@@ -1,0 +1,173 @@
+{
+  "at": "2026-10-24T16:03:00.334Z",
+  "passed": true,
+  "liveApi": true,
+  "readOnly": true,
+  "accountId": "149623339",
+  "accountEvidence": "Cuenta DEVELOPER_TEST. Objetos activos, propiedades estándar y personalizadas, relaciones verificadas.",
+  "counts": {
+    "contacts": {
+      "expected": 5,
+      "actual": 5
+    },
+    "companies": {
+      "expected": 2,
+      "actual": 2
+    },
+    "deals": {
+      "expected": 0,
+      "actual": 0
+    },
+    "tasks": {
+      "expected": 2,
+      "actual": 2
+    }
+  },
+  "relations": 2,
+  "pipelines": [
+    {
+      "id": "default",
+      "label": "Sales Pipeline"
+    }
+  ],
+  "stages": [
+    {
+      "id": "appointmentscheduled",
+      "label": "Appointment Scheduled",
+      "pipelineId": "default"
+    },
+    {
+      "id": "qualifiedtobuy",
+      "label": "Qualified To Buy",
+      "pipelineId": "default"
+    },
+    {
+      "id": "presentationscheduled",
+      "label": "Presentation Scheduled",
+      "pipelineId": "default"
+    },
+    {
+      "id": "decisionmakerboughtin",
+      "label": "Decision Maker Bought-In",
+      "pipelineId": "default"
+    },
+    {
+      "id": "contractsent",
+      "label": "Contract Sent",
+      "pipelineId": "default"
+    },
+    {
+      "id": "closedwon",
+      "label": "Closed Won",
+      "pipelineId": "default"
+    },
+    {
+      "id": "closedlost",
+      "label": "Closed Lost",
+      "pipelineId": "default"
+    }
+  ],
+  "customFields": [
+    {
+      "entity": "contacts",
+      "fields": [
+        {
+          "key": "email",
+          "type": "email",
+          "readOnly": false
+        },
+        {
+          "key": "firstname",
+          "type": "text",
+          "readOnly": false
+        },
+        {
+          "key": "lastname",
+          "type": "text",
+          "readOnly": false
+        },
+        {
+          "key": "phone",
+          "type": "text",
+          "readOnly": false
+        }
+      ]
+    },
+    {
+      "entity": "companies",
+      "fields": [
+        {
+          "key": "domain",
+          "type": "text",
+          "readOnly": false
+        },
+        {
+          "key": "name",
+          "type": "text",
+          "readOnly": false
+        },
+        {
+          "key": "phone",
+          "type": "text",
+          "readOnly": false
+        }
+      ]
+    },
+    {
+      "entity": "deals",
+      "fields": [
+        {
+          "key": "amount",
+          "type": "number",
+          "readOnly": false
+        },
+        {
+          "key": "closedate",
+          "type": "datetime",
+          "readOnly": false
+        },
+        {
+          "key": "dealname",
+          "type": "text",
+          "readOnly": false
+        },
+        {
+          "key": "dealstage",
+          "type": "enum",
+          "readOnly": false
+        },
+        {
+          "key": "pipeline",
+          "type": "enum",
+          "readOnly": false
+        }
+      ]
+    },
+    {
+      "entity": "tasks",
+      "fields": [
+        {
+          "key": "hs_task_status",
+          "type": "enum",
+          "readOnly": false
+        },
+        {
+          "key": "hs_task_subject",
+          "type": "text",
+          "readOnly": false
+        },
+        {
+          "key": "hs_timestamp",
+          "type": "datetime",
+          "readOnly": false
+        }
+      ]
+    }
+  ],
+  "specIssues": [],
+  "limitations": [
+    "Se verifica el contenido actual del portal de ensayo; no acredita que el conjunto previsto esté completo.",
+    "No escribe en HubSpot ni modifica la base operativa de Plan B.",
+    "No acredita una devolución real ni generación IA."
+  ]
+}

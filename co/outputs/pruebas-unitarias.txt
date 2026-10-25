@@ -1,0 +1,31 @@
+
+> plan-b-crm@0.1.0 test
+> tsx --test tests/*.test.ts
+
+✔ dos configuraciones completas producen formularios, etapas y validaciones diferentes (14.4545ms)
+✔ capturas parciales y referencias rotas se rechazan sin sustituir la última captura válida (25.5831ms)
+✔ la especificación no puede inventar campos ni reglas importadas o de usuario sin procedencia (1.5117ms)
+✔ un fallo de generación y una regla inválida impiden activar y editar (12.8833ms)
+✔ cliente, avance de oportunidad y nueva tarea sobreviven a cerrar SQLite y trasladar el paquete (176.1738ms)
+✔ el servidor aplica las reglas de campos, referencias y fechas y rechaza transiciones inválidas (10.4545ms)
+✔ el presupuesto reserva antes de gastar y conserva reservas al reiniciar (88.7279ms)
+✔ API local: origen, flujo real de ensayo, desconexión y exportaciones sin credenciales (1300.6243ms)
+✔ importación HubSpot de ensayo conserva paginación, campos, registros y relaciones verificadas (95.2062ms)
+✔ cuenta de producción, recuento parcial, asociaciones incompletas y cursor repetido bloquean la importación (19.6134ms)
+✔ no se importa una cuenta sin confirmación o con un ID diferente (2.1399ms)
+✔ el arnés de independencia bloquea fetch y sockets externos antes de conectar (358.793ms)
+✔ el adaptador envía solo metadatos al destino elegido y valida una especificación declarativa (95.8171ms)
+✔ modo JSON incluye el esquema y se valida igual que el modo estructurado (7.9057ms)
+✔ salida parcial, JSON roto, campo inventado y cuota agotada se rechazan (17.2504ms)
+✔ sin configuración, sin tarifas o desconectado no se llama al proveedor (4.5486ms)
+✔ el bloqueo preventivo evita la petición antes de superar 25 USD (2.1686ms)
+✔ un fallo de red retiene la reserva por consumo incierto (2.9974ms)
+✔ la clave no se reutiliza para otra dirección y nunca vuelve en la API pública (42.0382ms)
+ℹ tests 19
+ℹ suites 0
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4521.1557

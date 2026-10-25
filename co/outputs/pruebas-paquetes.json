@@ -1,0 +1,22 @@
+[
+  {
+    "package": "Plan-B-CRM-demo.zip",
+    "passed": true,
+    "entries": 6150,
+    "records": 63,
+    "changes": 3,
+    "restartAfterMove": true,
+    "externalNetworkBlocked": true,
+    "secretsExcluded": true
+  },
+  {
+    "package": "Plan-B-independiente.zip",
+    "passed": true,
+    "entries": 6091,
+    "records": 63,
+    "changes": 3,
+    "restartAfterMove": true,
+    "externalNetworkBlocked": true,
+    "secretsExcluded": true
+  }
+]

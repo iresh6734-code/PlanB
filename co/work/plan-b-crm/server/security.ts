@@ -1,0 +1,43 @@
+import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
+import type { FastifyInstance } from 'fastify';
+import { z } from 'zod';
+import { AppError, Store } from './store.js';
+
+export function registerSecurity(app: FastifyInstance, store: Store) {
+  const sessions = new Map<string,number>(), attempts = new Map<string,{at:number;count:number}>();
+  const credential = () => store.get<{salt:string;hash:string}|null>('password',null);
+  const cookie = (header?:string) => /(?:^|;\s*)planb_session=([a-f0-9]+)/.exec(header ?? '')?.[1] ?? '';
+  const authenticated = (header?:string,extend=false) => {
+    const id = cookie(header), expiry = sessions.get(id);
+    if (!expiry || expiry < Date.now()) { sessions.delete(id); return false; }
+    if(extend)sessions.set(id,Date.now()+30*60_000); return true;
+  };
+  app.addHook('onRequest',async (request,reply) => {
+    const path = request.url.split('?')[0];
+    if (!path.startsWith('/api/') || path.startsWith('/api/v2/auth/') || path === '/api/health') return;
+    const extend=request.method!=='GET'||path.startsWith('/api/v2/records/');
+    if (credential() && !authenticated(request.headers.cookie,extend)) return reply.code(401).send({error:'Desbloquea tu copia local para continuar.'});
+    if(credential()&&extend)reply.header('Set-Cookie','planb_session='+cookie(request.headers.cookie)+'; HttpOnly; SameSite=Strict; Path=/; Max-Age=1800');
+  });
+  app.get('/api/health',async()=>({ok:true,version:'0.2.1'}));
+  app.get('/api/v2/auth/status',async request=>({configured:!!credential(),authenticated:!credential() || authenticated(request.headers.cookie)}));
+  app.post('/api/v2/auth/setup',async (request,reply)=>{
+    if (credential()) throw new AppError(409,'La protección local ya está configurada.');
+    const {password} = z.object({password:z.string().min(12).max(200)}).strict().parse(request.body);
+    const salt = randomBytes(16); store.set('password',{salt:salt.toString('base64'),hash:scryptSync(password,salt,32).toString('base64')});
+    const id=randomBytes(32).toString('hex'); sessions.set(id,Date.now()+30*60_000);
+    reply.header('Set-Cookie','planb_session='+id+'; HttpOnly; SameSite=Strict; Path=/; Max-Age=1800');
+    return {configured:true};
+  });
+  app.post('/api/v2/auth/login',async (request,reply)=>{
+    const {password}=z.object({password:z.string().max(200)}).strict().parse(request.body);
+    const key=request.ip, previous=attempts.get(key), now=Date.now();
+    const attempt = previous && now-previous.at<60_000 ? previous : {at:now,count:0};
+    if (++attempt.count>5) throw new AppError(429,'Demasiados intentos. Espera un minuto.'); attempts.set(key,attempt);
+    const saved=credential();
+    if (!saved || !timingSafeEqual(scryptSync(password,Buffer.from(saved.salt,'base64'),32),Buffer.from(saved.hash,'base64'))) throw new AppError(401,'Contraseña incorrecta.');
+    attempts.delete(key); const id=randomBytes(32).toString('hex'); sessions.set(id,now+30*60_000);
+    reply.header('Set-Cookie','planb_session='+id+'; HttpOnly; SameSite=Strict; Path=/; Max-Age=1800'); return {authenticated:true};
+  });
+  app.post('/api/v2/auth/lock',async(request,reply)=>{sessions.delete(cookie(request.headers.cookie)); reply.header('Set-Cookie','planb_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0');return {locked:true};});
+}

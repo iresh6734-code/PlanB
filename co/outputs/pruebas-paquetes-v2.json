@@ -1,0 +1,31 @@
+[
+  {
+    "package": "Plan-B-CRM-v2.zip",
+    "passed": true,
+    "entries": 6198,
+    "records": 63,
+    "changes": 3,
+    "restartAfterMove": true,
+    "externalNetworkBlocked": true,
+    "secretsExcluded": true
+  },
+  {
+    "package": "Plan-B-independiente-v2.zip",
+    "passed": true,
+    "entries": 6114,
+    "records": 63,
+    "changes": 3,
+    "restartAfterMove": true,
+    "externalNetworkBlocked": true,
+    "secretsExcluded": true
+  },
+  {
+    "package": "exportado mediante API",
+    "passed": true,
+    "encryptedPortableRestore": true,
+    "wrongPasswordRejected": true,
+    "externalNetworkBlocked": true,
+    "credentialsRequired": false,
+    "exportDurationMs": 123344
+  }
+]

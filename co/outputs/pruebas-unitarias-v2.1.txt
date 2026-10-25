@@ -1,0 +1,64 @@
+
+> plan-b-crm@0.2.1 test
+> tsx --test tests/*.test.ts
+
+✔ dos configuraciones completas producen formularios, etapas y validaciones diferentes (7.4887ms)
+✔ capturas parciales y referencias rotas se rechazan sin sustituir la última captura válida (20.6751ms)
+✔ la especificación no puede inventar campos ni reglas importadas o de usuario sin procedencia (0.9301ms)
+✔ un fallo de actualización conserva la aplicación activa y bloquea solo la candidata (11.3364ms)
+✔ cliente, avance de oportunidad y nueva tarea sobreviven a cerrar SQLite y trasladar el paquete (2018.7517ms)
+✔ el servidor aplica las reglas de campos, referencias y fechas y rechaza transiciones inválidas (32.3767ms)
+✔ el presupuesto reserva antes de gastar y conserva reservas al reiniciar (1169.2946ms)
+✔ API local: origen, flujo real de ensayo, desconexión y exportaciones sin credenciales (1913.2248ms)
+✔ devolución HubSpot: verifica portal y tipo antes de usar un destino (41.9153ms)
+✔ devolución HubSpot: propiedades, creación y asociación verificada por lectura (4.785ms)
+✔ devolución HubSpot: nunca reintenta una escritura con respuesta fallida (1.3009ms)
+✔ importación HubSpot de ensayo conserva paginación, campos, registros y relaciones verificadas (39.4087ms)
+✔ cuenta de producción, recuento parcial, asociaciones incompletas y cursor repetido bloquean la importación (6.0642ms)
+✔ no se importa una cuenta sin confirmación o con un ID diferente (1.0234ms)
+✔ 207 de asociaciones exige confirmar cada resultado ausente con GET individual (7.1266ms)
+✔ 207 no oculta permisos insuficientes al verificar asociaciones individualmente (6.0148ms)
+✔ el arnés de independencia bloquea fetch y sockets externos antes de conectar (174.9916ms)
+✔ el adaptador envía solo metadatos al destino elegido y valida una especificación declarativa (36.9655ms)
+✔ modo JSON incluye el esquema y se valida igual que el modo estructurado (2.4276ms)
+✔ salida parcial, JSON roto, campo inventado y cuota agotada se rechazan (6.9587ms)
+✔ sin configuración, sin tarifas o desconectado no se llama al proveedor (1.6318ms)
+✔ el bloqueo preventivo evita la petición antes de superar 25 USD (1.1533ms)
+✔ un fallo de red retiene la reserva por consumo incierto (1.9744ms)
+✔ la clave no se reutiliza para otra dirección y nunca vuelve en la API pública (572.2535ms)
+✔ el diagnóstico nunca reutiliza el éxito de otra captura y exige renovarlo a los 30 días (6.6036ms)
+✔ el último resultado fallido de la misma captura invalida un éxito anterior (1.5584ms)
+✔ el simulacro cambia valores, avanza a una etapa posterior válida y crea una tarea pendiente antes de completarla (2.7034ms)
+✔ una captura sin oportunidades conserva sus datos y explica qué falta para el simulacro (1.8377ms)
+✔ el resumen de la última captura no confunde sus recuentos con el espacio activo (18.8392ms)
+✔ el informe legible escapa contenido importado y nunca completa recuentos con otra captura (19.6022ms)
+✔ v2: la candidata se promueve solo tras revisión y un fallo no altera la activa (46.7679ms)
+✔ v2: primera propuesta fallida nunca activa la aplicación (8.3593ms)
+✔ v2: promoción detecta ediciones posteriores a confirmar una sustitución (21.6845ms)
+✔ v2: AppSpecPatch conserva campos y exige procedencia para reglas nuevas (1.9659ms)
+✔ v2: copia cifrada se recupera y detecta contraseña incorrecta o alteraciones (250.3117ms)
+✔ v2: migra SQLite v1 a valores cifrados y conserva datos al reiniciar (1102.6494ms)
+✔ v2: etapas y fechas con hora se validan contra el pipeline (0.9037ms)
+✔ v2: 10.000 registros producen páginas de 50 y búsqueda en menos de 2 segundos (454.9701ms)
+✔ v2: retención conserva la captura activa (249.81ms)
+✔ v2: devolución verifica tres operaciones y no repite lo confirmado (57.7807ms)
+✔ v2: conflictos y cambios remotos posteriores exigen otra revisión (52.6798ms)
+✔ v2: creación con respuesta perdida queda incierta y nunca se repite sola (20.8714ms)
+✔ v2: traslado conserva IDs devueltos y no duplica un alta ya confirmada (261.5887ms)
+✔ v2: exportación conserva resultados inciertos y bloquea repetición y ediciones (35.3362ms)
+✔ v2: nuevas ediciones locales invalidan aprobación (24.7527ms)
+✔ v2: decisiones no pueden quitar campos obligatorios de un alta remota (20.2128ms)
+✔ v2: cancelar un trabajo conserva la copia activa (77.3584ms)
+✔ v2: captura parcial programada falla sin alterar la copia y conserva intento persistido (33.5902ms)
+✔ v2: sesión pausa servicios y no se cierra con cambios pendientes (30.549ms)
+✔ v2: devolución real controlada permite cerrar y abrir otra captura sin perder auditoría (27.261ms)
+✔ v2: restauración rechaza historial alterado y altas ausentes en el estado final (98.7865ms)
+✔ v2: sesión local protege datos, revoca cookies y limita intentos de contraseña (1567.893ms)
+ℹ tests 52
+ℹ suites 0
+ℹ pass 52
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7063.9374

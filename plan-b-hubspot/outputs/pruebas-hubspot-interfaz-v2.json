@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "source": "Captura auténtica DEVELOPER_TEST 149623339",
+  "isolated": true,
+  "hubspotWrites": false,
+  "externalNetworkBlocked": true,
+  "operations": [
+    "Editar cliente importado",
+    "Crear oportunidad local y avanzar etapa importada",
+    "Crear y completar tarea con campos HubSpot",
+    "Relacionar tarea con contacto",
+    "Conservar fecha UTC y mostrar zona Europe/Madrid",
+    "Reiniciar y comparar todos los registros"
+  ],
+  "datetimeUTC": "2026-11-12T09:30:00.000Z",
+  "browserErrors": [],
+  "externalRequests": [],
+  "limitations": [
+    "La captura no contenía oportunidades: la oportunidad de esta prueba se creó solo en la copia local.",
+    "No acredita devolución a HubSpot ni las dos configuraciones previstas."
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "passed": true,
+  "records": 10000,
+  "pageSize": 50,
+  "encryptedSQLite": true,
+  "transport": "HTTP real en 127.0.0.1",
+  "requests": 10,
+  "pageMs": [
+    520,
+    402,
+    358,
+    375,
+    347,
+    337,
+    339,
+    364,
+    354,
+    357
+  ],
+  "p95Ms": 520,
+  "searchMs": 347,
+  "sqliteBytes": 8990720,
+  "environment": {
+    "node": "v24.19.0",
+    "platform": "win32"
+  },
+  "limitations": [
+    "Medición local sin usuarios concurrentes; no es una garantía de rendimiento en otros equipos."
+  ]
+}

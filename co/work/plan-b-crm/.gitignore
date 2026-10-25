@@ -1,0 +1,15 @@
+node_modules/
+dist/
+build/
+.env*
+.ai.local.json*
+.key-setup/
+.npm-cache/
+data/
+test-results/
+playwright-report/
+release/
+runtime-assets/
+tests/.tmp/
+.planb-key
+.instance

@@ -1,0 +1,297 @@
+{
+  "account": {
+    "suggestedName": "Plan B · Ensayo",
+    "verifiedPortalId": "149623339",
+    "requiredTypes": [
+      "DEVELOPER_TEST",
+      "SANDBOX"
+    ],
+    "originalPortalId": "149623262",
+    "originalPortalType": "NO_VERIFICADO",
+    "actualName": "Plan B - Ensayo",
+    "verifiedBy": "Interfaz Cuentas de prueba de desarrollador e informe de lectura API real pruebas-hubspot-lectura-v2.json, 2026-10-24T16:03:00.334Z.",
+    "verifiedAccountType": "DEVELOPER_TEST"
+  },
+  "pipelines": [
+    {
+      "ref": "pipeline_nuevos",
+      "label": "[FICTICIO] Plan B · Nuevos clientes",
+      "stages": [
+        {
+          "ref": "nuevo_contacto",
+          "label": "Contacto inicial",
+          "probability": "0.1",
+          "actualHubspotId": "6289265901"
+        },
+        {
+          "ref": "nuevo_propuesta",
+          "label": "Propuesta",
+          "probability": "0.5",
+          "actualHubspotId": "6289265902"
+        },
+        {
+          "ref": "nuevo_ganado",
+          "label": "Ganado",
+          "probability": "1.0",
+          "actualHubspotId": "6289265906"
+        },
+        {
+          "ref": "nuevo_perdido",
+          "label": "Perdido",
+          "probability": "0.0",
+          "actualHubspotId": "6289265907"
+        }
+      ],
+      "actualHubspotId": "4252418259"
+    },
+    {
+      "ref": "pipeline_renovaciones",
+      "label": "[FICTICIO] Plan B · Renovaciones",
+      "stages": [
+        {
+          "ref": "renovacion_revision",
+          "label": "Revisión",
+          "probability": "0.2",
+          "actualHubspotId": "6292841715"
+        },
+        {
+          "ref": "renovacion_propuesta",
+          "label": "Propuesta",
+          "probability": "0.6",
+          "actualHubspotId": "6292841716"
+        },
+        {
+          "ref": "renovacion_ganado",
+          "label": "Ganado",
+          "probability": "1.0",
+          "actualHubspotId": "6292841717"
+        },
+        {
+          "ref": "renovacion_perdido",
+          "label": "Perdido",
+          "probability": "0.0",
+          "actualHubspotId": "6292841718"
+        }
+      ],
+      "actualHubspotId": "4251527394"
+    }
+  ],
+  "customProperties": [
+    {
+      "objectType": "contacts",
+      "name": "planb_ensayo_segmento",
+      "label": "Plan B · Segmento ficticio",
+      "description": "Dato de ensayo; no describe a una persona real.",
+      "type": "enumeration",
+      "fieldType": "select",
+      "options": [
+        {
+          "label": "Nuevo",
+          "value": "nuevo",
+          "displayOrder": 0
+        },
+        {
+          "label": "Activo",
+          "value": "activo",
+          "displayOrder": 1
+        },
+        {
+          "label": "En revisión",
+          "value": "revision",
+          "displayOrder": 2
+        }
+      ]
+    }
+  ],
+  "companies": [
+    {
+      "ref": "empresa_nube",
+      "properties": {
+        "name": "[FICTICIO] Nube de Ensayo",
+        "domain": "nube.example.com"
+      },
+      "actualHubspotId": "457060588743"
+    },
+    {
+      "ref": "empresa_faro",
+      "properties": {
+        "name": "[FICTICIO] Faro de Ensayo",
+        "domain": "faro.example.com"
+      },
+      "actualHubspotId": "456788705502"
+    }
+  ],
+  "contacts": [
+    {
+      "ref": "contacto_ana",
+      "properties": {
+        "firstname": "Ana",
+        "lastname": "Ensayo Ficticio",
+        "email": "ana.planb@example.com",
+        "planb_ensayo_segmento": "nuevo"
+      },
+      "actualHubspotId": "900730426607"
+    },
+    {
+      "ref": "contacto_bruno",
+      "properties": {
+        "firstname": "Bruno",
+        "lastname": "Ensayo Ficticio",
+        "email": "bruno.planb@example.com",
+        "planb_ensayo_segmento": "activo"
+      },
+      "actualHubspotId": "900723944678"
+    },
+    {
+      "ref": "contacto_carla",
+      "properties": {
+        "firstname": "Carla",
+        "lastname": "Ensayo Ficticio",
+        "email": "carla.planb@example.com",
+        "planb_ensayo_segmento": "revision"
+      },
+      "actualHubspotId": "900731145407"
+    }
+  ],
+  "deals": [
+    {
+      "ref": "oportunidad_nube",
+      "pipelineRef": "pipeline_nuevos",
+      "stageRef": "nuevo_contacto",
+      "properties": {
+        "dealname": "[FICTICIO] Nube · Alta de ensayo",
+        "closedate": "2026-11-30"
+      },
+      "actualHubspotId": "530961487065"
+    },
+    {
+      "ref": "oportunidad_faro",
+      "pipelineRef": "pipeline_nuevos",
+      "stageRef": "nuevo_propuesta",
+      "properties": {
+        "dealname": "[FICTICIO] Faro · Propuesta de ensayo",
+        "closedate": "2026-12-15"
+      },
+      "actualHubspotId": "531005409482"
+    },
+    {
+      "ref": "oportunidad_renovacion",
+      "pipelineRef": "pipeline_renovaciones",
+      "stageRef": "renovacion_propuesta",
+      "properties": {
+        "dealname": "[FICTICIO] Nube · Renovación de ensayo",
+        "closedate": "2027-01-15"
+      },
+      "actualHubspotId": "531228925141"
+    }
+  ],
+  "tasks": [
+    {
+      "ref": "tarea_ana",
+      "properties": {
+        "hs_task_subject": "[FICTICIO] Revisar ficha de Ana",
+        "hs_task_body": "Ensayo local de continuidad. No contactar a nadie.",
+        "hs_task_status": "NOT_STARTED",
+        "hs_task_type": "TODO",
+        "hs_timestamp": "2026-10-26T10:00:00Z"
+      }
+    },
+    {
+      "ref": "tarea_carla",
+      "properties": {
+        "hs_task_subject": "[FICTICIO] Revisar propuesta de Faro",
+        "hs_task_body": "Ensayo local de continuidad. No enviar propuesta ni correo.",
+        "hs_task_status": "NOT_STARTED",
+        "hs_task_type": "TODO",
+        "hs_timestamp": "2026-10-27T10:00:00Z"
+      }
+    },
+    {
+      "ref": "tarea_bruno",
+      "properties": {
+        "hs_task_subject": "[FICTICIO] Revisar renovación de Nube",
+        "hs_task_body": "Ensayo local de continuidad. Sin cobros ni recordatorios.",
+        "hs_task_status": "NOT_STARTED",
+        "hs_task_type": "TODO",
+        "hs_timestamp": "2026-10-28T10:00:00Z"
+      }
+    }
+  ],
+  "associations": [
+    {
+      "from": "contacto_ana",
+      "to": "empresa_nube",
+      "relationship": "empresa principal"
+    },
+    {
+      "from": "contacto_bruno",
+      "to": "empresa_nube",
+      "relationship": "empresa principal"
+    },
+    {
+      "from": "contacto_carla",
+      "to": "empresa_faro",
+      "relationship": "empresa principal"
+    },
+    {
+      "from": "oportunidad_nube",
+      "to": "empresa_nube",
+      "relationship": "empresa"
+    },
+    {
+      "from": "oportunidad_faro",
+      "to": "empresa_faro",
+      "relationship": "empresa"
+    },
+    {
+      "from": "oportunidad_renovacion",
+      "to": "empresa_nube",
+      "relationship": "empresa"
+    },
+    {
+      "from": "oportunidad_nube",
+      "to": "contacto_ana",
+      "relationship": "contacto"
+    },
+    {
+      "from": "oportunidad_faro",
+      "to": "contacto_carla",
+      "relationship": "contacto"
+    },
+    {
+      "from": "oportunidad_renovacion",
+      "to": "contacto_bruno",
+      "relationship": "contacto"
+    },
+    {
+      "from": "tarea_ana",
+      "to": "contacto_ana",
+      "relationship": "contacto"
+    },
+    {
+      "from": "tarea_carla",
+      "to": "contacto_carla",
+      "relationship": "contacto"
+    },
+    {
+      "from": "tarea_bruno",
+      "to": "contacto_bruno",
+      "relationship": "contacto"
+    },
+    {
+      "from": "tarea_ana",
+      "to": "oportunidad_nube",
+      "relationship": "oportunidad"
+    },
+    {
+      "from": "tarea_carla",
+      "to": "oportunidad_faro",
+      "relationship": "oportunidad"
+    },
+    {
+      "from": "tarea_bruno",
+      "to": "oportunidad_renovacion",
+      "relationship": "oportunidad"
+    }
+  ]
+}

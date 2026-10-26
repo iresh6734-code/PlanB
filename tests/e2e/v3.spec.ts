@@ -1,0 +1,34 @@
+import { test, expect } from '@playwright/test';
+import { resolve } from 'node:path';
+import { makeFixture } from '../../shared/fixtures.js';
+const output=resolve(process.env.PLANB_EVIDENCE_DIR||'test-results');
+
+test('v3: preparación guiada, clasificación real y recuperación manual sin escrituras',async({page,request})=>{
+  const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
+  const auth=await request.get('/api/v2/auth/status').then(r=>r.json());
+  if(auth.configured)expect((await request.post('/api/v2/auth/login',{data:{password:'solo-prueba-local-2026'}})).ok()).toBeTruthy();
+  else expect((await request.post('/api/v2/auth/setup',{data:{password:'solo-prueba-local-2026'}})).ok()).toBeTruthy();
+  const snapshot=makeFixture();snapshot.version=3;snapshot.source={kind:'hubspot',accountId:'123',isTestData:false,environment:'production',accountType:'STANDARD',description:'Solo datos sintéticos para probar la interfaz; ninguna cuenta real.'};
+  expect((await request.post('/api/import/snapshot',{data:{snapshot,replace:true}})).ok()).toBeTruthy();
+  expect((await request.post('/api/generate',{data:{mode:'demo'}})).ok()).toBeTruthy();
+  expect((await request.post('/api/activate',{data:{reviewed:true}})).ok()).toBeTruthy();
+  await page.goto('/');await expect(page.getByText('Producción · lectura',{exact:false}).first()).toBeVisible();
+  await page.getByText('Preparación de tu Plan B',{exact:true}).click();await expect(page.getByText('Preparar recuperación',{exact:false})).toBeVisible();
+  await page.getByRole('button',{name:'Conectar HubSpot',exact:true}).click();
+  const dialog=page.getByRole('dialog',{name:'Conectar HubSpot',exact:true});await expect(dialog).toBeVisible();
+  await dialog.getByLabel('Modo de conexión',{exact:true}).selectOption('production_readonly');
+  await expect(dialog.getByText('Tengo autorización del cliente',{exact:false})).toBeVisible();
+  await dialog.getByRole('button',{name:'Cerrar',exact:true}).click();
+  await page.getByRole('button',{name:'Trabajar',exact:true}).click();await page.getByRole('button',{name:'Editar Lucía Martín',exact:true}).click();
+  await page.getByLabel('Teléfono',{exact:true}).fill('600 321 321');await page.getByRole('button',{name:'Guardar cambios',exact:true}).click();
+  await page.getByRole('button',{name:'Cambios',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Recuperación manual verificada',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Aplicar a HubSpot de prueba',exact:true})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Proveedor de IA',exact:true})).toHaveCount(0);
+  expect((await request.get('/api/export/bundle')).status()).toBe(403);
+  expect((await request.post('/api/v2/return/preview',{data:{simulation:false}})).status()).toBe(403);
+  await page.screenshot({path:resolve(output,'v0.3.0-produccion-manual.png'),fullPage:true});
+  await page.setViewportSize({width:390,height:844});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
+  await page.screenshot({path:resolve(output,'v0.3.0-produccion-movil.png'),fullPage:true});expect(errors).toEqual([]);
+});

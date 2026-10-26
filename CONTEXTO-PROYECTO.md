@@ -1,0 +1,210 @@
+# Plan B · Contexto y continuidad del proyecto
+
+Última revisión: **26 de octubre de 2026, Europe/Madrid**.
+Repositorio: `iresh6734-code/PlanB`. Base revisada: `main`, commit `f5e950d6c91dc296dba2bea2f75cf34537f54742` («Primera versión del proyecto», 25/10/2026).
+
+Este documento reúne el estado del código, las evidencias guardadas y los chats relacionados. Debe actualizarse al cerrar cada tarea relevante. Los resultados históricos no equivalen a pruebas ejecutadas en el entorno actual.
+
+## Restricción vigente de equipos
+
+**El ordenador original es de la empresa y no debe recibir ninguna acción ni conexión.** El usuario informa de alertas corporativas por interacciones anteriores con navegador y credenciales. No acceder a ese equipo, su navegador, terminales, perfiles, agentes, bases o claves; tampoco pedir que otro chat opere allí. No intentar evitar sus controles. La autorización actual es continuar con el código disponible en esta copia cloud y preparar una instalación independiente en el ordenador que usa ahora el usuario. Los planes antiguos de recuperar la captura o actualizar la instalación original quedan sustituidos.
+
+El usuario está en otro ordenador. La observación histórica de HubSpot mostraba un inicio de sesión con respuesta 401. En la tarea local del 26/10 se comprobó desde el navegador de Codex del ordenador actual una sesión activa en «Plan B - Ensayo», portal 149623339; se detalla abajo. Un acceso a una cuenta compartida puede generar avisos de esa cuenta aunque se haga desde otro PC. No prometer ausencia de alertas ni utilizar sesiones o credenciales del equipo corporativo.
+
+## Dónde nos quedamos
+
+**v2.1 tiene ahora ZIP candidatos generados, compilación confirmada, 55 pruebas de lógica/API y 8 recorridos Chromium superados, incluida la descarga HTML. Los dos ZIP y la recuperación cifrada superan 3 comprobaciones de lógica con Node Linux. La aceptación Windows debe hacerse en el ordenador actual. La captura histórica de las 18:36 no está conciliada aquí y no se recuperará del equipo corporativo: se continuará con datos ficticios y, si procede, una captura nueva de una cuenta de ensayo autorizada.**
+
+**Primera validación local, antes de conectar HubSpot, 26/10/2026:** compilación, 55/55 pruebas y 8/8 recorridos con Chrome, además de seis comprobaciones nativas de la instalación nueva y su ZIP cifrado exportado, con DPAPI real y traslado/reinicio. Demo independiente en `http://127.0.0.1:4321/` y otra instancia inicialmente vacía en `http://127.0.0.1:4322/`. En esa fase se preparó un borrador de clave; su creación, conexión y captura se completaron posteriormente como se indica debajo. Esta primera validación no acredita los dos ZIP candidatos históricos ni concilia la captura de las 18:36.
+
+**Último avance, conexión y captura cerradas:** la conexión ya está guardada y cifrada en la instalación actual 4322. Captura nueva de **26/10/2026, 11:58:24 Europe/Madrid**, ID `6d65d147-1ecd-4e87-bf56-9fb742f2e9ce:2026-10-26T10:58:24.957Z`: portal **149623339 / DEVELOPER_TEST** verificado por API, **15 registros y 17 relaciones**. Superadas **76/76 comprobaciones** del conjunto previsto (11 registros, 15 relaciones), distinguiendo cuatro registros y dos relaciones adicionales. Simulacro de esa misma captura superado y guardado, **5/5** comprobaciones. Corregida una omisión del importador en propiedades personalizadas; compilación y **56/56 pruebas** correctas. La instancia actual está actualizada y reiniciada; será necesario desbloquearla con la contraseña del usuario al volver a la interfaz. La captura histórica de las 18:36 sigue sin verificarse aquí y no se recuperó del PC corporativo.
+
+- El chat principal añadió diagnóstico vinculado a cada captura, simulacros más estrictos e informe HTML descargable.
+- El chat de continuación completó por interfaz los datos ficticios del portal de ensayo y comunicó una nueva «Captura conciliada» a las **18:36:50 del 24/10/2026**.
+- Ese último chat se interrumpió mientras verificaba el contenido de la captura y los IDs de tareas. No hay en el repositorio un informe final que concilie esa captura completa.
+- Los documentos v2 conservan pendientes antiguos: no volver a crear los pipelines, campo, oportunidades y tareas sin comprobar antes lo existente.
+- No están acreditadas una devolución auténtica a HubSpot ni una generación correcta con el proveedor IA que el usuario elija.
+- Continuación del 26/10: generados `co/outputs/Plan-B-CRM-v2.1.zip` y `Plan-B-independiente-v2.1.zip`, con evidencias y manifiesto SHA-256. Preparada lectura de la base original en solo lectura mediante `scripts/verify-configured-capture.ts`. No se ha modificado la instancia operativa Windows.
+
+## Qué es el producto
+
+Plan B conserva una copia utilizable del CRM para seguir trabajando cuando HubSpot no esté disponible. Permite comprobar procesos mediante un simulacro, conservar cambios locales y preparar su devolución revisada.
+
+Destinatarios: pymes usuarias de HubSpot y agencias que preparan y supervisan su continuidad. El objetivo del usuario es desarrollar un producto potente, sencillo y comercializable, sin sobrecargarlo de módulos.
+
+Alcance actual: **Windows, un operador, una instalación y un portal por carpeta, hasta 10.000 registros totales de ensayo**. Objetos: clientes/contactos, empresas, oportunidades y tareas. Interfaz española, fondo blanco, texto oscuro y acento azul.
+
+No incluye campañas, facturación, multiusuario, borrados remotos automáticos ni sincronización bidireccional continua. Los datos empresariales de producción siguen bloqueados. El funcionamiento local durante continuidad no requiere HubSpot ni IA; las capturas necesitan ordenador encendido y servidor conectado.
+
+## Lo construido
+
+- React 19, TypeScript, Vite 6; servidor Fastify 5, Node **24 o posterior**, SQLite.
+- Preparación desde dos conjuntos ficticios o importación de HubSpot; campos, etapas, relaciones y reglas con procedencia.
+- Contratos `CrmSnapshot`, `AppSpec` y registro de cambios. La IA propone especificaciones validadas, no código arbitrario ejecutable.
+- Separación entre generador y runtime independiente, sin adaptadores externos en el paquete independiente.
+- Versión activa y candidata: una propuesta fallida no sustituye la aplicación operativa.
+- Capturas conciliadas, historial, retención, trabajos persistentes, cancelación y programación de capturas/simulacros.
+- Clientes, empresas, oportunidades y tareas con edición, tablero, búsqueda, paginación y validación en servidor.
+- Sesión de continuidad que pausa capturas e IA; cambios persistentes y exportación CSV/JSON.
+- Cifrado AES-256-GCM, clave protegida por Windows DPAPI, contraseña y sesión local, bloqueo de instancia.
+- Exportación y recuperación cifrada con contraseña, preservando historial e IDs remotos confirmados.
+- Simulacro aislado con red externa bloqueada: editar cliente, avanzar oportunidad, crear/completar tarea y comprobar persistencia tras reiniciar.
+- Devolución revisada con comparación de tres vías, conflictos, diario y resultados inciertos que no se reintentan automáticamente. Su validación auténtica está pendiente.
+- Página local para agencias y materiales de piloto; no hay cobro ni envío de formularios a un servicio externo.
+
+## Últimas mejoras de v0.2.1
+
+Están en el código del repositorio, aunque el registro `IMPLEMENTACION-V2.md` no recoge todo este último bloque:
+
+- `server/assessment.ts`: el éxito de otra captura no valida una nueva; el último fallo invalida el éxito previo de esa captura; el simulacro caduca a los 30 días.
+- `server/drill-plan.ts` y `server/drill-worker.ts`: comprueban que existen datos apropiados y verifican cambios efectivos, etapa, tarea completada e historial tras reabrir SQLite.
+- `src/ContinuityHome.tsx`: diagnóstico y recuentos de la captura, límites y explicación de lo que falta.
+- `server/drill-report.ts`: informe HTML legible e imprimible, con captura, recuentos, comprobaciones y límites; descarga adicional JSON.
+- Nuevas pruebas en `tests/readiness.test.ts` y ampliación del recorrido de navegador.
+
+## Evidencias de pruebas y entregas
+
+Esta tabla recoge resultados históricos del entorno Windows/Edge del 24/10/2026, inspeccionados el 26/10. Las comprobaciones actuales de Linux se documentan aparte en «Estado de esta máquina cloud».
+
+| Evidencia | Resultado y alcance |
+| --- | --- |
+| `co/outputs/pruebas-unitarias-v2.1.txt` | **52/52** pruebas, 0 fallos, cancelaciones u omisiones. Incluye el informe HTML. |
+| `co/outputs/pruebas-navegador-v2.1.json` | **8 recorridos esperados**, 0 inesperados, omitidos o inestables; unos 29,9 s. El chat muestra que esta ejecución precede a la incorporación final del informe HTML: repetir el navegador para ese último cambio. |
+| Chat principal, último turno | Última compilación `npm run build` y último `npm test` completados con salida 0. El turno se interrumpió después por límite de uso. |
+| `co/outputs/pruebas-paquetes-v2.json` | **3/3**: dos ZIP v2 y exportación cifrada por API; reinicio, traslado, persistencia y rechazo de contraseña incorrecta. No acredita paquetes v2.1. |
+| `co/outputs/pruebas-rendimiento-v2.json` y resultados v2 | 10.000 registros, páginas de 50, máximo/p95 520 ms y búsqueda 347 ms en el equipo original. |
+| Informes HubSpot lectura/captura/interfaz v2 | Lectura auténtica, primera captura guardada y trabajo local sobre copia aislada. No acreditan devolución remota. |
+
+Los ZIP `Plan-B-CRM-v2.zip` y `Plan-B-independiente-v2.zip` siguen en `co/outputs/`. El 26/10 se recalcularon sus SHA-256 y coinciden con `ENTREGA-SHA256-v2.json`. El `source/package.json` del ZIP principal declara **0.2.0**, mientras el código de trabajo declara **0.2.1**.
+
+Los ZIP v2.1, `ENTREGA-SHA256-v2.1.json` y `RESULTADOS-PRUEBAS-v2.1.md` ya existen. Son **candidatos**, con aceptación nativa pendiente. El runtime Windows se recuperó del ZIP v2 después de verificar su hash y la coincidencia de dependencias. Se corrigió un error previo del lockfile: la entrada `eastasianwidth` debe declarar 0.2.0, igual al tarball e integridad, y no la versión 0.2.1 de la aplicación.
+
+Evidencias actuales separadas de las históricas: `co/outputs/compilacion-v2.1-linux.txt`, `pruebas-unitarias-v2.1-linux.txt` (**55/55**), `pruebas-navegador-v2.1-linux.json` (**8/8**, unos 40 s) y `pruebas-paquetes-v2.1-linux.json` (**3/3 de lógica**, con `bundledWindowsRuntimeExecuted=false` y `windowsDpapiVerified=false`). Guía: `co/work/plan-b-crm/LEEME-V2.1.md`.
+
+## HubSpot: estado reconstruido
+
+Portal de ensayo: **149623339, «Plan B - Ensayo», DEVELOPER_TEST**, verificado por API. No confundirlo con el portal inicial 149623262, cuyo tipo no se verificó. Vencimiento mostrado al crear el ensayo: 22/01/2027; no se ha comprobado de nuevo su estado actual.
+
+La Service Key «Plan B - Lectura» y la contraseña local se configuraron en la instalación Windows original, mediante formulario. No están acreditadas como disponibles en cloud. No copiar, registrar ni solicitar sus valores en chat. No ampliar permisos para continuar una lectura ya autorizada.
+
+El fallo inicial HTTP 207 al consultar asociaciones se corrigió: los resultados ausentes o con error se verifican con GET individual paginado; no se acepta una captura parcial como completa ni se ocultan errores de permisos.
+
+### Primera captura con informe guardado
+
+`co/outputs/pruebas-hubspot-captura-v2.json`, 24/10/2026 **18:09:11 CEST**: 5 contactos, 2 empresas, 0 oportunidades, 2 tareas y 2 relaciones; lectura auténtica, guardada en historial operativo, sin sustituir el espacio activo ni escribir en HubSpot. Los 5 contactos incluyen dos ejemplos predeterminados de HubSpot.
+
+Después se verificaron edición, tarea, relaciones, fechas y reinicio sobre una copia aislada de esa captura (`pruebas-hubspot-interfaz-v2.json`). La oportunidad de ese ensayo se creó localmente; no demuestra devolución remota.
+
+### Preparación posterior completada por interfaz
+
+El handoff y el chat «Plan B · Continuar HubSpot» documentan:
+
+- Empresas Nube `457060588743` y Faro `456788705502`.
+- Contactos Ana `900730426607`, Bruno `900723944678` y Carla `900731145407`.
+- Pipeline Nuevos clientes `4252418259`: Contacto inicial, Propuesta, Ganado y Perdido.
+- Pipeline Renovaciones `4251527394`: Revisión, Propuesta, Ganado y Perdido.
+- Campo `contacts.planb_ensayo_segmento`; valores Ana=`nuevo`, Bruno=`activo`, Carla=`revision`.
+- Oportunidades: Nube Alta `530961487065`, Faro Propuesta `531005409482`, Nube Renovación `531228925141`, con sus contactos/empresas y pipelines.
+- Tres tareas ficticias sin avisos, con vencimientos 26, 27 y 28/10/2026 a las 11:00 de Madrid, respectivamente para Ana, Carla y Bruno. Falta cerrar la comprobación de IDs y horas UTC.
+- Las 15 relaciones previstas se prepararon por interfaz; falta su conciliación final de lectura.
+- Último mensaje del chat: nueva **«Captura conciliada» de las 18:36:50**; estaba verificando contenido e IDs de tareas cuando se agotó el uso.
+
+Ese último resultado es una observación comunicada por el chat, no un informe final de conciliación disponible en Git. No concluir que ya pasaron todos los criterios del conjunto completo. Las dos tareas y relaciones iniciales deben distinguirse de las creadas después.
+
+El 26/10 se confirmó que ni `data/hubspot-v2` ni la copia aislada auténtica están en cloud. El intento de consultar de nuevo el chat local devolvió indisponibilidad del host. Se prepararon `scripts/check-fixture.ts`, `scripts/hubspot-fixture.expected.json` y `scripts/verify-configured-capture.ts`: al ejecutarlos en la instalación original, comparan la captura guardada con los 11 registros y 15 relaciones previstos, identifican tareas y extras, comprueban campos/pipelines/fechas y lanzan el simulacro aislado si el conjunto coincide. El acceso a SQLite es de solo lectura, sin leer la conexión ni llamar a HubSpot. Las tres nuevas pruebas son sintéticas. No confundirlas con el cierre auténtico aún pendiente.
+
+## Chats revisados
+
+Se consultaron los turnos disponibles de estos cuatro chats relacionados; del principal se paginó hasta el comienzo. Los títulos se conservan tal como los devuelve la herramienta.
+
+| Chat | ID | Aportación |
+| --- | --- | --- |
+| Explora ideas para monetizar una web | `01a16d93-b154-79c0-912a-fba76bdcf1fd` | Origen de Plan B, decisiones, implementación, pruebas, entregas y últimas mejoras v2.1. |
+| Configurar HubSpot de prueba para Plan… | `01a16e81-9e99-7b93-b8c8-fb4889a932eb` | Creación del ensayo, permisos de lectura, datos iniciales, HTTP 207 y primera captura. |
+| Plan B · Continuar HubSpot | `01a16eb2-0366-7e50-89f1-ccdb8efe7573` | Pipelines, segmentos, oportunidades, tareas, relaciones y última captura comunicada. |
+| Trasladar proyecto con GitHub | `6addd472-e2f8-83ed-9841-808dd5c9c53f` | Traslado al repositorio. La herramienta devuelve mensajes del usuario, pero las respuestas aparecen como referencias sin contenido legible; revisión parcial. |
+
+También se revisó este chat «Configurar PlanB». El listado de archivados Codex accesibles está vacío. Los archivados ChatGPT no son accesibles desde esta tarea cloud; no se afirma haber revisado todos los chats de la cuenta.
+
+Los bloqueos de navegador de Work pertenecen al historial: el chat de continuación sí consiguió operar. No tratarlos como diagnóstico vigente sin comprobarlo.
+
+## Comercial e IA
+
+Propuesta a validar con agencias: **199 € de preparación + 59 €/mes por portal**; hipótesis, no precios ni ingresos validados. Objetivo propuesto: entrevistar cinco agencias y conseguir tres compromisos pagados. No hay ventas, pilotos pagados, testimonios, SLA ni rentabilidad acreditados.
+
+El usuario indicó que añadiría después una clave de un proveedor distinto de OpenAI. Hay configuración de endpoint, modelo y tarifas compatibles; el límite preventivo local es 25 USD/mes, sin sustituir el límite de facturación del proveedor. Falta verificar una generación real con el proveedor elegido. No es necesario añadir saldo a OpenAI para continuar el trabajo local.
+
+## Estado histórico de la máquina cloud
+
+- El 25/10 se observó el remoto vacío. El 26/10 se confirmó `main` con el commit inicial y se recuperó su contenido.
+- En la revisión inicial se materializó `main` en `/workspace/PlanB`. La continuación autorizada de v2.1 añade herramientas y pruebas, ajusta el empaquetado y corrige el metadato de una dependencia en el lockfile. Los cambios están en el espacio de trabajo y todavía no se han subido a GitHub.
+- Código de la app: `/workspace/PlanB/co/work/plan-b-crm`. Entregables: `/workspace/PlanB/co/outputs`.
+- Herramientas observadas: Node 24.19.0, npm 11.9.0, Python 3.12.14 y Git 2.52.0. El acceso de lectura GitHub funciona.
+- Dependencias reinstaladas con `npm ci` después de corregir la versión de `eastasianwidth` en el lockfile, sin alterar su tarball ni integridad. Compilación `npm run build` correcta y **55/55 pruebas actuales** con `NODE_ENV=test npm test` el 26/10/2026, sin fallos, omisiones ni cancelaciones.
+- **App v0.2.1 iniciada en cloud**, puerto interno 4317, con la demo sintética Agencia Norte (62 registros), servicios desconectados y red externa del proceso bloqueada mediante `scripts/block-external.cjs`. Datos separados en `co/work/plan-b-crm/data/cloud-demo/` (ruta ignorada por Git).
+- Verificados por HTTP: salud/versión, HTML, estado preparado, 62 registros, comprobación funcional `/api/probe`, simulacro aislado completado con cinco comprobaciones y descarga de su informe HTML. Se detuvo y reinició el servidor: registros, informe y diagnóstico se conservaron.
+- Se ejecutaron **8/8 recorridos Playwright con Chromium del sistema**, sin Browser plugin disponible, en escritorio y móvil. Se comprobó la descarga HTML y su renderizado sin red con `setContent`; la política de navegador bloquea `file://` y no se deshabilitó. No se ha probado apertura por doble clic ni impresión física.
+- Este onboarding no ofrece una vista previa web accesible al usuario. El intento anterior de apertura en el navegador de Codex devolvió `queued`; las pruebas automatizadas de Chromium no equivalen a una pestaña visible para el usuario. La v2 sigue disponible para abrir con `ABRIR PLAN B.cmd`; v2.1 se entrega ahora como candidata pendiente de aceptación Windows.
+- Los procesos, bases y credenciales de la instalación Windows original no se trasladaron por el mero hecho de subir el código.
+- La protección comercial requiere Windows DPAPI; en Linux, `server/crypto.ts` admite claves locales únicamente bajo `NODE_ENV=test`. Cualquier ejecución así es solo de pruebas con datos ficticios, no una instalación comercial equivalente.
+- Playwright usa Edge (`msedge`) por defecto y permite `PLANB_PLAYWRIGHT_EXECUTABLE` para el Chromium Linux. `PLANB_EVIDENCE_DIR` separa los resultados nuevos. El empaquetado desde Linux admite el `node.exe` Windows verificado de v2, comprueba formato PE y conserva las dependencias; esto no ejecuta ese binario. `verify-package.py --node` genera un informe de lógica distinto al de aceptación Windows.
+- La demo cloud se reinició con la compilación v2.1 actualizada, conservando los registros. La instalación Windows original y sus puertos 4340/4344 no se modificaron ni se han comprobado accesibles.
+- Borrador de onboarding actualizado y guardado: `install_script` (instalación y compilación), `start_skill` (arranque Linux de demo, inicialización que conserva espacios existentes y comprobaciones) y repositorio fijado al commit revisado. Publicación pendiente del usuario en los ajustes del entorno; guardar el borrador no publica ni garantiza restauración en una tarea nueva.
+
+Comando de arranque verificado, desde `/workspace/PlanB/co/work/plan-b-crm`:
+
+```bash
+NODE_ENV=test PLANB_DATA_DIR=/workspace/PlanB/co/work/plan-b-crm/data/cloud-demo PLANB_PORT=4317 node --require ./scripts/block-external.cjs build/server.mjs
+```
+
+Reutilizar el servidor si ya responde. No sobrescribir ni reinicializar la demo existente al arrancar de nuevo. Los procesos deben arrancarse otra vez cuando se restaure una máquina.
+
+## Estado del ordenador actual · Windows, 26/10/2026
+
+- Carpeta de código extraída: `D:\AI\Plan-B-CRM-v2.1\source`. No contiene `.git`; no se ha realizado ninguna sincronización o publicación. Los documentos y resultados cloud anteriores son históricos, no procesos de este Windows.
+- Dependencias de desarrollo instaladas mediante `npm ci --ignore-scripts --no-audit --no-fund`, sin cambios del lockfile. Node del entorno: 24.14.0; npm 11.16.0. `npm run build` correcto; `npm test`: **55/55**, sin fallos ni omisiones.
+- `npm run test:e2e` ejecutado con Chrome instalado, en perfil de pruebas separado y servidor temporal 4337: **8/8**, 28,5 segundos. Incluye escritorio 1536×1024, móvil 390×844, descarga HTML, renderizado sin red, simulacro y restauración cifrada. Edge no se ha ejecutado: no se encontró el ejecutable en su ruta estándar.
+- Demo nueva y autónoma en `source\planb-local-2026-10-26`, con binarios compilados aquí, dependencias/runtime Windows del paquete extraído y semilla comprobada `fixture/demo-agency`: **62 registros, cero cambios operativos**. Su almacenamiento es propio; clave local `kind=dpapi`, sin imprimir su valor. Proceso iniciado oculto en 4321 con `block-external.cjs`; HubSpot e IA sin configurar. La pestaña de Codex mostró «Simulacro superado», cinco comprobaciones; consola sin errores ni avisos. La base de la carpeta padre no se ha inspeccionado ni modificado.
+- Aceptación adicional en carpetas temporales nuevas: **6/6** comprobaciones nativas. Edición de cliente, etapa y tarea; simulacro aislado; exportación de ZIP cifrado por API; reinicio tras traslado preservando registros, cambios e informe; recuperación con el `node.exe` Windows exportado y nueva clave DPAPI; contraseña incorrecta rechazada. Las carpetas temporales se eliminaron tras la prueba y la demo visible conservó sus 62 registros/cero cambios. Esta aceptación corresponde a la instalación nueva y su exportación, **no** a los dos ZIP candidatos históricos; no prueba otro usuario Windows ni los iniciadores CMD.
+- Segunda instalación nueva en `source\planb-hubspot-149623339-2026-10-26`, puerto **4322**, inicialmente vacía y ahora con contraseña elegida por el usuario, conexión de ensayo cifrada y capturas nuevas. Sin proveedor IA ni programación automática; DPAPI comprobada. Se conservó el espacio activo sin sustituirlo: la captura se guardó en historial, lista para abrir con «Continuar trabajando». El iniciador fija puerto y carpeta de datos. El servidor se reinició con el importador corregido; la sesión en memoria quedó cerrada y requiere desbloqueo normal. No se ha creado ni leído la contraseña del usuario; no se accedió a claves del PC corporativo.
+- Navegador de Codex comprobado disponible en este Windows. Portal abierto: `https://app-eu1.hubspot.com/contacts/149623339/objects/0-1/views/all/list`, con sesión activa y cinco contactos de ensayo visibles. Esta observación de interfaz no sustituye la comprobación API de `DEVELOPER_TEST` ni una captura conciliada nueva. No se han cambiado fichas, pipelines, relaciones o credenciales existentes.
+- Inicialmente el usuario no disponía de credencial en este equipo. Se preparó y después se creó la nueva clave **Plan B - Lectura PC actual 2026-10-26**, ID **58711306**, con seis scopes: `crm.objects.contacts.read`, `crm.objects.companies.read`, `crm.objects.deals.read`, `crm.schemas.contacts.read`, `crm.schemas.companies.read`, `crm.schemas.deals.read`. Ningún scope de escritura o datos sensibles. El selector no ofrecía `external-settings-access`; no se añadieron permisos de seguridad como sustituto. La captura real posterior verificó los endpoints usados sin ampliar este alcance. No volver a crear la clave ni modificar sus permisos para repetir una lectura ya autorizada.
+- El usuario pidió guardar la clave **sin ver información confidencial**, configuró su contraseña y después confirmó el pegado. Al retomar, el formulario ya estaba cerrado y la conexión guardada; una captura solicitada por interfaz usó esa conexión correctamente. La clave **58711306** se identificó por la URL de HubSpot; no se volvió a crear otra ni se mostró, extrajo o imprimió su valor para el agente. No se leyó el portapapeles ni ninguna cookie. El conector y un diagnóstico acotado utilizaron internamente la conexión cifrada de esta instalación para consultas de lectura; las salidas del diagnóstico contienen solo tipo de cuenta y metadatos del campo, sin token ni valores de fichas.
+- **Corrección comprobada:** la API devolvió 405 propiedades de contactos: 404 con `hubspotDefined=true` y el campo `planb_ensayo_segmento` con ese indicador omitido, `hidden=false` y `archived=false`. El filtro anterior exigía `hubspotDefined===false` y omitía el campo y sus valores. `server/hubspot.ts` acepta ahora propiedades no marcadas explícitamente como estándar, respetando exclusiones de ocultas/archivadas. Nueva regresión en `tests/hubspot.test.ts`: falló antes del arreglo y pasó después; comprueba opciones, valores y parámetros solicitados. **56/56** pruebas completas y compilación correctas; TypeScript comprobado otra vez tras ajustar el script de mantenimiento.
+- `scripts/capture-configured.ts` admite ahora `PLANB_DATA_DIR` y `PLANB_EVIDENCE_DIR` para trabajar sobre esta instalación nueva y separar resultados. Se paró exclusivamente su proceso, se copió `build/server.mjs` corregido y se hizo una captura de mantenimiento con bloqueo de instancia y la conexión ya configurada. Se respetaron las restricciones de servicios/sesión y no se sustituyó el espacio activo. Se ejecutó `verify-configured-capture.ts` y se guardó también un simulacro mediante las clases de la aplicación; servidor 4322 reiniciado y salud `ok=true`. No se actualizaron la demo 4321, la carpeta padre ni los dos ZIP candidatos.
+- **Cierre de la captura nueva:** 5 contactos, 2 empresas, 3 oportunidades y 5 tareas; 17 relaciones y tres pipelines (incluido el predeterminado). Los 11 registros y 15 relaciones previstos pasan **76/76** comprobaciones, incluidos ambos pipelines de ensayo, sus etapas, el campo de segmento y sus opciones/valores. Tareas identificadas: Ana `532392820928` a `2026-10-26T10:00:00Z`, Carla `532392821988` a `2026-10-27T10:00:00Z`, Bruno `532752438517` a `2026-10-28T10:00:00Z` (11:00 Europe/Madrid en esas fechas). Extras separados: contactos de muestra `901274972404` y `901277832423`, tareas anteriores `532441519290` y `532691652822`; no se recrearon ni eliminaron. El conector no importa cuerpo/tipo de tarea ni recordatorios: su comprobación por interfaz sigue fuera de esta aceptación.
+- La captura inicial de esta fase, `a5fecf88-6fd9-425e-a660-08f1511bb72d:2026-10-26T10:49:33.496Z`, superó el simulacro pero falló **4 de 76** comprobaciones por la omisión del campo. Su informe fallido se conserva como `pruebas-hubspot-conjunto-v2.1-antes.json`. No atribuirle el éxito de la captura corregida `6d65d147-1ecd-4e87-bf56-9fb742f2e9ce:2026-10-26T10:58:24.957Z`.
+- Simulacro operativo de la captura corregida: informe `c55eb6b6-9621-48e9-b8ca-a87aacf61290`, **5/5** (red bloqueada, editar cliente, avanzar oportunidad, crear/completar tarea, persistencia al reabrir). Diagnóstico `passed` con el mismo ID de captura y cambios operativos intactos. Informe HTML generado y renderizado sin red con Chrome aislado, cinco celdas «Superada» y cero errores de página. Se verificó además la lectura real de `DEVELOPER_TEST`; los seis scopes de lectura de la nueva clave bastaron en esta ejecución, sin ampliar permisos ni usar `external-settings-access`.
+- Evidencias de esta fase en la subcarpeta externa `hubspot-2026-10-26`: `diagnostico-propiedad.json`, `pruebas-hubspot-captura-v2.1.json`, `pruebas-hubspot-conjunto-v2.1.json`, `simulacro-hubspot-v2.1.json`, `informe-hubspot-continuidad-v2.1.html`, su PNG, logs de compilación/pruebas y scripts acotados de diagnóstico, informe y renderizado. No incluyen secretos ni fichas de clientes.
+- Evidencias actuales, separadas de las históricas, en `C:\Users\iresh\.codex\visualizations\2026\10\26\01a17797-166c-76c3-8d72-7ce5aa914116`: `compilacion-v2.1-windows.txt`, `pruebas-unitarias-v2.1-windows.txt`, `pruebas-navegador-v2.1.json`, `pruebas-navegador-v2.1-windows.txt`, `aceptacion-local-v2.1-windows.py`, `aceptacion-local-v2.1-windows.json`, capturas e informe HTML. La revisión automática rechazó inicialmente escribir el informe del navegador en el proyecto; se resolvió usando esta carpeta externa. No queda un bloqueo de aprobación de pruebas.
+- Los procesos iniciados no son servicios ni tareas programadas; tras cerrarlos o reiniciar Windows hay que usar el iniciador de su carpeta correspondiente. No se modificó el arranque automático. `.gitignore` excluye ambas familias de instalaciones para evitar incluir datos y runtime locales en una futura copia Git.
+
+## Siguiente trabajo recomendado
+
+1. Instalaciones y conexión actual completadas. Desbloquear 4322 con la contraseña del usuario y abrir la captura corregida mediante «Continuar trabajando» cuando quiera empezar el trabajo local; conservar ambas carpetas separadas. No usar el equipo de la empresa ni recuperar sus datos o credenciales.
+2. Completadas la captura nueva del portal 149623339, las 76 comprobaciones del conjunto y el simulacro asociado. Quedan fuera de ese cierre el cuerpo/tipo y los recordatorios de tareas, no importados por el conector. No recrear los datos existentes. La captura histórica de las 18:36 continúa sin recuperarse y no forma parte de esta aceptación.
+3. Chrome/Windows y DPAPI ya comprobados en la instalación nueva. Sigue pendiente Edge y la comprobación específica de iniciadores; no atribuirles los resultados de Chrome.
+4. Ejecutar la aceptación nativa de los ZIP v2.1 ya generados, incluyendo DPAPI/iniciadores, reinicio/traslado/restauración. Actualizar resultados y hashes si cambia la entrega. La instalación operativa corporativa no se actualizará.
+5. Preparar una devolución real controlada únicamente en ensayo y con el alcance/permiso de escritura revisado expresamente. La preparación ficticia y la lectura anteriores no demuestran esa devolución.
+6. Probar el proveedor IA elegido cuando esté configurado y después validar la oferta con agencias, sin añadir módulos ajenos al recorrido.
+
+## Fuentes del repositorio
+
+- `co/work/plan-b-crm/PRODUCT.md`, `IMPLEMENTACION-V2.md`, `LEEME-V2.md`, `COMERCIAL-V2.md`.
+- `co/work/plan-b-crm/HUBSPOT-HANDOFF.md` y `plan-b-hubspot-continuar/outputs/HUBSPOT-HANDOFF.md`.
+- Informes y capturas de `co/outputs/` y especificaciones `plan-b-hubspot*/outputs/plan-b-datos-ensayo.json`.
+- `package.json`, código del diagnóstico/simulacro/informe, configuración Playwright y scripts de empaquetado.
+
+## Registro de actualizaciones
+
+- **26/10/2026:** contexto inicial consolidado a partir del repositorio y cuatro chats. Detectados el avance de HubSpot posterior al handoff, la diferencia código v0.2.1/ZIP v0.2.0 y la necesidad de repetir navegador tras el informe HTML. Hashes de ZIP v2 verificados. Añadido `AGENTS.md` para mantener esta memoria. Esta tarea no ejecutó pruebas de aplicación ni modificó servicios externos.
+- **26/10/2026, arranque solicitado:** instaladas dependencias, compilación correcta y 52 pruebas superadas en Linux. Demo Agencia Norte iniciada y reiniciada con persistencia; comprobados API, simulacro y reporte HTML. Guardados instalación, instrucciones de arranque y commit en el borrador del entorno. Sin cambios de código ni conexiones a HubSpot/IA; acceso visual del usuario desde cloud no disponible.
+- **26/10/2026, apertura en navegador solicitada:** enviada orden de apertura al panel derecho de Codex; resultado `queued`, sin confirmación de que la página haya cargado. Salud de la app cloud comprobada nuevamente: `ok=true`, versión 0.2.1.
+- **26/10/2026, continuación de v2.1:** compilación confirmada; corregido metadato de `eastasianwidth`; 55 pruebas y 8 recorridos Chromium superados, con descarga HTML y renderizado sin red. Añadido cierre de captura por SQLite de solo lectura y cobertura de sus casos de error. Generados los dos ZIP Windows candidatos con runtime v2 verificado, probados lógicamente en Linux (3/3), incorporadas evidencias y hashes. Demo cloud actualizada sin perder registros. Bloqueos restantes: captura en Windows original y aceptación nativa/DPAPI; no se han actualizado servicios externos ni subido cambios a GitHub.
+- **26/10/2026, nueva solicitud de navegador/HubSpot:** app cloud comprobada activa en 4317, versión 0.2.1, demo-agency desconectada y simulacro válido. Las herramientas de este chat no incluyen control o lectura del navegador del usuario. Solicitada apertura del portal 149623339 en Codex: resultado `queued`, sin confirmación de carga. No hay terminal de la app adjunta. Los puertos 4340/4344 no responden dentro de la máquina cloud; esto no demuestra el estado de esos puertos en el Windows del usuario. Pendiente identificar si el usuario está en el ordenador original para indicar la continuación local adecuada. No se ha cambiado HubSpot ni la instalación operativa original.
+- **26/10/2026, ordenador confirmado:** el usuario indica que está en otro ordenador. La conversación y la demo cloud siguen disponibles; la base y clave DPAPI del Windows original no se transfieren con la conversación. Para ver la candidata en el nuevo Windows, usar el ZIP v2.1 y su iniciador; para operar navegador y archivos de ese equipo, continuar en una tarea local de Codex sobre su carpeta `source`, comprobando allí las herramientas disponibles. La captura de las 18:36 continúa pendiente de recuperar desde la instalación original o de contrastar con una nueva lectura autorizada del portal de ensayo.
+- **26/10/2026, restricción expresa:** el usuario aclara que el equipo original pertenece a la empresa y prohíbe afectarlo. Se excluyen conexiones y tareas a ese equipo y la recuperación de sus credenciales/bases. La continuación se limita al repositorio disponible y una instalación independiente en el equipo actual. La recuperación de la captura original deja de ser una acción pendiente autorizada. Regla guardada en AGENTS.md y guías de la candidata. App cloud comprobada activa; sin cambios de HubSpot.
+- **26/10/2026, continuación local en Windows (Europe/Madrid):** leídos AGENTS.md y contexto, instalada la herramienta de desarrollo y compilada v0.2.1. Superadas 55 pruebas, 8 recorridos Chrome y 6 comprobaciones nativas de edición/simulacro/exportación/traslado/recuperación con DPAPI. Creadas dos carpetas nuevas: demo en 4321 (62 registros ficticios, sin red externa) e instancia vacía para el ensayo en 4322. HubSpot abierto con sesión activa en el portal 149623339; preparado, sin crear, el borrador de clave con seis scopes de lectura. El usuario necesita una credencial nueva; se le dejaron los formularios para crearla y proteger la instalación. Evidencias externas de Codex; contexto e ignorados actualizados. No se accedió al equipo corporativo, no se cambiaron datos CRM ni se publicaron archivos. Siguiente paso: actuación del usuario sobre contraseña/clave, captura nueva y conciliación; pendientes Edge, iniciadores, aceptación de los dos ZIP históricos, devolución auténtica e IA.
+- **26/10/2026, guardado sin exposición solicitado (Europe/Madrid):** el usuario autoriza que el agente guarde la clave sin ver información confidencial. Comprobado únicamente el estado de protección local de 4322: contraseña aún no configurada. No se leyó ninguna contraseña, clave ni portapapeles; no se creó la credencial. Pendiente que el usuario establezca su contraseña local y luego continuar la transferencia por Copiar/Pegar, el guardado cifrado y la captura de ensayo.
+- **26/10/2026, protección local confirmada y transferencia pendiente (Europe/Madrid):** tras «lista», comprobada contraseña configurada y sesión de navegador capaz de abrir el formulario. Identificada únicamente por URL la clave de servicio 58711306 del portal de ensayo; el valor no se leyó. Prellenado el ID 149623339 en Plan B. Copiar/Pegar automático no transfirió contenido al portapapeles virtual; no se guardó ninguna conexión ni se inició captura. Solicitado un pegado manual en el campo oculto; siguiente paso del agente al recibir «pegada»: guardar, capturar y conciliar. No se modificaron permisos, datos CRM ni la demo.
+- **26/10/2026, 11:58 Europe/Madrid, captura y conjunto cerrados:** tras la confirmación del usuario, la conexión ya estaba guardada. Captura por interfaz de 15 registros/17 relaciones y simulacro inicial correctos; la conciliación detectó la omisión del segmento personalizado (4 fallos). Diagnóstico de metadatos confirmó que HubSpot omite `hubspotDefined` en ese campo. Corregido el filtro, añadida regresión y verificadas compilación/56 pruebas. Actualizada solo la nueva instancia 4322; repetida la captura con bloqueo de mantenimiento, cuenta DEVELOPER_TEST verificada y **76/76** comprobaciones superadas. IDs/horas UTC de tareas y extras conciliados. Simulacro de la captura corregida guardado con 5/5, informe HTML renderizado sin red y servidor reiniciado con salud correcta. Sin escrituras CRM, ampliación de permisos, exposición de secretos, acceso corporativo ni cambios a ZIP históricos. Siguiente paso: desbloqueo normal para abrir la copia; continúan pendientes Edge/iniciadores, entrega corregida, devolución auténtica e IA.

@@ -20,3 +20,4 @@ delivery/
 # Instalaciones independientes del ordenador actual; nunca incluir sus datos.
 planb-local-*/
 planb-hubspot-*/
+planb-ensayo-retorno-*/

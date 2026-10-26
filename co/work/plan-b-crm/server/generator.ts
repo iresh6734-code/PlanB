@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { makeDemoSpec, makeFixture } from '../shared/fixtures.js';
 import { AppError, Store } from './store.js';
+import { SnapshotSchema } from '../shared/model.js';
 import { generateWithAI } from './ai.js';
 import { importHubspot } from './hubspot.js';
 import { ProviderSettings } from './provider.js';
@@ -19,7 +20,9 @@ export function registerGenerator(app: FastifyInstance, store: Store, providers:
   });
   app.post('/api/import/snapshot', async request => {
     const body = z.object({ snapshot: z.unknown(), replace: z.boolean().default(false) }).strict().parse(request.body);
-    return exclusively(async () => ({ report: store.importSnapshot(body.snapshot, body.replace) }));
+    const snapshot=SnapshotSchema.parse(body.snapshot);
+    if(!snapshot.source.isTestData&&!store.get('password',null))throw new AppError(409,'Protege esta instalación con una contraseña antes de importar datos reales.');
+    return exclusively(async () => ({ report: store.importSnapshot(snapshot, body.replace) }));
   });
   app.post('/api/import/hubspot', async request => {
     const body = z.object({

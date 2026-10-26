@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { createBaseApp } from './app.js';
 import { lockInstance } from './instance.js';
+import { publishEndpoint } from './endpoint.js';
 // Deliberately does not import the generator, provider settings, or CRM connector.
 const root = process.cwd();
 const releaseLock=lockInstance(resolve(process.env.PLANB_DATA_DIR || join(root,'data')));
@@ -25,4 +26,5 @@ for (;;) {
   }
 }
 console.log('\nPlan B · Aplicación independiente\nAbre http://127.0.0.1:' + port + '\nNo se utilizan servicios externos. Conserva la carpeta data con tus cambios.\n');
+publishEndpoint(app,store,port);
 for (const signal of ['SIGINT', 'SIGTERM'] as const) process.on(signal, () => { void app.close().then(() => {releaseLock();process.exit(0);}); });

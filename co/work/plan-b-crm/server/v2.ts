@@ -9,8 +9,11 @@ import { runtimeZip } from './exporter.js';
 import { makeDemoSpec } from '../shared/fixtures.js';
 import { drillReportHtml } from './drill-report.js';
 import { summarizeCapture } from './assessment.js';
+import { ConnectionSchema, type inspectConnection } from './connection.js';
+import { verifyManualRecovery } from './manual-recovery.js';
+import { APP_VERSION, RUNTIME_ZIP } from '../shared/version.js';
 
-export interface ExternalServices { capture:CaptureImporter; remote:(token:string,accountId:string,spec:import('../shared/model.js').AppSpec)=>Remote; }
+export interface ExternalServices { capture:CaptureImporter; remote:(token:string,accountId:string,spec:import('../shared/model.js').AppSpec,fetcher?:typeof fetch,readOnly?:boolean)=>Remote; inspect?:typeof inspectConnection; }
 export function registerV2(app:FastifyInstance,store:Store,root:string,runtime=false,external?:ExternalServices) {
   const continuity=new Continuity(store,root,runtime,external?.capture),recovery=new Recovery(store);
   const remoteSchema=z.object({simulation:z.boolean().default(false),token:z.string().max(4096).optional()});
@@ -18,6 +21,7 @@ export function registerV2(app:FastifyInstance,store:Store,root:string,runtime=f
     if(runtime)throw new AppError(403,'La devolución se prepara en el generador, no en el paquete independiente.');
     const options=remoteSchema.parse(raw);
     if(options.simulation)return simulatedRemote(store);
+    if(store.snapshot?.source.isTestData===false)throw new AppError(403,'Las escrituras en producción están bloqueadas. Usa la comprobación manual.');
     const connection=continuity.connection();
     if(!connection||!store.spec)throw new AppError(422,'Configura el portal de prueba antes de devolver cambios.');
     if(!external)throw new AppError(503,'El conector no está disponible en este paquete.');
@@ -36,9 +40,17 @@ export function registerV2(app:FastifyInstance,store:Store,root:string,runtime=f
     const record=store.record(entity,id);if(!record)throw new AppError(404,'Registro no encontrado.');return {record};
   });
   if(!runtime)app.post('/api/v2/connection',async request=>{
-    const body=z.object({token:z.string().max(4096),accountId:z.string(),confirmedTestAccount:z.literal(true)}).strict().parse(request.body);
+    const body=ConnectionSchema.parse(request.body);
     if(!store.get('password',null))throw new AppError(409,'Configura la contraseña local antes de guardar credenciales.');
-    continuity.saveConnection(body.token,body.accountId);return {saved:true,accountId:body.accountId};
+    if(!external?.inspect)throw new AppError(503,'El conector no está disponible.');
+    const verified=await external.inspect(body);
+    const {token,accountId,...details}=body;
+    continuity.saveConnection(token,accountId,details,verified);return {saved:true,...verified};
+  });
+  if(!runtime)app.post('/api/v2/connection/inspect',async request=>{
+    if(!store.get('password',null))throw new AppError(409,'Protege primero la instalación.');
+    if(!external?.inspect)throw new AppError(503,'El conector no está disponible.');
+    return external.inspect(ConnectionSchema.parse(request.body));
   });
   if(!runtime)app.post('/api/v2/captures',async()=>continuity.capture());
   if(!runtime)app.post('/api/v2/schedule',async request=>{
@@ -69,7 +81,15 @@ export function registerV2(app:FastifyInstance,store:Store,root:string,runtime=f
     if(continuity.status().session&&enabled)throw new AppError(409,'Cierra la sesión de continuidad para habilitar importación e IA. La devolución usa su propio recorrido revisado.');
     store.set('disconnected',!enabled);return {connected:enabled};
   });
-  app.get('/api/v2/changes',async()=>({changes:store.changes(),plan:recovery.plan()}));
+  app.get('/api/v2/changes',async()=>({changes:store.changes(),plan:recovery.plan(),revision:recovery.revision(),pendingChanges:store.pendingChangesCount,watermark:store.get('returnWatermark:hubspot',0),manualReport:store.get('manualRecoveryReport',null)}));
+  if(!runtime)app.post('/api/v3/manual-recovery/verify',async request=>{
+    const body=z.object({revision:z.string().min(1),mapping:z.array(z.object({entity:EntityNameSchema,localId:z.string(),remoteId:z.string().regex(/^\d+$/)}).strict()).max(10000),reviewed:z.literal(true)}).strict().parse(request.body);
+    const connection=continuity.connection();
+    if(!connection||connection.mode!=='production_readonly'||!store.spec||store.get<{mode?:string}|null>('connectionPublic',null)?.mode!=='production_readonly')throw new AppError(403,'Autoriza primero la conexión de producción de esta instalación.');
+    if(continuity.jobs.list().some(j=>['running','queued'].includes(j.status)))throw new AppError(409,'Espera a que termine el trabajo actual.');
+    store.set('returnBusy',true);
+    try{if(!external)throw new AppError(503,'Conector no disponible.');return await verifyManualRecovery(store,external.remote(connection.token,connection.accountId,store.spec,fetch,true),body);}finally{store.set('returnBusy',false);}
+  });
   if(!runtime) {
   app.post('/api/v2/return/preview',async request=>recovery.preview(remote(request.body)));
   app.post('/api/v2/return/refresh',async request=>{
@@ -99,22 +119,34 @@ export function registerV2(app:FastifyInstance,store:Store,root:string,runtime=f
   }
   app.post('/api/v2/export/encrypted',async(request,reply)=>{
     const {password}=z.object({password:z.string().min(12).max(200)}).strict().parse(request.body);
-    return reply.type('application/json').header('Content-Disposition','attachment; filename="plan-b-copia-cifrada.json"').send(encodePortable(store.bundle(),password));
+    const encrypted=encodePortable(store.bundle(),password);store.set('recoveryCopy',{exportedAt:new Date().toISOString()});
+    return reply.type('application/json').header('Content-Disposition','attachment; filename="plan-b-copia-cifrada.json"').send(encrypted);
   });
   app.post('/api/v2/export/package',async(request,reply)=>{
     const {password}=z.object({password:z.string().min(12).max(200)}).strict().parse(request.body);
-    return reply.type('application/zip').header('Content-Disposition','attachment; filename="Plan-B-independiente-v2.1.zip"').send(await runtimeZip(store.bundle(),root,password));
+    const zip=await runtimeZip(store.bundle(),root,password);store.set('recoveryCopy',{exportedAt:new Date().toISOString()});
+    return reply.type('application/zip').header('Content-Disposition','attachment; filename="'+RUNTIME_ZIP+'"').send(zip);
   });
   app.post('/api/v2/restore',async request=>{
     if(continuity.jobs.list().some(j=>['running','queued'].includes(j.status)))throw new AppError(409,'Espera a que termine o cancela el trabajo actual antes de restaurar.');
     const {file,password,replace}=z.object({file:z.string().max(40_000_000),password:z.string().max(200).default(''),replace:z.boolean().default(false)}).strict().parse(request.body);
     if(store.changesCount&&!replace)throw new AppError(409,'Exporta tus cambios y confirma la sustitución antes de restaurar.');
     let bundle:unknown;try{const raw=JSON.parse(file);bundle=raw.format==='planb-encrypted-v2'?decodePortable(file,password):raw;}catch(error){throw new AppError(422,error instanceof Error?error.message:'Archivo inválido.');}
+    if((bundle as any)?.snapshot?.source?.isTestData===false&&(!password||JSON.parse(file).format!=='planb-encrypted-v2'||!store.get('password',null)))throw new AppError(403,'Los datos reales requieren una copia cifrada y una contraseña local configurada antes de restaurar.');
     // Validate in a disposable store before touching the active database.
     const probe=new Store(':memory:');try{probe.restoreBundle(bundle);}finally{probe.close();}
     const old=store.bundleOrNull();
     if(old)store.set('lastRestoreArchive',old);
-    store.restoreBundle(bundle);return {restored:true};
+    store.restoreBundle(bundle);store.set('recoveryCopy',{exportedAt:(bundle as any).exportedAt,restoredAt:new Date().toISOString()});return {restored:true};
+  });
+  app.post('/api/v3/recovery-copy/confirm',async request=>{
+    z.object({storedSeparately:z.literal(true)}).strict().parse(request.body);
+    const copy=store.get<{exportedAt:string}|null>('recoveryCopy',null);if(!copy)throw new AppError(409,'Exporta primero una copia cifrada.');
+    store.set('recoveryCopy',{...copy,confirmedAt:new Date().toISOString()});return {confirmed:true};
+  });
+  app.get('/api/v3/diagnostics',async(_request,reply)=>{
+    const status=continuity.status();
+    return reply.header('Content-Disposition','attachment; filename="plan-b-diagnostico.json"').send({at:new Date().toISOString(),protected:status.protected,connected:status.connected,mode:status.connection?.mode??'test',records:status.latestCapture?.records??0,captures:status.captures.length,pendingChanges:status.pendingChanges,readiness:status.readiness.status,jobs:status.jobs.slice(0,10).map(j=>({kind:j.kind,status:j.status})),limits:{records:10000},recoveryCopy:status.recoveryCopy});
   });
   app.post('/api/v2/history/prepare',async request=>{
     const {captureId}=z.object({captureId:z.string()}).strict().parse(request.body);

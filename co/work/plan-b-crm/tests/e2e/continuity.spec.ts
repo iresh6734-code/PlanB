@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
 import { resolve } from 'node:path';
+import { readFile } from 'node:fs/promises';
 import { makeFixture } from '../../shared/fixtures.js';
-const output = resolve('../../outputs');
+const output = resolve(process.env.PLANB_EVIDENCE_DIR || '../../outputs');
 test('preparación y continuidad con todo el tráfico externo bloqueado', async ({ page }) => {
   const errors: string[] = [], external: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
@@ -15,7 +16,7 @@ test('preparación y continuidad con todo el tráfico externo bloqueado', async 
   await expect(page).toHaveTitle('Plan B · Tu CRM sigue contigo');
   await page.getByRole('button',{name:'Preparar aplicación',exact:true}).click();
   await expect(page.getByRole('heading', { name: 'Tu CRM, con un plan B.' })).toBeVisible();
-  await page.screenshot({ path: resolve(output, 'plan-b-v2.1-preparacion.png') });
+  await page.screenshot({ path: resolve(output, 'plan-b-v0.3.0-preparacion.png') });
   await page.getByRole('button', { name: 'Continuar con Agencia Norte', exact: true }).click();
   await expect(page.getByText('Captura conciliada', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Crear especificación de ensayo', exact: true }).click();
@@ -27,7 +28,7 @@ test('preparación y continuidad con todo el tráfico externo bloqueado', async 
   const client = page.getByRole('dialog', { name: 'Lucía Martín', exact: true });
   await client.getByLabel('Teléfono', { exact: true }).fill('600 123 456');
   await expect(page.getByRole('status')).toBeHidden({ timeout: 8000 });
-  await page.screenshot({ path: resolve(output, 'plan-b-v2.1-clientes.png') });
+  await page.screenshot({ path: resolve(output, 'plan-b-v0.3.0-clientes.png') });
   await client.getByRole('button', { name: 'Guardar cambios', exact: true }).click();
   await expect(client).toBeHidden();
   await expect(page.getByRole('cell', { name: '600 123 456', exact: true })).toBeVisible();
@@ -38,7 +39,7 @@ test('preparación y continuidad con todo el tráfico externo bloqueado', async 
   await deal.getByRole('button', { name: 'Guardar cambios', exact: true }).click();
   await expect(deal).toBeHidden();
   await expect(page.locator('.kanban-column').filter({ has: page.getByRole('heading', { name: 'Propuesta' }) }).getByRole('button', { name: /Rediseño web · Estudio Arce/ })).toBeVisible();
-  await page.screenshot({ path: resolve(output, 'plan-b-v2.1-oportunidades.png') });
+  await page.screenshot({ path: resolve(output, 'plan-b-v0.3.0-oportunidades.png') });
   await page.getByRole('button', { name: 'Tareas', exact: true }).click();
   await page.getByRole('button', { name: 'Nueva tarea', exact: true }).click();
   const task = page.getByRole('dialog', { name: 'Nueva tarea', exact: true });
@@ -58,14 +59,14 @@ test('preparación y continuidad con todo el tráfico externo bloqueado', async 
   await page.getByRole('button', { name: 'Cambios', exact: true }).click();
   const dl = page.waitForEvent('download');
   await page.getByRole('button', { name: 'CSV', exact: true }).click();
-  await (await dl).saveAs(resolve(output, 'ejemplo-cambios-v2.1.csv'));
+  await (await dl).saveAs(resolve(output, 'ejemplo-cambios-v0.3.0.csv'));
   await page.getByRole('button',{name:'Preparar revisión',exact:true}).click();
   await page.getByRole('checkbox',{name:/He revisado las decisiones/}).check();
   await page.getByRole('button',{name:'Aprobar plan revisado',exact:true}).click();
   await page.getByRole('button',{name:'Ejecutar devolución simulada',exact:true}).click();
   await expect(page.getByText('Prueba completada. Los cambios locales siguen pendientes de devolución real.',{exact:true})).toBeVisible({timeout:30000});
   await page.locator('.changes-page').evaluate(el=>el.parentElement?.scrollTo(0,0));
-  await page.screenshot({path:resolve(output,'plan-b-v2.1-devolucion.png'),fullPage:true});
+  await page.screenshot({path:resolve(output,'plan-b-v0.3.0-devolucion.png'),fullPage:true});
   await page.getByRole('button', { name: 'Proveedor de IA', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Tu proveedor de IA' })).toBeVisible();
   await page.getByRole('combobox', { name: 'Proveedor', exact: true }).selectOption('deepseek');
@@ -95,11 +96,11 @@ test('segunda configuración cambia campos, etapas y regla requerida sin tocar l
 test('móvil: navegación, edición y configuración sin desbordamiento de página', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
-  await page.screenshot({path:resolve(output,'plan-b-v2.1-movil-continuidad.png'),fullPage:true});
+  await page.screenshot({path:resolve(output,'plan-b-v0.3.0-movil-continuidad.png'),fullPage:true});
   await page.getByRole('button',{name:'Trabajar',exact:true}).click();
   await page.getByRole('button', { name: 'Editar Lucía Martín', exact: true }).click();
   await expect(page.getByLabel('Código de cliente', { exact: false })).toBeVisible();
-  await page.screenshot({ path: resolve(output, 'plan-b-v2.1-movil.png') });
+  await page.screenshot({ path: resolve(output, 'plan-b-v0.3.0-movil.png') });
   await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
   await page.getByRole('button', { name: 'Proveedor de IA', exact: true }).click();
   await expect(page.getByLabel('Modelo', { exact: true })).toBeVisible();
@@ -107,14 +108,38 @@ test('móvil: navegación, edición y configuración sin desbordamiento de pági
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), JSON.stringify(overflow)).toBeTruthy();
   await page.getByRole('button', { name: 'Ahora no', exact: true }).click();
 });
-test('simulacro en proceso aislado y sesión de continuidad desde el historial',async({page})=>{
+test('simulacro en proceso aislado y sesión de continuidad desde el historial',async({page,browser})=>{
   await page.goto('/');
   await expect(page.getByRole('heading',{name:'Tu negocio puede seguir.',exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Probar mi Plan B',exact:true}).click();
   await expect(page.getByText('Simulacro superado',{exact:true})).toBeVisible({timeout:45000});
   const reportDownload=page.waitForEvent('download');await page.getByRole('button',{name:'Informe para compartir',exact:true}).click();
-  await (await reportDownload).saveAs(resolve(output,'ejemplo-informe-continuidad-v2.1.html'));
-  await page.screenshot({path:resolve(output,'plan-b-v2.1-continuidad.png')});
+  const downloadedReport = await reportDownload;
+  expect(downloadedReport.suggestedFilename()).toBe('plan-b-informe-continuidad.html');
+  const reportPath = resolve(output,'ejemplo-informe-continuidad-v0.3.0.html');
+  await downloadedReport.saveAs(reportPath);
+  const offline = await browser.newContext({ offline: true, viewport: { width: 1536, height: 1024 } });
+  try {
+    const reportPage = await offline.newPage();
+    const errors: string[] = [], external: string[] = [];
+    reportPage.on('pageerror', error => errors.push(error.message));
+    reportPage.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
+    reportPage.on('request', request => { if (/^https?:/.test(request.url())) external.push(request.url()); });
+    // Render the downloaded bytes offline without depending on browser file:// policy.
+    await reportPage.setContent(await readFile(reportPath, 'utf8'));
+    await expect(reportPage).toHaveTitle('Plan B · Informe de simulacro');
+    await expect(reportPage.getByRole('heading', { name: 'Informe de simulacro de continuidad' })).toBeVisible();
+    await expect(reportPage.getByText('Simulacro superado', { exact: true })).toBeVisible();
+    await expect(reportPage.getByRole('cell', { name: 'Superada', exact: true })).toHaveCount(5);
+    await expect(reportPage.locator('body')).not.toContainText('Lucía Martín');
+    await expect(reportPage.locator('body')).toContainText('No acredita el estado actual de HubSpot ni una devolución de cambios.');
+    await reportPage.screenshot({ path: resolve(output, 'plan-b-v0.3.0-informe-desktop.png'), fullPage: true });
+    await reportPage.setViewportSize({ width: 390, height: 844 });
+    expect(await reportPage.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
+    await reportPage.screenshot({ path: resolve(output, 'plan-b-v0.3.0-informe-movil.png'), fullPage: true });
+    expect(errors).toEqual([]); expect(external).toEqual([]);
+  } finally { await offline.close(); }
+  await page.screenshot({path:resolve(output,'plan-b-v0.3.0-continuidad.png')});
   await page.getByRole('button',{name:'Continuar trabajando',exact:true}).click();
   await expect(page.getByText('Modo independiente',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Continuidad',exact:true}).click();
@@ -126,7 +151,7 @@ test('exportación cifrada y restauración desde navegador mantienen registros y
   await page.getByRole('button',{name:'Exportar',exact:true}).click();
   await page.getByLabel('Contraseña de recuperación',{exact:true}).fill('recuperacion-de-prueba-2026');
   await page.getByLabel('Repite la contraseña',{exact:true}).fill('recuperacion-de-prueba-2026');
-  await page.screenshot({path:resolve(output,'plan-b-v2.1-exportar.png')});
+  await page.screenshot({path:resolve(output,'plan-b-v0.3.0-exportar.png')});
   const download=page.waitForEvent('download');await page.getByRole('button',{name:'Solo copia cifrada',exact:true}).click();
   const file=await (await download).path();if(!file)throw new Error('No se recibió la descarga.');
   await page.getByRole('button',{name:'Continuidad',exact:true}).click();
@@ -152,10 +177,10 @@ test('cada copia muestra su contenido y exige su propio simulacro aunque la ante
   await expect(page.locator('.capture-details-body')).toContainText('Agencia Norte');
   await expect(page.locator('.capture-counts>div').filter({has:page.locator('dt',{hasText:'Clientes'})}).locator('dd')).toHaveText('25');
   await expect(page.getByText('63 registros en esta captura',{exact:false})).toBeVisible();
-  await page.screenshot({path:resolve(output,'plan-b-v2.1-copia-sin-probar.png'),fullPage:true});
+  await page.screenshot({path:resolve(output,'plan-b-v0.3.0-copia-sin-probar.png'),fullPage:true});
   await page.getByRole('button',{name:'Probar mi Plan B',exact:true}).click();
   await expect(page.getByText('Simulacro superado',{exact:true})).toBeVisible({timeout:45000});
-  await page.screenshot({path:resolve(output,'plan-b-v2.1-continuidad.png'),fullPage:true});
+  await page.screenshot({path:resolve(output,'plan-b-v0.3.0-continuidad.png'),fullPage:true});
   const blocked=makeFixture('distribution');blocked.records=blocked.records.filter(r=>r.entity!=='deals');
   for(const record of blocked.records)if('deal_id' in record.values)record.values.deal_id=null;
   blocked.links=blocked.links.filter(link=>link.fromEntity!=='deals'&&link.toEntity!=='deals');blocked.manifest.expectedCounts.deals=0;blocked.manifest.expectedLinks=blocked.links.length;
@@ -165,7 +190,7 @@ test('cada copia muestra su contenido y exige su propio simulacro aunque la ante
   await expect(page.getByText('Añade una oportunidad de ensayo para probar su avance.',{exact:true})).toBeVisible();
   await expect(page.getByText('Simulacro superado',{exact:true})).toHaveCount(0);
   await page.setViewportSize({width:390,height:844});await page.getByText('Ver contenido de esta copia',{exact:true}).click();
-  await page.screenshot({path:resolve(output,'plan-b-v2.1-diagnostico-movil.png'),fullPage:true});
+  await page.screenshot({path:resolve(output,'plan-b-v0.3.0-diagnostico-movil.png'),fullPage:true});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBeTruthy();expect(errors).toEqual([]);
 });
 
@@ -189,7 +214,7 @@ test('página para agencias prepara un guion local sin solicitudes externas',asy
   page.on('pageerror',error=>errors.push(error.message));
   await page.goto('/agencias.html');
   await expect(page.getByRole('heading',{level:1})).toContainText('el trabajo puede seguir');
-  await page.screenshot({path:resolve(output,'plan-b-v2.1-agencias.png'),fullPage:true});
+  await page.screenshot({path:resolve(output,'plan-b-v0.3.0-agencias.png'),fullPage:true});
   await page.getByLabel('Nombre de la agencia o del ensayo').fill('Ensayo ficticio');
   await page.getByLabel('Proceso que debe seguir funcionando').fill('Crear una tarea sin CRM');
   await page.getByLabel('Cómo comprobaremos que funcionó').fill('La tarea se conserva al reiniciar');

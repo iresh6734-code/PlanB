@@ -56,6 +56,40 @@ test('importación HubSpot de ensayo conserva paginación, campos, registros y r
   for (const record of snapshot.records) assert.deepEqual(validateRecord(makeDemoSpec(snapshot), record), {});
   assert.equal(calls.filter(c => c.endsWith('/contacts') && c.includes('/objects/')).length, 2);
 });
+
+test('propiedad personalizada sin hubspotDefined conserva opciones y valores, excluyendo estándar, ocultas y archivadas', async () => {
+  const base = mock().fetcher;
+  let requestedProperties: string[] = [];
+  const fetcher: typeof fetch = async (input, init) => {
+    const url = new URL(String(input));
+    if (url.pathname.includes('/objects/') && url.pathname.endsWith('/contacts')) {
+      requestedProperties = (url.searchParams.get('properties') ?? '').split(',');
+    }
+    const response = await base(input, init);
+    if (!url.pathname.includes('/properties/') || !url.pathname.endsWith('/contacts')) return response;
+    const data = await response.json() as { results: Record<string, unknown>[] };
+    data.results = data.results.map(property => {
+      if (property.name !== 'customer_code') return property;
+      const { hubspotDefined, ...custom } = property;
+      return { ...custom, type: 'enumeration', fieldType: 'select', hidden: false,
+        options: [{ value: 'A1', label: 'Nuevo' }, { value: 'A2', label: 'Activo' }] };
+    });
+    data.results.push(
+      { name: 'standard_extra', label: 'Estándar', type: 'string', hubspotDefined: true },
+      { name: 'custom_hidden', label: 'Oculta', type: 'string', hidden: true },
+      { name: 'custom_archived', label: 'Archivada', type: 'string', archived: true }
+    );
+    return Response.json(data);
+  };
+  const snapshot = await importHubspot(options, fetcher);
+  const field = snapshot.entities.find(entity => entity.id === 'contacts')!.fields.find(field => field.key === 'customer_code');
+  assert.ok(field, 'Una propiedad personalizada puede omitir hubspotDefined en la API real.');
+  assert.equal(field.type, 'enum');
+  assert.deepEqual(field.options, [{ id: 'A1', label: 'Nuevo' }, { id: 'A2', label: 'Activo' }]);
+  assert.equal(snapshot.records.find(record => record.entity === 'contacts' && record.id === '1')!.values.customer_code, 'A1');
+  assert.deepEqual(requestedProperties, ['firstname', 'lastname', 'email', 'phone', 'customer_code']);
+  assert.equal(reconcile(snapshot).complete, true);
+});
 test('cuenta de producción, recuento parcial, asociaciones incompletas y cursor repetido bloquean la importación', async () => {
   for (const mode of ['production', 'missing', 'partial', 'cursor'] as const) {
     await assert.rejects(() => importHubspot(options, mock(mode).fetcher));
@@ -64,6 +98,16 @@ test('cuenta de producción, recuento parcial, asociaciones incompletas y cursor
 test('no se importa una cuenta sin confirmación o con un ID diferente', async () => {
   await assert.rejects(() => importHubspot({ ...options, confirmedTestAccount: false }, mock().fetcher), /confirma/);
   await assert.rejects(() => importHubspot({ ...options, accountId: '999' }, mock().fetcher), /no corresponde/);
+});
+
+test('producción requiere modo explícito y solo incluye campos personalizados seleccionados',async()=>{
+  let requested='';const base=mock('production').fetcher;
+  const fetcher:typeof fetch=async(input,init)=>{const url=new URL(String(input));if(url.pathname.includes('/objects/')&&url.pathname.endsWith('/contacts'))requested=url.searchParams.get('properties')??'';return base(input,init);};
+  const snapshot=await importHubspot({...options,confirmedTestAccount:false,mode:'production_readonly',selectedFields:{contacts:['customer_code']}},fetcher);
+  assert.equal(snapshot.source.isTestData,false);assert.equal(snapshot.source.environment,'production');assert.equal(snapshot.source.accountType,'STANDARD');assert.ok(requested.includes('customer_code'));assert.equal(reconcile(snapshot).complete,true);
+  const minimal=await importHubspot({...options,confirmedTestAccount:false,mode:'production_readonly'},fetcher);
+  assert.ok(!minimal.entities[0].fields.some(f=>f.key==='customer_code'));assert.ok(!requested.includes('customer_code'));
+  await assert.rejects(importHubspot({...options,mode:'production_readonly'},mock().fetcher),/tipo de cuenta/);
 });
 
 test('207 de asociaciones exige confirmar cada resultado ausente con GET individual',async()=>{

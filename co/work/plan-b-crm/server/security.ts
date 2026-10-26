@@ -2,6 +2,7 @@ import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { AppError, Store } from './store.js';
+import { APP_VERSION } from '../shared/version.js';
 
 export function registerSecurity(app: FastifyInstance, store: Store) {
   const sessions = new Map<string,number>(), attempts = new Map<string,{at:number;count:number}>();
@@ -19,7 +20,7 @@ export function registerSecurity(app: FastifyInstance, store: Store) {
     if (credential() && !authenticated(request.headers.cookie,extend)) return reply.code(401).send({error:'Desbloquea tu copia local para continuar.'});
     if(credential()&&extend)reply.header('Set-Cookie','planb_session='+cookie(request.headers.cookie)+'; HttpOnly; SameSite=Strict; Path=/; Max-Age=1800');
   });
-  app.get('/api/health',async()=>({ok:true,version:'0.2.1'}));
+  app.get('/api/health',async()=>({ok:true,version:APP_VERSION,instanceId:store.get('instanceId',null)}));
   app.get('/api/v2/auth/status',async request=>({configured:!!credential(),authenticated:!credential() || authenticated(request.headers.cookie)}));
   app.post('/api/v2/auth/setup',async (request,reply)=>{
     if (credential()) throw new AppError(409,'La protección local ya está configurada.');

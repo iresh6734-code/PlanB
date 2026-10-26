@@ -7,7 +7,7 @@ import type { RecoveryPlan } from '../shared/operations.js';
 import {
   AppSpecSchema, BundleSchema, RecordSchema, SnapshotSchema, reconcile, validateRecord, validateSpec,
   type AppSpec, type Change, type ContinuityBundle, type CrmRecord, type CrmSnapshot,
-  type EntityName, type Generation, type Reconciliation
+  MAX_RECORDS, type EntityName, type Generation, type Reconciliation
 } from '../shared/model.js';
 
 export class AppError extends Error {
@@ -183,6 +183,7 @@ export class Store {
     return row ? this.decode<CrmRecord>(row.value) : null;
   }
   saveRecord(entity: EntityName, values: CrmRecord['values'], id?: string): CrmRecord {
+    if(!id&&this.records().length>=MAX_RECORDS)throw new AppError(413,'El piloto admite hasta 10.000 registros totales.');
     if(this.get('returnBusy',false))throw new AppError(409,'Espera a que termine la devolución revisada.');
     const plan=this.get<RecoveryPlan|null>('recoveryPlan',null);
     if(plan&&plan.status!=='complete'&&plan.operations.some(o=>['applied','sending','uncertain'].includes(o.status)))throw new AppError(409,'Resuelve la devolución parcial antes de seguir editando. Tus cambios actuales se conservan.');
@@ -221,8 +222,9 @@ export class Store {
     const snapshot = this.snapshot, spec = this.spec, generation = this.generation;
     if (!snapshot || !spec || !generation) return null;
     const plan=this.get<RecoveryPlan|null>('recoveryPlan',null);
-    return { format: 'planb-continuity-v2', exportedAt: new Date().toISOString(), sessionId: this.get('sessionId',''),
-      returnState:{accountId:snapshot.source.accountId,watermark:this.get('returnWatermark:hubspot',0),mapping:this.get('remoteMapping:hubspot',{}),plan:plan?.source==='hubspot'?plan:null},
+    const manualReport=this.get<NonNullable<ContinuityBundle['returnState']>['manualReport']|null>('manualRecoveryReport',null);
+    return { format: snapshot.version===3?'planb-continuity-v3':'planb-continuity-v2', exportedAt: new Date().toISOString(), sessionId: this.get('sessionId',''),
+      returnState:{accountId:snapshot.source.accountId,watermark:this.get('returnWatermark:hubspot',0),mapping:this.get('remoteMapping:hubspot',{}),plan:plan?.source==='hubspot'?plan:null,...(manualReport?{manualReport}:{})},
       snapshot, spec, generation, records: this.records(), changes: this.changes() };
   }
   bundle(): ContinuityBundle {
@@ -230,9 +232,11 @@ export class Store {
     return this.bundleOrNull()!;
   }
   restoreBundle(raw: unknown) {
+    if(this.get('returnBusy',false))throw new AppError(409,'Espera a que termine la revisión de cambios.');
     const parsed = BundleSchema.safeParse(raw);
     if (!parsed.success) throw new AppError(422, 'El paquete de continuidad no es válido.');
     const bundle = parsed.data;
+    this.assertPortal(bundle.snapshot);
     const report = reconcile(bundle.snapshot);
     const errors = validateSpec(bundle.spec, bundle.snapshot, bundle.generation.prompt);
     const ids = new Set(bundle.records.map(r => r.entity + ':' + r.id));
@@ -249,6 +253,7 @@ export class Store {
     const returned=bundle.returnState;
     if(returned){
       if(returned.accountId!==bundle.snapshot.source.accountId||returned.watermark>previousChangeId)errors.push('Estado de devolución incompatible con el historial.');
+      if(returned.manualReport&&(returned.manualReport.watermark!==returned.watermark||returned.manualReport.sessionId!==(bundle.sessionId??'')||returned.manualReport.captureId!==bundle.snapshot.id+':'+bundle.snapshot.capturedAt))errors.push('Comprobación manual incompatible con la sesión.');
       const created=new Set(bundle.changes.filter(c=>c.operation==='create').map(c=>c.entity+':'+c.recordId));
       if(Object.keys(returned.mapping).some(key=>!created.has(key)))errors.push('Correspondencia de IDs sin alta local.');
       if(returned.plan){
@@ -282,6 +287,7 @@ export class Store {
       this.resetReturnState();
       if(returned){
         this.set('returnWatermark:hubspot',returned.watermark);this.set('remoteMapping:hubspot',returned.mapping);
+        if(returned.manualReport)this.set('manualRecoveryReport',returned.manualReport);
         const plan=returned.plan;
         if(plan){
           if(plan.status==='applying'){for(const op of plan.operations)if(op.status==='sending'){op.status='uncertain';op.error='La copia se exportó durante un envío. Verifica el resultado remoto antes de repetir.';}plan.status='partial';}
@@ -293,6 +299,9 @@ export class Store {
     this.addCapture(bundle.snapshot);
   }
   addCapture(snapshot: CrmSnapshot) {
+    const validated=SnapshotSchema.safeParse(snapshot);
+    if(!validated.success)throw new AppError(422,'Captura incompatible con el formato o el límite de 10.000 registros.');
+    this.assertPortal(snapshot);
     const report = reconcile(snapshot);
     if (!report.complete) throw new AppError(422,'La captura no está conciliada.',report.errors);
     const id = snapshot.id + ':' + snapshot.capturedAt, payload = this.encode(snapshot);
@@ -313,17 +322,28 @@ export class Store {
     return total;
   }
   private resetReturnState() {
+    this.set('manualRecoveryReport',null);
     for(const key of ['recoveryPlan','continuitySession','simulatedRemote'])this.set(key,null);
     for(const kind of ['simulation','hubspot']){this.set('returnWatermark:'+kind,0);this.set('remoteMapping:'+kind,{});}
     this.set('returnComplete',false);this.set('sessionCapture','');
   }
   captures() { return (this.db.prepare('SELECT id,at,bytes FROM captures ORDER BY at DESC,rowid DESC').all() as unknown as {id:string;at:string;bytes:number}[]); }
+  private assertPortal(snapshot:CrmSnapshot){
+    const bound=this.get<{accountId:string}|null>('connectionPublic',null);
+    if(bound&&snapshot.source.accountId!==bound.accountId)throw new AppError(409,'Esta carpeta pertenece a otro portal. Crea una instalación separada.');
+  }
   capture(id: string): CrmSnapshot {
     const row = this.db.prepare('SELECT payload FROM captures WHERE id=?').get(id) as {payload:string} | undefined;
     if (!row) throw new AppError(404,'No se encontró la captura.');
     return this.decode<CrmSnapshot>(row.payload);
   }
   pruneCaptures(now = Date.now()) {
+    const archives=this.db.prepare('SELECT id,at,bundle FROM archives ORDER BY at DESC,rowid DESC').all() as {id:string;at:string;bundle:string}[];
+    for(const [index,item] of archives.entries()){
+      if(index<3&&now-Date.parse(item.at)<30*86400_000)continue;
+      const bundle=this.decode<ContinuityBundle>(item.bundle),watermark=bundle.returnState?.watermark??0;
+      if(!bundle.changes.some(change=>change.id>watermark))this.db.prepare('DELETE FROM archives WHERE id=?').run(item.id);
+    }
     const all = this.captures(), protectedId = this.snapshot ? this.snapshot.id + ':' + this.snapshot.capturedAt : '';
     const days = new Set<string>(); let hours = 0;
     for (const item of all) {

@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { Download, FileJson, LockKeyhole } from 'lucide-react';
 import { download } from './api.js';
 import { Spinner } from './components.js';
+import { RUNTIME_ZIP } from '../shared/version.js';
 export function PortableExport(){
   const [password,setPassword]=useState(''),[confirm,setConfirm]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[done,setDone]=useState(false);
   const run=async(kind:'package'|'encrypted')=>{
     if(password.length<12||password!==confirm){setError('Usa al menos 12 caracteres y repite la misma contraseña.');return;}
     setBusy(true);setError('');setDone(false);
-    try{await download('/v2/export/'+kind,kind==='package'?'Plan-B-independiente-v2.1.zip':'plan-b-copia-cifrada.json',{password});setDone(true);}catch(f){setError((f as Error).message);}finally{setBusy(false);}
+    try{await download('/v2/export/'+kind,kind==='package'?RUNTIME_ZIP:'plan-b-copia-cifrada.json',{password});setDone(true);}catch(f){setError((f as Error).message);}finally{setBusy(false);}
   };
   return <section className="export-page"><header className="page-header"><div><h1>Tu copia, contigo.</h1><p className="page-subtitle">Una aplicación independiente y una copia cifrada recuperable en otro equipo.</p></div><LockKeyhole size={29}/></header>
     <div className="export-instructions"><h2>Prepara una contraseña de recuperación</h2><p>Se utilizará para abrir los datos en otro ordenador. Guárdala en un lugar seguro separado del archivo. No incluimos claves de HubSpot ni de IA.</p>

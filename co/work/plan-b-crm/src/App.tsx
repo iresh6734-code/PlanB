@@ -9,6 +9,7 @@ import { ContinuityHome } from './ContinuityHome.js';
 import { ChangesView } from './ChangesView.js';
 import { PortableExport } from './PortableExport.js';
 import { Protection } from './Protection.js';
+import { APP_VERSION } from '../shared/version.js';
 
 const navigation = [
   { id: 'contacts', label: 'Clientes', icon: Users },
@@ -23,6 +24,7 @@ export default function App() {
   const [page, setPage] = useState<'continuity' | 'changes' | 'prepare' | 'workspace' | 'export'>('continuity');
   const [entityName, setEntity] = useState<EntityName>('contacts');
   const [step, setStep] = useState(0);
+  const [connectRequest,setConnectRequest]=useState(0);
   const [selected, setSelected] = useState<CrmRecord | 'new' | null>(null);
   const [query, setQuery] = useState('');
   const [offset,setOffset]=useState(0),[total,setTotal]=useState(0),[pipeline,setPipeline]=useState('');
@@ -105,19 +107,19 @@ export default function App() {
         {!state.runtime && page !== 'prepare' ? <button className="nav-item" onClick={() => { setPage('prepare'); setSelected(null); }}><LayoutDashboard size={19} />Preparación</button> : null}
         {page === 'prepare' ? <button className="nav-item" disabled={!state.ready} onClick={() => setPage('workspace')}><ArrowRight size={19} />Abrir aplicación</button> : null}
         <button className={'nav-item ' + (page === 'export' ? 'active' : '')} disabled={!state.ready} onClick={() => { setPage('export'); setSelected(null); }}><Download size={19} />Exportar</button>
-        {!state.runtime ? <button className="nav-item" onClick={() => setModal('settings')}><Settings2 size={19} />Proveedor de IA</button> : null}
+        {!state.runtime&&state.snapshot?.source.isTestData!==false ? <button className="nav-item" onClick={() => setModal('settings')}><Settings2 size={19} />Proveedor de IA</button> : null}
         <button className="nav-item" onClick={()=>void protect()}><ShieldCheck size={19}/>Proteger / bloquear</button>
       </div>
-      <div className="sidebar-bottom"><span className="dot" />Datos de ensayo<small>{state.snapshot?.name ?? 'Tu copia, en tu ordenador'}</small></div>
+      <div className="sidebar-bottom"><span className="dot" />{state.snapshot?.source.isTestData===false?'Producción · lectura':'Datos de ensayo'}<small>{state.snapshot?.name ?? 'Tu copia, en tu ordenador'} · v{APP_VERSION}</small></div>
     </aside>
-    <div className="mobile-brand"><Brand /><span className="badge">Local · Ensayo</span></div>
+    <div className="mobile-brand"><Brand /><span className="badge">{state.snapshot?.source.isTestData===false?'Producción · lectura':'Local · Ensayo'}</span></div>
     <main className="main-content">
       {error ? <div role="alert" className="global-error"><span>{error}</span><button className="icon-button" aria-label="Cerrar aviso" onClick={() => setError('')}><X size={18} /></button></div> : null}
-      {page==='continuity'?<ContinuityHome state={state} refresh={refresh} work={()=>openEntity('contacts')} prepare={()=>{setPage('prepare');setStep(0);}} protect={()=>void protect()}/>
-      :page==='changes'?<ChangesView runtime={state.runtime}/>
+      {page==='continuity'?<ContinuityHome state={state} refresh={refresh} work={()=>openEntity('contacts')} prepare={()=>{setPage('prepare');setStep(0);}} protect={()=>void protect()} exportCopy={()=>setPage('export')} connectRequest={connectRequest}/>
+      :page==='changes'?<ChangesView runtime={state.runtime} production={state.snapshot?.source.isTestData===false}/>
       :page==='export'?<PortableExport/>
       :page === 'prepare' ? <Preparation state={state.candidate?{...state,...state.candidate,lastError:state.candidate.error}:state} step={step} setStep={setStep} refresh={refresh}
-        openWorkspace={() => setPage('workspace')} configure={() => setModal('settings')} onError={setError} />
+        openWorkspace={() => setPage('workspace')} configure={() => setModal('settings')} onConnect={()=>{setPage('continuity');setConnectRequest(n=>n+1);}} onError={setError} />
       : !state.ready || !spec || !entity ? <section className="empty-state"><ShieldCheck size={36} /><h1>Revisa la preparación</h1><p>La captura y las reglas deben estar verificadas antes de editar.</p>
           <button className="button primary" onClick={() => { setPage('prepare'); setStep(2); }}>Revisar aplicación</button></section>
       : <section className="workspace">

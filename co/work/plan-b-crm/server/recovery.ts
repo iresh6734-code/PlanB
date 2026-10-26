@@ -5,11 +5,13 @@ import type { RecoveryOperation, RecoveryPlan } from '../shared/operations.js';
 import { Store, AppError } from './store.js';
 export interface Remote {
   source:'hubspot'|'simulation'; accountId:string;
+  readOnly?:boolean;
   verify():Promise<void>;
   read(entity:EntityName,id:string):Promise<CrmRecord|null>;
   create(entity:EntityName,values:CrmRecord['values'],operationId:string):Promise<string>;
   update(entity:EntityName,id:string,values:CrmRecord['values']):Promise<void>;
   relate(entity:EntityName,id:string,target:EntityName,targetId:string):Promise<void>;
+  hasRelation?(entity:EntityName,id:string,target:EntityName,targetId:string):Promise<boolean>;
 }
 const equal=(a:unknown,b:unknown)=>JSON.stringify(a??null)===JSON.stringify(b??null);
 const hash=(value:unknown)=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -26,6 +28,7 @@ export class Recovery {
   private save(plan:RecoveryPlan){this.store.set('recoveryPlan',plan);}
   revision(){return hash({session:this.store.get('sessionId',''),changes:this.store.changes(),spec:this.store.spec});}
   async preview(remote:Remote):Promise<RecoveryPlan> {
+    if(!this.store.snapshot?.source.isTestData && remote.source!=='simulation')throw new AppError(403,'Producción solo permite comprobación manual por lectura.');
     if(!this.store.ready || !this.store.snapshot)throw new AppError(409,'Necesitas una copia activa.');
     if(this.plan()?.operations.some(o=>['sending','uncertain','applied'].includes(o.status)) && this.plan()?.status!=='complete')throw new AppError(409,'Resuelve o termina el envío actual antes de crear otro plan.');
     const localRevision=this.revision();
@@ -99,6 +102,7 @@ export class Recovery {
     plan.status='review';plan.approvedAt=null;this.save(plan);return plan;
   }
   async apply(planId:string,remote:Remote,signal?:AbortSignal,progress?:(message:string,percent:number)=>void) {
+    if(remote.readOnly||!this.store.snapshot?.source.isTestData&&remote.source!=='simulation')throw new AppError(403,'Las escrituras en producción están bloqueadas.');
     const plan=this.require(planId);
     if(plan.status!=='approved'||plan.source!==remote.source||plan.accountId!==remote.accountId||plan.revision!==this.revision())throw new AppError(409,'Revisa y aprueba un plan vigente antes de aplicarlo.');
     await remote.verify();
@@ -128,7 +132,8 @@ export class Recovery {
         for(const ref of op.references){
           const target=mapping[ref.entity+':'+ref.id]??ref.id!;
           if(target.startsWith('local-'))throw new AppError(422,'Falta devolver primero el registro relacionado.');
-          await remote.relate(op.entity,op.remoteId!,ref.entity,target);
+          if(!remote.hasRelation||!await remote.hasRelation(op.entity,op.remoteId!,ref.entity,target))await remote.relate(op.entity,op.remoteId!,ref.entity,target);
+          if(remote.hasRelation&&!await remote.hasRelation(op.entity,op.remoteId!,ref.entity,target))throw new AppError(502,'HubSpot no confirmó la relación enviada.');
         }
         const verified=await remote.read(op.entity,op.remoteId!);
         if(!verified||Object.entries(values).some(([k,v])=>!equal(verified.values[k],v)))throw new AppError(502,'HubSpot no confirmó los valores enviados.');
@@ -154,8 +159,16 @@ export class Recovery {
     if(!op||op.status!=='uncertain'||plan.source!==remote.source||plan.accountId!==remote.accountId)throw new AppError(409,'No hay una operación incierta compatible.');
     await remote.verify();const record=await remote.read(op.entity,remoteId);
     if(!record||op.fields.filter(f=>f.decision==='local').some(f=>!equal(record.values[f.field],f.local)))throw new AppError(409,'El registro remoto no confirma los valores. Revisión manual necesaria.');
-    if(op.references.length)throw new AppError(409,'Hay relaciones pendientes: verifica la devolución con la agencia antes de continuar.');
-    op.remoteId=remoteId;op.status='applied';op.error=null;
+    const mappingBefore=this.store.get<Record<string,string>>('remoteMapping:'+remote.source,{});
+    const other=Object.entries(mappingBefore).find(([key,value])=>value===remoteId&&key!==op.entity+':'+op.localId&&key.startsWith(op.entity+':'));
+    if(other||op.remoteId&&op.remoteId!==remoteId)throw new AppError(409,'El ID remoto no corresponde a esta operación.');
+    let pendingRelations=false;
+    for(const ref of op.references){
+      if(!remote.hasRelation)throw new AppError(409,'El destino no permite verificar relaciones.');
+      const target=mappingBefore[ref.entity+':'+ref.id]??ref.id!;
+      if(!await remote.hasRelation(op.entity,remoteId,ref.entity,target))pendingRelations=true;
+    }
+    op.remoteId=remoteId;op.status=pendingRelations?'pending':'applied';op.error=pendingRelations?'Registro verificado. Revisa y aprueba únicamente las relaciones pendientes.':null;
     const mapping=this.store.get<Record<string,string>>('remoteMapping:'+remote.source,{});mapping[op.entity+':'+op.localId]=remoteId;this.store.set('remoteMapping:'+remote.source,mapping);
     plan.status='partial';this.save(plan);return plan;
   }

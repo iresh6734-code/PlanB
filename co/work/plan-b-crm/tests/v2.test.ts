@@ -136,7 +136,7 @@ test('v2: captura parcial programada falla sin alterar la copia y conserva inten
   const store=new Store(':memory:');prepare(store);const original=store.bundle();
   const partial=makeFixture();partial.manifest.expectedCounts.contacts++;
   const continuity=new Continuity(store,root,false,async()=>partial);
-  continuity.connection=()=>({token:'fake-test-token',accountId:'123'});store.set('disconnected',false);continuity.configureSchedule(true);
+  continuity.connection=()=>({token:'fake-test-token',accountId:'123',mode:'test'});store.set('disconnected',false);continuity.configureSchedule(true);
   // Use the test portal ID expected by this injected importer; no network is contacted.
   partial.source.accountId='123';continuity.tick();
   for(let i=0;i<100&&continuity.jobs.list()[0]?.status!=='failed';i++)await new Promise(r=>setTimeout(r,5));
@@ -184,4 +184,14 @@ test('v2: sesión local protege datos, revoca cookies y limita intentos de contr
     for(let i=0;i<5;i++)assert.equal((await inject('POST','/api/v2/auth/login',{password:'wrong'})).statusCode,401);
     assert.equal((await inject('POST','/api/v2/auth/login',{password:'wrong'})).statusCode,429);
   }finally{await app.close();}
+});
+
+test('v3: resolver alta incierta reanuda solo relaciones y exige su lectura final',async()=>{
+  const store=new Store(':memory:');prepare(store);store.saveRecord('tasks',{subject:'Alta con relación',due_date:'2026-11-12',status:'pending',contact_id:'contact-1'});
+  const base=simulatedRemote(store);let creates=0,relations=0,createdId='',linked=false;
+  const remote:Remote={...base,async create(entity,values,id){creates++;createdId=await base.create(entity,values,id);throw new Error('respuesta perdida');},async hasRelation(){return linked;},async relate(){relations++;linked=true;}};
+  const engine=new Recovery(store),plan=await engine.preview(remote);engine.approve(plan.id);
+  assert.equal((await engine.apply(plan.id,remote)).operations[0].status,'uncertain');
+  const resolved=await engine.resolveUncertain(plan.id,plan.operations[0].id,createdId,remote);assert.equal(resolved.operations[0].status,'pending');
+  engine.approve(plan.id);assert.equal((await engine.apply(plan.id,remote)).status,'complete');assert.equal(creates,1);assert.equal(relations,1);assert.equal(linked,true);store.close();
 });

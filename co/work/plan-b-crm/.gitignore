@@ -8,8 +8,17 @@ build/
 data/
 test-results/
 playwright-report/
+.playwright-mcp/
 release/
 runtime-assets/
 tests/.tmp/
 .planb-key
 .instance
+.endpoint.json
+delivery/
+.source-history/
+
+# Instalaciones independientes del ordenador actual; nunca incluir sus datos.
+planb-local-*/
+planb-hubspot-*/
+planb-ensayo-retorno-*/

@@ -18,6 +18,7 @@ const instructions = [
 ].join('\n');
 
 export async function generateWithAI(store: Store, snapshot: CrmSnapshot, prompt: string, config: AiConfig | null, fetcher: typeof fetch = fetch): Promise<AppSpec> {
+  if(!snapshot.source.isTestData)throw new AppError(403,'La IA está desactivada para los datos de producción en esta versión.');
   if (store.disconnected) throw new AppError(409, 'Los servicios están desconectados. La aplicación local sigue disponible.');
   if (!config) throw new AppError(503, 'Configura tu proveedor, modelo y clave para generar con IA. La especificación de ensayo funciona sin una API.');
   validateAiDestination(config);

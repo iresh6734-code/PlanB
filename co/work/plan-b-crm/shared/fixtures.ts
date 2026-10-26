@@ -100,7 +100,7 @@ export function makeFixture(profile: 'agency' | 'distribution' = 'agency'): CrmS
 export function makeDemoSpec(snapshot: CrmSnapshot): AppSpec {
   return {
     version: snapshot.version, title: snapshot.name, description: 'Tu equipo sigue trabajando con su copia local.',
-    ...(snapshot.version===2 ? {roles:{stage:'dealstage',amount:'amount',pipeline:snapshot.pipelines?.length?'pipeline':null,dueDate:snapshot.source.kind==='hubspot'?'hs_timestamp':'due_date',taskStatus:snapshot.source.kind==='hubspot'?'hs_task_status':'status'}}:{}),
+    ...(snapshot.version>=2 ? {roles:{stage:'dealstage',amount:'amount',pipeline:snapshot.pipelines?.length?'pipeline':null,dueDate:snapshot.entities.find(e=>e.id==='tasks')?.fields.some(f=>f.key==='hs_timestamp')?'hs_timestamp':'due_date',taskStatus:snapshot.entities.find(e=>e.id==='tasks')?.fields.some(f=>f.key==='hs_task_status')?'hs_task_status':'status'}}:{}),
     entities: structuredClone(snapshot.entities), stages: structuredClone(snapshot.stages),
     rules: structuredClone(snapshot.rules),
     coverage: { supported: ['Consultar y editar clientes', 'Gestionar empresas y sus relaciones', 'Avanzar oportunidades entre etapas', 'Crear y completar tareas', 'Conservar y exportar cambios locales'],

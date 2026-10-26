@@ -4,6 +4,7 @@ export interface Job {
   createdAt: string; updatedAt: string; message: string; progress: number; result?: unknown;
 }
 export interface DrillReport {
+  environment?:'test'|'production';
   id: string; captureId: string; startedAt: string; completedAt: string;
   passed: boolean; isolated: boolean; checks: { label: string; passed: boolean; detail: string }[];
   durationMs: number; dataSource: string; limitations: string[];
@@ -16,8 +17,11 @@ export interface ContinuityStatus {
   connected: boolean; protected: boolean; accountId: string | null; changes: number; pendingChanges: number;
   runtime: boolean; realDataEnabled: boolean;
   latestCapture:CaptureSummary|null; readiness:DrillReadiness;
+  connection?:{accountId:string;mode:'test'|'production_readonly';accountType:string;verifiedAt:string|null;selectedFields:Record<string,string[]>}|null;
+  recoveryCopy?:{exportedAt:string;confirmedAt?:string;restoredAt?:string}|null;
 }
 export interface CaptureSummary {
+  environment?:'test'|'production';
   id:string;name:string;source:CrmSnapshot['source']['kind'];accountId:string;capturedAt:string;
   counts:Record<EntityName,number>;records:number;relations:number;pipelines:number;fields:number;
 }

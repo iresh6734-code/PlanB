@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { entityNames, type CrmSnapshot, type Entity, type EntityName, type Field, type FieldValue, type Link, type Rule } from '../shared/model.js';
+import { entityNames, MAX_RECORDS, type ConnectionMode, type CrmSnapshot, type Entity, type EntityName, type Field, type FieldValue, type Link, type Rule } from '../shared/model.js';
 import { AppError } from './store.js';
+import { readonlyFetch } from './connection.js';
 
 interface Property {
   name: string; label: string; type: string; fieldType?: string; hubspotDefined?: boolean;
@@ -27,10 +28,12 @@ const labels: Record<string, string> = {
   dealname: 'Nombre de la oportunidad', amount: 'Importe', dealstage: 'Etapa', pipeline: 'Proceso comercial', closedate: 'Fecha prevista de cierre',
   hs_task_subject: 'Asunto', hs_task_status: 'Estado', hs_timestamp: 'Fecha límite'
 };
-export interface HubspotOptions { token: string; accountId: string; name?: string; confirmedTestAccount: boolean; signal?:AbortSignal; progress?:(message:string,percent:number)=>void; }
+export interface HubspotOptions { token: string; accountId: string; name?: string; confirmedTestAccount: boolean; mode?:ConnectionMode; selectedFields?:Partial<Record<EntityName,string[]>>; signal?:AbortSignal; progress?:(message:string,percent:number)=>void; }
 export async function importHubspot(options: HubspotOptions, fetcher: typeof fetch = fetch): Promise<CrmSnapshot> {
+  fetcher=readonlyFetch(fetcher);
   const captureStartedAt=new Date().toISOString();
-  if (!options.confirmedTestAccount || !/^\d+$/.test(options.accountId)) throw new AppError(422, 'Indica el ID y confirma que usarás una cuenta de prueba.');
+  const production=options.mode==='production_readonly';
+  if ((!production&&!options.confirmedTestAccount) || !/^\d+$/.test(options.accountId)) throw new AppError(422, 'Indica el ID y confirma que usarás una cuenta de prueba.');
   if (!options.token || options.token.length < 10) throw new AppError(422, 'Configura una Service Key o un token OAuth de lectura.');
   async function request<T>(currentPath: string, legacyPath?: string, body?: unknown, partialAssociations=false): Promise<T> {
     const get = async (path: string) => {
@@ -62,9 +65,9 @@ export async function importHubspot(options: HubspotOptions, fetcher: typeof fet
     return data;
   }
   const account = await request<{ portalId: number; accountType: string }>('/account-info/2026-09/details', '/account-info/v3/details');
-  options.progress?.('Cuenta de prueba verificada',5);
+  options.progress?.(production?'Cuenta de producción verificada · lectura':'Cuenta de prueba verificada',5);
   if (String(account.portalId) !== options.accountId) throw new AppError(422, 'La credencial no corresponde al ID de cuenta indicado.');
-  if (!['DEVELOPER_TEST', 'SANDBOX'].includes(account.accountType)) throw new AppError(403, 'Esta demo solo importa cuentas de prueba o sandbox verificadas, no cuentas de producción.');
+  if (production ? account.accountType!=='STANDARD' : !['DEVELOPER_TEST', 'SANDBOX'].includes(account.accountType)) throw new AppError(403, 'El tipo de cuenta no corresponde al modo autorizado. Solo se admiten cuentas de prueba o producción STANDARD en lectura.');
   const pipelineResponse = await request<Page<Pipeline>>('/crm/pipelines/2026-09/deals', '/crm/v3/pipelines/deals');
   if (!pipelineResponse.results?.length) throw new AppError(422, 'La cuenta de prueba necesita al menos un proceso comercial.');
   const stageMap = new Map<string, { id: string; label: string; color: string; pipelineId:string }>();
@@ -86,7 +89,10 @@ export async function importHubspot(options: HubspotOptions, fetcher: typeof fet
   for (const entity of entityNames) {
     options.signal?.throwIfAborted(); options.progress?.('Leyendo '+basics[entity].label.toLowerCase(),10+entityNames.indexOf(entity)*15);
     const meta = await request<Page<Property>>('/crm/properties/2026-09/' + entity, '/crm/v3/properties/' + entity);
-    const selected = meta.results.filter(p => !p.archived && (basics[entity].fields.includes(p.name) || p.hubspotDefined === false && !p.hidden));
+    // HubSpot marks standard properties true, but can omit the flag on custom
+    // properties. Requiring an explicit false silently drops their values.
+    const selected = meta.results.filter(p => !p.archived && (basics[entity].fields.includes(p.name) || p.hubspotDefined !== true && !p.hidden && (options.selectedFields ? !!options.selectedFields[entity]?.includes(p.name) : !production)));
+    if(options.selectedFields?.[entity]?.some(name=>!selected.some(p=>p.name===name)))throw new AppError(422,'Un campo seleccionado ya no está disponible. Revisa el alcance antes de capturar.');
     if (selected.length > 60) throw new AppError(422, 'La demo admite hasta 60 propiedades por objeto. Selecciona una cuenta de ensayo más pequeña.');
     if (!selected.some(p => p.name === basics[entity].display)) throw new AppError(422, 'Falta un campo principal del objeto ' + entity + '.');
     const fields: Field[] = selected.map(p => {
@@ -110,7 +116,7 @@ export async function importHubspot(options: HubspotOptions, fetcher: typeof fet
       const page = await request<Page<HsRecord>>('/crm/objects/2026-09/' + entity + query, '/crm/v3/objects/' + entity + query);
       if (!Array.isArray(page.results)) throw new AppError(502, 'HubSpot no devolvió la colección completa.');
       list.push(...page.results);
-      if (list.length > 10000) throw new AppError(413, 'La demo admite hasta 10.000 registros por objeto.');
+      if (records.length + list.length > MAX_RECORDS) throw new AppError(413, 'El piloto admite hasta 10.000 registros totales. No se guardará una captura parcial.');
       after = page.paging?.next ? String(page.paging.next.after) : '';
       if (after && previous.has(after)) throw new AppError(502, 'HubSpot repitió un cursor de paginación.');
       if (after) previous.add(after);
@@ -219,10 +225,10 @@ export async function importHubspot(options: HubspotOptions, fetcher: typeof fet
     origin: 'configuration', description: 'El correo debe tener un formato válido.', evidence: 'Propiedad de correo importada de HubSpot: contacts.email.'
   }] : [];
   return {
-    version: 2, id: randomUUID(), name: options.name?.trim() || 'HubSpot de ensayo · ' + account.portalId,
+    version: 3, id: randomUUID(), name: options.name?.trim() || (production?'HubSpot · ':'HubSpot de ensayo · ') + account.portalId,
     captureStartedAt,pipelines:pipelineResponse.results.map(p=>({id:p.id,label:p.label})),
     capturedAt: new Date().toISOString(),
-    source: { kind: 'hubspot', accountId: String(account.portalId), isTestData: true, description: 'Cuenta ' + account.accountType + '. Objetos activos, propiedades estándar y personalizadas, relaciones verificadas.' },
+    source: { kind: 'hubspot', accountId: String(account.portalId), isTestData: !production, environment:production?'production':'test', accountType:account.accountType, description: 'Cuenta ' + account.accountType + '. Objetos activos y alcance seleccionado; relaciones verificadas.' },
     entities, records, links, stages, rules, unsupported: [...new Set(unsupported)],
     manifest: { complete: true, expectedCounts, expectedLinks: links.length }
   };

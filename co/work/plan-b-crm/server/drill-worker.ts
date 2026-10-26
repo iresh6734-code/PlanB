@@ -49,6 +49,7 @@ finally{store?.close();const absolute=resolve(folder);if(!absolute.startsWith(sc
 function requireSeparator(){return process.platform==='win32'?'\\':'/';}
 const report:DrillReport={id:randomUUID(),captureId:input.captureId,startedAt:new Date(started).toISOString(),completedAt:new Date().toISOString(),
   passed:checks.length===5 && checks.every(c=>c.passed),isolated:true,checks,durationMs:Date.now()-started,
-  dataSource:input.bundle.snapshot.source.kind==='fixture'?'Conjunto ficticio incluido':'Cuenta HubSpot de prueba',
+  environment:input.bundle.snapshot.source.isTestData?'test':'production',
+  dataSource:input.bundle.snapshot.source.kind==='fixture'?'Conjunto ficticio incluido':input.bundle.snapshot.source.isTestData?'Cuenta HubSpot de prueba':'Copia local de HubSpot · producción',
   limitations:['Simulacro técnico, no certificación ni SLA.','Ejercita un cliente, una oportunidad y una tarea; no prueba todos los procesos de la empresa.','No acredita devolución real a HubSpot.','No modifica los datos operativos.']};
 process.stdout.write(JSON.stringify(report));

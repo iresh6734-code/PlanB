@@ -4,18 +4,20 @@ import type { Change } from '../shared/model.js';
 import type { RecoveryPlan } from '../shared/operations.js';
 import { api, post, download } from './api.js';
 import { Spinner } from './components.js';
-export function ChangesView({runtime}:{runtime:boolean}) {
+import { ManualRecovery } from './ManualRecovery.js';
+export function ChangesView({runtime,production=false}:{runtime:boolean;production?:boolean}) {
   const [changes,setChanges]=useState<Change[]>([]),[plan,setPlan]=useState<RecoveryPlan|null>(null),[simulation,setSimulation]=useState(true);
   const [busy,setBusy]=useState(false),[error,setError]=useState(''),[reviewed,setReviewed]=useState(false),[token,setToken]=useState('');
   const [uncertainId,setUncertainId]=useState('');
-  const load=async()=>{const data=await api<{changes:Change[];plan:RecoveryPlan|null}>('/v2/changes');setChanges(data.changes);setPlan(data.plan);};
+  const [revision,setRevision]=useState(''),[pending,setPending]=useState(0),[watermark,setWatermark]=useState(0),[manualReport,setManualReport]=useState<{verifiedAt:string}|null>(null);
+  const load=async()=>{const data=await api<{changes:Change[];plan:RecoveryPlan|null;revision:string;pendingChanges:number;watermark:number;manualReport:{verifiedAt:string}|null}>('/v2/changes');setChanges(data.changes);setPlan(data.plan);setRevision(data.revision);setPending(data.pendingChanges);setWatermark(data.watermark);setManualReport(data.manualReport);};
   useEffect(()=>{void load().catch(f=>setError((f as Error).message));const timer=setInterval(()=>void load().catch(()=>{}),2500);return()=>clearInterval(timer);},[]);
   const run=async(fn:()=>Promise<unknown>)=>{setBusy(true);setError('');try{await fn();await load();}catch(f){setError((f as Error).message);}finally{setBusy(false);}};
   const destinations={simulation,token:token||undefined};
   return <section className="changes-page"><header className="page-header"><div><h1>El trabajo sigue contigo.</h1><p className="page-subtitle">{changes.length} operaciones guardadas en este ordenador.</p></div>
     <div className="button-row"><button className="button secondary" onClick={()=>run(()=>download('/export/changes?format=csv','plan-b-cambios.csv'))}><Download size={16}/>CSV</button><button className="button secondary" onClick={()=>run(()=>download('/export/changes','plan-b-cambios.json'))}>JSON</button></div></header>
     {error?<p role="alert" className="error-box">{error}</p>:null}
-    {!runtime?<section className="return-section"><div className="section-heading"><div><h2>Devolución revisada</h2><p className="muted">Compara, resuelve conflictos y aprueba el estado final antes de enviarlo.</p></div><GitBranch size={25}/></div>
+    {production&&!runtime?<><ManualRecovery changes={changes.filter(c=>c.id>watermark)} revision={revision} pending={pending} refresh={load}/>{manualReport?<p className="helper">Última comprobación manual: {new Date(manualReport.verifiedAt).toLocaleString('es-ES')}. No se enviaron datos mediante la API.</p>:null}</>:!runtime?<section className="return-section"><div className="section-heading"><div><h2>Devolución revisada</h2><p className="muted">Compara, resuelve conflictos y aprueba el estado final antes de enviarlo.</p></div><GitBranch size={25}/></div>
       <label className="checkbox-label"><input type="checkbox" checked={simulation} disabled={busy} onChange={e=>{setSimulation(e.target.checked);setReviewed(false);}}/>Usar destino simulado para probar el recorrido (no envía datos a HubSpot)</label>
       {!simulation?<><p className="info-box">Solo cuentas HubSpot de prueba. La credencial necesita permisos de escritura adicionales. Revisa las automatizaciones con la agencia antes de aprobar.</p>
         <label className="field"><span>Token de escritura de esta cuenta (opcional si el guardado ya dispone de permisos)</span><input type="password" autoComplete="new-password" value={token} onChange={e=>setToken(e.target.value)}/></label></>:null}

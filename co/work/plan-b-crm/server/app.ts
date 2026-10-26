@@ -7,6 +7,7 @@ import { AppError, Store } from './store.js';
 import { runtimeZip } from './exporter.js';
 import { registerSecurity } from './security.js';
 import { registerV2, type ExternalServices } from './v2.js';
+import { randomUUID } from 'node:crypto';
 
 export interface AppOptions {
   dbPath: string; root: string; staticDir: string; runtime?: boolean;
@@ -16,6 +17,7 @@ export interface AppOptions {
 }
 export async function createBaseApp(options: AppOptions): Promise<{ app: FastifyInstance; store: Store }> {
   const store = new Store(options.dbPath);
+  if(!store.get('instanceId',null))store.set('instanceId',randomUUID());
   if (options.runtime) store.set('disconnected', true);
   const app = Fastify({ logger: false, bodyLimit: 20 * 1024 * 1024, requestTimeout: 180000 });
   registerSecurity(app,store);
@@ -49,7 +51,7 @@ export async function createBaseApp(options: AppOptions): Promise<{ app: Fastify
     reconciliation: store.reconciliation, disconnected: store.disconnected, runtime: !!options.runtime,
     ready: store.ready, changes: store.changesCount, usage: store.usage(),
     aiConfigured: !options.runtime && (options.aiConfigured?.() ?? false),
-    hubspotConfigured: !options.runtime && (options.hubspotConfigured?.() ?? false),
+    hubspotConfigured: !options.runtime && (!!store.get('hubspotConnection',null)||(options.hubspotConfigured?.() ?? false)),
     lastError: store.get<string | null>('lastError', null),
     aiSettings: options.runtime ? null : options.aiPublic?.() ?? null
     ,candidate: store.candidate

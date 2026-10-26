@@ -1,11 +1,13 @@
 import type { CrmRecord, EntityName, FieldValue, AppSpec } from '../shared/model.js';
 import type { Remote } from './recovery.js';
 import { AppError } from './store.js';
-export function hubspotRemote(token:string,accountId:string,spec:AppSpec,fetcher:typeof fetch=fetch):Remote {
+import { readonlyFetch } from './connection.js';
+export function hubspotRemote(token:string,accountId:string,spec:AppSpec,fetcher:typeof fetch=fetch,readOnly=false):Remote {
+  if(readOnly)fetcher=readonlyFetch(fetcher);
   async function request(path:string,method='GET',body?:unknown):Promise<any> {
     let response:Response;
     try{response=await fetcher('https://api.hubapi.com'+path,{method,headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body),redirect:'error',signal:AbortSignal.timeout(30_000)});}
-    catch{throw new AppError(502,'No se confirmó la conexión con HubSpot.');}
+    catch(error){if(error instanceof AppError)throw error;throw new AppError(502,'No se confirmó la conexión con HubSpot.');}
     if(response.status===404&&method==='GET')return null;
     if(!response.ok||response.status===207)throw new AppError(response.status===401||response.status===403?response.status:502,'HubSpot no confirmó la operación ('+response.status+'). Comprueba permisos y estado del portal.');
     if(response.status===204)return {};
@@ -32,7 +34,8 @@ export function hubspotRemote(token:string,accountId:string,spec:AppSpec,fetcher
     }));
   };
   return {source:'hubspot',accountId,
-    async verify(){const account=await request('/account-info/v3/details');if(String(account?.portalId)!==accountId)throw new AppError(422,'Credencial de otro portal.');if(!['DEVELOPER_TEST','SANDBOX'].includes(account.accountType))throw new AppError(403,'Devolución habilitada solo para cuentas de prueba hasta completar la validación del piloto.');},
+    readOnly,
+    async verify(){const account=await request('/account-info/v3/details');if(String(account?.portalId)!==accountId)throw new AppError(422,'Credencial de otro portal.');if(readOnly?account.accountType!=='STANDARD':!['DEVELOPER_TEST','SANDBOX'].includes(account.accountType))throw new AppError(403,'Devolución habilitada solo para cuentas de prueba; producción solo permite lectura.');},
     async read(entity,id){
       const fields=spec.entities.find(e=>e.id===entity)!.fields.filter(f=>f.type!=='reference').map(f=>f.key);
       const result=await request('/crm/v3/objects/'+entity+'/'+encodeURIComponent(id)+'?properties='+encodeURIComponent(fields.join(',')));
@@ -54,6 +57,18 @@ export function hubspotRemote(token:string,accountId:string,spec:AppSpec,fetcher
         if(after)seen.add(after);
       }while(after&&!confirmed);
       if(!confirmed)throw new AppError(502,'HubSpot no confirmó la relación añadida.');
+    },
+    async hasRelation(entity,id,target,targetId){
+      let after='';const seen=new Set<string>();
+      do {
+        const page=await request('/crm/v4/objects/'+entity+'/'+encodeURIComponent(id)+'/associations/'+target+'?limit=500'+(after?'&after='+encodeURIComponent(after):''));
+        if(!Array.isArray(page?.results))throw new AppError(502,'No se pudo comprobar la relación.');
+        if(page.results.some((r:{toObjectId:string|number})=>String(r.toObjectId)===targetId))return true;
+        after=page.paging?.next?String(page.paging.next.after):'';
+        if(after&&seen.has(after))throw new AppError(502,'HubSpot repitió un cursor.');
+        if(after)seen.add(after);
+      }while(after);
+      return false;
     }
   };
 }

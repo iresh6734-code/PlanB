@@ -10,6 +10,8 @@ Conservar una copia utilizable, demostrar sus procesos mediante un simulacro y d
 Windows, una instalación y un portal por carpeta. Copias actualizadas mientras el ordenador está encendido. Trabajo desconectado sin HubSpot ni IA. La preparación, las credenciales y la devolución requieren red explícitamente habilitada.
 ## Capabilities and Constraints
 Mantener React, Vite, Fastify, Node 24 y SQLite. Cuatro objetos: clientes, empresas, oportunidades, tareas. Un operador. 10000 registros totales en piloto. Versiones candidatas nunca inutilizan la activa. Sin campañas, borrados remotos automáticos ni multiusuario.
+
+La candidata 0.3.0 admite producción STANDARD únicamente en lectura y recuperación manual comprobada. La IA queda deshabilitada para datos reales. Clave propia y consentimiento explícito por instalación; datos reales solo se exportan/restauran cifrados y con contraseña local previa. El runtime independiente no contiene conectores. El primer piloto autónomo y la devolución auténtica de ensayo necesitan aceptación con evidencia; no están acreditados por las pruebas sintéticas.
 ## Brand Commitments
 Nombre Plan B, español, blanco, texto oscuro, acento azul. Conservar tablas legibles y edición lateral de la demo.
 ## Evidence on Hand

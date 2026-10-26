@@ -29,3 +29,19 @@ Refuerzo final: el bloqueo de importación/generación/promoción durante contin
 18:09 CEST: scripts/capture-configured.ts guardó una captura auténtica conciliada en el historial operativo. Se detuvo el servidor antes de abrir su base con bloqueo de instancia, se respetaron los estados de servicios/sesión existentes y no se reemplazó el espacio de trabajo. Servidor 4340 reiniciado con las últimas correcciones, protección y conexión intactas. Informe outputs/pruebas-hubspot-captura-v2.json. El conjunto del portal aún no contiene oportunidades ni las dos configuraciones previstas. No ampliar permisos sin revisar el alcance.
 
 Aceptación final completada: ambos ZIP superan edición, simulacro aislado, reinicio y traslado; paquete cifrado exportado por API restaura en carpeta nueva y rechaza contraseña incorrecta (exportación 123,3 s). 3/3 verificaciones, sin tráfico externo ni secretos. Últimos recorridos estándar Edge: 7/7 en 20,7 s. Prueba adicional scripts/verify-imported-ui.mjs sobre copia auténtica importada: cliente, oportunidad creada localmente y avance, tarea completada/referenciada, conversión Europe/Madrid→UTC y reinicio; sin errores ni peticiones externas. No escribe en el portal. El código compilado queda congelado; el cierre de entrega solo añade evidencias y scripts de reproducción a los ZIP y recalcula hashes.
+
+## Continuación v2.1 · 26 de octubre de 2026
+
+El checkpoint anterior describe la entrega v2; no acredita los cambios posteriores. v2.1 añade contenido y recuentos propios por captura, diagnóstico ligado a la misma copia y caducidad de 30 días, persistencia reforzada e informe HTML descargable.
+
+En Linux se confirmó la compilación y se superaron 55 pruebas unitarias/API y 8 recorridos Chromium, incluida la descarga del informe y su renderizado sin red en escritorio y móvil. La política de Chromium bloquea file://; no se alteró. La prueba usa los bytes descargados mediante setContent. Los informes Linux llevan sufijo propio y conservan las evidencias históricas.
+
+Corregida la versión accidental de eastasianwidth en el lockfile: debe ser 0.2.0, igual al tarball e integridad existentes. El empaquetador admite un runtime Windows verificado desde otro sistema y rechaza ejecutables sin formato PE. Las pruebas del ZIP con Node Linux se registran por separado de la aceptación nativa Windows.
+
+Añadidos verificador del conjunto y script de lectura de captura guardada: scripts/verify-configured-capture.ts. Valida el portal de ensayo, datos previstos e IDs, mantiene extras visibles y ejecuta el simulacro aislado si el conjunto concuerda. Falta la base Windows original para aplicarlo a la captura de las 18:36; las nuevas pruebas son sintéticas.
+
+La instancia operativa Windows no se ha modificado. Guía y límites actuales en LEEME-V2.1.md y outputs/RESULTADOS-PRUEBAS-v2.1.md. No declarar terminada la aceptación Windows ni el cierre auténtico hasta obtener sus resultados.
+
+Generados Plan-B-CRM-v2.1.zip y Plan-B-independiente-v2.1.zip con el runtime Windows verificado de v2. Superadas 3/3 comprobaciones de lógica bajo Node Linux: ambos paquetes tras traslado/reinicio y recuperación cifrada de la exportación por API, incluida contraseña incorrecta. El informe distingue expresamente que no ejecutó el node.exe ni DPAPI de Windows. Se añaden resultados y hashes finales sin sustituir los ZIP v2.
+
+Restricción posterior del usuario (26/10): el ordenador original es corporativo y queda fuera de alcance. No acceder a él ni recuperar bases, claves o sesiones; no enviar tareas a sus chats/agentes. Se cancela el plan de recuperar su captura o actualizar su instancia. Continuar con el repositorio y una instalación independiente en el ordenador actual, demo ficticia y futura captura nueva de ensayo autorizada. Las guías y la memoria se incluyen en la candidata para conservar esta restricción al cambiar de tarea.

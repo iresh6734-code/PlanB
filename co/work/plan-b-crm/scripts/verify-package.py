@@ -1,4 +1,5 @@
 """Execute the delivered ZIP, edit without external network, restart after moving it."""
+import argparse
 import json
 import os
 import pathlib
@@ -11,9 +12,19 @@ import urllib.request
 import zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-OUTPUT = ROOT.parents[1] / "outputs"
+VERSION = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))["version"]
+TAG = "v" + VERSION
+OUTPUT = pathlib.Path(os.environ.get("PLANB_OUTPUT_DIR", ROOT / "delivery" / TAG)).resolve()
 SCRATCH = ROOT / "tests" / ".tmp"
 SCRATCH.mkdir(parents=True, exist_ok=True)
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--node", type=pathlib.Path, help="Runtime local para pruebas de lógica del ZIP; no acredita el node.exe incluido ni DPAPI de Windows.")
+args = parser.parse_args()
+if os.name != "nt" and args.node is None:
+    parser.error("La aceptación nativa requiere Windows. Usa --node para una comprobación de lógica separada en Linux.")
+if args.node is not None:
+    args.node = args.node.resolve(strict=True)
+NATIVE_WINDOWS = os.name == "nt" and args.node is None
 BASE = "http://127.0.0.1:4347"
 GUARD = ROOT / "scripts" / "block-external.cjs"
 opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
@@ -27,8 +38,10 @@ def api(path, payload=None, method=None):
 def launch(folder, entry):
     env = {key: value for key, value in os.environ.items() if not any(word in key.upper() for word in ["API_KEY", "HUBSPOT", "PLANB_", "NODE_OPTIONS"])}
     env["PLANB_PORT"] = "4347"
+    if not NATIVE_WINDOWS:
+        env["NODE_ENV"] = "test"
     log = (folder / "test-run.log").open("w", encoding="utf-8")
-    process = subprocess.Popen([str(folder / "node.exe"), "--require", str(GUARD), entry],
+    process = subprocess.Popen([str(args.node or folder / "node.exe"), "--require", str(GUARD), entry],
         cwd=folder, env=env, stdout=log, stderr=log, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
     try:
         for _ in range(100):
@@ -52,6 +65,10 @@ def inspect_archive(archive, runtime):
         names = source.namelist()
         assert source.testzip() is None
         assert "node.exe" in names and "dist/index.html" in names and "ABRIR PLAN B.cmd" in names
+        binary = source.read("node.exe")
+        assert binary[:2] == b"MZ" and len(binary) >= 64, "node.exe no es un ejecutable Windows."
+        pe = int.from_bytes(binary[60:64], "little")
+        assert 64 <= pe <= len(binary) - 4 and binary[pe:pe+4] == b"PE\0\0"
         assert not any(pathlib.PurePosixPath(name).name.startswith((".env", ".ai.local", ".key-setup", ".planb-key", ".instance")) for name in names)
         assert not any(".sqlite" in name for name in names)
         assert not any(".." in pathlib.PurePosixPath(name).parts or name.startswith(("/", "\\")) for name in names)
@@ -66,7 +83,7 @@ def inspect_archive(archive, runtime):
     return len(names)
 
 results = []
-for filename, runtime in [("Plan-B-CRM-v2.1.zip", False), ("Plan-B-independiente-v2.1.zip", True)]:
+for filename, runtime in [(f"Plan-B-CRM-v{VERSION}.zip", False), (f"Plan-B-independiente-v{VERSION}.zip", True)]:
     print("Verificando " + filename, flush=True)
     archive = OUTPUT / filename
     entries = inspect_archive(archive, runtime)
@@ -81,6 +98,12 @@ for filename, runtime in [("Plan-B-CRM-v2.1.zip", False), ("Plan-B-independiente
         entry = "runtime.mjs" if runtime else "server.mjs"
         process, log, state = launch(initial, entry)
         try:
+            if not runtime and not state["ready"]:
+                api("/import/fixture", {"profile": "agency"}, "POST")
+                api("/generate", {"mode": "demo"}, "POST")
+                api("/activate", {"reviewed": True}, "POST")
+                api("/v2/services", {"enabled": False}, "POST")
+                state = api("/state")
             assert state["ready"] and state["disconnected"] and state["runtime"] == runtime
             assert not state["aiConfigured"] and not state["hubspotConfigured"]
             api("/records/contacts/contact-1", {"values": {"phone": "600 999 888"}}, "PATCH")
@@ -161,5 +184,13 @@ with tempfile.TemporaryDirectory(prefix="encrypted-", dir=SCRATCH) as temporary:
         stop(process, log, destination)
 results.append({"package": "exportado mediante API", "passed": True, "encryptedPortableRestore": True,
     "wrongPasswordRejected": True, "externalNetworkBlocked": True, "credentialsRequired": False, "exportDurationMs": portable_export_ms})
-OUTPUT.joinpath("pruebas-paquetes-v2.1.json").write_text(json.dumps(results, indent=2, ensure_ascii=False), encoding="utf-8")
+for result in results:
+    result["platform"] = os.name
+    result["bundledWindowsRuntimeExecuted"] = NATIVE_WINDOWS
+    result["windowsDpapiVerified"] = NATIVE_WINDOWS
+    if not NATIVE_WINDOWS:
+        result["limitations"] = ["Prueba de lógica con Node de Linux y claves de test. No ejecuta el node.exe incluido ni acredita DPAPI o los iniciadores Windows.",
+            "La exportación cifrada generada en esta ejecución contiene el runtime de Linux; no es una entrega Windows."]
+report_name = f"pruebas-paquetes-v{VERSION}.json" if NATIVE_WINDOWS else f"pruebas-paquetes-v{VERSION}-linux.json"
+OUTPUT.joinpath(report_name).write_text(json.dumps(results, indent=2, ensure_ascii=False), encoding="utf-8")
 print(json.dumps(results, ensure_ascii=False))

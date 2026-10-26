@@ -1,7 +1,7 @@
 import { entityNames, type CrmSnapshot } from '../shared/model.js';
 import type { CaptureSummary, DrillReadiness, DrillReport } from '../shared/operations.js';
 export function summarizeCapture(id:string,snapshot:CrmSnapshot):CaptureSummary {
-  return {id,name:snapshot.name,source:snapshot.source.kind,accountId:snapshot.source.accountId,capturedAt:snapshot.capturedAt,
+  return {id,name:snapshot.name,source:snapshot.source.kind,environment:snapshot.source.isTestData?'test':'production',accountId:snapshot.source.accountId,capturedAt:snapshot.capturedAt,
     counts:Object.fromEntries(entityNames.map(entity=>[entity,snapshot.records.filter(r=>r.entity===entity).length])) as CaptureSummary['counts'],
     records:snapshot.records.length,relations:snapshot.links.length,pipelines:snapshot.pipelines?.length??1,
     fields:snapshot.entities.reduce((total,entity)=>total+entity.fields.length,0)};

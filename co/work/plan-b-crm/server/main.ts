@@ -6,6 +6,8 @@ import { ProviderSettings } from './provider.js';
 import { importHubspot } from './hubspot.js';
 import { hubspotRemote } from './hubspot-remote.js';
 import { lockInstance } from './instance.js';
+import { inspectConnection } from './connection.js';
+import { publishEndpoint } from './endpoint.js';
 
 const root = process.cwd();
 const releaseLock=lockInstance(resolve(process.env.PLANB_DATA_DIR || join(root,'data')));
@@ -17,7 +19,7 @@ const { app, store } = await createBaseApp({
   aiConfigured: () => !!providers.read(),
   aiPublic: () => providers.public(),
   hubspotConfigured: () => !!process.env.PLANB_HUBSPOT_TOKEN
-  ,external:{capture:importHubspot,remote:hubspotRemote}
+  ,external:{capture:importHubspot,remote:hubspotRemote,inspect:inspectConnection}
 });
 registerGenerator(app, store, providers);
 const seed = join(root, 'demo.seed.json');
@@ -31,4 +33,5 @@ for (;;) {
   }
 }
 console.log('\nPlan B CRM · Generador local\nAbre http://127.0.0.1:' + port + '\nTus datos se guardan en este ordenador. Cierra esta ventana para detener la app.\n');
+publishEndpoint(app,store,port);
 for (const signal of ['SIGINT', 'SIGTERM'] as const) process.on(signal, () => { void app.close().then(() => {releaseLock();process.exit(0);}); });

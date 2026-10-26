@@ -1,40 +1,28 @@
-"""Add final evidence to already tested packages without rebuilding application code."""
+"""Verify immutable delivery hashes; save acceptance evidence beside the tested ZIPs."""
 import hashlib
 import json
+import os
 import pathlib
 import zipfile
 
 root = pathlib.Path(__file__).resolve().parents[1]
-output = root.parents[1] / "outputs"
-evidence = {path.name: path.read_bytes() for path in output.iterdir()
-    if "v2.1" in path.name.lower() and not path.name.startswith("ENTREGA-SHA256") and path.suffix in [".json", ".txt", ".png", ".md", ".csv", ".html"]}
-evidence["RESULTADOS-PRUEBAS-v2.1.md"] = (output / "RESULTADOS-PRUEBAS-v2.1.md").read_bytes()
-updates = {"pruebas/" + name: content for name, content in evidence.items()}
-for filename in ["Plan-B-CRM-v2.1.zip", "Plan-B-independiente-v2.1.zip"]:
+version = json.loads((root / "package.json").read_text(encoding="utf-8"))["version"]
+tag = "v" + version
+output = pathlib.Path(os.environ.get("PLANB_OUTPUT_DIR", root / "delivery" / tag)).resolve()
+manifest_file = output / ("ENTREGA-SHA256-" + tag + ".json")
+manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
+for filename, expected in manifest["files"].items():
     archive = output / filename
-    replacements = dict(updates)
-    if filename == "Plan-B-CRM-v2.1.zip":
-        for relative in ["IMPLEMENTACION-V2.md"]:
-            replacements["source/"+relative]=(root/relative).read_bytes()
-        for script in ["verify-package.py", "finalize-delivery.py"]:
-            replacements["source/scripts/" + script] = (root / "scripts" / script).read_bytes()
-    temporary = archive.with_suffix(".zip.tmp")
-    with zipfile.ZipFile(archive) as source, zipfile.ZipFile(temporary, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=3) as target:
-        for entry in source.infolist():
-            if entry.filename not in replacements:
-                target.writestr(entry, source.read(entry))
-        for name, content in replacements.items():
-            target.writestr(name, content)
-    temporary.replace(archive)
-    with zipfile.ZipFile(archive) as final:
-        assert final.testzip() is None
-        assert len(final.namelist()) == len(set(final.namelist()))
-        assert final.read("runtime.mjs") == (root / "build" / "runtime.mjs").read_bytes()
-        assert final.read("drill.mjs") == (root / "build" / "drill.mjs").read_bytes()
-        if filename == "Plan-B-CRM-v2.1.zip":
-            assert final.read("server.mjs") == (root / "build" / "server.mjs").read_bytes()
-        assert "pruebas/RESULTADOS-PRUEBAS-v2.1.md" in final.namelist()
-manifest = {path.name: {"bytes": path.stat().st_size, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
-    for path in output.glob("*-v2.1.zip")}
-(output / "ENTREGA-SHA256-v2.1.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
-print(json.dumps(manifest))
+    actual = hashlib.sha256(archive.read_bytes()).hexdigest()
+    assert actual == expected["sha256"] and archive.stat().st_size == expected["bytes"], filename
+    with zipfile.ZipFile(archive) as package:
+        assert package.testzip() is None
+        assert len(package.namelist()) == len(set(package.namelist()))
+        for module in ["runtime", "drill"] + (["server"] if filename.startswith("Plan-B-CRM-") else []):
+            assert package.read(module + ".mjs") == (root / "build" / (module + ".mjs")).read_bytes()
+reports = {}
+for report in output.glob("pruebas-*.json"):
+    reports[report.name] = hashlib.sha256(report.read_bytes()).hexdigest()
+summary = {"version":version,"immutablePackagesVerified":True,"manifest":manifest_file.name,"evidence":reports}
+(output / ("ACEPTACION-" + tag + ".json")).write_text(json.dumps(summary,indent=2),encoding="utf-8")
+print(json.dumps(summary))

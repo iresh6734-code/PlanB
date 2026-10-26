@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
 export const entityNames = ['contacts', 'companies', 'deals', 'tasks'] as const;
+export const MAX_RECORDS = 10000;
+export const ConnectionModeSchema = z.enum(['test', 'production_readonly']);
+export type ConnectionMode = z.infer<typeof ConnectionModeSchema>;
+export const CaptureSelectionSchema = z.record(z.enum(['contacts','companies','deals','tasks']), z.array(z.string().regex(/^[a-zA-Z][a-zA-Z0-9_]{0,99}$/)).max(60)).optional();
 export const EntityNameSchema = z.enum(entityNames);
 export type EntityName = z.infer<typeof EntityNameSchema>;
 export type FieldValue = string | number | boolean | null;
@@ -55,7 +59,7 @@ export const LinkSchema = z.object({
 }).strict();
 export type Link = z.infer<typeof LinkSchema>;
 export const SnapshotSchema = z.object({
-  version: z.union([z.literal(1), z.literal(2)]),
+  version: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   captureStartedAt: z.string().datetime().optional(),
   pipelines: z.array(z.object({ id: z.string(), label: z.string() }).strict()).optional(),
   id: z.string(),
@@ -64,11 +68,13 @@ export const SnapshotSchema = z.object({
   source: z.object({
     kind: z.enum(['fixture', 'hubspot', 'archive']),
     accountId: z.string(),
-    isTestData: z.literal(true),
+    isTestData: z.boolean(),
+    environment: z.enum(['test','production']).optional(),
+    accountType: z.string().optional(),
     description: z.string()
   }).strict(),
   entities: z.array(EntitySchema).length(4),
-  records: z.array(RecordSchema).max(40000),
+  records: z.array(RecordSchema).max(MAX_RECORDS),
   links: z.array(LinkSchema).max(200000),
   stages: z.array(StageSchema).min(1),
   rules: z.array(RuleSchema),
@@ -78,10 +84,16 @@ export const SnapshotSchema = z.object({
     expectedCounts: z.record(z.number().int().nonnegative()),
     expectedLinks: z.number().int().nonnegative()
   }).strict()
-}).strict();
+}).strict().superRefine((snapshot, ctx) => {
+  const production = !snapshot.source.isTestData;
+  if (production && (snapshot.version !== 3 || snapshot.source.environment !== 'production' || snapshot.source.kind !== 'hubspot' || snapshot.source.accountType !== 'STANDARD')) {
+    ctx.addIssue({code:'custom',message:'Los datos de producción requieren formato v3 y una cuenta STANDARD verificada.'});
+  }
+  if (!production && snapshot.source.environment === 'production') ctx.addIssue({code:'custom',message:'Clasificación de datos incoherente.'});
+});
 export type CrmSnapshot = z.infer<typeof SnapshotSchema>;
 export const AppSpecSchema = z.object({
-  version: z.union([z.literal(1), z.literal(2)]),
+  version: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   roles: z.object({ stage: z.string(), amount: z.string(), pipeline: z.string().nullable(), dueDate: z.string(), taskStatus: z.string() }).strict().optional(),
   title: z.string().min(1).max(100),
   description: z.string().max(500),
@@ -145,20 +157,22 @@ export const RecoveryPlanSchema=z.object({
   }).strict())
 }).strict();
 export const BundleSchema = z.object({
-  format: z.enum(['planb-continuity-v1', 'planb-continuity-v2']),
+  format: z.enum(['planb-continuity-v1', 'planb-continuity-v2', 'planb-continuity-v3']),
   sessionId: z.string().optional(),
-  returnState:z.object({accountId:z.string(),watermark:z.number().int().min(0),mapping:z.record(z.string().min(1)),plan:RecoveryPlanSchema.nullable()}).strict().optional(),
+  returnState:z.object({accountId:z.string(),watermark:z.number().int().min(0),mapping:z.record(z.string().min(1)),plan:RecoveryPlanSchema.nullable(),manualReport:z.object({id:z.string(),sessionId:z.string(),captureId:z.string(),revision:z.string(),watermark:z.number().int().min(0),verifiedAt:z.string().datetime(),method:z.literal('manual_verified'),records:z.number().int().min(0)}).strict().optional()}).strict().optional(),
   exportedAt: z.string().datetime(),
   snapshot: SnapshotSchema,
   spec: AppSpecSchema,
   generation: GenerationSchema,
-  records: z.array(RecordSchema),
+  records: z.array(RecordSchema).max(MAX_RECORDS),
   changes: z.array(z.object({
     id: z.number().int(), at: z.string().datetime(), entity: EntityNameSchema,
     recordId: z.string(), operation: z.enum(['create', 'update']),
     before: RecordSchema.nullable(), after: RecordSchema
   }).strict())
-}).strict();
+}).strict().superRefine((bundle,ctx)=>{
+  if(!bundle.snapshot.source.isTestData && bundle.format!=='planb-continuity-v3')ctx.addIssue({code:'custom',message:'Un paquete con datos reales requiere formato v3.'});
+});
 export type ContinuityBundle = z.infer<typeof BundleSchema>;
 
 export function reconcile(snapshot: CrmSnapshot): Reconciliation {

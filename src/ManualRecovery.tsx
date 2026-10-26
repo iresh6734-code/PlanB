@@ -11,7 +11,7 @@ export function ManualRecovery({changes,revision,pending,refresh}:{changes:Chang
     setChecks(result.checks);await refresh();
   }catch(f){setError((f as Error).message);}finally{setBusy(false);}};
   return <section className="return-section"><h2>Recuperación manual verificada</h2>
-    <p>Este portal real está conectado solo en lectura. Exporta los cambios, revísalos con la agencia y aplícalos manualmente en HubSpot. Plan B comprobará después los valores y relaciones.</p>
+    <p>Esta copia procede de un portal real. Su conexión solo admite lectura. Exporta los cambios, revísalos con la agencia y aplícalos manualmente en HubSpot. Plan B comprobará después los valores y relaciones.</p>
     <p className="helper">Exportar no marca cambios como devueltos. Los cambios intermedios están en el historial; aplica el estado final. Si hay diferencias, la sesión permanece abierta.</p>
     {created.map(change=><label className="field" key={change.entity+':'+change.recordId}><span>ID remoto para el alta {change.entity} · {change.recordId}</span><input inputMode="numeric" pattern="[0-9]+" value={mapping[change.entity+':'+change.recordId]??''} onChange={e=>setMapping(m=>({...m,[change.entity+':'+change.recordId]:e.target.value}))}/></label>)}
     <label className="checkbox-label"><input type="checkbox" checked={reviewed} onChange={e=>setReviewed(e.target.checked)}/>He revisado y aplicado manualmente los cambios en el portal correcto. Coordinaré la comprobación sin ediciones simultáneas.</label>

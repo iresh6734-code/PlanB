@@ -15,6 +15,7 @@ export function Preparation({ state, step, setStep, refresh, openWorkspace, conf
   const [reviewed, setReviewed] = useState(false);
 
   const [replace, setReplace] = useState(false);
+  const production=state.snapshot?.source.isTestData===false;
   const run = async (fn: () => Promise<unknown>, next?: number) => {
     setBusy(true); onError('');
     try { await fn(); await refresh(); if (next !== undefined) { setStep(next); setReviewed(false); } }
@@ -22,7 +23,7 @@ export function Preparation({ state, step, setStep, refresh, openWorkspace, conf
     finally { setBusy(false); }
   };
   return <section className="preparation">
-    <header className="prepare-heading"><div><h1>Tu CRM, con un plan B.</h1><p className="page-subtitle">Prepara una aplicación independiente con tus datos y procesos.</p></div><span className="badge"><span className="dot" />Local · Datos de ensayo</span></header>
+    <header className="prepare-heading"><div><h1>Tu CRM, con un plan B.</h1><p className="page-subtitle">Prepara una aplicación independiente con tus datos y procesos.</p></div><span className="badge"><span className="dot" />{production?'Producción · lectura':'Local · Datos de ensayo'}</span></header>
     <div className="stepper" aria-label="Pasos de preparación">{['Origen', 'Procesos', 'Generar', 'Exportar'].map((label, index) => <div key={label} className={index === step ? 'current' : index < step ? 'done' : ''}><span>{index < step ? <Check size={14} /> : index + 1}</span>{label}{index < 3 ? <i /> : null}</div>)}</div>
     {step === 0 ? <>
       <div className="prepare-columns"><div><h2>Empieza con un CRM de ensayo</h2><p className="muted">Elige un negocio ficticio. Verás cómo se adapta la aplicación.</p>
@@ -40,20 +41,20 @@ export function Preparation({ state, step, setStep, refresh, openWorkspace, conf
       <footer className="prepare-footer"><span className="muted"><Database size={15} />Esta selección utiliza datos ficticios.</span><button className="button primary" disabled={busy || state.changes > 0 && !replace}
         onClick={() => run(() => post('/import/fixture', { profile, replace }), 1)}>{busy ? <Spinner /> : <>Continuar con {profile === 'agency' ? 'Agencia Norte' : 'Distribuidora Atlas'}<ArrowRight size={17} /></>}</button></footer>
     </> : step === 1 && state.snapshot ? <>
-      <div className="section-heading"><div><h2>Datos recuperados. Procesos claros.</h2><p className="muted">{state.snapshot.name} · {state.snapshot.source.kind === 'fixture' ? 'Conjunto ficticio incluido' : 'Cuenta de prueba verificada de HubSpot'}</p></div>
+      <div className="section-heading"><div><h2>Datos recuperados. Procesos claros.</h2><p className="muted">{state.snapshot.name} · {state.snapshot.source.kind === 'fixture' ? 'Conjunto ficticio incluido' : production?'HubSpot · producción en lectura':'Cuenta de prueba verificada de HubSpot'}</p></div>
         <span className="success-label"><CheckCircle2 size={17} />Captura conciliada</span></div>
       <div className="import-report">{state.snapshot.entities.map(entity => <div key={entity.id}><strong>{state.reconciliation?.counts[entity.id]?.actual ?? 0}</strong><span>{entity.label}</span><small>{entity.fields.length} campos</small></div>)}<div><strong>{state.reconciliation?.actualLinks}</strong><span>Relaciones</span><small>Con destino verificado</small></div></div>
       <div className="process-grid"><div><h3>Etapas de oportunidades</h3><div className="stage-chips">{state.snapshot.stages.map(stage => <span key={stage.id}><i style={{ background: stage.color }} />{stage.label}</span>)}</div>
         <h3>Reglas recuperadas</h3><RuleList rules={state.snapshot.rules} />
-      </div><div><label className="field"><span>¿Qué más debe respetar la aplicación?</span><textarea rows={6} value={prompt} maxLength={8000} onChange={event => setPrompt(event.target.value)} placeholder="Ejemplo: el importe de una oportunidad debe ser de al menos 100 euros." /></label>
+      </div><div>{production?<div className="info-box"><Info size={18}/><div><strong>Configuración importada</strong><p>Se conservarán los campos y reglas de esta captura. La IA está desactivada para datos reales; revisa el alcance y las funciones pendientes antes de activar.</p></div></div>:<><label className="field"><span>¿Qué más debe respetar la aplicación?</span><textarea rows={6} value={prompt} maxLength={8000} onChange={event => setPrompt(event.target.value)} placeholder="Ejemplo: el importe de una oportunidad debe ser de al menos 100 euros." /></label>
         <p className="helper">La IA puede proponer reglas de campos obligatorios, correos, importes y transiciones. Cada regla nueva conservará una cita de tu instrucción. Revísala antes de activar.</p>
-        <div className="info-box"><Info size={18} /><div><strong>Configura la IA cuando quieras</strong><p>Sin proveedor puedes probar una especificación de ensayo. Esta opción conserva las reglas importadas y no interpreta instrucciones nuevas.</p><button className="text-button" onClick={configure}>Configurar proveedor<ChevronRight size={14} /></button></div></div></div></div>
+        <div className="info-box"><Info size={18} /><div><strong>Configura la IA cuando quieras</strong><p>Sin proveedor puedes probar una especificación de ensayo. Esta opción conserva las reglas importadas y no interpreta instrucciones nuevas.</p><button className="text-button" onClick={configure}>Configurar proveedor<ChevronRight size={14} /></button></div></div></>}</div></div>
       <footer className="prepare-footer"><button className="text-button" onClick={() => setStep(0)}>Volver al origen</button><div className="button-row">
         <button className="button secondary" disabled={busy} onClick={() => run(() => post('/generate', { mode: 'demo' }), 2)}>{busy ? <Spinner /> : state.snapshot?.source.isTestData===false?'Preparar con la configuración importada':'Crear especificación de ensayo'}</button>
-        <button className="button primary" disabled={busy || !state.aiConfigured || state.disconnected || state.snapshot?.source.isTestData===false} onClick={() => run(() => post('/generate', { mode: 'ai', prompt }), 2)}><Sparkles size={17} />Generar con mi IA</button></div></footer>
-      {!state.aiConfigured ? <p className="helper align-right">Añade tu proveedor para habilitar la generación real.</p> : null}
+        {!production?<button className="button primary" disabled={busy || !state.aiConfigured || state.disconnected} onClick={() => run(() => post('/generate', { mode: 'ai', prompt }), 2)}><Sparkles size={17} />Generar con mi IA</button>:null}</div></footer>
+      {!production&&!state.aiConfigured ? <p className="helper align-right">Añade tu proveedor para habilitar la generación real.</p> : null}
     </> : <>
-      <div className="section-heading"><div><h2>{state.spec ? 'Revisa tu aplicación.' : 'Prepara primero una especificación.'}</h2><p className="muted">{state.generation?.provider === 'ai' ? 'Generada con ' + state.generation.model : 'Especificación de ensayo · sin llamada a una IA'}</p></div><ShieldCheck className="blue" size={28} /></div>
+      <div className="section-heading"><div><h2>{state.spec ? 'Revisa tu aplicación.' : 'Prepara primero una especificación.'}</h2><p className="muted">{state.generation?.provider === 'ai' ? 'Generada con ' + state.generation.model : production?'Configuración importada · sin llamada a una IA':'Especificación de ensayo · sin llamada a una IA'}</p></div><ShieldCheck className="blue" size={28} /></div>
       {state.lastError ? <div className="error-box" role="alert">{state.lastError}</div> : null}
       {state.spec ? <><div className="review-grid">{state.spec.entities.map(entity => <article key={entity.id}><h3>{entity.label}</h3><p>{entity.fields.length} campos · {entity.columns.length} columnas</p><small>{entity.fields.map(f => f.label).join(' · ')}</small></article>)}</div>
         <div className="process-grid"><div><h3>Reglas que se aplicarán</h3><RuleList rules={state.spec.rules} /></div><div><h3>Pendiente de cobertura</h3><ul className="plain-list">{state.spec.coverage.unsupported.map(item => <li key={item}>{item}</li>)}</ul></div></div>

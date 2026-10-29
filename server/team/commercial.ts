@@ -21,9 +21,9 @@ export class CommercialService {
   }
   private async revision(sql:Sql,tenant:string){const records=(await sql.query('SELECT entity,id,version::text FROM team_records WHERE tenant_id=$1 ORDER BY entity,id',[tenant])).rows;const connection=(await sql.query('SELECT revision::text FROM team_google_connections WHERE tenant_id=$1',[tenant])).rows;const source=await salesSource(sql,tenant);return digest(JSON.stringify({records,connection,source:source?.snapshot.id,demo:this.demo}));}
   private hash(revision:string,content:CommercialContent){return digest(JSON.stringify({revision,content}));}
-  async overview(tenant:string,user:TeamPrincipal){return this.repo.scoped(tenant,user,'read',async sql=>{
-    // An interrupted external execution is never retried automatically.
-    await sql.query("UPDATE team_sales_proposals SET status='uncertain',error='Ejecución interrumpida. Requiere conciliación; no se repetirá automáticamente.' WHERE tenant_id=$1 AND status IN ('executing','reconciling') AND started_at<$2",[tenant,new Date(this.repo.clock().getTime()-120000).toISOString()]);
+  async overview(tenant:string,user:TeamPrincipal){return this.repo.scoped(tenant,user,'read',async(sql,role)=>{
+    // An interrupted external execution is never retried automatically. Un visor solo lee: lo concilia quien puede escribir.
+    if(role!=='viewer')await sql.query("UPDATE team_sales_proposals SET status='uncertain',error='Ejecución interrumpida. Requiere conciliación; no se repetirá automáticamente.' WHERE tenant_id=$1 AND status IN ('executing','reconciling') AND started_at<$2",[tenant,new Date(this.repo.clock().getTime()-120000).toISOString()]);
     const proposals=(await sql.query<CommercialProposal>('SELECT id,contact_id,revision,content,content_hash,status,evidence,error,created_at,reconciliation,context FROM team_sales_proposals WHERE tenant_id=$1 ORDER BY created_at DESC LIMIT 30',[tenant])).rows;
     const tasks=(await sql.query('SELECT id,title,due_at,status FROM team_sales_tasks WHERE tenant_id=$1 ORDER BY due_at LIMIT 30',[tenant])).rows;
     const connection=(await sql.query('SELECT account,revision::text FROM team_google_connections WHERE tenant_id=$1',[tenant])).rows[0]??null;

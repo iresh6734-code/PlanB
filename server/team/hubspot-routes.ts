@@ -10,6 +10,8 @@ export function registerHubspotContext(app:FastifyInstance,repo:TeamRepository,o
   const params=(r:FastifyRequest)=>z.object({tenant:z.string().uuid(),contact:z.string().min(1).max(100).optional()}).parse(r.params);
   app.get('/api/team/spaces/:tenant/v6/hubspot/:contact',async request=>{
     const user=await principal(request),{tenant,contact}=params(request);
+    // Lectura en vivo con el token de la empresa: un visor solo ve la instantánea guardada.
+    await repo.scoped(tenant,user,'write',async()=>undefined);
     const currentSource=()=>repo.scoped(tenant,user,'read',async sql=>{
       const source=await salesSource(sql,tenant);
       if(demo){const local=(await sql.query("SELECT id FROM team_records WHERE tenant_id=$1 AND entity='contacts' AND id=$2",[tenant,contact])).rows.length;if(!local&&!source?.records.some(r=>r.entity==='contacts'&&r.id===contact))throw new AppError(404,'Cliente fuera de esta empresa.');return null;}

@@ -69,6 +69,7 @@ test('una ficha abierta con texto sin guardar no atrapa Tab ni se cierra con Esc
   await page.route('**/v6/customers/**',route=>route.fulfill({status:401,json:{error:'La sesión del piloto caducó.'}}));
   await drawer.getByRole('button',{name:'Actualizar datos guardados',exact:true}).click();
   const gate=page.getByRole('heading',{name:'Sesión bloqueada.',exact:true});await expect(gate).toBeVisible();
+  await expect(page.getByLabel('Contraseña del piloto',{exact:true})).toBeVisible();
   await page.keyboard.press('Escape');await page.keyboard.press('Tab');
   expect(dialogs,'Escape sobre un modal oculto no debe pedir confirmación').toEqual([]);
   // Un modal oculto que atrapara Tab dejaría el foco en el título; debe avanzar al campo de contraseña de la puerta.

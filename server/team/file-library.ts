@@ -34,9 +34,9 @@ export class FileLibrary {
     return {links:rows.map(row=>({id:row.id,contact_id:row.contact_id,file_id:row.file_id,name:row.name,mime_type:row.mime_type,url:fileUrl(row.file_id,row.mime_type)})),sourceKey:source.key,account:this.demo?null:identity?.account??null,connected:!!identity,pickerConfigured:this.pickerConfigured,legacyCount:legacy,connectionRevision:identity?.revision??null};
   });}
   async page(tenant:string,user:TeamPrincipal,cursor?:string){
-    const identity=await this.repo.scoped(tenant,user,'read',sql=>this.identity(sql,tenant));if(!identity)throw new AppError(409,'Conecta Google para cargar los archivos autorizados.');
+    const identity=await this.repo.scoped(tenant,user,'write',sql=>this.identity(sql,tenant));if(!identity)throw new AppError(409,'Conecta Google para cargar los archivos autorizados.');
     const page=this.provider.filePage?await this.provider.filePage(tenant,cursor,identity.revision):{files:await this.provider.files(tenant)};
-    await this.repo.scoped(tenant,user,'read',async sql=>{const next=await this.identity(sql,tenant);if(!next||next.subject!==identity.subject||next.account!==identity.account||next.revision!==identity.revision)throw new AppError(409,'La cuenta cambió durante la lectura.');});return {...page,connectionRevision:identity.revision};
+    await this.repo.scoped(tenant,user,'write',async sql=>{const next=await this.identity(sql,tenant);if(!next||next.subject!==identity.subject||next.account!==identity.account||next.revision!==identity.revision)throw new AppError(409,'La cuenta cambió durante la lectura.');});return {...page,connectionRevision:identity.revision};
   }
   async linkMany(tenant:string,user:TeamPrincipal,contact:string,ids:string[],local=false,expectedSource?:string,expectedConnection?:string){
     const selected=[...new Set(z.array(fileId).min(1).max(10).parse(ids))];
@@ -55,9 +55,9 @@ export class FileLibrary {
     const binding=await this.binding(sql,tenant,row.contact_id,row.source_key==='local',row.source_key);if(binding.identity.subject!==row.account_subject||binding.identity.account!==row.account)throw new AppError(403,'Este vínculo corresponde a otra cuenta Google.');return {row,binding};
   }
   async document(tenant:string,user:TeamPrincipal,id:string){
-    const initial=await this.repo.scoped(tenant,user,'read',sql=>this.link(sql,tenant,id));if(initial.row.mime_type!==supported[0]||!this.provider.document)throw new AppError(404,'El vínculo no es un documento legible.');
+    const initial=await this.repo.scoped(tenant,user,'write',sql=>this.link(sql,tenant,id));if(initial.row.mime_type!==supported[0]||!this.provider.document)throw new AppError(404,'El vínculo no es un documento legible.');
     const text=await this.provider.document(tenant,initial.row.file_id,initial.binding.identity.revision);
-    await this.repo.scoped(tenant,user,'read',async sql=>{this.same(initial.binding,(await this.link(sql,tenant,id)).binding);await this.repo.audit(sql,tenant,user.uid,'file.context.read',id);});
+    await this.repo.scoped(tenant,user,'write',async sql=>{this.same(initial.binding,(await this.link(sql,tenant,id)).binding);await this.repo.audit(sql,tenant,user.uid,'file.context.read',id);});
     return {name:initial.row.name,text:text.slice(0,20000),partial:true};
   }
   async detach(tenant:string,user:TeamPrincipal,id:string){return this.repo.scoped(tenant,user,'write',async sql=>{

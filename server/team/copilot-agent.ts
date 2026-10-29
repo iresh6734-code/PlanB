@@ -27,8 +27,8 @@ export class TeamCopilotAgent {
     const rows=(await sql.query<{contact_id:string;due_at:string}>("SELECT contact_id,due_at FROM team_customer_actions WHERE tenant_id=$1 AND source_key=$2 AND status='open' AND due_at>=$3 AND due_at<=$4",[tenant,sourceKey,this.repo.clock().toISOString(),new Date(this.repo.clock().getTime()+7*86400000).toISOString()])).rows;
     return rows.map(row=>({contactId:row.contact_id,dueAt:row.due_at}));
   }
-  async overview(tenant:string,user:TeamPrincipal){return this.repo.scoped(tenant,user,'read',async sql=>{
-    await sql.query("UPDATE team_copilot_runs SET status='uncertain',error='Análisis interrumpido. No se repite automáticamente.' WHERE tenant_id=$1 AND status='running' AND created_at<$2",[tenant,new Date(this.repo.clock().getTime()-120000).toISOString()]);
+  async overview(tenant:string,user:TeamPrincipal){return this.repo.scoped(tenant,user,'read',async(sql,role)=>{
+    if(role!=='viewer')await sql.query("UPDATE team_copilot_runs SET status='uncertain',error='Análisis interrumpido. No se repite automáticamente.' WHERE tenant_id=$1 AND status='running' AND created_at<$2",[tenant,new Date(this.repo.clock().getTime()-120000).toISOString()]);
     const source=await salesSource(sql,tenant),account=(await sql.query<{account:string}>('SELECT account FROM team_copilot_connections WHERE tenant_id=$1 AND user_id=$2',[tenant,user.uid])).rows[0];
     const runs=(await sql.query('SELECT id,provider,model,status,created_at,result,error,proposal_id FROM team_copilot_runs WHERE tenant_id=$1 AND actor=$2 ORDER BY created_at DESC LIMIT 20',[tenant,user.uid])).rows;
     return {configured:!!this.auth.config,connected:!!account,account:account?.account??null,monthlyLimit:this.auth.config?.monthlyTurnLimit??1,localAI:{...await this.local.settings(sql,tenant),available:this.local.available,monthlyLimit:100},source:source?{id:source.snapshot.id,origin:source.origin,isTestData:source.snapshot.source.isTestData}:null,priorities:source?salesPriorities(source.records,source.spec,source.snapshot.links,this.repo.clock(),await this.internalActions(sql,tenant,source.key)):[],runs};

@@ -666,3 +666,22 @@ test('R-16 una lectura de sondeo lenta no provoca peticiones solapadas y un fall
     assert.ok(!/La acción se realizó/.test(h.text()), 'un sondeo fallido no se presenta como fallo de una acción'); assert.match(h.text(), /Hay un análisis en curso/);
   } finally { h.unmount(); }
 });
+
+// ---------- CLAUDE-SEC-028: el visor ve solo la instantánea ----------
+test('SEC-028 Comercial: un visor no ve la consulta de HubSpot en vivo y un escritor sí', async () => {
+  const viewerSide = await boot({ current: overview([], { contacts: [contact('c1', 'Ana', 'García', 'ana@a.es')] }) }, {}, { canWrite: false });
+  viewerSide.h.named('TabList')[0].props.onChange('import'); await viewerSide.settleRender(); assert.equal(viewerSide.h.button('Cargar archivos autorizados').props.disabled, true, 'el visor no puede leer Drive en vivo');
+  viewerSide.h.named('TabList')[0].props.onChange('followup'); await viewerSide.settleRender();
+  assert.equal(viewerSide.h.named('HubspotContext').length, 0); assert.match(viewerSide.h.text(), /requiere permiso de edición; con tu acceso ves solo la instantánea guardada/);
+  const writerSide = await boot({ current: overview([], { contacts: [contact('c1', 'Ana', 'García', 'ana@a.es')] }) });
+  assert.equal(writerSide.h.named('HubspotContext').length, 1); assert.ok(!writerSide.h.text().includes('ves solo la instantánea guardada'));
+});
+test('SEC-028 documentos: «Leer contexto del documento» solo se ofrece a quien puede escribir', async () => {
+  const library = { links: [{ id: 'l1', contact_id: 'c1', file_id: 'f1', name: 'Propuesta', mime_type: 'application/vnd.google-apps.document', url: 'https://docs.google.com/x' }], sourceKey: 'k', account: 'me@x.es', connected: true, pickerConfigured: false, legacyCount: 0, connectionRevision: 'r1' };
+  for (const [canWrite, offered] of [[false, false], [true, true]] as const) {
+    const server = fakeServer({ '/file-links?': () => library });
+    const h = mount('CustomerFiles.tsx', 'CustomerFiles', filesMocks, { tenant: 'T1', contact: 'c1', canWrite, canConnect: true, call: server.call });
+    h.render(); h.render(); await settle(); h.render();
+    assert.equal(h.byTag('button').some(b => h.text(b) === 'Leer contexto del documento'), offered, 'canWrite=' + canWrite);
+  }
+});

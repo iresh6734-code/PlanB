@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { ArrowRight, CheckCircle2, Download, GitBranch } from 'lucide-react';
+import { ArrowRight, CheckCircle2, ChevronDown, Download, GitBranch } from 'lucide-react';
 import type { Change } from '../shared/model.js';
 import type { RecoveryPlan } from '../shared/operations.js';
 import { api, post, download } from './api.js';
 import { Spinner } from './components.js';
 import { ManualRecovery } from './ManualRecovery.js';
+import { SalesWorkspace } from './SalesWorkspace.js';
 export function ChangesView({runtime,production=false}:{runtime:boolean;production?:boolean}) {
   const [changes,setChanges]=useState<Change[]>([]),[plan,setPlan]=useState<RecoveryPlan|null>(null),[simulation,setSimulation]=useState(true);
   const [busy,setBusy]=useState(false),[error,setError]=useState(''),[reviewed,setReviewed]=useState(false),[token,setToken]=useState('');
@@ -17,7 +18,8 @@ export function ChangesView({runtime,production=false}:{runtime:boolean;producti
   return <section className="changes-page"><header className="page-header"><div><h1>El trabajo sigue contigo.</h1><p className="page-subtitle">{changes.length} operaciones guardadas en este ordenador.</p></div>
     <div className="button-row"><button className="button secondary" onClick={()=>run(()=>download('/export/changes?format=csv','plan-b-cambios.csv'))}><Download size={16}/>CSV</button><button className="button secondary" onClick={()=>run(()=>download('/export/changes','plan-b-cambios.json'))}>JSON</button></div></header>
     {error?<p role="alert" className="error-box">{error}</p>:null}
-    {production&&!runtime?<><ManualRecovery changes={changes.filter(c=>c.id>watermark)} revision={revision} pending={pending} refresh={load}/>{manualReport?<p className="helper">Última comprobación manual: {new Date(manualReport.verifiedAt).toLocaleString('es-ES')}. No se enviaron datos mediante la API.</p>:null}</>:!runtime?<section className="return-section"><div className="section-heading"><div><h2>Devolución revisada</h2><p className="muted">Compara, resuelve conflictos y aprueba el estado final antes de enviarlo.</p></div><GitBranch size={25}/></div>
+    {!runtime&&!production?<SalesWorkspace view="proposals"/>:null}
+    {production&&!runtime?<><ManualRecovery changes={changes.filter(c=>c.id>watermark)} revision={revision} pending={pending} refresh={load}/>{manualReport?<p className="helper">Última comprobación manual: {new Date(manualReport.verifiedAt).toLocaleString('es-ES')}. No se enviaron datos mediante la API.</p>:null}</>:!runtime?<details className="return-section" open={changes.length>0||!!plan}><summary><div><h2>Devolución revisada</h2><p className="muted">Compara, resuelve conflictos y aprueba el estado final antes de enviarlo.</p></div><ChevronDown size={17} className="disclosure-indicator"/></summary>
       <label className="checkbox-label"><input type="checkbox" checked={simulation} disabled={busy} onChange={e=>{setSimulation(e.target.checked);setReviewed(false);}}/>Usar destino simulado para probar el recorrido (no envía datos a HubSpot)</label>
       {!simulation?<><p className="info-box">Solo cuentas HubSpot de prueba. La credencial necesita permisos de escritura adicionales. Revisa las automatizaciones con la agencia antes de aprobar.</p>
         <label className="field"><span>Token de escritura de esta cuenta (opcional si el guardado ya dispone de permisos)</span><input type="password" autoComplete="new-password" value={token} onChange={e=>setToken(e.target.value)}/></label></>:null}
@@ -38,7 +40,7 @@ export function ChangesView({runtime,production=false}:{runtime:boolean;producti
         {plan.status==='approved'?<button className="button primary" disabled={busy||plan.source!==(simulation?'simulation':'hubspot')} onClick={()=>run(()=>post('/v2/return/apply',{...destinations,planId:plan.id,approved:true}))}>{plan.source==='simulation'?'Ejecutar devolución simulada':'Aplicar a HubSpot de prueba'}</button>:null}
         {plan.status==='complete'?<p className="success-label"><CheckCircle2 size={18}/>{plan.source==='simulation'?'Prueba completada. Los cambios locales siguen pendientes de devolución real.':'Los valores enviados se han leído y verificado en HubSpot.'}</p>:null}
       </div>:null}
-    </section>:<p className="info-box">Exporta los cambios y abre la devolución en el generador con la agencia. Este paquete no contiene conectores externos.</p>}
+    </details>:<p className="info-box">Exporta los cambios y abre la devolución en el generador con la agencia. Este paquete no contiene conectores externos.</p>}
     <section className="history-section"><h2>Historial de operaciones</h2>{changes.length?<div className="history-list">{changes.slice(-100).reverse().map(c=><details key={c.id}><summary><strong>{c.entity} · {c.recordId}</strong><span>{c.operation==='create'?'Creado':'Editado'} · {new Date(c.at).toLocaleString('es-ES')}</span></summary><pre>{JSON.stringify({antes:c.before?.values??null,despues:c.after.values},null,2)}</pre></details>)}</div>:<p className="muted">Tus próximas ediciones aparecerán aquí.</p>}</section>
   </section>;
 }

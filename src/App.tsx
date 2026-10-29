@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowRight, Building2, CheckCircle2, ChevronRight, Circle, Database, Download, GitBranch, LayoutDashboard, ListTodo, PlugZap, Plus, Search, Settings2, ShieldCheck, Unplug, Users, X } from 'lucide-react';
+import { ArrowRight, Bot, Building2, CalendarDays, CheckCircle2, ChevronDown, ChevronRight, Circle, Database, Download, GitBranch, LayoutDashboard, ListTodo, PlugZap, Plus, Search, Settings2, ShieldCheck, Unplug, Users, X } from 'lucide-react';
 import type { AppState, CrmRecord, EntityName } from '../shared/model.js';
 import { api, post } from './api.js';
 import { Brand, Modal, RecordDrawer, Spinner, displayValue, recordName } from './components.js';
@@ -10,6 +10,8 @@ import { ChangesView } from './ChangesView.js';
 import { PortableExport } from './PortableExport.js';
 import { Protection } from './Protection.js';
 import { APP_VERSION } from '../shared/version.js';
+import { SalesWorkspace } from './SalesWorkspace.js';
+import { TeamSync } from './TeamSync.js';
 
 const navigation = [
   { id: 'contacts', label: 'Clientes', icon: Users },
@@ -21,14 +23,19 @@ const singular: Record<EntityName, string> = { contacts: 'Nuevo cliente', compan
 export default function App() {
   const [state, setState] = useState<AppState | null>(null);
   const [records, setRecords] = useState<CrmRecord[]>([]);
-  const [page, setPage] = useState<'continuity' | 'changes' | 'prepare' | 'workspace' | 'export'>('continuity');
+  const [page, setPage] = useState<'continuity' | 'changes' | 'prepare' | 'workspace' | 'export' | 'today' | 'agents' | 'integrations' | 'team-sync'>('continuity');
   const [entityName, setEntity] = useState<EntityName>('contacts');
+  const [workOpen,setWorkOpen]=useState(false);
+  useEffect(()=>{setWorkOpen(page==='workspace');},[page]);
+  const [teamOrigin,setTeamOrigin]=useState<string|null>(null);
+  useEffect(()=>{if(!state||state.runtime)return;let active=true;void api<{origin:string|null}>('/v6/workspace').then(value=>{if(active)setTeamOrigin(value.origin);}).catch(()=>{});return()=>{active=false;};},[state?.runtime]);
   const [step, setStep] = useState(0);
   const [connectRequest,setConnectRequest]=useState(0);
   const [selected, setSelected] = useState<CrmRecord | 'new' | null>(null);
   const [query, setQuery] = useState('');
   const [offset,setOffset]=useState(0),[total,setTotal]=useState(0),[pipeline,setPipeline]=useState('');
   const [rows,setRows]=useState<CrmRecord[]>([]);
+  const [recordsLoading,setRecordsLoading]=useState(true),[recordsError,setRecordsError]=useState('');
   const [auth,setAuth]=useState<'loading'|'open'|'locked'|'setup'>('loading');
   const [dataRevision,setDataRevision]=useState(0);
   const [modal, setModal] = useState<'settings' | 'coverage' | null>(null);
@@ -51,9 +58,9 @@ export default function App() {
   }, [refresh]);
   useEffect(()=>{
     if(auth!=='open'||page!=='workspace'||!state?.ready)return;
-    const controller=new AbortController();
+    const controller=new AbortController();setRecordsLoading(true);setRecordsError('');
     const timer=setTimeout(()=>void api<{records:CrmRecord[];related:CrmRecord[];total:number}>('/v2/records/'+entityName+'?q='+encodeURIComponent(query)+'&offset='+offset+'&limit=50&pipeline='+encodeURIComponent(pipeline),{signal:controller.signal})
-      .then(data=>{setRows(data.records);setRecords([...data.records,...data.related]);setTotal(data.total);}).catch(f=>{if(f.name!=='AbortError')setError(f.message);}),query?180:0);
+      .then(data=>{setRows(data.records);setRecords([...data.records,...data.related]);setTotal(data.total);}).catch(f=>{if(f.name!=='AbortError'){setError(f.message);setRecordsError(f.message);}}).finally(()=>{if(!controller.signal.aborted)setRecordsLoading(false);}),query?180:0);
     return()=>{controller.abort();clearTimeout(timer);};
   },[auth,page,entityName,query,offset,pipeline,dataRevision,state?.ready]);
   useEffect(() => {
@@ -71,7 +78,7 @@ export default function App() {
     catch (failure) { setError(failure instanceof Error ? failure.message : 'No se pudo completar la operación.'); }
     finally { setBusy(false); }
   };
-  const openEntity = (id: EntityName) => { setEntity(id); setSelected(null); setQuery('');setOffset(0);setPipeline('');setRows([]);setRecords([]); setPage('workspace'); };
+  const openEntity = (id: EntityName) => { setWorkOpen(true);setEntity(id); setSelected(null); setQuery('');setOffset(0);setPipeline('');setRows([]);setRecords([]);setRecordsLoading(true);setTotal(0);setDataRevision(r=>r+1); setPage('workspace'); };
   const viewCoverage = async () => {
     setModal('coverage'); setProbe(null);
     try { setProbe(await post('/probe', {})); } catch (failure) { setError((failure as Error).message); }
@@ -89,33 +96,35 @@ export default function App() {
   const entity = spec?.entities.find(e => e.id === entityName);
   const date = state.snapshot ? new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(state.snapshot.capturedAt)) : '';
   return <div className={'app-shell ' + (selected ? 'has-drawer' : '')}>
+    <a className="skip-link" href="#main-content">Saltar al contenido</a>
     <aside className="sidebar">
-      <Brand /><p className="sidebar-caption">{page === 'prepare' ? 'PREPARACIÓN' : 'APLICACIÓN'}</p>
+      <Brand /><p className="sidebar-caption">{page === 'prepare' ? 'PREPARACIÓN' : 'ESPACIO LOCAL'}</p>
       <nav aria-label="Navegación principal">
-        <button className={'nav-item '+(page==='continuity'?'active':'')} onClick={()=>{setPage('continuity');setSelected(null);}}><ShieldCheck size={19}/>Continuidad</button>
-        <button className={'nav-item '+(page==='workspace'?'active':'')} disabled={!state.ready} onClick={()=>openEntity('contacts')}><Users size={19}/>Trabajar</button>
-        <button className={'nav-item '+(page==='changes'?'active':'')} disabled={!state.ready} onClick={()=>{setPage('changes');setSelected(null);}}><GitBranch size={19}/>Cambios</button>
+        {!state.runtime?<button className={'nav-item '+(page==='today'?'active':'')} aria-current={page==='today'?'page':undefined} onClick={()=>{setPage('today');setSelected(null);}}><CalendarDays size={19}/>Hoy</button>:null}
+        <button className={'nav-item '+(page==='continuity'?'active':'')} aria-current={page==='continuity'?'page':undefined} onClick={()=>{setPage('continuity');setSelected(null);}}><ShieldCheck size={19}/>Continuidad</button>
+        <button className={'nav-item work-toggle '+(page==='workspace'?'active':'')} aria-expanded={workOpen} aria-controls="work-navigation" disabled={!state.ready} onClick={()=>page==='workspace'?setWorkOpen(open=>!open):openEntity(entityName)}><Users size={19}/><span>Trabajar</span><ChevronDown size={15} aria-hidden="true" className={workOpen?'expanded':''}/></button>
+        <div id="work-navigation" className={'work-disclosure '+(workOpen?'is-open':'')} aria-hidden={!workOpen} inert={!workOpen}><div><nav className="work-subnav" aria-label="Secciones de trabajo">{navigation.map(item=><button key={item.id} className={'nav-item '+(page==='workspace'&&entityName===item.id?'active':'')} aria-current={page==='workspace'&&entityName===item.id?'page':undefined} onClick={()=>openEntity(item.id)}><item.icon size={16}/>{item.label}</button>)}</nav></div></div>
+        <button className={'nav-item '+(page==='changes'?'active':'')} aria-current={page==='changes'?'page':undefined} disabled={!state.ready} onClick={()=>{setPage('changes');setSelected(null);}}><GitBranch size={19}/>Cambios</button>
+        {!state.runtime?<button className={'nav-item '+(page==='agents'?'active':'')} aria-current={page==='agents'?'page':undefined} onClick={()=>{setPage('agents');setSelected(null);}}><Bot size={19}/>Agentes</button>:null}
       </nav>
-      {page==='workspace'||page==='prepare'?<nav className="entity-nav" aria-label="Secciones">
-        {page === 'prepare' ? ['Origen', 'Procesos', 'Generar', 'Exportar'].map((label, index) => <button key={label}
-          className={'nav-item ' + (step === index ? 'active' : '')} disabled={index > 0 && !state.snapshot || index === 3 && !state.ready}
-          onClick={() => index === 3 ? setPage('export') : setStep(index)}><span className="step-number">{index + 1}</span>{label}</button>)
-          : navigation.map(item => <button key={item.id} className={'nav-item ' + (page === 'workspace' && entityName === item.id ? 'active' : '')}
-              onClick={() => openEntity(item.id)}><item.icon size={19} />{item.label}</button>)}
-      </nav>:null}
+      {page==='prepare'?<nav className="entity-nav" aria-label="Secciones de preparación">{['Origen','Procesos','Generar','Exportar'].map((label,index)=><button key={label} className={'nav-item '+(step===index?'active':'')} aria-current={step===index?'step':undefined} disabled={index>0&&!state.snapshot||index===3&&!state.ready} onClick={()=>index===3?setPage('export'):setStep(index)}><span className="step-number">{index+1}</span>{label}</button>)}</nav>:null}
       <div className="sidebar-secondary">
+        {!state.runtime?<button className={'nav-item '+(page==='team-sync'?'active':'')} aria-current={page==='team-sync'?'page':undefined} onClick={()=>{setPage('team-sync');setSelected(null);}}><Building2 size={19}/>Copia de equipo</button>:null}
+        {!state.runtime?<button className={'nav-item '+(page==='integrations'?'active':'')} aria-current={page==='integrations'?'page':undefined} onClick={()=>{setPage('integrations');setSelected(null);}}><PlugZap size={19}/>Integraciones</button>:null}
         {!state.runtime && page !== 'prepare' ? <button className="nav-item" onClick={() => { setPage('prepare'); setSelected(null); }}><LayoutDashboard size={19} />Preparación</button> : null}
         {page === 'prepare' ? <button className="nav-item" disabled={!state.ready} onClick={() => setPage('workspace')}><ArrowRight size={19} />Abrir aplicación</button> : null}
-        <button className={'nav-item ' + (page === 'export' ? 'active' : '')} disabled={!state.ready} onClick={() => { setPage('export'); setSelected(null); }}><Download size={19} />Exportar</button>
+        <button className={'nav-item ' + (page === 'export' ? 'active' : '')} aria-current={page==='export'?'page':undefined} disabled={!state.ready} onClick={() => { setPage('export'); setSelected(null); }}><Download size={19} />Exportar</button>
         {!state.runtime&&state.snapshot?.source.isTestData!==false ? <button className="nav-item" onClick={() => setModal('settings')}><Settings2 size={19} />Proveedor de IA</button> : null}
         <button className="nav-item" onClick={()=>void protect()}><ShieldCheck size={19}/>Proteger / bloquear</button>
       </div>
       <div className="sidebar-bottom"><span className="dot" />{state.snapshot?.source.isTestData===false?'Producción · lectura':'Datos de ensayo'}<small>{state.snapshot?.name ?? 'Tu copia, en tu ordenador'} · v{APP_VERSION}</small></div>
     </aside>
     <div className="mobile-brand"><Brand /><span className="badge">{state.snapshot?.source.isTestData===false?'Producción · lectura':'Local · Ensayo'}</span></div>
-    <main className="main-content">
+    <main id="main-content" className="main-content" tabIndex={-1}><div className="workspace-context"><span>Espacio local</span><strong>{state.snapshot?.name??'Preparación de tu copia'}</strong><span>{teamOrigin?<a className="text-button" href={teamOrigin+'/team?view=commercial'}>Espacio de equipo <ArrowRight size={13}/></a>:state.snapshot?.source.isTestData===false?'Producción · lectura':'Datos de ensayo'}</span></div>
       {error ? <div role="alert" className="global-error"><span>{error}</span><button className="icon-button" aria-label="Cerrar aviso" onClick={() => setError('')}><X size={18} /></button></div> : null}
       {page==='continuity'?<ContinuityHome state={state} refresh={refresh} work={()=>openEntity('contacts')} prepare={()=>{setPage('prepare');setStep(0);}} protect={()=>void protect()} exportCopy={()=>setPage('export')} connectRequest={connectRequest}/>
+      :page==='today'||page==='agents'||page==='integrations'?<SalesWorkspace key={page} view={page} openProposals={()=>setPage('changes')} openDeal={label=>{openEntity('deals');setQuery(label);}}/>
+      :page==='team-sync'?<TeamSync/>
       :page==='changes'?<ChangesView runtime={state.runtime} production={state.snapshot?.source.isTestData===false}/>
       :page==='export'?<PortableExport/>
       :page === 'prepare' ? <Preparation state={state.candidate?{...state,...state.candidate,lastError:state.candidate.error}:state} step={step} setStep={setStep} refresh={refresh}
@@ -149,9 +158,9 @@ export default function App() {
                 {entityName === 'contacts' && key === entity.displayField ? recordName(record, spec) : value}</button>
                 : <span className={field.type === 'enum' ? 'enum-label' : ''}>{value}</span>}</td>; })}
             <td><button className="icon-button" aria-label={'Editar ' + recordName(record, spec)} onClick={() => setSelected(record)}><ChevronRight size={18} /></button></td></tr>)}</tbody></table>
-          {!filtered.length ? <div className="empty-table"><Search size={24} /><h3>{query ? 'Sin resultados' : 'Todavía no hay registros'}</h3><p>{query ? 'Prueba con otro nombre, correo o empresa.' : 'Crea el primer registro para empezar.'}</p></div> : null}
+          {recordsLoading?<div className="empty-table" role="status"><Spinner text="Cargando registros…"/></div>:recordsError?<p className="error-box">No se pudieron cargar los registros. Vuelve a seleccionar la sección para intentarlo de nuevo.</p>:!filtered.length ? <div className="empty-table"><Search size={24} /><h3>{query ? 'Sin resultados' : 'Todavía no hay registros'}</h3><p>{query ? 'Prueba con otro nombre, correo o empresa.' : 'Crea el primer registro para empezar.'}</p></div> : null}
         </div>}
-        <footer className="pagination"><span>{total?offset+1:0}–{Math.min(offset+50,total)} de {total}</span><button className="button secondary" disabled={offset===0} onClick={()=>setOffset(Math.max(0,offset-50))}>Anterior</button><button className="button secondary" disabled={offset+50>=total} onClick={()=>setOffset(offset+50)}>Siguiente</button></footer>
+        <footer className="pagination"><span>{recordsLoading?'Cargando…':<>{total?offset+1:0}–{Math.min(offset+50,total)} de {total}</>}</span><button className="button secondary" disabled={recordsLoading||offset===0} onClick={()=>setOffset(Math.max(0,offset-50))}>Anterior</button><button className="button secondary" disabled={recordsLoading||offset+50>=total} onClick={()=>setOffset(offset+50)}>Siguiente</button></footer>
         <footer className="workspace-footer"><Database size={14} />Guardado en este ordenador<span>{state.changes} cambios locales</span></footer>
       </section>}
     </main>

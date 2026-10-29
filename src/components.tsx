@@ -10,7 +10,7 @@ export function Brand() {
 export function Spinner({ text = 'Preparando…' }: { text?: string }) {
   return <span className="inline-loading"><LoaderCircle size={17} className="spin" />{text}</span>;
 }
-export function Modal({ title, children, close, wide = false }: { title: string; children: ReactNode; close: () => void; wide?: boolean }) {
+export function Modal({ title, children, close, wide = false, side = false }: { title: string; children: ReactNode; close: () => void; wide?: boolean; side?: boolean }) {
   const dialog = useRef<HTMLElement>(null);
   useDialogFocus(dialog);
   useEffect(() => {
@@ -21,7 +21,7 @@ export function Modal({ title, children, close, wide = false }: { title: string;
     return () => { clearTimeout(timer); document.removeEventListener('keydown', key); previous?.focus(); };
   }, [close]);
   return <div className="modal-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) close(); }}>
-    <section ref={dialog} role="dialog" aria-modal="true" aria-label={title} className={'modal ' + (wide ? 'modal-wide' : '')}>
+    <section ref={dialog} role="dialog" aria-modal="true" aria-label={title} className={'modal ' + (wide ? 'modal-wide' : '')+(side?' modal-side':'')}>
       <header className="modal-header"><h2>{title}</h2><button className="icon-button" aria-label="Cerrar" onClick={close}><X size={22} /></button></header>
       {children}
     </section>

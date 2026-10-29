@@ -43,6 +43,7 @@ export function Settings({ state, close, done }: { state: AppState; close: () =>
     <form className="settings-form" onSubmit={save}>
       <p className="muted">Configúralo cuando quieras. La aplicación de continuidad seguirá funcionando sin una API.</p>
       <p className="helper">Este mes: {state.usage.usedUsd.toFixed(4)} USD estimados · {state.usage.reservedUsd.toFixed(4)} USD reservados · límite {state.usage.limitUsd} USD. El bloqueo utiliza las tarifas que indiques; no sustituye la factura del proveedor.</p>
+      <fieldset className="settings-group"><legend>Conexión</legend>
       <div className="settings-grid">
         <label className="field"><span>Proveedor</span><select value={preset} onChange={event => changePreset(event.target.value as keyof typeof presets)}>
           {Object.entries(presets).map(([key, value]) => <option key={key} value={key}>{value.name}</option>)}</select></label>
@@ -52,17 +53,20 @@ export function Settings({ state, close, done }: { state: AppState; close: () =>
       <label className="field"><span><KeyRound size={15} /> Clave API</span><input type="password" value={apiKey} onChange={event => setKey(event.target.value)}
         placeholder={hasSavedKey ? 'Clave guardada · deja vacío para conservarla' : preset === 'ollama' ? 'No necesaria para el modelo local' : 'Tu clave de este proveedor'}
         autoComplete="new-password" required={!hasSavedKey && preset !== 'ollama'} /></label>
+      </fieldset><fieldset className="settings-group"><legend>Control de consumo</legend>
       <div className="settings-grid">
         <label className="field"><span>Entrada · USD por millón de tokens</span><input type="number" min="0" max="10000" step="any" value={inputRate} onChange={event => setInputRate(event.target.value)} placeholder="Tarifa del modelo" /></label>
         <label className="field"><span>Salida · USD por millón de tokens</span><input type="number" min="0" max="10000" step="any" value={outputRate} onChange={event => setOutputRate(event.target.value)} placeholder="Tarifa del modelo" /></label>
       </div>
       <p className="helper"><Info size={15} /> El límite local de 25 USD se calcula con estas tarifas. Indica 0 si tu modelo es gratuito y comprueba también el límite de tu proveedor.</p>
+      </fieldset><fieldset className="settings-group"><legend>Parámetros de respuesta</legend>
       <div className="settings-grid">
         <label className="field"><span>Formato de salida</span><select value={outputMode} onChange={event => setOutputMode(event.target.value as typeof outputMode)}>
           <option value="json_schema">JSON Schema · si el modelo lo admite</option><option value="json_object">JSON · validado por Plan B</option></select></label>
         <label className="field"><span>Máximo de tokens de salida</span><input type="number" min="1024" max="24000" step="1" value={maxOutputTokens} onChange={event => setMaxOutputTokens(Number(event.target.value))} /></label>
       </div>
       <p className="helper">La clave se guarda en este ordenador y se envía únicamente a la dirección que indiques. No se incluye en las exportaciones.</p>
+      </fieldset>
       {error ? <p className="error-box" role="alert">{error}</p> : null}
       <footer className="modal-footer"><button type="button" className="button secondary" onClick={close}>Ahora no</button>
         <button className="button primary" disabled={busy}>{busy ? <Spinner text="Guardando…" /> : 'Guardar configuración'}</button></footer>

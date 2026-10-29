@@ -14,7 +14,7 @@ export function registerCommercial(app:FastifyInstance,repo:TeamRepository,optio
   const params=(request:FastifyRequest)=>z.object({tenant:z.string().uuid(),id:z.string().uuid().optional()}).parse(request.params);
   const reviewed=z.object({reviewed:z.literal(true),contentHash:z.string().regex(/^[a-f0-9]{64}$/)}).strict(),root='/api/team/spaces/:tenant/v6';
   app.get(root+'/commercial',async r=>service.overview(params(r).tenant,await options.principal(r)));
-  app.post(root+'/proposals',async r=>{const body=z.object({contactId:z.string().min(1).max(100),intent:z.object({sourceKey:z.string().min(1).max(160),internalOnly:z.literal(true)}).strict().optional()}).strict().parse(r.body);return service.prepare(params(r).tenant,await options.principal(r),body.contactId,undefined,body.intent);});
+  app.post(root+'/proposals',async r=>{const body=z.object({contactId:z.string().min(1).max(100),id:z.string().uuid().optional(),intent:z.object({sourceKey:z.string().min(1).max(160),internalOnly:z.literal(true)}).strict().optional()}).strict().parse(r.body);return service.prepare(params(r).tenant,await options.principal(r),body.contactId,undefined,body.intent,body.id);});
   app.post(root+'/proposals/:id/edit',async r=>{const body=CommercialContentSchema.parse(r.body);const p=params(r);return service.edit(p.tenant,await options.principal(r),p.id!,body);});
   app.post(root+'/proposals/:id/approve',async r=>{const body=reviewed.parse(r.body),p=params(r);return service.approve(p.tenant,await options.principal(r),p.id!,body.contentHash);});
   app.post(root+'/proposals/:id/execute',async r=>{const body=reviewed.parse(r.body),p=params(r);return service.execute(p.tenant,await options.principal(r),p.id!,body.contentHash);});

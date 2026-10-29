@@ -1,0 +1,10 @@
+{
+  "id": "CLAUDE-003",
+  "agent": "claude",
+  "title": "Construir un prototipo interactivo de trabajo comercial",
+  "plan": "Solo tras aceptar CLAUDE-002, desarrolla en design/claude un prototipo HTML/CSS/JS autocontenido: Hoy, Comercial y conexiones, con ficha contextual. Permite comparar las dos composiciones acordadas mediante un control local. Mantén banner persistente de prototipo sin conexión. Usa estados vacíos y campos sin datos personales; no inventes clientes, métricas o conexiones verificadas. Implementa navegación local, abrir/cerrar ficha, Escape y edición temporal. Las acciones de envío, autorización o ejecución están deshabilitadas y explicadas, sin simulación de éxito. Sin red, almacenamiento, nuevas dependencias, imágenes/fuentes remotas o llamadas IA. No edites ningún archivo de la app. Sigue el criterio de diseño y la recomendación aceptados, sin sustituir la identidad. Codex realizará la comprobación visual en un perfil de pruebas separado; tú documentas solo las comprobaciones que hagas realmente.",
+  "acceptance": "Cuatro archivos funcionales y legibles, dos alternativas con diferencias de composición reales, controles accesibles y estilos adaptables a1440/1024/390/320. Sin grandes columnas vacías ni overflow previsto. Reporte con instrucciones de apertura, verificación sintáctica y límites. Antes de aceptar, Codex renderiza escritorio/móvil y puede pedir una ronda de correcciones. El prototipo no se declara integrado o conectado.",
+  "files": ["design/claude/prototipo.html", "design/claude/prototipo.css", "design/claude/prototipo.js", "coordination/reports/CLAUDE-003-prototipo.md"],
+  "readFiles": ["coordination/plans/CLAUDE-COLABORACION.md", "coordination/reports/CLAUDE-002-ux.md", "DESIGN.md", "src/SalesWorkspace.tsx", "src/CommercialEditor.tsx", "src/TeamIntegrations.tsx", "src/CustomerDossier.tsx"],
+  "dependencies": ["CLAUDE-002"]
+}

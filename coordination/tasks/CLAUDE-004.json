@@ -1,0 +1,10 @@
+{
+  "id": "CLAUDE-004",
+  "agent": "claude",
+  "title": "Revisar recorridos y recuperación de la interfaz",
+  "plan": "Revisa desde código los recorridos preparar/editar/revisar una propuesta, abrir ficha/documentos y revisar un análisis. Cubre carga, vacío, fallo parcial, desconexión, permisos de lector, cambios de empresa/fuente, doble pulsación y borrador desactualizado. Añade teclado, Escape, foco y legibilidad móvil. Busca problemas concretos que afecten completar una tarea, no una lista genérica de buenas prácticas. Evita repetir el informe HubSpot: céntrate en interacción y comunicación de estados. Propón una prueba de aceptación por hallazgo y los puntos exactos de cambio. Puedes hacer esta tarea mientras CLAUDE-002 espera revisión. No ejecutes acciones reales o modelos, no abras cuentas, no edites la app ni fabriques resultados de navegador.",
+  "acceptance": "Informe trazable con pasos, evidencia estática y consecuencias para el usuario, prioridad y prueba propuesta. Distinguir defectos observados de hipótesis y de capacidades ya cubiertas. No desactivar revisión, permisos o controles de destinatarios para simplificar la UX. Explicitar qué debe comprobar Codex en navegador.",
+  "files": ["coordination/reports/CLAUDE-004-recorridos.md"],
+  "readFiles": ["coordination/plans/CLAUDE-COLABORACION.md", "coordination/reports/CLAUDE-001.md", "src/CommercialWorkspace.tsx", "src/CommercialEditor.tsx", "src/CustomerDossier.tsx", "src/CustomerFiles.tsx", "src/TeamAgentWorkspace.tsx", "src/TeamContacts.tsx", "shared/commercial.ts"],
+  "dependencies": ["CLAUDE-001"]
+}

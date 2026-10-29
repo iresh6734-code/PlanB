@@ -1,0 +1,10 @@
+{
+  "id":"CODEX-DUET-001",
+  "agent":"codex",
+  "title":"Activar colaboración acotada con Claude personal",
+  "plan":"Verificar sesión propia con auth status sin mostrar identidad o credenciales; ejecutar consulta real a Claude Code con archivos de fuente seleccionados, sin herramientas, hooks o conectores y con plazo/presupuesto acotados. Integrar la delegación en instrucciones del proyecto para que Codex intercambie tareas y resultados sin copiar mensajes a mano. Conservar el tablón y las reservas existentes. Documentar evidencia real y límites de continuidad; no habilitar un bucle permanente ni el ejecutor existente sin revisar sus permisos. La entrega CLAUDE-HS-001 tiene su propia reserva. No tocar runtime, servicios, cuentas externas, perfiles, secretos, paquetes o configuración global.",
+  "acceptance":"Consulta real acreditada o fallo concreto documentado; comandos de delegación reproducibles sin shell interpolado ni acceso de Claude a herramientas; reglas automáticas de coordinación vigentes. Informe honesto separa autenticación, respuestas reales, pruebas locales y tareas pendientes. No prometer trabajo en segundo plano al cerrar el chat.",
+  "files":["AGENTS.md","COORDINACION.md","tools/duet/consult.mjs","tools/duet/consult.test.mjs","coordination/reports/CODEX-DUET-001.md"],
+  "readFiles":["CLAUDE.md","tools/chat/runner.mjs","tools/chat/chat.mjs","coordination/tasks/CLAUDE-HS-001.json"],
+  "dependencies":[]
+}

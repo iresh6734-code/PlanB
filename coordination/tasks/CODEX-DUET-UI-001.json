@@ -1,0 +1,7 @@
+{
+  "id":"CODEX-DUET-UI-001","agent":"codex","title":"Panel visible de trabajo Codex y Claude",
+  "plan":"Crear panel local de solo lectura con estado explícito de envío, respuesta de Claude, pruebas de Codex y revisión; eventos registrados por coordinador, sin inventar actividad interna del modelo. Servidor solo loopback con Host/Origin validados, rutas fijas y sin escrituras HTTP. No mostrar secretos o datos CRM; no invocar agentes desde navegador. Puerto separado4347, no detener servicios existentes. Validar HTTP y UI integrada.",
+  "acceptance":"Panel accesible, estado real diferenciado de autenticación o simulación, respuesta/revisión atribuida, polling de solo lectura y limitaciones visibles; servidor rechaza escritura y origen ajeno. Sin cambios del piloto o trabajos reservados.",
+  "files":["tools/duet/server.mjs","tools/duet/index.html","tools/duet/panel.js","tools/duet/panel.css","tools/duet/server.test.mjs","coordination/reports/duet-live.json"],
+  "readFiles":["tools/coordination/core.mjs"],"dependencies":[]
+}

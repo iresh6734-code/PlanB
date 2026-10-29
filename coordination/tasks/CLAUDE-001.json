@@ -1,0 +1,10 @@
+{
+  "id": "CLAUDE-001",
+  "agent": "claude",
+  "title": "Revisar la conexión HubSpot en lectura",
+  "plan": "Revisar exclusivamente el código previsto y entregar un informe con problemas comprobables de paginación, identidad de portal, lectura de actividades y recuperación. Proponer cambios concretos por archivo. No editar la app, abrir cuentas, leer bases o credenciales ni llamar a HubSpot. El portal personal autorizado149623262 todavía no tiene conexión API acreditada: no darla por hecha. El trabajo de implementación de Codex continúa en un chat separado; tu única escritura es el informe asignado.",
+  "acceptance": "Informe con rutas y funciones concretas, evidencia estática, diferencias entre capacidad implementada y pendiente, riesgos de regresión y propuesta de pruebas. No presentar una inspección de código como validación remota. Sin modificar archivos de aplicación o contratos compartidos.",
+  "files": ["coordination/reports/CLAUDE-001.md"],
+  "readFiles": ["server/team/oauth.ts", "server/connection.ts", "server/hubspot.ts", "server/team/hubspot-routes.ts"],
+  "dependencies": []
+}

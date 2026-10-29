@@ -1,0 +1,10 @@
+{
+  "id": "CLAUDE-005",
+  "agent": "claude",
+  "title": "Preparar componentes y contratos para integrar el diseño",
+  "plan": "A partir del prototipo y la revisión de recorridos aceptados, propón el menor conjunto de componentes reutilizables necesario para mejorar la app real. Para cada uno concreta propósito, props/eventos, datos de entrada, carga/vacío/error/permisos, accesibilidad y comportamiento móvil. Mapea tokens actuales y evita un sistema de diseño paralelo. Divide la integración en incrementos que se puedan comprobar individualmente; indica archivos exactos a reservar en cada incremento y qué funcionalidad/guardas deben permanecer. Elige una primera mejora de impacto alto y alcance pequeño. No implementes componentes todavía: Codex debe acordar el contrato y abrir el encargo con reservas reales.",
+  "acceptance": "Documento de componentes y otro de integración con contratos concretos, procedencia de datos, criterios de aceptación y riesgos. Ninguna dependencia nueva sin necesidad justificada. Sin duplicar lógica comercial ni confundir prototipo con entrega en producción. El siguiente encargo de código puede ejecutarse sin adivinar archivos o ampliar permisos.",
+  "files": ["design/claude/componentes.md", "coordination/reports/CLAUDE-005-integracion.md"],
+  "readFiles": ["coordination/plans/CLAUDE-COLABORACION.md", "coordination/reports/CLAUDE-002-ux.md", "coordination/reports/CLAUDE-003-prototipo.md", "coordination/reports/CLAUDE-004-recorridos.md", "DESIGN.md", "src/WorkspaceUI.tsx", "src/components.tsx", "src/CommercialEditor.tsx", "src/design-system.css"],
+  "dependencies": ["CLAUDE-003", "CLAUDE-004"]
+}

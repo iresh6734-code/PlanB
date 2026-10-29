@@ -1,0 +1,10 @@
+{
+  "id": "CLAUDE-002",
+  "agent": "claude",
+  "title": "Diseñar la siguiente mejora de UX de Plan B",
+  "plan": "Lee el plan de colaboración y el diseño aprobado. Audita Hoy, Comercial, Integraciones y ficha de cliente a partir del código: propósito, datos necesarios, acción principal, grupos, redundancia, densidad y estados. Contrasta dos composiciones con los mismos campos: lista con contexto bajo demanda y mesa de preparación adaptable. Prioriza un máximo de doce mejoras verificables por impacto y coste; si hay menos problemas reales, no rellenes la lista. Explica qué conservar y qué cambiar. No edites la app ni DESIGN.md y no abras cuentas, bases o ventanas. No afirmes auditoría visual si solo has leído código.",
+  "acceptance": "Informe con referencias a componentes/estilos, matriz por vista, dos alternativas estructurales distintas y recomendación razonada. Criterios medibles de densidad, móvil, foco y estados. Separar lo observado en código de hipótesis que debe renderizar Codex. Mantener identidad azul, navegación y revisión de acciones externas; sin inventar actividad o clientes.",
+  "files": ["coordination/reports/CLAUDE-002-ux.md"],
+  "readFiles": ["coordination/plans/CLAUDE-COLABORACION.md", "DESIGN.md", "UX-ARQUITECTURA-0.6.md", "src/SalesWorkspace.tsx", "src/CommercialWorkspace.tsx", "src/CommercialEditor.tsx", "src/TeamIntegrations.tsx", "src/CustomerDossier.tsx", "src/design-system.css", "src/refinements.css"],
+  "dependencies": ["CLAUDE-001"]
+}

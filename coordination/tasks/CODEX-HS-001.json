@@ -1,0 +1,10 @@
+{
+  "id": "CODEX-HS-001",
+  "agent": "codex",
+  "title": "Corregir H1 y rechazar IDs duplicados de H6",
+  "plan": "Entrega acotada: convertir exclusivamente el 401 remoto de HubSpot en 502 en captura e inspección; conservar 403 y mensajes propios. Rechazar IDs repetidos por entidad dentro de una página o entre páginas antes de aceptar la captura. Conservar rechazo de recuentos discordantes y relaciones fuera de captura. Sin cambios OAuth, UI, contratos, package, reintentos o archivos de otros encargos. Documentar revisión H1-H8 y abrir pruebas/revisión para Claude en archivos nuevos. Solo transportes ficticios y red externa bloqueada; sin credenciales, DPAPI, llamadas remotas, despliegues o reinicios.",
+  "acceptance": "401 remoto en inspección/captura devuelve 502; 403 conservado; duplicados rechazados por entidad; suites afectadas correctas. Informe con hashes finales, validaciones y pendientes H2-H8. Encargo de Claude registrado para pruebas persistentes y revisión. Contexto actualizado conservando historial y atribución de otros chats.",
+  "files": ["server/connection.ts", "server/hubspot.ts", "coordination/reports/CODEX-HS-001.md", "coordination/tasks/CLAUDE-HS-001.json", "CONTEXTO-PROYECTO.md"],
+  "readFiles": ["AGENTS.md", "COORDINACION.md", "coordination/reports/CLAUDE-001.md", "server/team/oauth.ts", "server/team/hubspot-routes.ts", "src/TeamApp.tsx", "tests/hubspot.test.ts", "tests/hubspot-local-production.test.ts", "tests/network.test.ts"],
+  "dependencies": ["CLAUDE-001"]
+}

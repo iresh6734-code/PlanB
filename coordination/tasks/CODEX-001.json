@@ -1,0 +1,10 @@
+{
+  "id": "CODEX-001",
+  "agent": "codex",
+  "title": "Desarrollar la conexión personal de HubSpot",
+  "plan": "Continuar el plan de integración real de HubSpot del chat Plan B · HubSpot personal y conexiones reales. Antes de reservar, confirmar que estos archivos corresponden a la entrega concreta; cualquier alcance adicional necesita otro encargo. Mantener separado el portal de ensayo, los permisos de lectura y la verificación del portal personal. Este tablón no prueba que el chat en curso lo haya adoptado ni sustituye sus restricciones de navegador.",
+  "acceptance": "Cambios revisables con autorización y fuente explícitas, sin sustitución silenciosa de conexiones ni escrituras remotas. Documentar lo realmente probado y lo pendiente. La conexión auténtica solo se acredita con evidencia de API autorizada.",
+  "files": ["server/team/oauth.ts", "server/team/app.ts", "src/HubspotPrivateConnect.tsx"],
+  "readFiles": ["AGENTS.md", "PLAN-1.0.md", "INTEGRACIONES-PILOTO.md"],
+  "dependencies": []
+}

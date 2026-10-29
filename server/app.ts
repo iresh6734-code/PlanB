@@ -10,6 +10,13 @@ import { registerV2, type ExternalServices } from './v2.js';
 import { randomUUID } from 'node:crypto';
 import { registerV4 } from './v4.js';
 
+/** Celda CSV entrecomillada. Una celda que una hoja de cálculo ejecutaría como fórmula (= + - @ o tabulador/retorno iniciales) se
+ *  prefija con una comilla simple; los números, incluso negativos, no se tocan. */
+export function csvCell(value: unknown) {
+  const text = String(value ?? '');
+  const formula = /^[=+\-@\t\r]/.test(text) && !/^-?\d+(\.\d+)?$/.test(text);
+  return '"' + (formula ? "'" : '') + text.replace(/"/g, '""') + '"';
+}
 export interface AppOptions {
   dbPath: string; root: string; staticDir: string; runtime?: boolean;
   aiConfigured?: () => boolean; aiPublic?: () => AppState['aiSettings'];
@@ -115,11 +122,10 @@ export async function createBaseApp(options: AppOptions): Promise<{ app: Fastify
   app.get<{ Querystring: { format?: string } }>('/api/export/changes', async (request, reply) => {
     const changes = store.changes();
     if (request.query.format === 'csv') {
-      const quote = (value: unknown) => '"' + String(value ?? '').replace(/"/g, '""') + '"';
       const rows = [['fecha', 'entidad', 'id', 'operacion', 'antes_json', 'despues_json'],
         ...changes.map(c => [c.at, c.entity, c.recordId, c.operation, JSON.stringify(c.before), JSON.stringify(c.after)])];
       return reply.type('text/csv; charset=utf-8').header('Content-Disposition', 'attachment; filename="plan-b-cambios.csv"')
-        .send('\uFEFF' + rows.map(row => row.map(quote).join(',')).join('\r\n'));
+        .send('\uFEFF' + rows.map(row => row.map(csvCell).join(',')).join('\r\n'));
     }
     return reply.header('Content-Disposition', 'attachment; filename="plan-b-cambios.json"').send({ exportedAt: new Date().toISOString(), changes });
   });

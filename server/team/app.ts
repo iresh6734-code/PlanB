@@ -28,14 +28,21 @@ export async function createTeamApp(options:TeamAppOptions){
   if(options.localPilot&&(options.origin!=='http://localhost:4334'||options.demo||options.verify||options.firebase||options.workerVerify||options.workspaceProvider))throw new Error('El piloto requiere su origen local y autenticación propia, sin identidades ni proveedores simulados.');
   if(options.migrate!==false)await options.db.exec(teamSchema);
   const repo=new TeamRepository(options.db),oauth=new TeamOAuth(repo,options.oauth??null,options.fetcher,options.localPilot?.key),jobs=new TeamJobs(repo,(tenant,signal)=>oauth.capture(tenant,signal));
+  // Ruta normalizada (sin query y con los porcentajes decodificados) para decidir qué bloquea el piloto; una codificación inválida no coincide con nada.
+  const pilotPath=(url:string)=>{try{return decodeURIComponent(new URL(url,'http://localhost').pathname).toLowerCase();}catch{return null;}};
   const app=Fastify({logger:false,bodyLimit:20_000_000,requestTimeout:120000});
-  app.setErrorHandler((error,request,reply)=>{const status=error instanceof AppError?error.status:error instanceof z.ZodError?422:500;return reply.code(status).send({error:error instanceof AppError?error.message:error instanceof z.ZodError?'Revisa los datos enviados.':'La operación no se completó. Conserva los cambios pendientes.',requestId:request.id});});
+  app.setErrorHandler((error,request,reply)=>{
+    // Los errores 4xx del propio servidor (JSON inválido, cuerpo demasiado grande) se devuelven como tales, sin trazas.
+    const client=(error as {statusCode?:number}).statusCode,http=typeof client==='number'&&client>=400&&client<500?client:null;
+    const status=error instanceof AppError?error.status:error instanceof z.ZodError?422:http??500;
+    const message=error instanceof AppError?error.message:error instanceof z.ZodError?'Revisa los datos enviados.':http===413?'El contenido enviado es demasiado grande.':http?'La solicitud no es válida.':'La operación no se completó. Conserva los cambios pendientes.';
+    return reply.code(status).send({error:message,requestId:request.id});});
   app.addHook('onRequest',async(request,reply)=>{
     if(request.headers.origin&&request.headers.origin!==options.origin)return reply.code(403).send({error:'Origen no autorizado.'});
     if(options.localPilot){
       if(request.headers.host!=='localhost:4334')return reply.code(403).send({error:'Abre el piloto desde localhost:4334.'});
       if(!['GET','HEAD'].includes(request.method)&&request.headers.origin!==options.origin)return reply.code(403).send({error:'Abre el piloto desde su propia dirección.'});
-      if(/^\/api\/team\/(device\/|spaces\/[^/]+\/(invites|members|devices)(\/|$))/.test(request.url))return reply.code(403).send({error:'El piloto local es de un operador. Usa identidad gestionada para compartir acceso.'});
+      if(/^\/api\/team\/(device\/|spaces\/[^/]+\/(invites|members|devices)(\/|$))/.test(pilotPath(request.url)??'/api/team/device/')||pilotPath(request.url)===null)return reply.code(403).send({error:'El piloto local es de un operador. Usa identidad gestionada para compartir acceso.'});
     }
     if(options.demo&&!/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(request.headers.host??''))return reply.code(403).send({error:'Demo disponible solo en loopback.'});
     reply.header('Cache-Control','no-store').header('X-Content-Type-Options','nosniff').header('Referrer-Policy','no-referrer').header('X-Request-Id',request.id);
@@ -86,8 +93,8 @@ export async function createTeamApp(options:TeamAppOptions){
   app.post('/api/team/spaces/:tenant/devices/:id/revoke',async request=>repo.revoke(tenant(request),await principal(request),z.object({id:z.string().uuid()}).passthrough().parse(request.params).id));
   app.post('/api/team/spaces/:tenant/conflicts/:id',async request=>{const body=z.object({decision:z.enum(['local','remote']),expectedVersion:z.number().int().min(0)}).strict().parse(request.body);return repo.resolve(tenant(request),await principal(request),z.object({id:z.string().uuid()}).passthrough().parse(request.params).id,body.decision,body.expectedVersion);});
   app.post('/api/team/spaces/:tenant/jobs',async request=>{const body=z.object({kind:z.enum(['sync-audit','hubspot-capture']),dedupeKey:z.string().uuid()}).strict().parse(request.body);return jobs.enqueue(tenant(request),await principal(request),body.kind,body.dedupeKey);});
-  app.post('/api/team/spaces/:tenant/oauth/hubspot/begin',async request=>{const body=z.object({accountId:z.string().regex(/^\d+$/),authorizedRead:z.literal(true),extendedRead:z.boolean().default(false)}).strict().parse(request.body);return oauth.begin(tenant(request),await principal(request),body.accountId,body.extendedRead);});
-  app.post('/api/team/spaces/:tenant/hubspot/private',async request=>{if(!options.localPilot)throw new AppError(403,'Conexión privada disponible solo en el piloto local.');const body=z.object({accountId:z.string().regex(/^\d+$/),token:z.string().min(10).max(4096),reviewed:z.literal(true)}).strict().parse(request.body);return oauth.connectPrivate(tenant(request),await principal(request),body.token,body.accountId);});
+  app.post('/api/team/spaces/:tenant/oauth/hubspot/begin',async request=>{const body=z.object({accountId:z.string().regex(/^\d{1,20}$/),authorizedRead:z.literal(true),extendedRead:z.boolean().default(false)}).strict().parse(request.body);return oauth.begin(tenant(request),await principal(request),body.accountId,body.extendedRead);});
+  app.post('/api/team/spaces/:tenant/hubspot/private',async request=>{if(!options.localPilot)throw new AppError(403,'Conexión privada disponible solo en el piloto local.');const body=z.object({accountId:z.string().regex(/^\d{1,20}$/),token:z.string().min(10).max(4096),reviewed:z.literal(true)}).strict().parse(request.body);return oauth.connectPrivate(tenant(request),await principal(request),body.token,body.accountId);});
   app.post('/api/team/spaces/:tenant/hubspot/private-production',async request=>{if(!options.localPilot)throw new AppError(403,'Conexión privada disponible solo en el piloto local.');return oauth.connectPrivateProduction(tenant(request),await principal(request),request.body);});
   app.post('/api/team/spaces/:tenant/oauth/hubspot/complete',async request=>{const body=z.object({state:z.string().regex(/^[a-f0-9]{64}$/),code:z.string().min(1).max(2000)}).strict().parse(request.body);return oauth.complete(tenant(request),await principal(request),body.state,body.code);});
   app.post('/api/team/spaces/:tenant/oauth/hubspot/disconnect',async request=>{z.object({reviewed:z.literal(true)}).strict().parse(request.body);return repo.disconnectHubspot(tenant(request),await principal(request));});

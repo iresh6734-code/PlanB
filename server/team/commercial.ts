@@ -12,6 +12,8 @@ import type { CrmSnapshot } from '../../shared/model.js';
 import { googleIntegrationStatus,type IntegrationOperation } from '../../shared/integration-status.js';
 import { salesSource } from './sales-source.js';
 import { FileLibrary } from './file-library.js';
+/** Tiempo máximo entre aprobar y ejecutar. Las aprobaciones anteriores a esta regla no tienen fecha y no caducan por tiempo. */
+const APPROVAL_TTL_MS=24*3600_000;
 export class CommercialService {
   constructor(private repo:TeamRepository,private provider:WorkspaceProvider,private demo=false,private configured=false,private ownAccountOnly=false){}
   private checkRecipient(content:CommercialContent,account?:string){
@@ -56,13 +58,13 @@ export class CommercialService {
     return {id};
   });}
   async edit(tenant:string,user:TeamPrincipal,id:string,raw:unknown){const content=CommercialContentSchema.parse(raw);return this.repo.scoped(tenant,user,'write',async sql=>{
-    const revision=await this.revision(sql,tenant),hash=this.hash(revision,content);const result=await sql.query("UPDATE team_sales_proposals SET content=$3::jsonb,revision=$4,content_hash=$5,status='draft',approved_by=NULL WHERE tenant_id=$1 AND id=$2 AND status IN ('draft','approved') RETURNING id",[tenant,id,JSON.stringify(content),revision,hash]);if(!result.rows.length)throw new AppError(409,'La propuesta ya no admite edición.');return {contentHash:hash};
+    const revision=await this.revision(sql,tenant),hash=this.hash(revision,content);const result=await sql.query("UPDATE team_sales_proposals SET content=$3::jsonb,revision=$4,content_hash=$5,status='draft',approved_by=NULL,approved_at=NULL WHERE tenant_id=$1 AND id=$2 AND status IN ('draft','approved') RETURNING id",[tenant,id,JSON.stringify(content),revision,hash]);if(!result.rows.length)throw new AppError(409,'La propuesta ya no admite edición.');return {contentHash:hash};
   });}
   async approve(tenant:string,user:TeamPrincipal,id:string,hash:string){return this.repo.scoped(tenant,user,'write',async sql=>{
     const row=(await sql.query<CommercialProposal>('SELECT * FROM team_sales_proposals WHERE tenant_id=$1 AND id=$2 FOR UPDATE',[tenant,id])).rows[0];if(!row||row.status!=='draft'||row.content_hash!==hash||row.revision!==await this.revision(sql,tenant))throw new AppError(409,'La propuesta o sus datos cambiaron. Guarda y revisa la versión actual.');
     const content=CommercialContentSchema.parse(row.content);if(content.meeting&&Date.parse(content.start)<=this.repo.clock().getTime())throw new AppError(422,'Elige una reunión futura antes de aprobar.');if(!this.demo&&(content.email||content.meeting||content.document||content.spreadsheet)&&!(await sql.query('SELECT tenant_id FROM team_google_connections WHERE tenant_id=$1',[tenant])).rows.length)throw new AppError(409,'Conecta Google antes de aprobar acciones externas.');
     const account=(await sql.query<{account:string}>('SELECT account FROM team_google_connections WHERE tenant_id=$1',[tenant])).rows[0]?.account;this.checkRecipient(content,account);
-    await sql.query("UPDATE team_sales_proposals SET status='approved',approved_by=$3 WHERE tenant_id=$1 AND id=$2",[tenant,id,user.uid]);await this.repo.audit(sql,tenant,user.uid,'commercial.approve',id);return {approved:true};
+    await sql.query("UPDATE team_sales_proposals SET status='approved',approved_by=$3,approved_at=$4 WHERE tenant_id=$1 AND id=$2",[tenant,id,user.uid,this.repo.clock().toISOString()]);await this.repo.audit(sql,tenant,user.uid,'commercial.approve',id);return {approved:true};
   });}
   async execute(tenant:string,user:TeamPrincipal,id:string,hash:string){
     const proposal=await this.repo.scoped(tenant,user,'jobs',async sql=>{
@@ -71,6 +73,10 @@ export class CommercialService {
       const connection=(await sql.query<{revision:string;account:string;subject:string}>('SELECT revision::text,account,subject FROM team_google_connections WHERE tenant_id=$1 FOR UPDATE',[tenant])).rows[0];
       const row=(await sql.query<CommercialProposal>('SELECT * FROM team_sales_proposals WHERE tenant_id=$1 AND id=$2 FOR UPDATE',[tenant,id])).rows[0];if(row?.status==='verified'&&row.content_hash===hash)return null;
       if(!row||row.status!=='approved'||row.content_hash!==hash||row.revision!==await this.revision(sql,tenant))throw new AppError(409,'Revisa y aprueba la propuesta actual. Las ejecuciones inciertas no se repiten.');
+      // Una aprobación no es un permiso permanente: caduca a las 24 h y la reunión debe seguir en el futuro en el momento de ejecutar.
+      const approvedValue=(row as CommercialProposal&{approved_at?:string|Date|null}).approved_at,approvedAt=approvedValue?new Date(approvedValue).getTime():null,approvedContent=CommercialContentSchema.parse(row.content);
+      if(approvedAt!==null&&this.repo.clock().getTime()-approvedAt>APPROVAL_TTL_MS)throw new AppError(409,'La aprobación caducó (24 horas). Revisa la propuesta y vuelve a aprobarla.');
+      if(approvedContent.meeting&&Date.parse(approvedContent.start)<=this.repo.clock().getTime())throw new AppError(409,'La reunión ya pasó. Cambia la fecha y vuelve a aprobar la propuesta.');
       if((await sql.query("SELECT id FROM team_sales_proposals WHERE tenant_id=$1 AND status IN ('executing','reconciling')",[tenant])).rows.length||(await sql.query("SELECT id FROM team_jobs WHERE tenant_id=$1 AND status='running' AND lease_until>now()",[tenant])).rows.length)throw new AppError(409,'Ya hay un trabajo en curso para esta empresa.');
       this.checkRecipient(CommercialContentSchema.parse(row.content),connection?.account);
       await sql.query("UPDATE team_sales_proposals SET status='executing',started_at=$3,execution_account=$4::jsonb WHERE tenant_id=$1 AND id=$2",[tenant,id,this.repo.clock().toISOString(),connection?JSON.stringify({account:connection.account,subject:connection.subject}):null]);await this.repo.audit(sql,tenant,user.uid,'commercial.execute',id);return {...row,googleRevision:connection?.revision};
@@ -116,7 +122,10 @@ export class CommercialService {
   async preview(tenant:string,user:TeamPrincipal,selection:SheetSelection){await this.repo.scoped(tenant,user,'write',async()=>{});const values=await this.provider.sheet(tenant,selection.fileId,selection.range);return this.repo.scoped(tenant,user,'write',async sql=>{
     const records=(await sql.query<{value:CrmRecord}>('SELECT value FROM team_records WHERE tenant_id=$1 AND entity=$2',[tenant,'contacts'])).rows,emails=new Set(records.map(r=>String(r.value.values.email??'').trim().toLowerCase()));
     const blueprint=(await sql.query<{blueprint:{spec:AppSpec}}>('SELECT blueprint FROM team_spaces WHERE id=$1',[tenant])).rows[0].blueprint;
-    const rows=values.slice(1,101).map((row,index)=>{const email=(row[selection.mapping.email]??'').trim().toLowerCase(),firstname=(row[selection.mapping.firstname]??'').trim();const values={firstname,lastname:selection.mapping.lastname===undefined?'':row[selection.mapping.lastname]??'',email,phone:selection.mapping.phone===undefined?'':row[selection.mapping.phone]??''};const invalid=!z.email().safeParse(email).success||!firstname||firstname.length>100||!blueprint||Object.keys(validateRecord(blueprint.spec,{entity:'contacts',id:'preview',values})).length>0;const status=invalid?'invalid':emails.has(email)?'duplicate':'ready';if(!invalid)emails.add(email);return {row:index+2,status,values,operationId:randomUUID(),recordId:'sheet-'+randomUUID()};});
+    const rows=values.slice(1,101).map((row,index)=>{const email=(row[selection.mapping.email]??'').trim().toLowerCase().slice(0,254),firstname=(row[selection.mapping.firstname]??'').trim().slice(0,200);const values={firstname,lastname:selection.mapping.lastname===undefined?'':(row[selection.mapping.lastname]??'').slice(0,100),email,phone:selection.mapping.phone===undefined?'':(row[selection.mapping.phone]??'').slice(0,100)};const invalid=!z.email().safeParse(email).success||!firstname||firstname.length>100||!blueprint||Object.keys(validateRecord(blueprint.spec,{entity:'contacts',id:'preview',values})).length>0;const status=invalid?'invalid':emails.has(email)?'duplicate':'ready';if(!invalid)emails.add(email);return {row:index+2,status,values,operationId:randomUUID(),recordId:'sheet-'+randomUUID()};});
+    // Las vistas previas pendientes se limpian a las 24 h y solo se conservan las 20 más recientes por empresa (nunca bloquea al usuario).
+    await sql.query("DELETE FROM team_sheet_previews WHERE tenant_id=$1 AND status='review' AND created_at<now()-interval '24 hours'",[tenant]);
+    await sql.query("DELETE FROM team_sheet_previews WHERE tenant_id=$1 AND status='review' AND id IN (SELECT id FROM team_sheet_previews WHERE tenant_id=$1 AND status='review' ORDER BY created_at DESC OFFSET 19)",[tenant]);
     const id=randomUUID(),content={selection,headers:values[0]??[],rows},contentHash=digest(JSON.stringify(content));await sql.query('INSERT INTO team_sheet_previews VALUES($1,$2,$3::jsonb,$4,$5)',[tenant,id,JSON.stringify(content),contentHash,'review']);return {id,contentHash,...content};
   });}
   async importSheet(tenant:string,user:TeamPrincipal,id:string,hash:string){return this.repo.scoped(tenant,user,'write',async sql=>{

@@ -26,3 +26,6 @@ infrastructure/**/.terraform/
 infrastructure/**/*.tfstate*
 infrastructure/**/*.tfvars
 infrastructure/**/*.tfplan
+
+# Registros de depuración locales
+debug.log

@@ -6,6 +6,8 @@ import { AppError } from '../store.js';
 import type { Sql, TeamDatabase } from './database.js';
 export const digest=(value:string)=>createHash('sha256').update(value).digest('hex');
 type Member={role:TeamRole;email:string};
+/** Una invitación sin canjear caduca a los 14 días; volver a invitar renueva el plazo. */
+const INVITE_TTL_MS=14*86_400_000;
 export class TeamRepository {
   constructor(public db:TeamDatabase,public clock:()=>Date=()=>new Date()){}
   async scoped<T>(tenant:string,principal:TeamPrincipal,permission:string,run:(sql:Sql,role:TeamRole)=>Promise<T>):Promise<T>{
@@ -20,14 +22,14 @@ export class TeamRepository {
   async audit(sql:Sql,tenant:string,actor:string,action:string,reference:string){await sql.query('INSERT INTO team_audit(tenant_id,actor,action,reference) VALUES($1,$2,$3,$4)',[tenant,actor,action,reference]);}
   async spaces(principal:TeamPrincipal){
     await this.db.transaction(async sql=>{
-      await sql.query('INSERT INTO team_members(tenant_id,user_id,email,role) SELECT tenant_id,$1,email,role FROM team_invites WHERE email=$2 ON CONFLICT DO NOTHING',[principal.uid,principal.email.toLowerCase()]);
+      await sql.query('INSERT INTO team_members(tenant_id,user_id,email,role) SELECT tenant_id,$1,email,role FROM team_invites WHERE email=$2 AND created_at>$3 ON CONFLICT DO NOTHING',[principal.uid,principal.email.toLowerCase(),new Date(this.clock().getTime()-INVITE_TTL_MS).toISOString()]);
       await sql.query('DELETE FROM team_invites WHERE email=$1',[principal.email.toLowerCase()]);
     });
     return (await this.db.query('SELECT s.id,s.name,m.role FROM team_spaces s JOIN team_members m ON m.tenant_id=s.id WHERE m.user_id=$1 ORDER BY s.name',[principal.uid])).rows;
   }
   async createSpace(principal:TeamPrincipal,name:string){const id=randomUUID();await this.db.transaction(async sql=>{await sql.query('INSERT INTO team_spaces(id,name) VALUES($1,$2)',[id,name]);await sql.query('INSERT INTO team_members VALUES($1,$2,$3,$4)',[id,principal.uid,principal.email,'admin']);});return {id,name,role:'admin' as const};}
   async invite(tenant:string,principal:TeamPrincipal,email:string,role:Exclude<TeamRole,'admin'>){return this.scoped(tenant,principal,'members',async sql=>{
-    await sql.query('INSERT INTO team_invites(tenant_id,email,role) VALUES($1,$2,$3) ON CONFLICT(tenant_id,email) DO UPDATE SET role=excluded.role',[tenant,email.toLowerCase(),role]);
+    await sql.query('INSERT INTO team_invites(tenant_id,email,role,created_at) VALUES($1,$2,$3,$4) ON CONFLICT(tenant_id,email) DO UPDATE SET role=excluded.role,created_at=excluded.created_at',[tenant,email.toLowerCase(),role,this.clock().toISOString()]);
     await this.audit(sql,tenant,principal.uid,'member.invite',email.toLowerCase());return {invited:true};
   });}
   async changeRole(tenant:string,principal:TeamPrincipal,userId:string,role:TeamRole|null){return this.scoped(tenant,principal,'members',async sql=>{

@@ -22,10 +22,14 @@ CREATE TABLE IF NOT EXISTS team_google_states(tenant_id uuid NOT NULL,id text NO
 CREATE TABLE IF NOT EXISTS team_google_connections(tenant_id uuid PRIMARY KEY,account text NOT NULL,subject text NOT NULL,revision uuid NOT NULL,secret text NOT NULL,expires_at timestamptz NOT NULL);
 CREATE TABLE IF NOT EXISTS team_sales_proposals(tenant_id uuid NOT NULL,id uuid NOT NULL,contact_id text NOT NULL,revision text NOT NULL,content jsonb NOT NULL,content_hash text NOT NULL,status text NOT NULL DEFAULT 'draft',approved_by text,started_at timestamptz,evidence jsonb NOT NULL DEFAULT '[]',error text,created_at timestamptz NOT NULL DEFAULT now(),PRIMARY KEY(tenant_id,id));
 ALTER TABLE team_sales_proposals ADD COLUMN IF NOT EXISTS execution_account jsonb;
+ALTER TABLE team_sales_proposals ADD COLUMN IF NOT EXISTS approved_at timestamptz;
+UPDATE team_sales_proposals SET approved_at=now() WHERE status='approved' AND approved_at IS NULL;
+ALTER TABLE team_invites ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now();
 ALTER TABLE team_sales_proposals ADD COLUMN IF NOT EXISTS reconciliation jsonb;
 ALTER TABLE team_sales_proposals ADD COLUMN IF NOT EXISTS context jsonb NOT NULL DEFAULT '[]';
 CREATE TABLE IF NOT EXISTS team_sales_tasks(tenant_id uuid NOT NULL,id uuid NOT NULL,proposal_id uuid NOT NULL,title text NOT NULL,contact_id text NOT NULL,due_at timestamptz NOT NULL,status text NOT NULL DEFAULT 'open',PRIMARY KEY(tenant_id,id),UNIQUE(tenant_id,proposal_id));
 CREATE TABLE IF NOT EXISTS team_sheet_previews(tenant_id uuid NOT NULL,id uuid NOT NULL,content jsonb NOT NULL,content_hash text NOT NULL,status text NOT NULL DEFAULT 'review',PRIMARY KEY(tenant_id,id));
+ALTER TABLE team_sheet_previews ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now();
 CREATE TABLE IF NOT EXISTS team_file_links(tenant_id uuid NOT NULL,id uuid NOT NULL,contact_id text NOT NULL,file_id text NOT NULL,name text NOT NULL,mime_type text NOT NULL,PRIMARY KEY(tenant_id,id),UNIQUE(tenant_id,contact_id,file_id));
 ALTER TABLE team_file_links ADD COLUMN IF NOT EXISTS source_key text;
 ALTER TABLE team_file_links ADD COLUMN IF NOT EXISTS account text;
@@ -48,7 +52,10 @@ CREATE TABLE IF NOT EXISTS team_local_ai(tenant_id uuid PRIMARY KEY,enabled bool
 DO $$ BEGIN IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='planb_scoped') THEN CREATE ROLE planb_scoped NOLOGIN; END IF; END $$;
 GRANT planb_scoped TO CURRENT_USER;
 GRANT USAGE ON SCHEMA public TO planb_scoped;
-GRANT SELECT,INSERT,UPDATE,DELETE ON team_records,team_events,team_devices,team_operations,team_conflicts,team_jobs,team_oauth_states,team_connections,team_captures,team_audit TO planb_scoped;
+GRANT SELECT,INSERT,UPDATE,DELETE ON team_records,team_devices,team_operations,team_conflicts,team_jobs,team_oauth_states,team_connections,team_captures TO planb_scoped;
+-- La auditoría y los eventos son de solo añadir para el rol acotado: una consulta de empresa no puede reescribirlos ni borrarlos.
+GRANT SELECT,INSERT ON team_events,team_audit TO planb_scoped;
+REVOKE UPDATE,DELETE ON team_events,team_audit FROM planb_scoped;
 GRANT SELECT,UPDATE ON team_spaces TO planb_scoped;
 GRANT SELECT,INSERT,UPDATE,DELETE ON team_members,team_invites TO planb_scoped;
 GRANT SELECT,INSERT ON team_device_keys TO planb_scoped;

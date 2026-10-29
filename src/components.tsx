@@ -19,7 +19,8 @@ export function Modal({ title, children, close, wide = false, side = false, conf
   closing.current = { close, confirmClose };
   const requestClose = () => { if (!closing.current.confirmClose || closing.current.confirmClose()) closing.current.close(); };
   useEffect(() => {
-    const key = (event: KeyboardEvent) => { if (event.key === 'Escape') requestClose(); };
+    // Un modal dentro de una pantalla oculta o inerte (sesión bloqueada) no responde a Escape.
+    const key = (event: KeyboardEvent) => { if (event.key === 'Escape' && !dialog.current?.closest('[inert],[hidden]')) requestClose(); };
     const previous = document.activeElement as HTMLElement | null;
     document.addEventListener('keydown', key);
     const timer = setTimeout(() => document.querySelector<HTMLElement>('[role="dialog"] button')?.focus(), 0);
@@ -39,7 +40,7 @@ function useDialogFocus(ref: { current: HTMLElement | null }) {
     const focusable = () => [...(panel?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex="0"]') ?? [])];
     const timer = setTimeout(() => focusable()[0]?.focus(), 0);
     const key = (event: KeyboardEvent) => {
-      if (event.key !== 'Tab' || [...document.querySelectorAll('[role="dialog"]')].at(-1) !== panel) return;
+      if (event.key !== 'Tab' || [...document.querySelectorAll('[role="dialog"]')].at(-1) !== panel || panel?.closest('[inert],[hidden]')) return;
       const items = focusable(), first = items[0], last = items.at(-1);
       if (event.shiftKey && (document.activeElement === first || !panel?.contains(document.activeElement))) { event.preventDefault(); last?.focus(); }
       else if (!event.shiftKey && (document.activeElement === last || !panel?.contains(document.activeElement))) { event.preventDefault(); first?.focus(); }

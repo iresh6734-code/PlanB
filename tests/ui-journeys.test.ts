@@ -581,3 +581,15 @@ test('FIX-019 agente: otra revisión u otra oportunidad tras un fallo usa otra c
   const ids = postsTo(server, '/v6/proposals').map(r => r.body.id);
   assert.equal(ids.length, 3); assert.equal(ids[0], ids[1], 'mismo contexto, misma clave'); assert.notEqual(ids[1], ids[2], 'otra revisión del contexto, otra clave');
 });
+
+// ---------- Modal dentro de una pantalla bloqueada (sesión caducada) ----------
+test('FIX-020 Modal: dentro de una pantalla oculta o inerte Escape no lo cierra; visible, sí', () => {
+  const doc = fakeDocument(); let closed = 0;
+  const h = mount('components.tsx', 'Modal', modalMocks, { title: 'Ficha', children: null, close: () => closed++ });
+  h.render();
+  const section = h.nodes().find(n => n.type === 'section')!; let hiddenAncestor: object | null = {};
+  section.props.ref.current = { closest: (selector: string) => { assert.equal(selector, '[inert],[hidden]'); return hiddenAncestor; } };
+  doc.press('Escape'); assert.equal(closed, 0, 'oculto o inerte: no se cierra');
+  hiddenAncestor = null; doc.press('Escape'); assert.equal(closed, 1, 'visible: se cierra');
+  h.unmount();
+});

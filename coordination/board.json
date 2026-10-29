@@ -1,7 +1,7 @@
 {
   "format": 1,
-  "revision": 222,
-  "updatedAt": "2026-10-29T11:15:47.433Z",
+  "revision": 230,
+  "updatedAt": "2026-10-29T11:38:10.567Z",
   "tasks": [
     {
       "id": "CODEX-001",
@@ -1750,57 +1750,73 @@
       },
       "note": "Cliente envia la clave de idempotencia (Comercial, ficha, agente) y remates R-07/R-14. 550/550, ui-journeys 47/47, 25 E2E aislados. Revision independiente con 14/18 mutaciones detectadas y 4 huecos cerrados",
       "createdAt": "2026-10-29T10:58:04.974Z"
+    },
+    {
+      "id": "CLAUDE-FIX-020",
+      "agent": "claude",
+      "title": "Conservar los borradores sin guardar cuando caduca la sesión del piloto (401)",
+      "plan": "Por petición del usuario. Hoy un 401 en el piloto local pone ready=false y vacía los datos, desmontando la pantalla y descartando los borradores sin guardar (hueco que dejó CLAUDE-FIX-014, R-01). Cambiar el 401 por un estado locked: la aplicación sigue montada pero oculta, inerte y fuera del árbol de accesibilidad, y se superpone la puerta de desbloqueo; tras desbloquear se refresca y se vuelve a mostrar con los borradores. El bloqueo deliberado «Bloquear piloto» NO cambia (sigue vaciando datos tras la confirmación de R-01). Los modales ocultos no deben atrapar Tab ni cerrarse con Escape mientras la pantalla está bloqueada. Sin cambios de servidor, permisos ni contratos.",
+      "acceptance": "tsc, npm test y los E2E aislados sin regresiones. Prueba de navegador real que provoque un 401 con borrador sin guardar, vea la puerta de desbloqueo sin datos visibles, desbloquee y recupere el texto. Prueba de que el bloqueo deliberado sigue vaciando la pantalla. Pruebas de Modal oculto. Revisión independiente.",
+      "files": [
+        "src/TeamApp.tsx",
+        "src/components.tsx",
+        "tests/ui-journeys.test.ts",
+        "tests/e2e/session-lock.spec.ts",
+        "coordination/reports/CLAUDE-FIX-020.md"
+      ],
+      "readFiles": [
+        "coordination/reports/CLAUDE-FIX-014.md",
+        "src/LocalPilotGate.tsx"
+      ],
+      "dependencies": [],
+      "status": "done",
+      "reserved": false,
+      "baseline": {
+        "src/TeamApp.tsx": "a1fd12824c3022c95b03841d3b6f5972cc4aedcbc92e72ca5b5c164603872038",
+        "src/components.tsx": "062a9a77e4e755b49fd6ea0703d2dd01b01a0f7801324b90da980747087dc848",
+        "tests/ui-journeys.test.ts": "c273fa98cecf6c02009627c83e546bfe963520a68023a2d35ec864f084e278a9",
+        "tests/e2e/session-lock.spec.ts": null,
+        "coordination/reports/CLAUDE-FIX-020.md": null
+      },
+      "submitted": {
+        "src/TeamApp.tsx": "549d107a4e4b2a1b0a56a8ff032f0691be4a74c44bcdba86b1297183586af463",
+        "src/components.tsx": "507b7bf3e99b51d1a76ec7145d76265ed8bbddadff32917c4ad8dc3203ba5ce0",
+        "tests/ui-journeys.test.ts": "78ca5858cedfd4c89f878ae767cf38fab7bd025e27d3d2c81b760492100dc52a",
+        "tests/e2e/session-lock.spec.ts": "d90369a46a6ed3982c3ddedfcff0a7ce782e3a53106417779ffc92a9462a3baf",
+        "coordination/reports/CLAUDE-FIX-020.md": "db420a1acc5daab57c9c9f3d18214f9c1399e57b9f9115d42ffac2ec8bbcb545"
+      },
+      "note": "Un 401 del piloto ya no descarta borradores: pantalla oculta e inerte bajo la puerta de desbloqueo, sondeo pausado, Modal oculto sin Tab ni Escape. 551/551, 5 E2E nuevos (30 en total), mutaciones detectadas. Revision independiente aplicada. No probado contra el piloto real",
+      "createdAt": "2026-10-29T11:20:23.594Z"
+    },
+    {
+      "id": "CLAUDE-CTX-021",
+      "agent": "claude",
+      "title": "Actualizar el contexto y el registro de delegación tras FIX-020 y el análisis del motor de capturas",
+      "plan": "Por petición del usuario (delegación vigente). Reflejar en CONTEXTO-PROYECTO.md que la pérdida de borradores por 401 queda resuelta (CLAUDE-FIX-020), las cifras actuales de pruebas y tablón y la decisión de no integrar el motor de capturas en importHubspot; regenerar el registro de delegación con las órdenes ejecutadas después de su primera versión. Solo documentación.",
+      "acceptance": "Contexto fiel a lo verificado, sin secretos ni aceptaciones remotas inventadas; registro de delegación con todas las órdenes ejecutadas hasta el cierre.",
+      "files": [
+        "CONTEXTO-PROYECTO.md",
+        "coordination/reports/DELEGACION-CLAUDE-COMO-CODEX-2026-10-29.md"
+      ],
+      "readFiles": [
+        "coordination/reports/CLAUDE-FIX-020.md"
+      ],
+      "dependencies": [],
+      "status": "done",
+      "reserved": false,
+      "baseline": {
+        "CONTEXTO-PROYECTO.md": "eee3f4cc81cb8da3eeba77a77b2aa113d5157789204d3c5ffb2ea7c9de91015a",
+        "coordination/reports/DELEGACION-CLAUDE-COMO-CODEX-2026-10-29.md": "d572c55f20ec755f97cd6f15186cc8e9daa944c8b01d93e70161ea373cc04b12"
+      },
+      "submitted": {
+        "CONTEXTO-PROYECTO.md": "1e306f636e111cef13dcc79f9f4d77e6eba694e96390bd902eb433cf376478ed",
+        "coordination/reports/DELEGACION-CLAUDE-COMO-CODEX-2026-10-29.md": "0aca09986102cd895e658f6c6f09f3010c76bfaf7f54cc246be60bb94ecc9c1a"
+      },
+      "note": "Contexto actualizado (FIX-020, cifras 551/551 y 30 E2E, decision sobre el motor de capturas) y registro de delegacion regenerado desde los eventos del tablon",
+      "createdAt": "2026-10-29T11:37:42.987Z"
     }
   ],
   "events": [
-    {
-      "at": "2026-10-28T22:00:31.688Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CLAUDE-MCP-001"
-    },
-    {
-      "at": "2026-10-28T22:00:31.788Z",
-      "actor": "claude",
-      "action": "claim",
-      "task": "CLAUDE-MCP-001"
-    },
-    {
-      "at": "2026-10-28T22:00:57.679Z",
-      "actor": "claude",
-      "action": "release",
-      "task": "CLAUDE-MCP-001"
-    },
-    {
-      "at": "2026-10-28T22:11:23.777Z",
-      "actor": "claude",
-      "action": "claim",
-      "task": "CLAUDE-HS-001"
-    },
-    {
-      "at": "2026-10-28T22:14:49.057Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CODEX-DUET-001"
-    },
-    {
-      "at": "2026-10-28T22:14:49.066Z",
-      "actor": "codex",
-      "action": "claim",
-      "task": "CODEX-DUET-001"
-    },
-    {
-      "at": "2026-10-28T22:18:29.593Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CODEX-DUET-UI-001"
-    },
-    {
-      "at": "2026-10-28T22:18:29.601Z",
-      "actor": "codex",
-      "action": "claim",
-      "task": "CODEX-DUET-UI-001"
-    },
     {
       "at": "2026-10-28T22:23:23.073Z",
       "actor": "codex",
@@ -2952,6 +2968,54 @@
       "actor": "codex",
       "action": "accept",
       "task": "CODEX-DUET-MEM-001"
+    },
+    {
+      "at": "2026-10-29T11:20:23.594Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CLAUDE-FIX-020"
+    },
+    {
+      "at": "2026-10-29T11:20:23.714Z",
+      "actor": "claude",
+      "action": "claim",
+      "task": "CLAUDE-FIX-020"
+    },
+    {
+      "at": "2026-10-29T11:37:22.351Z",
+      "actor": "claude",
+      "action": "submit",
+      "task": "CLAUDE-FIX-020"
+    },
+    {
+      "at": "2026-10-29T11:37:22.546Z",
+      "actor": "codex",
+      "action": "accept",
+      "task": "CLAUDE-FIX-020"
+    },
+    {
+      "at": "2026-10-29T11:37:42.987Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CLAUDE-CTX-021"
+    },
+    {
+      "at": "2026-10-29T11:37:43.094Z",
+      "actor": "claude",
+      "action": "claim",
+      "task": "CLAUDE-CTX-021"
+    },
+    {
+      "at": "2026-10-29T11:38:10.449Z",
+      "actor": "claude",
+      "action": "submit",
+      "task": "CLAUDE-CTX-021"
+    },
+    {
+      "at": "2026-10-29T11:38:10.567Z",
+      "actor": "codex",
+      "action": "accept",
+      "task": "CLAUDE-CTX-021"
     }
   ]
 }

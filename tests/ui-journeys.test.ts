@@ -229,7 +229,7 @@ test('R-05 sin borrador abierto no pregunta; R-07 el botón explica por qué est
   const state = { current: overview([], { contacts: [contact('c1', 'Ana', 'García', 'ana@a.es')] }) };
   const { h, server, settleRender } = await boot(state, { '/v6/proposals': () => ({ id: 'NEW' }) });
   const prepare = () => h.button(/Preparar seguimiento/);
-  assert.equal(prepare().props.disabled, true); const reason = h.nodes().find(n => n.props.id === prepare().props['aria-describedby']); assert.ok(reason, 'el motivo existe como elemento'); assert.match(h.text(reason), /Selecciona un cliente/);
+  assert.equal(prepare().props.disabled, true); assert.ok(prepare().props['aria-describedby'], 'el botón apunta a su motivo'); const reason = h.nodes().find(n => n.props.id === prepare().props['aria-describedby']); assert.ok(reason, 'el motivo existe como elemento'); assert.match(h.text(reason), /Selecciona un cliente/);
   h.named('ContactSelect')[0].props.onChange('c1'); await settleRender();
   assert.equal(prepare().props.disabled, false); assert.equal(prepare().props['aria-describedby'], undefined);
   prepare().props.onClick(); await settleRender(); await settleRender();
@@ -384,7 +384,7 @@ test('R-07 "Analizar y mejorar" explica por qué está deshabilitado', async () 
   const h = mount('TeamAgentWorkspace.tsx', 'TeamAgentWorkspace', agentMocks, { tenant: 'T1', call: server.call, canWrite: true, canConnect: true, onProposal() {} });
   h.render(); h.render(); await settle(); h.render(); h.button('Revisar contexto').props.onClick(); await settle(); await settle(); h.render();
   const analyze = h.button('Analizar y mejorar borrador');
-  assert.equal(analyze.props.disabled, true); const why = h.nodes().find(n => n.props.id === analyze.props['aria-describedby']); assert.ok(why, 'el motivo existe como elemento'); assert.match(h.text(why), /Marca que has revisado el contexto/); assert.match(h.text(), /Microsoft no está autorizado/);
+  assert.equal(analyze.props.disabled, true); assert.ok(analyze.props['aria-describedby'], 'el botón apunta a su motivo'); const why = h.nodes().find(n => n.props.id === analyze.props['aria-describedby']); assert.ok(why, 'el motivo existe como elemento'); assert.match(h.text(why), /Marca que has revisado el contexto/); assert.match(h.text(), /Microsoft no está autorizado/);
 });
 
 // ---------- CustomerDossier ----------
@@ -493,4 +493,91 @@ test('Editor real: aprobar no llama a ejecutar y el botón de ejecutar no llama 
   const draft = realEditor({ onApprove: () => calls.push('aprobar'), onExecute: () => calls.push('ejecutar') }); draft.primary().props.onClick();
   const approved = realEditor({ proposal: proposal('A', { status: 'approved' }), onApprove: () => calls.push('aprobar'), onExecute: () => calls.push('ejecutar') }); approved.primary().props.onClick();
   assert.deepEqual(calls, ['aprobar', 'ejecutar']);
+});
+
+// ---------- Clave de idempotencia enviada por el cliente (CLAUDE-FIX-019) ----------
+const uuidShape = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const postsTo = (server: ReturnType<typeof fakeServer>, suffix: string) => server.log.filter(r => r.path.endsWith(suffix) && r.body);
+const failThenSucceed = (id = 'NEW') => { let calls = 0; return () => (++calls === 1 ? new Error('respuesta perdida') : { id }); };
+
+test('FIX-019 Comercial: el POST lleva un uuid, el reintento tras un fallo lo reutiliza y tras un éxito se renueva', async () => {
+  setConfirm(() => { throw new Error('No debía preguntar'); });
+  const state = { current: overview([], { contacts: [contact('c1', 'Ana', 'García', 'ana@a.es')] }) };
+  const { h, server, settleRender } = await boot(state, { '/v6/proposals': failThenSucceed() });
+  h.named('ContactSelect')[0].props.onChange('c1'); await settleRender();
+  const click = async () => { h.button(/Preparar seguimiento/).props.onClick(); await settleRender(); await settleRender(); };
+  await click(); await click(); await click();
+  const ids = postsTo(server, '/v6/proposals').map(r => r.body.id);
+  assert.equal(ids.length, 3); assert.ok(ids.every(id => uuidShape.test(id)));
+  assert.equal(ids[0], ids[1], 'el reintento tras el fallo reutiliza la clave'); assert.notEqual(ids[1], ids[2], 'tras el éxito se renueva');
+});
+test('FIX-019 Comercial: cambiar de cliente cambia la clave y confirmar «preparar otro» genera una nueva', async () => {
+  setConfirm(true);
+  const state = { current: overview([proposal('A', { contact_id: 'c1' })], { contacts: [contact('c1', 'Ana', 'García', 'ana@a.es'), contact('c2', 'Luis', 'Pérez', 'luis@a.es')] }) };
+  const { h, server, settleRender } = await boot(state, { '/v6/proposals': () => new Error('fallo') });
+  const click = async () => { h.button(/Preparar seguimiento/).props.onClick(); await settleRender(); await settleRender(); };
+  h.named('ContactSelect')[0].props.onChange('c2'); await settleRender(); await click(); await click();
+  h.named('ContactSelect')[0].props.onChange('c1'); await settleRender(); await click(); await click();
+  const [a1, a2, b1, b2] = postsTo(server, '/v6/proposals').map(r => r.body);
+  assert.equal(a1.id, a2.id, 'sin borrador abierto y tras fallo, misma clave'); assert.equal(a1.contactId, 'c2');
+  assert.notEqual(b1.id, a1.id, 'otro cliente, otra clave'); assert.notEqual(b1.id, b2.id, 'con borrador abierto confirmar «otro» renueva la clave');
+});
+test('FIX-019 ficha: el id es estable en el reintento y se renueva tras un éxito', async () => {
+  const prepared: string[] = [];
+  const { h, server } = dossierHarness({ '/customers/c1': () => dossier(), '/v6/proposals': failThenSucceed('PROP-1') }, { onPrepared: (id: string) => prepared.push(id) });
+  h.render(); h.render(); await settle(); h.render();
+  const click = async () => { h.button('Preparar seguimiento').props.onClick(); await settle(); await settle(); h.render(); };
+  await click(); await click(); await click();
+  const bodies = postsTo(server, '/v6/proposals').map(r => r.body);
+  assert.equal(bodies.length, 3); assert.ok(bodies.every(b => uuidShape.test(b.id) && b.contactId === 'c1' && b.intent.internalOnly === true));
+  assert.equal(bodies[0].id, bodies[1].id); assert.notEqual(bodies[1].id, bodies[2].id); assert.deepEqual(prepared, ['PROP-1', 'PROP-1']);
+});
+test('FIX-019 agente: el borrador de reglas envía id, lo reutiliza tras un fallo y lo renueva tras un éxito', async () => {
+  const opened: (string | undefined)[] = [];
+  const server = fakeServer({ '/copilot': () => agentData(), '/preview/o1': () => preview, '/v6/proposals': failThenSucceed('P-AGENTE') });
+  const h = mount('TeamAgentWorkspace.tsx', 'TeamAgentWorkspace', agentMocks, { tenant: 'T1', call: server.call, canWrite: true, canConnect: true, onProposal: (id?: string) => opened.push(id) });
+  h.render(); h.render(); await settle(); h.render(); h.button('Revisar contexto').props.onClick(); await settle(); await settle(); h.render();
+  const click = async () => { h.button('Preparar borrador con las reglas de Plan B').props.onClick(); await settle(); await settle(); h.render(); };
+  await click(); await click(); await click();
+  const ids = postsTo(server, '/v6/proposals').map(r => r.body.id);
+  assert.ok(ids.every(id => uuidShape.test(id))); assert.equal(ids[0], ids[1]); assert.notEqual(ids[1], ids[2]); assert.deepEqual(opened, ['P-AGENTE', 'P-AGENTE']);
+});
+test('R-07 Google e importación explican por qué sus botones están deshabilitados', async () => {
+  const state = { current: overview([], { connection: null, configured: false }) };
+  const { h, settleRender } = await boot(state);
+  const reasonOf = (button: VNode) => { const id = button.props['aria-describedby']; assert.ok(id, 'el botón apunta a su motivo con aria-describedby'); const node = h.nodes().find(n => n.props.id === id); assert.ok(node, 'el motivo existe como elemento con ese id'); return h.text(node); };
+  const google = h.button('Preparar autorización Google'); assert.equal(google.props.disabled, true);
+  assert.match(reasonOf(google), /configuración OAuth/); assert.match(reasonOf(google), /Escribe la cuenta Google/); assert.match(reasonOf(google), /Marca que has revisado/);
+  h.named('TabList')[0].props.onChange('import'); await settleRender();
+  const review = h.button('Revisar importación'); assert.equal(review.props.disabled, true); assert.match(reasonOf(review), /Selecciona una hoja/);
+});
+test('R-14 el agente avisa a un lector de que es de solo lectura', async () => {
+  const server = fakeServer({ '/copilot': () => agentData() });
+  const h = mount('TeamAgentWorkspace.tsx', 'TeamAgentWorkspace', agentMocks, { tenant: 'T1', call: server.call, canWrite: false, canConnect: false, onProposal() {} });
+  h.render(); h.render(); await settle(); h.render(); assert.match(h.text(), /Solo lectura\. Puedes consultar prioridades/);
+});
+
+// ---------- Casos de renovación de la clave que la revisión independiente encontró sin cubrir ----------
+test('FIX-019 Comercial: tras un fallo, cambiar de cliente (sin borrador abierto) usa otra clave', async () => {
+  setConfirm(() => { throw new Error('No debía preguntar'); });
+  const state = { current: overview([], { contacts: [contact('c1', 'Ana', 'García', 'ana@a.es'), contact('c2', 'Luis', 'Pérez', 'luis@a.es')] }) };
+  const { h, server, settleRender } = await boot(state, { '/v6/proposals': () => new Error('fallo') });
+  const click = async () => { h.button(/Preparar seguimiento/).props.onClick(); await settleRender(); await settleRender(); };
+  h.named('ContactSelect')[0].props.onChange('c1'); await settleRender(); await click();
+  h.named('ContactSelect')[0].props.onChange('c2'); await settleRender(); await click();
+  const [first, second] = postsTo(server, '/v6/proposals').map(r => r.body);
+  assert.equal(first.contactId, 'c1'); assert.equal(second.contactId, 'c2'); assert.notEqual(first.id, second.id, 'otro cliente nunca hereda la clave del anterior');
+});
+test('FIX-019 agente: otra revisión u otra oportunidad tras un fallo usa otra clave', async () => {
+  const previewFor = (id: string, revision: string) => ({ ...preview, opportunityId: id, contactId: 'c-' + id, revision });
+  const answers = [previewFor('o1', 'r1'), previewFor('o1', 'r2'), previewFor('o2', 'r2')];
+  let asked = 0;
+  const server = fakeServer({ '/copilot': () => agentData({ priorities: [{ id: 'o1', label: 'Uno', reason: 'x', stage: 's', contactId: 'c-o1' }] }), '/preview/o1': () => answers[Math.min(asked++, 1)], '/v6/proposals': () => new Error('fallo') });
+  const h = mount('TeamAgentWorkspace.tsx', 'TeamAgentWorkspace', agentMocks, { tenant: 'T1', call: server.call, canWrite: true, canConnect: true, onProposal() {} });
+  h.render(); h.render(); await settle(); h.render();
+  const review = async () => { h.button('Revisar contexto').props.onClick(); await settle(); await settle(); h.render(); };
+  const prepare = async () => { h.button('Preparar borrador con las reglas de Plan B').props.onClick(); await settle(); await settle(); h.render(); };
+  await review(); await prepare(); await prepare(); await review(); await prepare();
+  const ids = postsTo(server, '/v6/proposals').map(r => r.body.id);
+  assert.equal(ids.length, 3); assert.equal(ids[0], ids[1], 'mismo contexto, misma clave'); assert.notEqual(ids[1], ids[2], 'otra revisión del contexto, otra clave');
 });

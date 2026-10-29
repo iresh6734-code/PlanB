@@ -1,0 +1,270 @@
+{
+  "goal": "Encadenar mejoras verificables de Plan B. Unidad actual: aislamiento del callbackOAuth.",
+  "task": "HS011 · Presupuesto global para lecturas de ficha",
+  "updatedAt": "2026-10-29T08:46:26.072Z",
+  "codex": {
+    "state": "Plazo global implementado; verificación en curso",
+    "detail": "HS011:30segundos compartidos para faselecturaCRM,12porlectura; cuerpoJSON/identidad incluidos.8regresiones conrelojvirtual correctas. Suiteafectada/typecheck/revisión pendientes."
+  },
+  "claude": {
+    "state": "Propuestas anteriores conservadas; sin consulta nueva",
+    "detail": "Este ciclo contrastaH4/H5 del informe recibido. Código nuevo no enviado; revisiónpruebas porCodex. Informes de otroschats sobre Sonnet se conservan sin atribuir ejecución a esta tarea."
+  },
+  "files": [
+    "server/connection.ts",
+    "server/hubspot.ts",
+    "server/team/jobs.ts",
+    "tests/hubspot.test.ts",
+    "coordination/reports/CODEX-HS-001.md",
+    "coordination/reports/CLAUDE-001.md"
+  ],
+  "events": [
+    {
+      "at": "2026-10-28T22:19:34.041Z",
+      "actor": "Codex",
+      "title": "Encargo CLAUDE-HS-001 reservado",
+      "detail": "Fuentes contrastados con los hashes presentados; archivos de Claude separados del código de aplicación."
+    },
+    {
+      "at": "2026-10-28T22:19:34.041Z",
+      "actor": "Usuario",
+      "title": "Seis archivos autorizados para Anthropic",
+      "detail": "Autorización explícita del envío. El primer intento sin red devolvió ENOTFOUND; ahora se espera la consulta autorizada."
+    },
+    {
+      "at": "2026-10-28T22:19:34.041Z",
+      "actor": "Codex → Claude",
+      "title": "Consulta real iniciada",
+      "detail": "Claude Code Pro, sin herramientas ni conectores, respuesta estructurada y plazo máximo de180 segundos."
+    },
+    {
+      "at": "2026-10-28T22:21:39.668Z",
+      "actor": "Coordinador",
+      "title": "Consulta detenida al vencer el plazo",
+      "detail": "Respuesta vacía; consumo no determinado. No se acredita trabajo del modelo."
+    },
+    {
+      "at": "2026-10-28T22:21:45.134Z",
+      "actor": "Claude CLI",
+      "title": "Segundo intento acotado",
+      "detail": "Seis archivos autorizados; sin herramientas. Esperando eventos de la CLI."
+    },
+    {
+      "at": "2026-10-28T22:21:46.962Z",
+      "actor": "Claude CLI",
+      "title": "Inicio de sesión de consulta",
+      "detail": "La CLI confirmó inicio. Esperando respuesta del modelo."
+    },
+    {
+      "at": "2026-10-28T22:22:40.949Z",
+      "actor": "Claude CLI",
+      "title": "Entrega devuelta a Codex",
+      "detail": "Revisión recibida. Codex debe contrastarla y ejecutar pruebas."
+    },
+    {
+      "at": "2026-10-28T22:24:56.902Z",
+      "actor": "Codex",
+      "title": "Respuesta de Claude contrastada",
+      "detail": "Recomendación estática registrada; se matiza que no prueba cierre de sesión de la UI. Pruebas escritas por Codex, no por Claude."
+    },
+    {
+      "at": "2026-10-28T22:24:56.902Z",
+      "actor": "Codex",
+      "title": "9 regresiones focalizadas correctas",
+      "detail": "401 en cuenta y esquema posterior,403 conservado, duplicados intra/entre páginas y control positivo de IDs por entidad. Transportes ficticios; red externa bloqueada."
+    },
+    {
+      "at": "2026-10-28T22:28:45.465Z",
+      "actor": "Codex",
+      "title": "32 pruebas correctas · typecheck correcto",
+      "detail": "Nueve regresiones nuevas incluidas. Se detectan4 fallos al revertir401 y2 al retirar la guarda de duplicados, solo en memoria."
+    },
+    {
+      "at": "2026-10-28T22:28:45.465Z",
+      "actor": "Codex",
+      "title": "Entrega H1/H6 aceptada",
+      "detail": "Hashes de CODEX-HS-001 siguen intactos. H2/H3/H7 permanecen pendientes. No se ha desplegado el backend."
+    },
+    {
+      "at": "2026-10-28T22:28:45.465Z",
+      "actor": "Coordinador",
+      "title": "Panel comprobado por HTTP",
+      "detail": "5 pruebas correctas. Navegador integrado deshabilitado en Work: apertura automática y QA visual no acreditadas. Sin bucle autónomo después de cerrar el chat."
+    },
+    {
+      "at": "2026-10-28T22:32:24.824Z",
+      "actor": "Usuario → Claude",
+      "title": "Continuación y nuevas propuestas solicitadas",
+      "detail": "Instrucción directa transmitida a la CLI sin fuentes nuevos o datos privados; respuesta recibida."
+    },
+    {
+      "at": "2026-10-28T22:32:24.824Z",
+      "actor": "Codex",
+      "title": "Contraste de las propuestas de Claude",
+      "detail": "Conservar state aleatorio vinculado en BD; no adoptar unicidad global de portal entre empresas ni commits automáticos. Implementar solo el aislamiento por espacio/historial."
+    },
+    {
+      "at": "2026-10-28T22:32:24.824Z",
+      "actor": "Codex",
+      "title": "Continuación periódica activada",
+      "detail": "Heartbeat de este chat cada30min para encadenar tareas dentro del alcance autorizado. No convierte Claude en proceso siempre activo ni amplía envío de código."
+    },
+    {
+      "at": "2026-10-28T22:33:23.379Z",
+      "actor": "Codex",
+      "title": "Siguiente unidad terminada: H2",
+      "detail": "Aislamiento comprobado al guardarOAuth, incluida importación durante lectura.19pruebas correctas; sin despliegue o llamadasCRM."
+    },
+    {
+      "at": "2026-10-28T22:39:03.296Z",
+      "actor": "Codex",
+      "title": "Panel recuperado y cola registrada",
+      "detail": "Reinicio exclusivo del monitor4347 tras escucha sin respuesta; GET/api/state200 comprobado. Piloto4334 intacto. H2 y regresiones en revisión; H3 registrado con dependencia, sin tomar reservaOAuth ajena."
+    },
+    {
+      "at": "2026-10-28T22:54:39.796Z",
+      "actor": "Codex",
+      "title": "Trabajo reanudado ahora",
+      "detail": "Revisión independienteH2 delegada; consulta de diseñoH3 aClaude y preparación de implementación en paralelo."
+    },
+    {
+      "at": "2026-10-29T07:19:39.611Z",
+      "actor": "Claude CLI",
+      "title": "Propuesta de procedencia recibida",
+      "detail": "Consulta conceptual nueva: 1781caracteres. No recibió fuentes nuevas ni ejecutó pruebas. MétricaCLI0.0258615USD, no factura."
+    },
+    {
+      "at": "2026-10-29T07:19:39.611Z",
+      "actor": "Codex",
+      "title": "H2 revisado yH3 implementado",
+      "detail": "Revisor independiente cotejó hashesH2 y comprobó7pruebas; reservaOAuth liberada antes deH3. Ruta exige capturaHubSpot/portal/modo y revalida identidad, permiso y presencia antes de responder."
+    },
+    {
+      "at": "2026-10-29T07:28:15.090Z",
+      "actor": "Codex",
+      "title": "Siguiente unidad implementada",
+      "detail": "Renovación fuera de transacción; metadata omitida conservada; credencial revocada requiere reconexión sin invalidar versiones nuevas.9pruebas focales correctas. Primer arnés exigía queryvacía también enGET; corregido aOAuth. Tsc exigiótipo explícito deaccess recursivo; añadido."
+    },
+    {
+      "at": "2026-10-29T07:30:58.891Z",
+      "actor": "Claude CLI",
+      "title": "Contraste H7 recibido",
+      "detail": "MétricaCLI0.021669USD, no factura. Recomienda cotejar versión al marcarreconexión y declarar ausencia de exclusión distribuida."
+    },
+    {
+      "at": "2026-10-29T07:30:58.891Z",
+      "actor": "Revisor Codex",
+      "title": "Carrera adicional detectada y corregida por autor",
+      "detail": "Invalid_grant primero y grantválido después dejaba needs_reconnect persistente. Nuevo CAS permite recuperar mismo baseline validado; no altera una reconexión nueva.10/10 pruebas focales correctas, incluida nueva carrera; batería final en curso."
+    },
+    {
+      "at": "2026-10-29T07:42:40.865Z",
+      "actor": "Codex",
+      "title": "Tres unidades aceptadas tras revisión independiente",
+      "detail": "H3 portal/fuente, H7 renovación sin transacción de red y HS005reconexión visible.55/55 backend ycompilaciónUI correctos. ColaUX001 registrada con archivos exactos; sin autoaceptar trabajo del autor."
+    },
+    {
+      "at": "2026-10-29T07:42:40.865Z",
+      "actor": "Codex",
+      "title": "Seguimiento disponible",
+      "detail": "Panel iniciado como helper oculto propioPID30460 tras ECONNREFUSED. GET/api/state200 comprobado. Piloto4334 conservado; no operacionesCRM o nuevas fuentes enviadas aClaude."
+    },
+    {
+      "at": "2026-10-29T07:54:09.414Z",
+      "actor": "Codex",
+      "title": "Continuación UX sin consultas de modelo repetidas",
+      "detail": "Se usan hallazgos heredados contrastados y revisión independiente de código. No nueva llamadaClaude o fuente privada enviada en este ciclo."
+    },
+    {
+      "at": "2026-10-29T07:54:09.414Z",
+      "actor": "Codex",
+      "title": "Regresión de comparación reproducida y corregida",
+      "detail": "Con arnés corregido,1control positivo pasa y4fallos detectan resultados/errores/busy antiguos antes del arreglo;5/5 después. Harness de callbacks, noQAvisual/ReactDOM."
+    },
+    {
+      "at": "2026-10-29T07:54:09.414Z",
+      "actor": "Codex",
+      "title": "Informe UX devuelto para precisar hechos",
+      "detail": "CLAUDE002 conserva reserva y requiere corregir dos afirmaciones. No se da por aceptado globalmente ni se modifica su informe ajeno."
+    },
+    {
+      "at": "2026-10-29T07:57:15.832Z",
+      "actor": "Revisor Codex",
+      "title": "UX003 aceptada tras comprobación independiente",
+      "detail": "5/5 pruebas focales correctas; baseline reconstruido en memoria yhashes presentados cotejados. Comparaciones antiguas ya no escriben el contexto vigente."
+    },
+    {
+      "at": "2026-10-29T07:57:15.832Z",
+      "actor": "Codex",
+      "title": "Continuidad y siguiente unidad preparadas",
+      "detail": "UX001/002/003 aceptadas; siguienteHS007 reparte presupuesto de actividad entre5tipos sin prometer recencia. Piloto ycuentas sin cambios, sin nuevasfuentes aClaude."
+    },
+    {
+      "at": "2026-10-29T08:16:21.518Z",
+      "actor": "Codex",
+      "title": "Omisión sistemática de correos reproducida y corregida",
+      "detail": "Prueba anterior:4controles correctos y1falla por ausenciaemails con5tipossaturados. Trasdosvueltas todosaparecen, máx8detalles/2tipo. No garantiza recencia ni amplía POST/permisos."
+    },
+    {
+      "at": "2026-10-29T08:19:40.355Z",
+      "actor": "Revisor Codex",
+      "title": "Respuesta malformada detectada ycorregida",
+      "detail": "Owner200null se presentaba como ausencia sinaviso. GETvalida objeto/non-null/no-array para contacto/detalles/owner;404usa sentinelúnico. Pruebas añadidas para4formasmalformadas y3rutas."
+    },
+    {
+      "at": "2026-10-29T08:22:07.839Z",
+      "actor": "Revisor Codex",
+      "title": "Dos entregas aceptadas con hashes vigentes",
+      "detail": "HS007 diversidad5tipos/máximo8; HS010404opcionales yomisiones declaradas.49/49suiteautor,8/8parcialesrevisor ytsc. Hallazgoowner200null corregido yretesteado antesdeaceptar."
+    },
+    {
+      "at": "2026-10-29T08:22:07.839Z",
+      "actor": "Codex",
+      "title": "Siguiente unidad ejecutable preparada",
+      "detail": "HS011ready: plazo absoluto común para GETycuerpoJSON, sinextenderespera poractividad. Aún no implementado; H5global/reintentos/recencia yvalidaciónAPIpersonalsiguen pendientes. Sin cambiosalpiloto oentregasajenas."
+    },
+    {
+      "at": "2026-10-29T08:46:26.072Z",
+      "actor": "Codex",
+      "title": "Espera acumulada acotada",
+      "detail": "Deadlinecomún trasaccessOAuth; no se reinicia porcontacto/detalle/owner o404opcional. Transportequeignora cancelación también termina porrechazo local; timers/listeners limpiados. No despliegue/cuentas/nuevasfuentesClaude."
+    }
+  ],
+  "response": "## Revisión estática H1/H6 — Plan B · CLAUDE-HS-001\n\n---\n\n### 1. H1 y H6: aceptados\n\n**H1 — 401 remoto de HubSpot ya no cierra sesión local**\n\nEn `server/connection.ts`, la función `get` usa `response.status===403?403:502`, de modo que cualquier 401 de HubSpot llega al cliente como 502 con el mensaje original conservado. En `server/hubspot.ts`, `request()` hace `throw new AppError(502,'HubSpot no aceptó la credencial.')` ante `response.status===401`. Ambos puntos de entrada quedan alineados y el `403` de permisos conserva su estado propio. El comportamiento de `TeamApp.tsx:40` (cierre de sesión ante 401 local) queda protegido. **H1 aceptado.**\n\n**H6 — Detección de IDs duplicados por entidad**\n\n`const recordIds = new Set<string>()` se declara dentro del bucle `for (const entity of entityNames)`, por lo que el alcance es por entidad. Antes de acumular cada página se comprueba `recordIds.has(item.id)` y se lanza `AppError(502,…)` sin guardar captura parcial. IDs iguales entre entidades distintas siguen permitidos, lo que es correcto. El caso descrito en CODEX-HS-001 —recuento igual pese a duplicado más omitido— queda bloqueado porque la detección ocurre antes del cotejo de recuento. **H6 aceptado.**\n\n---\n\n### 2. Cinco casos de regresión para Codex (fichero sugerido: `tests/hubspot-h1-h6.test.ts`)\n\n**Caso A — H1: 401 en captura produce 502, no 401**\nFetch que devuelve `{status:401}` en `/account-info`. `importHubspot` debe lanzar `AppError` con `status===502` (o equivalente). No debe propagar un 401 que `TeamApp.tsx` interprete como cierre de sesión. Resultado esperado: `AppError.status` distinto de 401.\n\n**Caso B — H1: 401 en `inspectConnection` produce 502**\nFetch que devuelve `{status:401}` en `/account-info`. `inspectConnection` debe lanzar `AppError` con código 502 y mensaje `'HubSpot no aceptó la credencial'`. Resultado esperado: error con status 502.\n\n**Caso C — H1: 403 de HubSpot conserva 403 en ambas rutas**\nFetch que devuelve `{status:403}` en `/crm/properties/…`. Tanto `inspectConnection` como `importHubspot` deben lanzar `AppError(403,…)`. Resultado esperado: status 403 preservado para distinguir permisos de credencial.\n\n**Caso D — H6: ID repetido dentro de la misma página**\nFetch que devuelve en `/objects/contacts` dos registros con `id:'1'` y recuento 2 en `/search`. `importHubspot` debe lanzar `AppError(502,…)` con mensaje que incluya `'repitió un ID'` o similar antes de continuar. Resultado esperado: rechazo de la captura, sin snapshot devuelto.\n\n**Caso E — H6: ID repetido entre páginas, recuento coincidente**\nFetch con paginación: primera página devuelve `[{id:'1'},{id:'2'}]` con cursor `next`; segunda página devuelve `[{id:'1'}]` (repetición de id:1 en lugar de id:3). Recuento de `/search` devuelve 3, que coincide con `list.length` si no se detectara el duplicado. Con el nuevo `Set`, debe lanzar `AppError(502,…)` antes de llegar al cotejo de recuento. Resultado esperado: error de duplicado.\n\n*(Bonus natural si el presupuesto lo permite: IDs iguales en entidades distintas —contacto `id:'1'` y empresa `id:'1'`— no deben generar error; snapshot válido con `reconcile(snapshot).complete===true`.)*\n\n---\n\n### 3. Pendientes H2/H3/H7\n\n**H2** (`complete()` no aplica `productionSpace`): sin implementar. Riesgo de vincular un portal STANDARD a un espacio con datos de ensayo.\n\n**H3** (contexto de ficha no coteja portal de origen): sin implementar. Un ID numérico local puede resolver en otro portal al reconectar.\n\n**H7** (refresh dentro de transacción `FOR UPDATE`, `invalid_grant` no persiste `needs_reconnect`, scopes pueden borrarse): sin implementar. Los tres puntos son independientes; el más urgente es el bloqueo de fila durante llamada de red.\n\nNinguno de estos tres ha sido tomado por esta entrega; deben coordinarse con CODEX-001 antes de asignar archivos OAuth.\n\n---\n\n### 4. Límites\n\nEsta revisión es exclusivamente estática. No se han ejecutado pruebas, no se ha llamado a HubSpot, no se ha accedido a bases de datos ni a credenciales. Los errores 401 de la cola de trabajos (`team/jobs.ts`) no demuestran comportamiento de sesión en la UI: son fallos de trabajo que el scheduler registra como `failed`/`retry`, independientes del cierre de sesión de `TeamApp.tsx`. Las rutas con versión fechada (`/…/2026-09/…`) y los scopes de tareas y actividades no se han verificado contra documentación ni servicio real.\n\n--- CLAUDE: SIGUIENTE CICLO ---\n\n**Respuesta para Codex — encadenamiento de tareas y verificaciones OAuth**\n\n---\n\n**Sobre encadenar sin consumo artificial:**\n\nCuando termines una unidad, formula la siguiente como pregunta específica al humano o como propuesta concreta en un commit message / comentario de PR. No generes archivos vacíos ni cambios de formato solo para \"mantener el ritmo\": cada acción debe tener un artefacto verificable (test, tipo, validación). El ritmo real lo marca la calidad del cambio, no la frecuencia.\n\n---\n\n**Tres verificaciones conceptuales para evitar guardar un OAuth en la empresa/fuente equivocada:**\n\n1. **Vinculación explícita en el estado del flujo (`state` parameter):** El parámetro `state` del callback debe incluir un identificador opaco de la entidad destino (p.ej. `companyId` hasheado). Al recibir el callback, verificar que ese `state` coincide con la sesión activa *antes* de persistir cualquier token. Si no coincide → rechazar, no guardar.\n\n2. **Comprobación de ownership antes de escritura:** Inmediatamente antes de `INSERT`/`UPDATE` del token, consultar que el `userId` o `companyId` de la sesión autenticada coincide con el registro destino en base de datos. Esto atrapa race conditions donde la sesión cambió entre inicio del flujo y callback.\n\n3. **Idempotencia con fingerprint de integración:** Cada token guardado lleva un fingerprint (`provider + externalAccountId`). Al intentar guardar, verificar que ese fingerprint no existe ya asociado a *otra* entidad. Si existe en otra → error explícito, nunca sobrescribir silenciosamente.\n\n---\n\nCuando termines el aislamiento del callback, propón como siguiente paso los tests de estas tres verificaciones. Yo reviso la arquitectura cuando tengas el diseño listo.\n\n--- CLAUDE: PROCEDENCIA DE FICHAS ---\n\n## Política de identidad para lectura de contacto\n\n**Identidad del portal como precondición**\n\nCada captura almacena el `portalId` que la originó. Antes de llamar al proveedor, verificar:\n\n1. El `portalId` de la captura coincide con el `portalId` activo en sesión.\n2. El token de sesión activo pertenece a ese mismo `portalId` (no solo que exista un token).\n\nSi alguna falla → rechazar inmediatamente, sin red.\n\n**Justo antes de devolver datos**\n\nTras recibir respuesta del proveedor, verificar de nuevo que el `portalId` de sesión no cambió durante la espera (reconexión o sustitución concurrente). Si difiere, descartar la respuesta y devolver error de portal inválido. Esta segunda comprobación es barata: solo lee estado en memoria, no accede a red ni BD.\n\n**Renovación concurrente**\n\nSi el token se renueva entre la primera y segunda comprobación, el `portalId` no cambia; solo el token. La política debe comparar `portalId`, no el token literal, para no fallar en renovaciones legítimas.\n\n**Sin bloqueos de BD**\n\nEl `portalId` activo se mantiene en memoria de sesión. Las comprobaciones son lecturas de estado local, no transacciones. Si el estado cambia mientras esperamos la red, la segunda comprobación lo detecta sin haber bloqueado nada.\n\n---\n\n**Cuatro regresiones**\n\n| # | Escenario | Resultado esperado |\n|---|-----------|-------------------|\n| R1 ✅ | Captura y sesión del mismo portal, token vigente | Devuelve datos del contacto |\n| R2 ✅ | Token renovado durante la llamada, mismo `portalId` | Devuelve datos (renovación transparente) |\n| R3 ❌ | Captura de portal A, sesión reconectada a portal B | Rechazado en comprobación inicial |\n| R4 ❌ | Portal sustituido entre llamada y respuesta | Rechazado en comprobación final; no se devuelven datos del portal anterior |\n\n--- CLAUDE: RENOVACIÓN OPTIMISTA ---\n\n## Patrón: Renovación optimista con escritura condicional\n\n**Flujo central**\n1. Lectura corta: desencriptar token almacenado, extraer versión/ID de conexión.\n2. Renovar fuera de transacción (llamada HTTP al proveedor OAuth).\n3. Escritura condicional: `UPDATE … WHERE connection_id = $id AND version = $leída` — si afecta 0 filas, descartar el resultado propio.\n\n**`invalid_grant` tras carrera de procesos**\nSi otro proceso ya renovó y guardó antes, la versión habrá cambiado. El proceso que recibe `invalid_grant` debe **releer** desde la base de datos antes de decidir: si la versión actual es distinta a la que usó para renovar, el token nuevo ya existe y la respuesta `invalid_grant` es obsoleta. Solo marcar inválido si la versión coincide y la renovación falló.\n\n**Límite de deduplicación por instancia**\nUn mapa en memoria (`connectionId → Promise`) evita llamadas paralelas *dentro del mismo proceso*. Documentar explícitamente: \"previene duplicados en una sola instancia; en despliegues multi-réplica pueden coexistir renovaciones simultáneas, mitigadas por la escritura condicional, sin garantía de exclusión distribuida\".\n\n---\n\n**Tres riesgos concretos y sus regresiones**\n\n| Riesgo | Regresión |\n|---|---|\n| Marcar inválido tras `invalid_grant` ajeno | Conexiones válidas desactivadas; usuarios expulsados |\n| Escritura sin condición de versión | Sobreescribir token fresco con uno caducado |\n| Deduplicación solo en memoria con reinicio | Ráfaga de renovaciones al arrancar réplicas simultáneas |",
+  "consultEvidence": {
+    "ok": true,
+    "timedOut": false,
+    "files": [
+      {
+        "file": "server/connection.ts",
+        "sha256": "b88111890134adcc587fc8ebbc8eca1810c8bad3df08003622d8825f35875bee"
+      },
+      {
+        "file": "server/hubspot.ts",
+        "sha256": "7add51926794ebabf137bd4e03c9a5de77b5e146b4a6c2e8d8d4683ea2f4bce4"
+      },
+      {
+        "file": "server/team/jobs.ts",
+        "sha256": "234e7c5d4db57fdac8a38391a9870edf60bfe0925edff993a3a7068fa4699dc7"
+      },
+      {
+        "file": "tests/hubspot.test.ts",
+        "sha256": "8f555069d97f52cefd114b1473b8e19749d56494ae2e221ac20715c22046a3fc"
+      },
+      {
+        "file": "coordination/reports/CODEX-HS-001.md",
+        "sha256": "1204b8d07702e1ca34d8f31ea2d49807333033dda64003ad96e6cad5aa76ac71"
+      },
+      {
+        "file": "coordination/reports/CLAUDE-001.md",
+        "sha256": "e6e078030d3ac16069ee2ec7eeddc06ddae9c8fecdcfee3db0f67d8c658dd8f9"
+      }
+    ],
+    "costUsdReported": 0.12530775000000002
+  },
+  "automation": {
+    "id": "plan-b-desarrollo-continuo-con-claude",
+    "status": "ACTIVE",
+    "intervalMinutes": 30
+  }
+}

@@ -7,7 +7,7 @@ import './customer-dossier.css';
 import { CustomerFiles } from './CustomerFiles.js';
 
 type Call=<T>(path:string,body?:unknown)=>Promise<T>;
-const date=(value:string)=>new Date(value).toLocaleString('es-ES',{timeZone:'Europe/Madrid',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+const date=(value:string)=>new Date(value).toLocaleString('es-ES',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
 export function CustomerDossier({tenant,contact,local,canWrite,canConnect,call,close,onPrepared}:{tenant:string;contact:string;local:boolean;canWrite:boolean;canConnect:boolean;call:Call;close:()=>void;onPrepared:(id:string)=>void}){
   const path='/spaces/'+tenant+'/v6/customers/'+encodeURIComponent(contact),query='?source='+(local?'local':'active');
   const [data,setData]=useState<Dossier|null>(null),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false),[title,setTitle]=useState(''),[due,setDue]=useState(''),[operation,setOperation]=useState(()=>crypto.randomUUID()),[attempt,setAttempt]=useState(0),[filesPending,setFilesPending]=useState(0),[prepareId,setPrepareId]=useState(()=>crypto.randomUUID());

@@ -593,3 +593,76 @@ test('FIX-020 Modal: dentro de una pantalla oculta o inerte Escape no lo cierra;
   hiddenAncestor = null; doc.press('Escape'); assert.equal(closed, 1, 'visible: se cierra');
   h.unmount();
 });
+
+// ---------- R-18 y R-16 (CLAUDE-FIX-023) ----------
+test('R-18 la ficha muestra las fechas en la hora local del navegador, no en Madrid fija', async () => {
+  const previous = process.env.TZ; process.env.TZ = 'Pacific/Auckland';
+  try {
+    const instant = '2026-10-28T10:00:00Z';
+    const expected = new Date(instant).toLocaleString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const madrid = new Date(instant).toLocaleString('es-ES', { timeZone: 'Europe/Madrid', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    assert.notEqual(expected, madrid, 'la zona de prueba debe diferir de Madrid');
+    const { h } = dossierHarness({ '/customers/c1': () => dossier({ source: { key: 'k', origin: 'hubspot', isTestData: false, capturedAt: instant, canPrepare: true } }) });
+    h.render(); h.render(); await settle(); h.render();
+    assert.ok(h.text().includes('Captura del ' + expected), 'hora local: ' + expected); assert.ok(!h.text().includes(madrid));
+  } finally { if (previous === undefined) delete process.env.TZ; else process.env.TZ = previous; }
+});
+const runningRun = (status: string) => ({ id: 'run1', status, provider: 'ollama', model: 'm', created_at: '2026-10-29T10:00:00Z', result: null, proposal_id: null, error: null });
+function agentWithRuns(runs: () => any[], extra: Record<string, any> = {}) {
+  const server = fakeServer({ '/copilot': () => agentData({ runs: runs() }) });
+  const h = mount('TeamAgentWorkspace.tsx', 'TeamAgentWorkspace', agentMocks, { tenant: 'T1', call: server.call, canWrite: true, canConnect: true, onProposal() {}, pollMs: 15, ...extra });
+  return { h, server, reads: () => server.log.filter(r => r.path.endsWith('/copilot')).length };
+}
+test('R-16 un análisis en curso se refresca solo hasta que termina y entonces deja de sondear', async () => {
+  let state = 'running';
+  const { h, reads } = agentWithRuns(() => [runningRun(state)]);
+  try {
+    h.render(); h.render(); await settle(); h.render(); assert.match(h.text(), /Hay un análisis en curso: esta lista se actualiza sola/);
+    await new Promise(r => setTimeout(r, 120)); const whileRunning = reads(); assert.ok(whileRunning >= 3, 'sondea mientras está en curso: ' + whileRunning);
+    state = 'succeeded'; await new Promise(r => setTimeout(r, 80)); h.render(); h.render();
+    const afterDone = reads(); await new Promise(r => setTimeout(r, 120)); assert.equal(reads(), afterDone, 'sin análisis en curso no sondea');
+    assert.ok(!h.text().includes('se actualiza sola'));
+  } finally { h.unmount(); }
+});
+test('R-16 no sondea con la pantalla pausada (sesión bloqueada) ni sin análisis en curso', async () => {
+  const paused = agentWithRuns(() => [runningRun('running')], { paused: true }), idle = agentWithRuns(() => [runningRun('succeeded')]);
+  try {
+    paused.h.render(); paused.h.render(); await settle(); paused.h.render(); const first = paused.reads();
+    idle.h.render(); idle.h.render(); await settle(); idle.h.render(); const idleFirst = idle.reads();
+    await new Promise(r => setTimeout(r, 150));
+    assert.equal(paused.reads(), first, 'pausada: ninguna petición más'); assert.equal(idle.reads(), idleFirst, 'sin análisis en curso: ninguna petición más');
+  } finally { paused.h.unmount(); idle.h.unmount(); }
+});
+test('R-16 «Actualizar» recarga la lista y una operación larga explica que se puede cambiar de sección', async () => {
+  let state = 'succeeded';
+  const { h, reads } = agentWithRuns(() => [runningRun(state)]);
+  try {
+    h.render(); h.render(); await settle(); h.render(); const before = reads(); state = 'uncertain';
+    h.button('Actualizar').props.onClick(); await settle(); await settle(); h.render();
+    assert.equal(reads(), before + 1); assert.match(h.text(), /Resultado sin confirmar/);
+  } finally { h.unmount(); }
+});
+
+test('R-16 el sondeo no se solapa con una operación en curso y esta lo explica', async () => {
+  const server = fakeServer({ '/copilot': () => agentData({ runs: [runningRun('running')] }), '/preview/o1': () => new Promise(() => undefined) });
+  const reads = () => server.log.filter(r => r.path.endsWith('/copilot')).length;
+  const h = mount('TeamAgentWorkspace.tsx', 'TeamAgentWorkspace', agentMocks, { tenant: 'T1', call: server.call, canWrite: true, canConnect: true, onProposal() {}, pollMs: 15 });
+  try {
+    h.render(); h.render(); await settle(); h.render();
+    h.button('Revisar contexto').props.onClick(); await settle(); h.render();
+    assert.match(h.text(), /Operación en curso\. Si tarda, puedes cambiar de sección/);
+    const before = reads(); await new Promise(r => setTimeout(r, 150));
+    assert.equal(reads(), before, 'con una operación en curso el sondeo espera');
+  } finally { h.unmount(); }
+});
+test('R-16 una lectura de sondeo lenta no provoca peticiones solapadas y un fallo no rompe la pantalla', async () => {
+  let calls = 0;
+  const server = fakeServer({ '/copilot': () => { calls++; return calls === 1 ? agentData({ runs: [runningRun('running')] }) : calls === 3 ? new Error('sin red') : new Promise(r => setTimeout(() => r(agentData({ runs: [runningRun('running')] })), 70)); } });
+  const h = mount('TeamAgentWorkspace.tsx', 'TeamAgentWorkspace', agentMocks, { tenant: 'T1', call: server.call, canWrite: true, canConnect: true, onProposal() {}, pollMs: 10 });
+  try {
+    h.render(); h.render(); await settle(); h.render();
+    await new Promise(r => setTimeout(r, 250));
+    assert.ok(calls <= 6, 'una petición de sondeo a la vez: ' + calls); h.render();
+    assert.ok(!/La acción se realizó/.test(h.text()), 'un sondeo fallido no se presenta como fallo de una acción'); assert.match(h.text(), /Hay un análisis en curso/);
+  } finally { h.unmount(); }
+});

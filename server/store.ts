@@ -322,6 +322,7 @@ export class Store {
     return total;
   }
   private resetReturnState() {
+    this.set('agentState',{runs:[],proposals:[],artifacts:[]});
     this.set('manualRecoveryReport',null);
     for(const key of ['recoveryPlan','continuitySession','simulatedRemote'])this.set(key,null);
     for(const kind of ['simulation','hubspot']){this.set('returnWatermark:'+kind,0);this.set('remoteMapping:'+kind,{});}

@@ -12,6 +12,7 @@ import { summarizeCapture } from './assessment.js';
 import { ConnectionSchema, type inspectConnection } from './connection.js';
 import { verifyManualRecovery } from './manual-recovery.js';
 import { APP_VERSION, RUNTIME_ZIP } from '../shared/version.js';
+import { rememberExport, confirmRecoveryCopy, bundleRevision } from './recovery-copy.js';
 
 export interface ExternalServices { capture:CaptureImporter; remote:(token:string,accountId:string,spec:import('../shared/model.js').AppSpec,fetcher?:typeof fetch,readOnly?:boolean)=>Remote; inspect?:typeof inspectConnection; }
 export function registerV2(app:FastifyInstance,store:Store,root:string,runtime=false,external?:ExternalServices) {
@@ -118,13 +119,15 @@ export function registerV2(app:FastifyInstance,store:Store,root:string,runtime=f
   });
   }
   app.post('/api/v2/export/encrypted',async(request,reply)=>{
-    const {password}=z.object({password:z.string().min(12).max(200)}).strict().parse(request.body);
-    const encrypted=encodePortable(store.bundle(),password);store.set('recoveryCopy',{exportedAt:new Date().toISOString()});
+    const {password,revision}=z.object({password:z.string().min(12).max(200),revision:z.string().optional()}).strict().parse(request.body);
+    const bundle=store.bundle();if(revision&&revision!==bundleRevision(bundle))throw new AppError(409,'El espacio cambió. Revisa de nuevo el contenido de la exportación.');
+    const encrypted=encodePortable(bundle,password);rememberExport(store,bundle,encrypted);
     return reply.type('application/json').header('Content-Disposition','attachment; filename="plan-b-copia-cifrada.json"').send(encrypted);
   });
   app.post('/api/v2/export/package',async(request,reply)=>{
-    const {password}=z.object({password:z.string().min(12).max(200)}).strict().parse(request.body);
-    const zip=await runtimeZip(store.bundle(),root,password);store.set('recoveryCopy',{exportedAt:new Date().toISOString()});
+    const {password,revision}=z.object({password:z.string().min(12).max(200),revision:z.string().optional()}).strict().parse(request.body);
+    const bundle=store.bundle();if(revision&&revision!==bundleRevision(bundle))throw new AppError(409,'El espacio cambió. Revisa de nuevo el contenido de la exportación.');
+    const zip=await runtimeZip(bundle,root,password);rememberExport(store,bundle,zip);
     return reply.type('application/zip').header('Content-Disposition','attachment; filename="'+RUNTIME_ZIP+'"').send(zip);
   });
   app.post('/api/v2/restore',async request=>{
@@ -140,9 +143,8 @@ export function registerV2(app:FastifyInstance,store:Store,root:string,runtime=f
     store.restoreBundle(bundle);store.set('recoveryCopy',{exportedAt:(bundle as any).exportedAt,restoredAt:new Date().toISOString()});return {restored:true};
   });
   app.post('/api/v3/recovery-copy/confirm',async request=>{
-    z.object({storedSeparately:z.literal(true)}).strict().parse(request.body);
-    const copy=store.get<{exportedAt:string}|null>('recoveryCopy',null);if(!copy)throw new AppError(409,'Exporta primero una copia cifrada.');
-    store.set('recoveryCopy',{...copy,confirmedAt:new Date().toISOString()});return {confirmed:true};
+    const {revision}=z.object({storedSeparately:z.literal(true),revision:z.string().regex(/^[a-f0-9]{64}$/).optional()}).strict().parse(request.body);
+    return confirmRecoveryCopy(store,revision);
   });
   app.get('/api/v3/diagnostics',async(_request,reply)=>{
     const status=continuity.status();

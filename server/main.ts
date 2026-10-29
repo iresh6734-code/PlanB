@@ -8,6 +8,7 @@ import { hubspotRemote } from './hubspot-remote.js';
 import { lockInstance } from './instance.js';
 import { inspectConnection } from './connection.js';
 import { publishEndpoint } from './endpoint.js';
+import { registerTeamSync } from './team-sync.js';
 
 const root = process.cwd();
 const releaseLock=lockInstance(resolve(process.env.PLANB_DATA_DIR || join(root,'data')));
@@ -22,6 +23,7 @@ const { app, store } = await createBaseApp({
   ,external:{capture:importHubspot,remote:hubspotRemote,inspect:inspectConnection}
 });
 registerGenerator(app, store, providers);
+registerTeamSync(app,store,process.env.PLANB_TEAM_ORIGIN,process.env.PLANB_TEAM_DEMO==='1');
 const seed = join(root, 'demo.seed.json');
 if (!store.snapshot && existsSync(seed)) store.restoreBundle(JSON.parse(readFileSync(seed, 'utf8')));
 let port = Number(process.env.PLANB_PORT || 4317);

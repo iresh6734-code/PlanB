@@ -8,6 +8,7 @@ build/
 data/
 test-results/
 playwright-report/
+.playwright-mcp/
 release/
 runtime-assets/
 tests/.tmp/
@@ -21,3 +22,7 @@ delivery/
 planb-local-*/
 planb-hubspot-*/
 planb-ensayo-retorno-*/
+infrastructure/**/.terraform/
+infrastructure/**/*.tfstate*
+infrastructure/**/*.tfvars
+infrastructure/**/*.tfplan

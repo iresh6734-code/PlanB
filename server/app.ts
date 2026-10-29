@@ -8,6 +8,7 @@ import { runtimeZip } from './exporter.js';
 import { registerSecurity } from './security.js';
 import { registerV2, type ExternalServices } from './v2.js';
 import { randomUUID } from 'node:crypto';
+import { registerV4 } from './v4.js';
 
 export interface AppOptions {
   dbPath: string; root: string; staticDir: string; runtime?: boolean;
@@ -69,12 +70,12 @@ export async function createBaseApp(options: AppOptions): Promise<{ app: Fastify
   });
   app.post<{ Params: { entity: string } }>('/api/records/:entity', async request => {
     const entity = EntityNameSchema.parse(request.params.entity);
-    const body = z.object({ values: z.record(z.union([z.string(), z.number().finite(), z.boolean(), z.null()])) }).strict().parse(request.body);
+    const body = z.object({ values: z.record(z.string(),z.union([z.string(), z.number().finite(), z.boolean(), z.null()])) }).strict().parse(request.body);
     return { record: store.saveRecord(entity, body.values) };
   });
   app.patch<{ Params: { entity: string; id: string } }>('/api/records/:entity/:id', async request => {
     const entity = EntityNameSchema.parse(request.params.entity);
-    const body = z.object({ values: z.record(z.union([z.string(), z.number().finite(), z.boolean(), z.null()])) }).strict().parse(request.body);
+    const body = z.object({ values: z.record(z.string(),z.union([z.string(), z.number().finite(), z.boolean(), z.null()])) }).strict().parse(request.body);
     return { record: store.saveRecord(entity, body.values, request.params.id) };
   });
   app.post('/api/activate', async request => {
@@ -127,6 +128,7 @@ export async function createBaseApp(options: AppOptions): Promise<{ app: Fastify
     return reply.type('application/zip').header('Content-Disposition', 'attachment; filename="Plan-B-independiente.zip"').send(zip);
   });
   registerV2(app,store,options.root,!!options.runtime,options.external);
+  registerV4(app,store,!!options.runtime);
   if (existsSync(options.staticDir)) {
     await app.register(staticPlugin, { root: options.staticDir, prefix: '/', decorateReply: true });
     app.setNotFoundHandler((request, reply) => {

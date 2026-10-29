@@ -125,3 +125,10 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 .continuity-verification{min-width:0}.continuity-verification>article{background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:18px 20px}.continuity-verification>article>p{font-size:12px;line-height:1.7;margin-bottom:13px}.continuity-verification .history-section{margin-top:18px;padding-top:16px}.continuity-verification .history-section .section-heading{flex-wrap:wrap;gap:8px}.continuity-verification .history-section h2{font-size:14px}.continuity-verification .history-section .button-row{margin:0;gap:12px}.maintenance-details>summary{font-size:12px;cursor:pointer;color:#335c94;padding:5px 0}.continuity-actions>article>.button-row{margin:12px 0}.continuity-actions>article>.helper{margin-bottom:8px}.continuity-actions .history-section .helper{margin-bottom:0}@media(max-width:600px){.continuity-verification>article{padding:15px}}
 
 .prepare-heading h1{font-size:24px;line-height:1.25;letter-spacing:-.5px}.review-grid article{padding:15px 16px;border-radius:6px;background:var(--surface)}.review-grid small,.rule-list small,.plain-list,.export-instructions ol,.export-instructions li,.workspace-footer,.status-strip .muted{color:var(--muted)}.review-grid small,.rule-list small,.provenance{font-size:12px;line-height:1.6}.provenance{color:#52627a;background:#eaf0f6}.export-instructions ol{font-size:13px;line-height:1.7}.export-instructions li{margin-bottom:8px}.team-sync-page>.settings-grid,.team-sync-page>.field,.team-sync-page>.helper{max-width:880px}@media(max-width:600px){.prepare-heading h1{font-size:23px}}
+
+/* Recorridos: contexto documental ajustado a la línea, selector de clientes y búsqueda de contactos. */
+.commercial-document-context pre{white-space:pre-wrap;overflow-wrap:anywhere}
+.contact-select{display:grid;gap:10px;min-width:0}
+.contact-select select{min-width:0;max-width:100%}
+.contacts-search{max-width:420px;margin:0 0 12px}
+.error-box>p{margin:0 0 8px}

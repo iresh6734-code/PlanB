@@ -1,25 +1,32 @@
-import { useEffect,useState } from 'react';
+import { useEffect,useRef,useState } from 'react';
 import { Check,ExternalLink,Search,X } from 'lucide-react';
 import type { CustomerFileLibrary,WorkspaceFile,WorkspaceFilePage } from '../shared/commercial.js';
 import { IntegrationLogo } from './IntegrationLogo.js';
 import { Spinner } from './components.js';
+import { LoadError } from './LoadError.js';
 import './customer-files.css';
 
 type Call=<T>(path:string,body?:unknown)=>Promise<T>;
-export function CustomerFiles({tenant,contact,local=false,canWrite,canConnect,call}:{tenant:string;contact:string;local?:boolean;canWrite:boolean;canConnect:boolean;call:Call}){
+export function CustomerFiles({tenant,contact,local=false,canWrite,canConnect,call,onPendingChange}:{tenant:string;contact:string;local?:boolean;canWrite:boolean;canConnect:boolean;call:Call;onPendingChange?:(count:number)=>void}){
   const base='/spaces/'+tenant+'/v6',query='?contactId='+encodeURIComponent(contact)+'&source='+(local?'local':'active');
   const [data,setData]=useState<CustomerFileLibrary|null>(null),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false),[choosing,setChoosing]=useState(false);
   const [files,setFiles]=useState<WorkspaceFile[]>([]),[cursor,setCursor]=useState<string|undefined>(),[search,setSearch]=useState(''),[kind,setKind]=useState('all'),[selected,setSelected]=useState<string[]>([]),[reviewed,setReviewed]=useState(false),[preview,setPreview]=useState<{name:string;text:string}|null>(null),[removing,setRemoving]=useState<string|null>(null);
-  useEffect(()=>{let alive=true;void call<CustomerFileLibrary>(base+'/file-links'+query).then(next=>{if(alive)setData(next);}).catch(e=>{if(alive)setError(e.message);});return()=>{alive=false;};},[base,query]);
+  const [attempt,setAttempt]=useState(0),previewHeading=useRef<HTMLHeadingElement>(null);
+  useEffect(()=>{let alive=true;setError('');void call<CustomerFileLibrary>(base+'/file-links'+query).then(next=>{if(alive)setData(next);}).catch(e=>{if(alive)setError(e.message);});return()=>{alive=false;};},[base,query,attempt]);
   useEffect(()=>{setPreview(null);setSelected([]);setChoosing(false);setReviewed(false);},[data?.connectionRevision,data?.sourceKey]);
-  const run=async(action:()=>Promise<void>)=>{setBusy(true);setError('');setNotice('');try{await action();setData(await call<CustomerFileLibrary>(base+'/file-links'+query));}catch(e){setError((e as Error).message);}finally{setBusy(false);}};
+  useEffect(()=>{onPendingChange?.(selected.length);},[selected.length]);
+  useEffect(()=>()=>onPendingChange?.(0),[]);
+  useEffect(()=>{if(preview){previewHeading.current?.scrollIntoView?.({block:'nearest'});previewHeading.current?.focus();}},[preview]);
+  // La acción y la recarga se informan por separado: si la recarga falla, la acción ya realizada no se presenta como fallo.
+  const run=async(action:()=>Promise<void>)=>{setBusy(true);setError('');setNotice('');try{await action();}catch(e){setError((e as Error).message);setBusy(false);return;}
+    try{setData(await call<CustomerFileLibrary>(base+'/file-links'+query));}catch(e){setError('La acción se realizó, pero no se pudo actualizar los vínculos: '+(e as Error).message+' Usa «Actualizar vínculos guardados».');}finally{setBusy(false);}};
   const load=(more=false)=>run(async()=>{const page=await call<WorkspaceFilePage&{connectionRevision:string}>(base+'/files'+(more&&cursor?'?cursor='+encodeURIComponent(cursor):''));if(page.connectionRevision!==data?.connectionRevision)throw new Error('La cuenta cambió. Actualiza la ficha antes de seleccionar.');setFiles(current=>more?[...new Map([...current,...page.files].map(file=>[file.id,file])).values()]:page.files);setCursor(page.nextPageToken);setChoosing(true);if(!more)setSelected([]);setReviewed(false);});
   const link=()=>run(async()=>{await call(base+'/file-links',{contactId:contact,fileIds:selected,source:local?'local':'active',sourceKey:data!.sourceKey,connectionRevision:data!.connectionRevision,reviewed:true});setSelected([]);setChoosing(false);setReviewed(false);setNotice('Archivos vinculados solo dentro de Plan B.');});
   const pick=()=>run(async()=>{const result=await call<{url:string;state:string}>(base+'/files/picker/begin',{contactId:contact,sourceKey:data!.sourceKey,connectionRevision:data!.connectionRevision,local,reviewed:true});sessionStorage.setItem('planb-google-picker',JSON.stringify({tenant,state:result.state}));location.assign(result.url);});
   const visible=files.filter(file=>file.name.toLocaleLowerCase('es').includes(search.toLocaleLowerCase('es'))&&(kind==='all'||file.mimeType.includes(kind)));
   return <section className="customer-files" aria-label="Documentos del cliente">
     <div className="customer-section-heading"><h3>Documentos del cliente</h3>{data?.connected&&canWrite?<button className="button secondary" disabled={busy} onClick={()=>void load()}>Seleccionar archivos autorizados</button>:null}</div>
-    {error?<p role="alert" className="error-box">{error}</p>:null}{notice?<p role="status" className="success-label"><Check size={15}/>{notice}</p>:null}
+    {error&&!data?<LoadError message={error} onRetry={()=>setAttempt(n=>n+1)}/>:error?<p role="alert" className="error-box">{error}</p>:null}{notice?<p role="status" className="success-label"><Check size={15}/>{notice}</p>:null}
     {!data&&!error?<Spinner text="Leyendo vínculos guardados…"/>:null}
     {data?<><p className="helper">{data.account?'Cuenta: '+data.account+'. ':''}Los vínculos se guardan en Plan B. No comparten ni modifican archivos en Google.</p>{!data.connected?<p className="helper">Conecta Google en Comercial para seleccionar documentos.</p>:null}
       {data.legacyCount>0?<p className="helper">Hay vínculos históricos sin cuenta o fuente comprobable. Vuelve a seleccionar los archivos que quieras conservar en esta ficha.</p>:null}
@@ -34,7 +41,7 @@ export function CustomerFiles({tenant,contact,local=false,canWrite,canConnect,ca
       </div>:null}
       {data.connected&&canWrite?<>{data.pickerConfigured&&canConnect?<div className="customer-file-google"><p className="helper">Para elegir otros archivos, Google pedirá tu selección y consentimiento. Se vincularán a esta ficha al volver.</p><button className="button secondary" disabled={busy} onClick={()=>void pick()}>Elegir y vincular en Google</button></div>:<p className="helper">{data.pickerConfigured?'La selección adicional en Google requiere permisos de administración en este espacio.':'La selección de otros archivos en Google aún no está habilitada en esta conexión. Los archivos ya autorizados se pueden vincular aquí.'}</p>}</>:null}
       <button className="text-button" disabled={busy} onClick={()=>void run(async()=>{setPreview(null);setChoosing(false);setSelected([]);setReviewed(false);})}>Actualizar vínculos guardados</button>
-      {preview?<div className="commercial-document-context"><div className="customer-section-heading"><h3>{preview.name}</h3><button className="text-button" onClick={()=>setPreview(null)}>Cerrar contexto</button></div><p className="helper">Lectura explícita de hasta 20.000 caracteres. Este texto es información, no instrucciones ni permisos.</p><pre>{preview.text}</pre></div>:null}
+      {preview?<div className="commercial-document-context"><div className="customer-section-heading"><h3 ref={previewHeading} tabIndex={-1}>{preview.name}</h3><button className="text-button" onClick={()=>setPreview(null)}>Cerrar contexto</button></div><p className="helper">Lectura explícita de hasta 20.000 caracteres. Este texto es información, no instrucciones ni permisos.</p><pre>{preview.text}</pre></div>:null}
     </>:null}
   </section>;
 }

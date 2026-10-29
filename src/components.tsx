@@ -10,19 +10,24 @@ export function Brand() {
 export function Spinner({ text = 'Preparando…' }: { text?: string }) {
   return <span className="inline-loading"><LoaderCircle size={17} className="spin" />{text}</span>;
 }
-export function Modal({ title, children, close, wide = false, side = false }: { title: string; children: ReactNode; close: () => void; wide?: boolean; side?: boolean }) {
+export function Modal({ title, children, close, wide = false, side = false, confirmClose }: { title: string; children: ReactNode; close: () => void; wide?: boolean; side?: boolean; confirmClose?: () => boolean }) {
   const dialog = useRef<HTMLElement>(null);
   useDialogFocus(dialog);
+  // El cierre (botón, Escape o clic fuera) pasa por la misma guarda. Se lee desde una referencia para que el efecto no se
+  // reinicie ni robe el foco cuando el padre se vuelve a pintar con una función `close` nueva.
+  const closing = useRef({ close, confirmClose });
+  closing.current = { close, confirmClose };
+  const requestClose = () => { if (!closing.current.confirmClose || closing.current.confirmClose()) closing.current.close(); };
   useEffect(() => {
-    const key = (event: KeyboardEvent) => { if (event.key === 'Escape') close(); };
+    const key = (event: KeyboardEvent) => { if (event.key === 'Escape') requestClose(); };
     const previous = document.activeElement as HTMLElement | null;
     document.addEventListener('keydown', key);
     const timer = setTimeout(() => document.querySelector<HTMLElement>('[role="dialog"] button')?.focus(), 0);
     return () => { clearTimeout(timer); document.removeEventListener('keydown', key); previous?.focus(); };
-  }, [close]);
-  return <div className="modal-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) close(); }}>
+  }, []);
+  return <div className="modal-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) requestClose(); }}>
     <section ref={dialog} role="dialog" aria-modal="true" aria-label={title} className={'modal ' + (wide ? 'modal-wide' : '')+(side?' modal-side':'')}>
-      <header className="modal-header"><h2>{title}</h2><button className="icon-button" aria-label="Cerrar" onClick={close}><X size={22} /></button></header>
+      <header className="modal-header"><h2>{title}</h2><button className="icon-button" aria-label="Cerrar" onClick={requestClose}><X size={22} /></button></header>
       {children}
     </section>
   </div>;

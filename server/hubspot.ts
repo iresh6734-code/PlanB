@@ -57,10 +57,16 @@ export async function importHubspot(options: HubspotOptions, fetcher: typeof fet
     };
     let response = await get(currentPath);
     if (response.status === 404 && legacyPath) response = await get(legacyPath);
-    if (response.status === 401) throw new AppError(401, 'HubSpot no aceptó la credencial.');
+    if (response.status === 401) throw new AppError(502, 'HubSpot no aceptó la credencial.');
     if (response.status === 403) throw new AppError(403, 'Faltan permisos de lectura en HubSpot. Revisa los objetos, sus propiedades y external-settings-access.');
     if (!response.ok || response.status === 207&&!partialAssociations) throw new AppError(502, 'HubSpot devolvió una lectura incompleta (' + response.status + ').');
-    const data = await response.json() as T & { errors?: unknown[]; status?: string };
+    let rawData: unknown;
+    try { rawData = await response.json(); }
+    catch { throw new AppError(502, 'HubSpot devolvió una respuesta no válida. La captura anterior se conserva.'); }
+    if (!rawData || typeof rawData !== 'object' || Array.isArray(rawData)) {
+      throw new AppError(502, 'HubSpot devolvió una respuesta no válida. La captura anterior se conserva.');
+    }
+    const data = rawData as T & { errors?: unknown[]; status?: string };
     if (data.errors?.length&&!partialAssociations || data.status === 'PENDING' || data.status === 'PROCESSING') throw new AppError(502, 'HubSpot devolvió resultados parciales. No se sustituirá la captura.');
     return data;
   }
@@ -109,15 +115,34 @@ export async function importHubspot(options: HubspotOptions, fetcher: typeof fet
     });
     const propertyNames = selected.map(p => p.name).join(',');
     const list: HsRecord[] = [];
+    const recordIds = new Set<string>();
     let after = '', previous = new Set<string>();
     do {
       options.signal?.throwIfAborted();
       const query = '?limit=100&archived=false&properties=' + encodeURIComponent(propertyNames) + (after ? '&after=' + encodeURIComponent(after) : '');
       const page = await request<Page<HsRecord>>('/crm/objects/2026-09/' + entity + query, '/crm/v3/objects/' + entity + query);
       if (!Array.isArray(page.results)) throw new AppError(502, 'HubSpot no devolvió la colección completa.');
-      list.push(...page.results);
-      if (records.length + list.length > MAX_RECORDS) throw new AppError(413, 'El piloto admite hasta 10.000 registros totales. No se guardará una captura parcial.');
-      after = page.paging?.next ? String(page.paging.next.after) : '';
+      if (page.results.length > MAX_RECORDS - records.length - list.length) throw new AppError(413, 'El piloto admite hasta 10.000 registros totales. No se guardará una captura parcial.');
+      let nextCursor = '';
+      if (page.paging?.next != null) {
+        const rawCursor: unknown = page.paging.next?.after;
+        if (!(typeof rawCursor === 'string' && rawCursor.length > 0 && rawCursor === rawCursor.trim()) &&
+            !(typeof rawCursor === 'number' && Number.isSafeInteger(rawCursor) && rawCursor >= 0)) {
+          throw new AppError(502, 'HubSpot devolvió un cursor de paginación no válido. No se guardará una captura parcial.');
+        }
+        nextCursor = String(rawCursor);
+      }
+      if (!page.results.length && nextCursor) throw new AppError(502, 'HubSpot devolvió una página sin progreso. No se guardará una captura parcial.');
+      for (const item of page.results) {
+        if (!item || typeof item !== 'object' || typeof item.id !== 'string' || !item.id.length || item.id !== item.id.trim() ||
+            !item.properties || typeof item.properties !== 'object' || Array.isArray(item.properties)) {
+          throw new AppError(502, 'HubSpot devolvió un registro no válido. No se guardará una captura parcial.');
+        }
+        if (recordIds.has(item.id)) throw new AppError(502, 'HubSpot repitió un ID de registro en ' + basics[entity].label.toLowerCase() + '. No se guardará una captura parcial.');
+        recordIds.add(item.id);
+      }
+      for (const item of page.results) list.push(item);
+      after = nextCursor;
       if (after && previous.has(after)) throw new AppError(502, 'HubSpot repitió un cursor de paginación.');
       if (after) previous.add(after);
     } while (after);

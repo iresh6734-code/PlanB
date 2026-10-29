@@ -1,0 +1,32 @@
+import { test, expect } from '@playwright/test';
+import { resolve } from 'node:path';
+const output=resolve(process.env.PLANB_EVIDENCE_DIR||'test-results'),team='http://127.0.0.1:4341',local='http://127.0.0.1:4337';
+test('v5: dos empresas, permisos, cola y sincronización con conflictos en escritorio y móvil',async({page})=>{
+  const errors:string[]=[],external:string[]=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
+  await page.route('**/*',route=>{if(new URL(route.request().url()).hostname!=='127.0.0.1'){external.push(route.request().url());return route.abort();}return route.continue();});
+  await page.goto(team+'/team');await expect(page.getByRole('heading',{name:'Las relaciones de tu equipo.'})).toBeVisible();
+  const spaces=(await page.request.get(team+'/api/team/spaces').then(r=>r.json())).spaces;
+  const a=spaces.find((s:any)=>s.name.includes('Arce')).id,b=spaces.find((s:any)=>s.name.includes('Faro')).id;
+  await page.getByLabel('Empresa activa',{exact:true}).selectOption(a);
+  await page.getByRole('button',{name:'Editar teléfono de Lucía',exact:true}).click();await page.getByLabel('Teléfono',{exact:true}).fill('600 111 333');await page.getByRole('button',{name:'Guardar cambio del equipo',exact:true}).click();
+  await expect(page.getByRole('cell',{name:'600 111 333',exact:true})).toBeVisible();
+  await page.getByLabel('Empresa activa',{exact:true}).selectOption(b);await expect(page.getByRole('cell',{name:'600 000 001',exact:true})).toBeVisible();await expect(page.getByRole('cell',{name:'600 111 333',exact:true})).toHaveCount(0);
+  await page.getByLabel('Perfil de ensayo',{exact:true}).selectOption('demo-viewer');await expect(page.getByRole('button',{name:'Editar teléfono de Lucía',exact:true})).toBeDisabled();
+  const denied=await page.request.post(team+'/api/team/spaces/'+b+'/jobs',{data:{kind:'sync-audit',dedupeKey:crypto.randomUUID()}});expect(denied.status()).toBe(403);
+  await page.getByLabel('Perfil de ensayo',{exact:true}).selectOption('demo-admin');await page.getByLabel('Empresa activa',{exact:true}).selectOption(a);
+  await page.screenshot({path:resolve(output,'v0.5.0-equipo.png'),fullPage:true});
+  await page.getByRole('button',{name:'Trabajos',exact:true}).click();await page.getByRole('button',{name:'Comprobar sincronización',exact:true}).click();await expect(page.getByText('Completado',{exact:true})).toBeVisible({timeout:15000});
+  await page.screenshot({path:resolve(output,'v0.5.0-trabajos.png'),fullPage:true});
+  const pair=await (await page.request.post(team+'/api/team/spaces/'+a+'/devices',{data:{name:'PC del recorrido'}})).json();
+  const gate=await page.request.get(local+'/api/v2/auth/status').then(r=>r.json());expect((await page.request.post(local+'/api/v2/auth/'+(gate.configured?'login':'setup'),{data:{password:'solo-prueba-local-2026'}})).ok()).toBeTruthy();
+  await page.goto(local);await page.getByRole('button',{name:'Copia de equipo',exact:true}).click();await page.getByLabel('Servicio de equipo',{exact:true}).fill(team);await page.getByLabel('ID de empresa',{exact:true}).fill(a);await page.getByLabel('Clave de vinculación',{exact:true}).fill(pair.token);await page.getByRole('button',{name:'Vincular copia protegida',exact:true}).click();
+  const row=page.getByRole('row').filter({has:page.getByRole('cell',{name:'Lucía Martín',exact:true})});await row.getByRole('button',{name:'Editar sin conexión',exact:true}).click();await page.getByLabel('Teléfono local',{exact:true}).fill('600 222 444');await page.getByRole('button',{name:'Guardar en la copia',exact:true}).click();await expect(page.getByText('1 cambios pendientes',{exact:false})).toBeVisible();
+  const remote=(await page.request.get(team+'/api/team/spaces/'+a+'/records').then(r=>r.json())).records.find((r:any)=>r.id==='contact-1');
+  expect((await page.request.post(team+'/api/team/spaces/'+a+'/records',{data:{id:crypto.randomUUID(),entity:'contacts',recordId:'contact-1',baseVersion:remote.version,values:{phone:'600 333 555'}}})).ok()).toBeTruthy();
+  await page.getByRole('button',{name:'Sincronizar ahora',exact:true}).click();await expect(page.getByText('1 conflictos registrados',{exact:false})).toBeVisible();
+  await page.screenshot({path:resolve(output,'v0.5.0-copia-local.png'),fullPage:true});
+  await page.goto(team+'/team');await page.getByRole('button',{name:'Dispositivos',exact:true}).click();await expect(page.getByRole('heading',{name:'Conflictos por revisar',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Conservar remoto',exact:true}).click();await expect(page.getByRole('heading',{name:'Conflictos por revisar',exact:true})).toHaveCount(0);
+  for(const width of [390,320]){await page.setViewportSize({width,height:900});for(const label of ['Contactos','Trabajos','Dispositivos','Equipo','Integraciones','Agente']){await page.getByRole('button',{name:label,exact:true}).click();await expect(page.locator('main h1')).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBeTruthy();if(width===390&&label==='Trabajos')await page.screenshot({path:resolve(output,'v0.5.0-movil.png'),fullPage:true});}}
+  await page.goto(local);await page.getByRole('button',{name:'Copia de equipo',exact:true}).click();await page.getByRole('button',{name:'Sincronizar ahora',exact:true}).click();await expect(page.getByText('0 conflictos registrados',{exact:false})).toBeVisible();expect(errors).toEqual([]);expect(external).toEqual([]);
+});

@@ -1,0 +1,7 @@
+.protection-page.protection-page {min-width:0;}
+.protection-page.protection-page > section {min-width:0;max-width:470px;width:100%;}
+.protection-page.protection-page form,.protection-completion {display:grid;gap:16px;}
+.protection-page.protection-page .field input,.protection-page.protection-page .button {min-height:44px;min-width:0;white-space:normal;}
+.protection-page.protection-page p,.protection-page.protection-page small {overflow-wrap:anywhere;line-height:1.6;}
+.protection-page.protection-page small {display:block;margin-top:20px;}
+@media(max-width:480px){.protection-page.protection-page .button {width:100%;}}

@@ -1,0 +1,21 @@
+/* ContinuityHub (clases cph-*). Sin estilos globales. */
+.cph{display:grid;gap:16px;color:var(--text-1,#0f1a2b)}
+.cph *{min-width:0}
+.cph>h2{margin:0;font-size:20px}
+.cph-message{margin:0;padding:8px 12px;border:1px solid var(--info-border,#c4d3f2);border-left-width:3px;border-radius:6px;background:var(--info-bg,#e8eefd);line-height:1.5;overflow-wrap:anywhere}
+.cph-confirm{padding:12px 14px;border:1px solid var(--warning-border,#e6cf92);border-left-width:3px;border-radius:8px;background:var(--warning-bg,#fbefd2);line-height:1.5}
+.cph-confirm h3{margin:0 0 6px;font-size:16px;outline:0}
+.cph-confirm h3:focus-visible{outline:2px solid var(--primary,#2c58dc);outline-offset:2px}
+.cph-confirm p{margin:0 0 6px;overflow-wrap:anywhere}
+.cph-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+body .cph .cph-actions .button{display:inline-flex;align-items:center;justify-content:center;min-height:var(--control-h,32px);height:auto;padding-block:6px;max-width:100%}
+body .cph .cph-actions .button[disabled]{opacity:.6;cursor:not-allowed}
+@media (max-width:600px){body .cph .cph-actions .button{min-height:44px;flex:1 1 100%}}
+.cph-sources{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;line-height:1.5}
+.cph-sources li{overflow-wrap:anywhere}
+.cph-sources li[data-state="loading"]{color:var(--text-2,#394659)}
+.cph-sources li[data-state="locked"],.cph-sources li[data-state="unavailable"]{color:var(--warning-text,#80510a);font-weight:600}
+.cph-live{margin:0;padding:8px 12px;border:1px solid var(--info-border,#c4d3f2);border-left-width:3px;border-radius:6px;background:var(--info-bg,#e8eefd);line-height:1.5;overflow-wrap:anywhere}
+.cph-live p{margin:0 0 4px}
+/* Publicación parcial: mientras falte alguna fuente no se ofrece una exportación incompleta. */
+.cph[data-partial="true"] .cpp-prov,.cph[data-partial="true"] .imp-export{display:none}

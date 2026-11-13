@@ -1,0 +1,36 @@
+/* Mapa de impacto y resumen de turno (clases imp-*). Sin estilos globales. */
+.imp{margin:0 0 20px;padding:14px 16px;border:1px solid var(--border,#e0e5ee);border-radius:10px;background:var(--bg-surface,#fff);color:var(--text-1,#0f1a2b);font-size:14px;line-height:1.5}
+.imp *{min-width:0}
+.imp h2{margin:0 0 4px;font-size:18px}
+.imp h3{margin:16px 0 6px;font-size:15px}
+.imp-lede{margin:0 0 8px;color:var(--text-2,#394659)}
+.imp-summary{padding:10px 12px;border:1px solid var(--info-border,#c4d3f2);border-left-width:3px;border-radius:6px;background:var(--info-bg,#e8eefd)}
+.imp-summary h3{margin:0 0 4px}
+.imp-lead{margin:0 0 6px;font-weight:600;overflow-wrap:anywhere}
+.imp-decision{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px;margin:0 0 6px}
+.imp-decision p{margin:0;overflow-wrap:anywhere}
+.imp-lines,.imp-rows{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.imp-lines li{overflow-wrap:anywhere}
+.imp-row{padding:8px 10px;border:1px solid var(--border,#e0e5ee);border-left-width:3px;border-radius:6px;background:var(--bg-subtle,#f4f6fa);overflow-wrap:anywhere}
+.imp-row p{margin:0}
+.imp-row small{display:block;margin-top:2px;color:var(--text-2,#394659);font-size:12px}
+.imp-blocked{border-left-color:var(--danger,#ac2a24)}
+.imp-attention{border-left-color:var(--warning,#80510a)}
+.imp-unknown{border-left-color:var(--text-3,#586680)}
+.imp-ok{border-left-color:var(--success,#17684a)}
+.imp-badge{display:inline-block;padding:0 6px;border-radius:999px;background:var(--bg-surface,#fff);border:1px solid var(--border,#e0e5ee);font-size:12px;font-weight:600}
+.imp-missing{margin-top:4px!important;color:var(--text-2,#394659);font-style:italic}
+.imp-hint{color:var(--text-2,#394659);font-size:13px}
+.imp-none{padding:8px 10px;border-radius:6px;background:var(--success-bg,#e2f3ea)}
+.imp-more{margin-top:10px}
+.imp-more>summary{display:flex;align-items:center;min-height:36px;cursor:pointer;font-weight:600;color:var(--text-2,#394659)}
+.imp-more>summary:focus-visible,.imp button:focus-visible{outline:2px solid var(--primary,#2c58dc);outline-offset:2px}
+.imp-actions{display:flex;flex-wrap:wrap;gap:8px}
+.imp-notice{margin:8px 0 0;padding:6px 10px;border-radius:6px;background:var(--success-bg,#e2f3ea)}
+body .imp .button{display:inline-flex;align-items:center;justify-content:center;min-height:var(--control-h,32px);height:auto;margin-top:6px;padding-block:6px;max-width:100%;text-align:center}
+@media (max-width:600px){
+  .imp{padding:12px}
+  body .imp .button{min-height:44px;flex:1 1 100%}
+  .imp-more>summary{min-height:44px}
+}
+@media (prefers-reduced-motion:reduce){.imp *{transition:none!important;animation:none!important}}

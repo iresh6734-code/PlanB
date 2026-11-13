@@ -1,0 +1,20 @@
+.copy-inspection {margin:28px 0;border-top:1px solid var(--line,#dce2ec);border-bottom:1px solid var(--line,#dce2ec);min-width:0;}
+.copy-inspection > summary {padding:18px 0;cursor:pointer;font-weight:600;min-height:44px;}
+.copy-inspection-panel {padding:0 0 24px;display:grid;gap:16px;min-width:0;}
+.copy-inspection-panel p {margin:0;line-height:1.6;overflow-wrap:anywhere;}
+.copy-inspection-panel small {display:block;overflow-wrap:anywhere;}
+.copy-inspection-panel form {display:grid;gap:16px;max-width:700px;min-width:0;}
+.copy-inspection-panel .field {min-width:0;}
+.copy-inspection-panel.copy-inspection-panel .field input,.copy-inspection-panel.copy-inspection-panel .button {min-height:44px;min-width:0;white-space:normal;overflow-wrap:anywhere;}
+.copy-inspection-panel input[type=file] {width:100%;padding:0;overflow:hidden;}
+.copy-inspection-panel input[type=file]::file-selector-button {min-height:44px;border:0;border-right:1px solid var(--line,#dce2ec);padding:8px 12px;margin-right:8px;color:inherit;background:var(--surface,#f4f6fb);}
+.copy-inspection-actions {display:flex;flex-wrap:wrap;gap:12px;}
+.copy-inspection-reference,.copy-inspection-result {border:1px solid var(--line,#dce2ec);border-radius:8px;padding:18px;min-width:0;display:grid;gap:12px;}
+.copy-inspection-result h3,.copy-inspection-result h4 {margin:4px 0;}
+.copy-inspection-result dl {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0;}
+.copy-inspection-result dl > div {min-width:0;}
+.copy-inspection-result dt {font-size:12px;color:var(--muted,#52627a);}
+.copy-inspection-result dd {margin:4px 0 0;overflow-wrap:anywhere;font-variant-numeric:tabular-nums;}
+.copy-inspection-coverage {display:grid;gap:12px;padding-top:12px;border-top:1px solid var(--line,#dce2ec);}
+.copy-inspection-notices {margin:0;padding-left:20px;display:grid;gap:8px;line-height:1.6;overflow-wrap:anywhere;}
+@media(max-width:480px){.copy-inspection-result dl {grid-template-columns:minmax(0,1fr);}.copy-inspection-panel .button {width:100%;}.copy-inspection-actions {display:grid;}.copy-inspection-reference,.copy-inspection-result {padding:14px;}}

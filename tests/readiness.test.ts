@@ -7,11 +7,12 @@ import { Store } from '../server/store.js';
 import { Continuity } from '../server/continuity.js';
 import type { DrillReport } from '../shared/operations.js';
 import { drillReportHtml } from '../server/drill-report.js';
+import { TECHNICAL_DRILL_CHECKS } from '../shared/drill-evidence.js';
 
 const now=Date.parse('2026-10-24T16:00:00Z');
 function report(captureId:string,id='report',at=now):DrillReport{
   return {id,captureId,startedAt:new Date(at-1000).toISOString(),completedAt:new Date(at).toISOString(),passed:true,isolated:true,
-    durationMs:1000,dataSource:'Conjunto ficticio',limitations:[],checks:Array.from({length:5},(_,i)=>({label:'Comprobación '+i,passed:true,detail:'Verificado'}))};
+    durationMs:1000,dataSource:'Conjunto ficticio',limitations:[],checks:TECHNICAL_DRILL_CHECKS.map(label=>({label,passed:true,detail:'Verificado'}))};
 }
 test('el diagnóstico nunca reutiliza el éxito de otra captura y exige renovarlo a los 30 días',()=>{
   const snapshot=makeFixture(),summary=summarizeCapture('current',snapshot);
@@ -22,7 +23,7 @@ test('el diagnóstico nunca reutiliza el éxito de otra captura y exige renovarl
   assert.equal(assessDrill(summary,['Falta una oportunidad'],[report('current')],now).status,'blocked');
 });
 test('el último resultado fallido de la misma captura invalida un éxito anterior',()=>{
-  const summary=summarizeCapture('current',makeFixture()),failed=report('current','failed');failed.passed=false;failed.checks[3]={label:'Persistencia',passed:false,detail:'No se conservó la etapa.'};
+  const summary=summarizeCapture('current',makeFixture()),failed=report('current','failed');failed.passed=false;failed.checks[3]={...failed.checks[3],passed:false,detail:'No se conservó la etapa.'};
   const result=assessDrill(summary,[],[failed,report('current','old')],now);
   assert.equal(result.status,'failed');assert.equal(result.reportId,'failed');assert.deepEqual(result.issues,['No se conservó la etapa.']);
   const forged=report('current');forged.checks[4].passed=false;

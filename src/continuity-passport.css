@@ -1,0 +1,38 @@
+/* Pasaporte de continuidad (clases cpp-*). Sin estilos globales. */
+.cpp{margin:0 0 20px;padding:14px 16px;border:1px solid var(--border,#e0e5ee);border-radius:10px;background:var(--bg-surface,#fff);color:var(--text-1,#0f1a2b);font-size:14px;line-height:1.5}
+.cpp *{min-width:0}
+.cpp h2{margin:0 0 4px;font-size:18px}
+.cpp h3{margin:16px 0 6px;font-size:15px}
+.cpp-lede{margin:0 0 4px;color:var(--text-2,#394659)}
+.cpp-identity{margin:0 0 8px;font-size:13px;color:var(--text-2,#394659);overflow-wrap:anywhere}
+.cpp-banner{margin:8px 0;padding:8px 10px;border:1px solid var(--warning-border,#e6cf92);border-left-width:3px;border-radius:6px;background:var(--warning-bg,#fbefd2)}
+.cpp-next{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;margin:10px 0 4px;padding:10px 12px;border:1px solid var(--info-border,#c4d3f2);border-left-width:3px;border-radius:6px;background:var(--info-bg,#e8eefd)}
+.cpp-next p{margin:0;overflow-wrap:anywhere}
+.cpp-next-none{display:block}
+.cpp-hint{color:var(--text-2,#394659);font-size:13px}
+.cpp-claims{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.cpp-claim{padding:8px 10px;border:1px solid var(--border,#e0e5ee);border-left-width:3px;border-radius:6px;background:var(--bg-subtle,#f4f6fa);overflow-wrap:anywhere}
+.cpp-claim p{margin:0}
+.cpp-claim small{display:block;margin-top:2px;color:var(--text-2,#394659);font-size:12px}
+.cpp-observed{border-left-color:var(--success,#17684a)}
+.cpp-declared{border-left-color:var(--primary,#2c58dc)}
+.cpp-unverified{border-left-color:var(--warning,#80510a)}
+.cpp-not-applicable{border-left-color:var(--text-3,#586680)}
+.cpp-badge{display:inline-block;margin-right:6px;padding:0 6px;border-radius:999px;background:var(--bg-surface,#fff);border:1px solid var(--border,#e0e5ee);font-size:12px;font-weight:600}
+.cpp-chip{display:inline-block;margin-right:6px;padding:0 6px;border-radius:999px;font-size:12px;font-weight:600}
+.cpp-chip-expired{background:var(--warning-bg,#fbefd2);border:1px solid var(--warning-border,#e6cf92)}
+.cpp-chip-unknown{background:var(--bg-surface,#fff);border:1px dashed var(--border,#c4ccdb)}
+.cpp-more>summary,.cpp-prov>summary{display:flex;align-items:center;min-height:36px;cursor:pointer;font-weight:600;color:var(--text-2,#394659)}
+.cpp-more>summary:focus-visible,.cpp-prov>summary:focus-visible,.cpp button:focus-visible{outline:2px solid var(--primary,#2c58dc);outline-offset:2px}
+.cpp-counts{font-weight:400;margin-left:4px}
+.cpp-prov{margin-top:16px;border-top:1px solid var(--border,#e0e5ee);padding-top:6px}
+.cpp-export-note{margin:8px 0;color:var(--text-2,#394659);font-size:13px}
+.cpp-actions{display:flex;flex-wrap:wrap;gap:8px}
+.cpp-notice{margin:8px 0 0;padding:6px 10px;border-radius:6px;background:var(--success-bg,#e2f3ea)}
+body .cpp .button{display:inline-flex;align-items:center;justify-content:center;min-height:var(--control-h,32px);height:auto;padding-block:6px;max-width:100%;text-align:center}
+@media (max-width:600px){
+  .cpp{padding:12px}
+  body .cpp .button{min-height:44px;flex:1 1 100%}
+  .cpp-more>summary,.cpp-prov>summary{min-height:44px}
+}
+@media (prefers-reduced-motion:reduce){.cpp *{transition:none!important;animation:none!important}}

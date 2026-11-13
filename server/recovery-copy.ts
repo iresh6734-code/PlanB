@@ -20,6 +20,7 @@ export function exportSummary(store: Store) {
     differsFromLatest: store.captures()[0]?.id !== captureId };
 }
 export function rememberExport(store: Store, bundle: ContinuityBundle, artifact: string | Buffer) {
+  store.assertRecoveryIntegrity();
   store.set('recoveryCopy', { exportedAt: bundle.exportedAt, revision: bundleRevision(bundle),
     captureId: bundle.snapshot.id + ':' + bundle.snapshot.capturedAt, records: bundle.records.length, changes: bundle.changes.length,
     artifactHash: createHash('sha256').update(artifact).digest('hex') } satisfies RecoveryCopy);
@@ -27,12 +28,13 @@ export function rememberExport(store: Store, bundle: ContinuityBundle, artifact:
 export function recoveryCopyStatus(store: Store): RecoveryCopy | null {
   const copy = store.get<RecoveryCopy | null>('recoveryCopy', null);
   if (!copy) return null;
-  const bundle = store.bundleOrNull();
+  const bundle = store.recoveryIntegrity().state==='invalid'?null:store.bundleOrNull();
   const current = !!copy.revision && !!bundle && store.ready && copy.revision === bundleRevision(bundle);
   const { confirmedAt, ...rest } = copy;
   return { ...rest, current, ...(current && confirmedAt ? { confirmedAt } : {}), ...(confirmedAt && !current ? { previousConfirmedAt: confirmedAt } : {}) };
 }
 export function confirmRecoveryCopy(store: Store, revision?: string) {
+  store.assertRecoveryIntegrity();
   const copy = recoveryCopyStatus(store);
   if (!copy?.current || !copy.revision || revision && revision !== copy.revision) throw new AppError(409, 'La copia no corresponde al espacio actual. Exporta esta revisión antes de confirmar su custodia.');
   store.set('recoveryCopy', { ...copy, confirmedAt: new Date().toISOString() });

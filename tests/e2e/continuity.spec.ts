@@ -13,6 +13,7 @@ test('preparación y continuidad con todo el tráfico externo bloqueado', async 
     return route.continue();
   });
   await page.goto('/');
+  await page.getByRole('button',{name:'Continuidad',exact:true}).click();
   await expect(page).toHaveTitle('Plan B · Tu CRM sigue contigo');
   await page.getByRole('button',{name:'Preparar aplicación',exact:true}).click();
   await expect(page.getByRole('heading', { name: 'Tu CRM, con un plan B.' })).toBeVisible();
@@ -50,7 +51,8 @@ test('preparación y continuidad con todo el tráfico externo bloqueado', async 
   await expect(task).toBeHidden();
   await expect(page.getByRole('button', { name: 'Llamar a Lucía sin conexión', exact: true })).toBeVisible();
   await page.reload();
-  await page.getByRole('button',{name:'Trabajar',exact:true}).click();
+  // Desde el rediseño «Faro», recargar conserva el apartado y la lista abiertos (aquí Tareas); se vuelve a Clientes de forma explícita.
+  await page.getByRole('button',{name:'Clientes',exact:true}).click();
   await expect(page.getByText('Modo independiente', { exact: true })).toBeVisible();
   await expect(page.getByRole('cell', { name: '600 123 456', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Ver cobertura', exact: true }).click();
@@ -97,12 +99,15 @@ test('móvil: navegación, edición y configuración sin desbordamiento de pági
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   await page.screenshot({path:resolve(output,'plan-b-v0.3.0-movil-continuidad.png'),fullPage:true});
-  await page.getByRole('button',{name:'Trabajar',exact:true}).click();
+  // En móvil la navegación es la barra inferior; el resto de apartados se abre desde «Más» (paleta de órdenes).
+  await page.getByRole('navigation',{name:'Navegación rápida'}).getByRole('button',{name:'Clientes',exact:true}).click();
   await page.getByRole('button', { name: 'Editar Lucía Martín', exact: true }).click();
   await expect(page.getByLabel('Código de cliente', { exact: false })).toBeVisible();
   await page.screenshot({ path: resolve(output, 'plan-b-v0.3.0-movil.png') });
   await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
-  await page.getByRole('button', { name: 'Proveedor de IA', exact: true }).click();
+  await page.getByRole('navigation',{name:'Navegación rápida'}).getByRole('button',{name:'Más',exact:true}).click();
+  await page.getByRole('combobox',{name:'Escribe una orden o un nombre'}).fill('Proveedor de IA');
+  await page.getByRole('option',{name:/Proveedor de IA/}).first().click();
   await expect(page.getByLabel('Modelo', { exact: true })).toBeVisible();
   const overflow = await page.evaluate(() => [...document.querySelectorAll('*')].filter(el => el.getBoundingClientRect().right > window.innerWidth + 1 && getComputedStyle(el).position !== 'fixed').map(el => ({ tag: el.tagName, cls: el.className, width: el.getBoundingClientRect().width, right: el.getBoundingClientRect().right })).slice(-18));
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), JSON.stringify(overflow)).toBeTruthy();
@@ -110,6 +115,7 @@ test('móvil: navegación, edición y configuración sin desbordamiento de pági
 });
 test('simulacro en proceso aislado y sesión de continuidad desde el historial',async({page,browser})=>{
   await page.goto('/');
+  await page.getByRole('button',{name:'Continuidad',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Tu negocio puede seguir.',exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Probar mi Plan B',exact:true}).click();
   await expect(page.getByText('Simulacro superado',{exact:true})).toBeVisible({timeout:45000});
@@ -151,10 +157,12 @@ test('exportación cifrada y restauración desde navegador mantienen registros y
   await page.getByRole('button',{name:'Exportar',exact:true}).click();
   await page.getByLabel('Contraseña de recuperación',{exact:true}).fill('recuperacion-de-prueba-2026');
   await page.getByLabel('Repite la contraseña',{exact:true}).fill('recuperacion-de-prueba-2026');
+  await page.getByLabel('He revisado la captura y los cambios incluidos en esta descarga.',{exact:true}).check();
   await page.screenshot({path:resolve(output,'plan-b-v0.3.0-exportar.png')});
   const download=page.waitForEvent('download');await page.getByRole('button',{name:'Solo copia cifrada',exact:true}).click();
   const file=await (await download).path();if(!file)throw new Error('No se recibió la descarga.');
   await page.getByRole('button',{name:'Continuidad',exact:true}).click();
+  await page.getByRole('tab',{name:'Copias y archivo',exact:true}).click();
   await page.getByRole('button',{name:'Restaurar archivo',exact:true}).click();
   const dialog=page.getByRole('dialog',{name:'Restaurar una copia'});
   await dialog.getByLabel('Archivo JSON de Plan B').setInputFiles(file);
@@ -171,6 +179,7 @@ test('cada copia muestra su contenido y exige su propio simulacro aunque la ante
   expect((await request.post('/api/import/snapshot',{data:{snapshot,replace:true}})).ok()).toBeTruthy();
   const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
   await page.goto('/');
+  await page.getByRole('button',{name:'Continuidad',exact:true}).click();
   await expect(page.getByText('Esta copia todavía no se ha probado',{exact:true})).toBeVisible();
   await expect(page.getByText('Simulacro superado',{exact:true})).toHaveCount(0);
   await page.getByText('Ver contenido de esta copia',{exact:true}).click();
@@ -196,6 +205,7 @@ test('cada copia muestra su contenido y exige su propio simulacro aunque la ante
 
 test('protección local, cierre de sesión y recuperación del acceso',async({page})=>{
   await page.goto('/');
+  await page.getByRole('button',{name:'Continuidad',exact:true}).click();
   await page.getByRole('button',{name:'Proteger / bloquear',exact:true}).click();
   await page.getByLabel('Contraseña local',{exact:true}).fill('solo-prueba-local-2026');
   await page.getByLabel('Repite la contraseña',{exact:true}).fill('solo-prueba-local-2026');

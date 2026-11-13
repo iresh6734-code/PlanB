@@ -1,0 +1,11 @@
+.export-page .export-review-tools{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:12px 0}
+.export-page .export-review-tools .helper{margin:0}
+.export-page .export-revision{overflow-wrap:anywhere}
+.export-page .export-review-check{margin-top:16px;min-height:44px;align-items:flex-start;line-height:1.5}
+.export-page .export-review-check input{margin-top:4px;flex:none}
+.export-page .export-custody{margin:16px 0;padding:16px;border:1px solid var(--border);border-radius:var(--r-lg);background:var(--bg-surface)}
+.export-page .export-custody h2{margin-top:0}
+.export-page .export-custody p{line-height:1.5}
+.export-page .export-custody .helper{margin-bottom:0}
+.export-page .button-row>.button,.export-page .export-review-tools>.button{min-height:44px}
+@media(max-width:600px){.export-page .export-review-tools>.button,.export-page .button-row>.button{width:100%}.export-page .export-custody{padding:12px}}

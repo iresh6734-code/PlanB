@@ -1,0 +1,44 @@
+.continuity-operations{min-width:0;margin:20px 0;padding:16px 0 0;border-top:1px solid var(--border)}
+.continuity-operations .co-head{display:flex;gap:var(--sp-3);justify-content:space-between;align-items:flex-start;flex-wrap:wrap}
+.continuity-operations .co-head h2{margin:0 0 4px}
+.continuity-operations .co-panel{display:grid;gap:var(--sp-3);min-width:0;padding-top:var(--sp-3)}
+.continuity-operations .co-controls{display:flex;gap:var(--sp-3);align-items:flex-end;flex-wrap:wrap}
+.continuity-operations .co-controls .field{margin:0;min-width:min(100%,220px);flex:1 1 200px}
+.continuity-operations .co-controls select{width:100%;min-height:44px}
+.continuity-operations .co-controls .button{min-height:44px}
+.continuity-operations .co-result{display:grid;gap:var(--sp-3);min-width:0}
+.continuity-operations .co-provenance{margin:0;font-size:var(--fs-sm);color:var(--text-2);overflow-wrap:anywhere}
+.continuity-operations .co-counts{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:var(--sp-2);margin:0}
+.continuity-operations .co-counts>div{background:var(--bg-subtle);border-radius:var(--r-md);padding:var(--sp-2) var(--sp-3);min-width:0}
+.continuity-operations .co-counts dt{font-size:var(--fs-sm);color:var(--text-3)}
+.continuity-operations .co-counts dd{color:var(--text-1);margin:0;font-family:var(--font-display);font-size:var(--fs-h2);font-weight:var(--fw-bold)}
+.continuity-operations .co-group{min-width:0}
+.continuity-operations .co-group h4,.continuity-operations .co-result>h4{margin:0 0 4px;font-size:var(--fs-lg)}
+.continuity-operations .co-result>h4:focus-visible,.continuity-operations .co-scroll:focus-visible,.continuity-operations summary:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.continuity-operations .co-badge{display:inline-block;min-width:22px;padding:0 6px;border-radius:999px;background:var(--bg-subtle);font-size:var(--fs-sm);text-align:center}
+.continuity-operations .co-list{list-style:none;margin:0;padding:0;display:grid;gap:var(--sp-2)}
+.continuity-operations .co-list>li{background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--r-md);padding:var(--sp-3);min-width:0;overflow-wrap:anywhere}
+.continuity-operations .co-list p{margin:4px 0 0}
+.continuity-operations .co-item-head{display:flex;gap:var(--sp-2);align-items:center;flex-wrap:wrap}
+.continuity-operations .co-item-head small{color:var(--text-3)}
+.continuity-operations .co-reason,.continuity-operations .co-refs{font-size:var(--fs-sm);color:var(--text-2)}
+.continuity-operations .co-refs span{display:inline-block;margin-right:var(--sp-2)}
+.continuity-operations .co-sides{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sp-3)}
+.continuity-operations .co-sides>div{display:grid;gap:2px;background:var(--bg-subtle);border-radius:var(--r-md);padding:var(--sp-3);min-width:0;overflow-wrap:anywhere}
+.continuity-operations .co-sides small{color:var(--text-3)}
+.continuity-operations .co-scroll{max-width:100%;overflow-x:auto;margin-top:var(--sp-2)}
+.continuity-operations .co-table{width:100%;border-collapse:collapse;font-size:var(--fs-md)}
+.continuity-operations .co-table :is(th,td){height:auto;text-align:left;vertical-align:top;padding:8px;border-bottom:1px solid var(--border);overflow-wrap:anywhere;background:none;color:var(--text-1);font-size:var(--fs-md);font-weight:var(--fw-regular)}
+.continuity-operations .co-table thead th{font-size:var(--fs-sm);color:var(--text-3);font-weight:var(--fw-semibold);background:var(--bg-subtle)}
+.continuity-operations .co-table tbody th{font-weight:var(--fw-semibold)}
+.continuity-operations .co-table tbody tr:last-child :is(th,td){border-bottom:0}
+.continuity-operations .co-table td{min-width:120px}
+.continuity-operations .co-value{display:grid;gap:2px}
+.continuity-operations .co-value small{color:var(--text-3)}
+.continuity-operations .co-value em{color:var(--text-3)}
+.continuity-operations .co-text{white-space:pre-wrap}
+.continuity-operations .co-pager{display:flex;gap:var(--sp-3);align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:var(--sp-2)}
+.continuity-operations .co-pager .text-button{min-height:44px}
+.continuity-operations .co-limits{font-size:var(--fs-sm)}
+.continuity-operations .co-error .button-row{margin-top:var(--sp-2)}
+@media (max-width:560px){.continuity-operations .co-sides{grid-template-columns:minmax(0,1fr)}.continuity-operations .co-controls .button{width:100%}}

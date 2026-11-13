@@ -24,17 +24,18 @@ export class Continuity {
       this.analysis={id:captures[0].id,summary:summarizeCapture(captures[0].id,snapshot),issues:planDrill(makeDemoSpec(snapshot),snapshot.records).issues};
     }
     if(!captures.length)this.analysis=null;
-    const reports=this.store.get<DrillReport[]>('drills',[]),latestCapture=this.analysis?.summary??null;
+    const reports=this.store.get<DrillReport[]>('drills',[]),latestCapture=this.analysis?.summary??null,recoveryIntegrity=this.store.recoveryIntegrity();
     return {captures,jobs:this.jobs.list(),reports,latestCapture,readiness:assessDrill(latestCapture,this.analysis?.issues??[],reports),latestCaptureAt:at,ageMinutes:age,stale:age===null || age>75,
       session:this.store.get('continuitySession',null),schedule:this.store.get('schedule',{enabled:false,intervalMinutes:60,lastAttempt:null}),
       connected:!this.store.disconnected,protected:!!this.store.get('password',null),accountId:this.store.snapshot?.source.accountId??null,
       changes:this.store.changesCount,pendingChanges:this.store.pendingChangesCount,runtime:this.runtime,realDataEnabled:this.store.get<{mode?:string}|null>('connectionPublic',null)?.mode==='production_readonly',connection:this.store.get('connectionPublic',null),recoveryCopy:recoveryCopyStatus(this.store),
-      operations:{lastAttempt:this.store.get('captureLastAttempt',null)??this.store.get<{lastAttempt:string|null}>('schedule',{lastAttempt:null}).lastAttempt,
-        lastSuccess:this.store.get('captureLastSuccess',null),error:this.store.get('operationError',null),paused:this.runtime||this.store.disconnected||!!this.store.get('continuitySession',null)}};
+      recoveryIntegrity,operations:{lastAttempt:this.store.get('captureLastAttempt',null)??this.store.get<{lastAttempt:string|null}>('schedule',{lastAttempt:null}).lastAttempt,
+        lastSuccess:this.store.get('captureLastSuccess',null),error:this.store.get('operationError',null),paused:this.runtime||this.store.disconnected||!!this.store.get('continuitySession',null)||recoveryIntegrity.state==='invalid'}};
   }
   private secretKey(){return localKey(dirname(this.store.filename));}
   connection() { const text=this.store.get<string|null>('hubspotConnection',null); return text?{mode:'test' as const,...JSON.parse(open(text,this.secretKey()))} as SavedConnection:null; }
   saveConnection(token:string,accountId:string,details?:Omit<SavedConnection,'token'|'accountId'>,verified?:{accountType:string;verifiedAt:string}) {
+    this.store.assertRecoveryIntegrity();
     if(this.runtime)throw new AppError(403,'El paquete independiente no contiene conectores.');
     if(!/^\d+$/.test(accountId)||token.length<10)throw new AppError(422,'Revisa el ID de cuenta y la credencial.');
     const bound=this.store.get<{accountId:string}|null>('connectionPublic',null)?.accountId??this.connection()?.accountId??(this.store.snapshot?.source.kind==='hubspot'?this.store.snapshot.source.accountId:null);
@@ -47,6 +48,7 @@ export class Continuity {
     });
   }
   capture() {
+    this.store.assertRecoveryIntegrity();
     this.store.set('captureLastAttempt',new Date().toISOString());
     if(this.runtime || this.store.disconnected || this.status().session)throw new AppError(409,'Habilita los servicios fuera de una sesión de continuidad.');
     const connection=this.connection();if(!connection)throw new AppError(422,'Configura una cuenta de prueba de HubSpot.');
@@ -66,6 +68,7 @@ export class Continuity {
     });
   }
   begin(captureId:string) {
+    this.store.assertRecoveryIntegrity();
     if(this.status().session)throw new AppError(409,'Ya hay una sesión de continuidad abierta. Continúa trabajando o ciérrala antes de abrir otra copia.');
     if(this.jobs.list().some(j=>['queued','running'].includes(j.status)))throw new AppError(409,'Espera a que termine el trabajo actual.');
     if(this.store.pendingChangesCount)throw new AppError(409,'Conserva y cierra los cambios pendientes antes de abrir otra captura.');
@@ -76,6 +79,7 @@ export class Continuity {
     return session;
   }
   end() {
+    this.store.assertRecoveryIntegrity();
     if(this.store.pendingChangesCount)throw new AppError(409,'Devuelve los cambios o conserva la sesión. Exportar no los marca como devueltos.');
     this.store.set('continuitySession',null);this.store.set('sessionCapture','');this.store.set('returnComplete',false);return {ended:true};
   }
@@ -102,9 +106,9 @@ export class Continuity {
       signal.throwIfAborted();this.store.set('drills',[report,...this.store.get<DrillReport[]>('drills',[])].slice(0,36));return report;
     });
   }
-  configureSchedule(enabled:boolean){this.store.set('schedule',{...this.status().schedule,enabled,intervalMinutes:60});return this.status().schedule;}
+  configureSchedule(enabled:boolean){this.store.assertRecoveryIntegrity();this.store.set('schedule',{...this.status().schedule,enabled,intervalMinutes:60});return this.status().schedule;}
   tick() {
-    const status=this.status();if(this.runtime || !status.schedule.enabled || !status.connected || status.session || this.jobs.list().some(j=>['running','queued'].includes(j.status)))return;
+    const status=this.status();if(this.runtime || status.recoveryIntegrity?.state==='invalid' || !status.schedule.enabled || !status.connected || status.session || this.jobs.list().some(j=>['running','queued'].includes(j.status)))return;
     const now=new Date().toISOString();
     if(!status.schedule.lastAttempt || Date.now()-Date.parse(status.schedule.lastAttempt)>=3600_000){
       this.store.set('schedule',{...status.schedule,lastAttempt:now});

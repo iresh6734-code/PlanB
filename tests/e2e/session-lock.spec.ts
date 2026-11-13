@@ -1,4 +1,6 @@
 import {test,expect,type Page} from '@playwright/test';
+// El selector de clientes es un combobox accesible: se abre y se elige la opción por el ID del cliente (no hay select nativo).
+const pickCustomer=async(page:import('@playwright/test').Page,label:string,id:string)=>{await page.getByRole('combobox',{name:label,exact:true}).click();await page.locator('[role="option"][data-contact-id="'+id+'"]').click();};
 const team='http://127.0.0.1:4341';
 // El servidor de demo no tiene piloto local: se simula solo la parte que ve el navegador (configuración y puerta de desbloqueo).
 async function pilotLike(page:Page,onLock?:()=>void,asPilot=false){
@@ -11,7 +13,7 @@ async function pilotLike(page:Page,onLock?:()=>void,asPilot=false){
 }
 async function openDraft(page:Page){
   await page.goto(team+'/team?view=commercial');await expect(page.getByRole('heading',{name:'Cada seguimiento, preparado.',exact:true})).toBeVisible();
-  await page.getByLabel('Cliente del seguimiento',{exact:true}).selectOption('contact-1');
+  await pickCustomer(page,'Cliente del seguimiento','contact-1');
   const accept=(dialog:import('@playwright/test').Dialog)=>void dialog.accept();page.on('dialog',accept);
   await page.getByRole('button',{name:'Preparar seguimiento',exact:true}).click();await expect(page.getByRole('status')).toContainText('Seguimiento preparado para revisión.');page.off('dialog',accept);
   const proposal=page.locator('.commercial-proposal').first();const message=proposal.getByLabel('Mensaje del seguimiento',{exact:true});

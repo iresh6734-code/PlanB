@@ -1,0 +1,10 @@
+{
+  "id": "CLAUDE-HOY-GUION-JORNADA-299",
+  "agent": "claude",
+  "title": "Claude A · Guion repetible de la Jornada publicada en la demo 4601 (299) y su observación de lectura, sin escrituras",
+  "plan": "Acompaña la revisión 299: recorrido manual en el navegador integrado sobre http://127.0.0.1:4601/ (instalación ficticia de Codex, solo lectura): encontrar «Organizar mi jornada», estimar, comparar 30 y 60 minutos, incluir una tarea sin duración, abrir la ficha por ID y volver con teclado. Registra qué se observó (resultados y peticiones de red) y qué NO se verificó, y separa el recorrido de lectura del recorrido de guardado, que solo se prueba en candidata propia con el banco de A3/A2.",
+  "acceptance": "Guion numerado con entradas y resultados esperados observados, registro de peticiones (solo GET), límites explícitos (sin guardado, sin 390/320 en esta observación, identidad de la instalación a comprobar por quien la sirve) y referencia a las pruebas de candidata propia.",
+  "files": ["coordination/plans/HOY-JORNADA-GUION-DEMO.md"],
+  "readFiles": ["coordination/reports/CLAUDE-HOY-COLA-JORNADA-A3.md"],
+  "dependencies": ["CLAUDE-HOY-COLA-JORNADA-A3"]
+}

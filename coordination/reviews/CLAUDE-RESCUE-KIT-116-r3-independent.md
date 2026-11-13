@@ -1,0 +1,17 @@
+# Revisión independiente · Kit de Relevo 116 R3
+
+3/11/2026, Europe/Madrid. Dictamen: **devolver 116 para corregir el tratamiento de la carrera entre recuperación e importación nueva**. Los 25 archivos de la entrega coincidían con sus hashes `submit` al inicio de esta revisión. La fuente `server/rescue-capsule.ts` cotejada tiene SHA-256 `c087675110b9d54d536c528c8d6061ba567d13913e0a2198fbaf0785cbf49670`.
+
+## F1 · recuperación e importación nueva: error `EEXIST` sin tratar
+
+R3 conserva la secuencia `unlinkSync(claim); take()` bajo la exclusión `.takeover`, pero un importador nuevo intenta crear el reclamo inicial sin adquirir esa exclusión. Entre ambas operaciones puede crear el reclamo y publicar, dejando que el recuperador reciba un error de sistema `EEXIST` sin convertir a un estado de dominio. El error ocurre antes del bloque de tratamiento posterior a la toma del reclamo. La API de la demo convierte errores ajenos a `CapsuleError`/`RescueError` en respuesta genérica `INTERNAL` (500); esto último es una lectura del manejador, no una prueba HTTP de esa carrera. La guarda `busy` de una instancia de servidor no demuestra exclusión entre dos procesos.
+
+Reproducción propia: se adaptó la caracterización `tests/independent-rescue-recovery-race.test.ts` a la fuente R3 con el hash anterior en un archivo temporal, sin modificar el test presentado 150 ni los archivos de Claude. Se copió la proyección R3 del autor a una raíz nueva y se introdujo únicamente una barrera después de eliminar el reclamo huérfano. Con dos procesos reales y datos ficticios: el primero queda retenido como recuperador; el segundo crea el reclamo, importa y publica; el primero se libera y devuelve `EEXIST`. El marcador del destino ganador existe y el reclamo final apunta a ese destino. **1/1 de caracterización**, no es una regresión verde; evidencia `tests/.tmp/independent-rescue-race-dfb0595b-cc5d-4d31-aeb3-986e7fcf02ce`. Se bloqueó la red externa.
+
+No se ha observado duplicación en este ensayo, ni se ha demostrado que esta secuencia exacta causara el `EEXIST` de la ronda 16 de QA136. Pedimos una regresión causal con importador nuevo y recuperador (no solo dos recuperadores), resolución conservadora y error de dominio fiel al resultado; conservar el reclamo del ganador y no eliminar destinos. Evaluar el comportamiento de la API si se ofrece por procesos separados. No basta con capturar cualquier `EEXIST` y afirmar que no se publicó nada sin leer/revalidar el estado pertinente.
+
+## Otras comprobaciones
+
+La regresión independiente de reclamo tras publicación más los contratos independientes de 106 pasaron **11/11** sobre el checkout R3: 1 y 10 respectivamente. Esto no cubre F1. La batería de casos «R3 ·» se repitió con red externa bloqueada y en la proyección propia `tests/.tmp/codex-review153-r3-20261103`: **12/12**, incluidos dos ensayos de estrés probabilístico de 20 rondas. Antes de la ejecución se cotejaron los hashes de la fuente y la prueba con los del submit R3; su aprobación no fuerza el intercalado específico de F1. No se ha ejecutado aquí toda la batería de 116 ni navegador R3, y no se afirma su resultado basándose en las cifras del autor.
+
+QA de rescate 136 sigue en revisión y su caso de caracterización del mismo PID debe tratarse bajo su reserva; no fue modificado aquí. Sin proveedor, datos reales u otro equipo. La muestra no prueba fallo en uso ordinario de un único servidor ni acredita garantías multiproceso completas.

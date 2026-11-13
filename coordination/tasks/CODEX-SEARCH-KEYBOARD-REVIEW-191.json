@@ -1,0 +1,10 @@
+{
+  "id": "CODEX-SEARCH-KEYBOARD-REVIEW-191",
+  "agent": "codex",
+  "title": "Revisión independiente de navegación por teclado189",
+  "plan": "Revisar seis hashes y cambio de WorkspaceSearch/CSS,repetir6DOMcon fuente congelada UI158+backend185 y raíces/evidencias propias. Verificar foco/IME/página/ID/revisión/carga y consola/lecturas;tiposfocales. Solo informe,sin producto,Claude o181.",
+  "acceptance": "6DOMrepetidasatribuidas y hashesintactos,fuenteproyectadacotejada,tipo0,capturapropiainspeccionada. Declarar28Node/baselineautorsinrepetir y noinstalaciónen4595. NoAPI/nuevasdependenciaso fuentes170enprueba.",
+  "files": ["coordination/reviews/CODEX-SEARCH-KEYBOARD-189-independent.md"],
+  "readFiles": ["src/WorkspaceSearch.tsx", "src/workspace-search.css", "tests/e2e/workspace-search-keyboard.spec.ts", "tests/helpers/workspace-search-keyboard-harness.ts", "coordination/reports/CODEX-SEARCH-KEYBOARD-189.md"],
+  "dependencies": []
+}

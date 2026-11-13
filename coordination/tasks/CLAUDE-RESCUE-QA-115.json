@@ -1,0 +1,31 @@
+{
+  "id": "CLAUDE-RESCUE-QA-115",
+  "agent": "claude",
+  "title": "Completar evidencia de Modo Rescate: DOM, interrupciones, contexto y límites",
+  "plan": "Ejecutar la parte A de coordination/briefs/CLAUDE-RESCUE-SIGUIENTE-114.md. Contrastar106 sobre snapshot propio y completar lagunas de DOM real, guardado con recarga fallida, respuestas tardías, teclado, lectura visual390, reanudación y límites del inventario. Respetar la revisión Codex113 y no apropiarse de sus pruebas/informe. Misma autora106 implica ampliación de QA propia, no revisión independiente. Leer dictamen113 si existe; no inventar hallazgos a partir de hipótesis. Solo archivos nuevos exactos; no corregir106 salvo devolución explícita en su reserva por su autora. Procesos/fixtures/Chromium automatizado propios y loopback, sin datos reales, perfiles, proveedores, instalaciones o dependencias nuevas. Mantener checkpoint e informe con oráculos y capas diferenciadas.",
+  "acceptance": "Pruebas complementarias con causas observables: un POST confirmado seguido de GET500 no vuelve a enviar ni pierde borrador pendiente; respuesta válida tardía dentro del componente no sustituye contexto/selección nuevos; recorrido completo por teclado; capturas1440/390/320 inspeccionadas; reapertura en proceso nuevo y digest de datos; límites200/10.000 documentados sin fingir planificación global. Estado de hipótesis113 atribuido; no duplicar sus fuentes o declarar independencia de autora. Clasificar mutante de marcador solo con equivalencia observable razonada. Repetir60Node106 sobre hashes actuales si siguen siendo60, sin afirmar checkoutglobalverde. No ocultar fallos con TODO/skip. Informe, checkpoint y traspaso separan mejoras pendientes, defectos confirmados y límites de producto. Presentar115; Codex acepta tras revisión, sin autoaceptación o inicio116 antes de puertas.",
+  "files": [
+    "tests/rescue-followup-context.test.ts",
+    "tests/rescue-followup-persistence.test.ts",
+    "tests/rescue-followup-paths.test.ts",
+    "tests/rescue-followup-scale.test.ts",
+    "tests/e2e/rescue-followup.spec.ts",
+    "tests/helpers/rescue-followup-harness.ts",
+    "coordination/reports/CLAUDE-RESCUE-QA-115.md",
+    "coordination/reports/CLAUDE-RESCUE-QA-115-CHECKPOINT.md",
+    "coordination/plans/RESCUE-115-HANDOFF.md"
+  ],
+  "readFiles": [
+    "AGENTS.md", "CLAUDE.md", "COORDINACION.md", "CONTEXTO-PROYECTO.md", "DESIGN.md",
+    "coordination/briefs/CLAUDE-RESCUE-SIGUIENTE-114.md", "coordination/plans/RESCATE-CONTINUIDAD-114.md",
+    "coordination/reports/CLAUDE-RESCUE-106.md", "coordination/plans/RESCUE-106-INTEGRACION.md",
+    "shared/rescue-room.ts", "shared/rescue-plan.ts", "shared/rescue-report.ts",
+    "server/rescue-room.ts", "server/rescue-room-journal.ts", "server/rescue-room-api.ts",
+    "src/RescueRoom.tsx", "src/rescue-room-client.ts", "scripts/demo-rescue-room.ts",
+    "server/store.ts", "server/recovery.ts", "server/instance.ts", "shared/response-queue.ts",
+    "tests/rescue-room.test.ts", "tests/rescue-plan.test.ts", "tests/rescue-room-journal.test.ts",
+    "tests/rescue-room-api.test.ts", "tests/rescue-room-client.test.ts", "tests/rescue-report.test.ts",
+    "tests/e2e/rescue-room.spec.ts", "tests/helpers/rescue-room-harness.ts", "scripts/block-external.cjs"
+  ],
+  "dependencies": []
+}

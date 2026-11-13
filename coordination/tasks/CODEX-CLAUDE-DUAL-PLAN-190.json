@@ -1,0 +1,10 @@
+{
+  "id": "CODEX-CLAUDE-DUAL-PLAN-190",
+  "agent": "codex",
+  "title": "Dos encargos de producto para Claude: trabajo continuo y conexiones comprobables",
+  "plan": "Contrastar tablero/entregas/hashes y preparar dos prompts completos, con etapas implementables y dependencias, reparto exacto y nuevos hitos visibles. A170→171→adopciónCAS/reapertura;B173yQA136→HubSpotrealpreparado→pasaporte/relevo. Mantener087/055/189yAppdeAexclusivos,integracionescentralesporCodex. No asignar código nuevo sinencargo/claim.",
+  "acceptance": "Dos briefs autocontenidos para pegar y plan de reparto, estados actuales verificados y diferencia entre códigoaceptado/demoinstalada/proveedorreal. Sin nuevasllamadas/proveedores/credenciales,fuentesClaudeoAppeditadas;memoria035porsupropietario.",
+  "files": ["coordination/briefs/CLAUDE-TRABAJO-CONTINUO-190.md", "coordination/briefs/CLAUDE-CONEXIONES-RELEVO-190.md", "coordination/plans/DESARROLLO-REAL-DOS-CLAUDE-190.md"],
+  "readFiles": ["CONTEXTO-PROYECTO.md", "COORDINACION.md", "coordination/reviews/CLAUDE-TASK-OUTCOMES-U1-148-independent.md", "coordination/reviews/CLAUDE-HUBSPOT-READ-160-173-independent.md", "coordination/briefs/CLAUDE-RESCUE-QA-136-R2.md"],
+  "dependencies": []
+}

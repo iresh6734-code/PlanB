@@ -1,0 +1,10 @@
+# Claude A · R2 del arnés de Hoy
+
+Conserva las tres rutas de `CLAUDE-HOY-APP-PROBES-A`. Usa el dictamen 266. La ficha condicionada puede seguir con su propia reserva. Entrega el arnés como prueba de línea base, con evidencia suficiente para trasladar después sus aserciones al montaje.
+
+1. En la sonda de acuse perdido, separa respuesta recibida, aplicación observada y corte de la respuesta al navegador. Antes del reinicio exige una respuesta exitosa para el PATCH de la tarea exacta, el valor persistido esperado y una fila del historial de ese ID. Usa `finally` para liberar la barrera. Después del reinicio exige la misma fila y estado, cero PATCH adicionales y la homónima intacta. En la línea base sigue fallando en la superficie aún ausente. El montaje futuro añade la identidad del intento y su verificación por lectura.
+2. Contrasta con un PATCH rechazado antes de escribir. Debe fallar en la prueba de aplicación antes del reinicio aunque el servidor haya contado una petición. El caso real con respuesta exitosa debe avanzar a la barrera de producto. Revisa los recuentos de conflicto. Una confirmación posterior a un 409 lleva a tres intentos y dos efectos, según 264.
+3. Crea una raíz propia bajo un padre de pruebas verificado. Rechaza destinos preexistentes que no creó la ejecución y destinos que resuelvan fuera del padre. Usa una raíz de datos nueva por caso. Solo el reinicio del mismo caso reutiliza su base. Evita borrar archivos de base o carpetas recursivamente para empezar otro caso. El PID y la identidad de ejecución deben acreditar el reinicio, incluso si el sistema reutiliza el puerto.
+4. Coteja las fuentes de cliente, activos y backend del corte que realmente ejecutas. Arranca sobre una copia privada, con entorno mínimo, clave de ensayo recién generada y red externa bloqueada. Conserva las tres huellas, los controles, la contraprueba del 500, la prueba de rechazo de un destino ajeno sintético y los recibos de cierre de procesos.
+
+Presenta R2 con el resultado exacto de cada barrera. El resumen público sigue siendo un contrato propuesto y A4 conserva su dependencia de 208. El recorrido final de salida pertenece a 264 y 251.

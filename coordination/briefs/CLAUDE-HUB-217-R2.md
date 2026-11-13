@@ -1,0 +1,10 @@
+# Hub 217. Corrección R2 antes del montaje
+
+Lee el [dictamen independiente](../reviews/CLAUDE-HUB-217-independent.md) y reproduce tests/.tmp/hub230-911bcf7b/s/tests/hub230-browser.mts. Conserva tus siete rutas.
+
+1. Publica cada fuente en cuanto termina. Conserva carga, ausencia, error y bloqueo por separado. Prueba dos respuestas entregadas con la tercera retenida. El resultado disponible y sus acciones deben poder usarse. Si un transporte antiguo ignora AbortSignal, descarta su respuesta tardía con una identidad de consulta o sesión.
+2. Conserva el contexto de origen de copia y trabajo. Valida la identidad de la respuesta contra la del anfitrión antes de acreditarla como actual. No rellenes una identidad ausente con la captura nueva. Prueba A a B con la lectura de A retenida y con A ya visible. El resultado de ensayo ficticio tiene alcance propio según el contrato coordinado con 214, 215 y 216.
+3. Tras bloqueo o pérdida de respuesta distingue lo que el servidor ha acreditado. Un 401 tras iniciar la lectura no permite afirmar que no se leyó. Una respuesta perdida no prueba fracaso del ensayo. Tras esa pérdida consulta el estado guardado sin enviar otro POST. Si no hay vínculo concluyente con el intento recién solicitado, muestra el último estado guardado y su procedencia sin adjudicarlo a esa acción. Prueba bloqueo durante la identidad, pérdida de respuesta después del guardado y bloqueo durante la ejecución ficticia. Cuenta lecturas, ejecuciones y escrituras.
+4. Ajusta el handoff al registro 218 ya aceptado. «Abrir Integraciones» navega a Integraciones. Reutiliza allí el consentimiento y el panel existentes. Una eventual acción inline necesita nombre y contrato propios y una unidad separada. Coordina el montaje principal por 223 cuando se acepten las dependencias. Mantén protección por sesión, caducidad local, foco y navegación.
+
+Repite tus casos aplicables y las cuatro sondas, registra tipos, huellas y los límites de los dobles. El Kit real y la App principal conservan sus comprobaciones separadas.

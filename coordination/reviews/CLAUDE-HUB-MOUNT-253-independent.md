@@ -1,0 +1,11 @@
+# 253 · Hub dentro de Continuidad y navegación a Integraciones
+
+6 de noviembre de 2026, Europe/Madrid. Favorable a las seis huellas presentadas. La revisión coteja esas rutas en el checkout y en `tests/.tmp/continuity-ui-review-lhEzps`. Pasan cinco pruebas estáticas, cuatro recorridos Chromium de App y tipos focales. El corte reúne los bytes aceptados de 239 y 242 y los presentados de 215/217/253. El mapa y el Hub tienen dictámenes propios.
+
+La prueba aplica el parche entregado de App únicamente a una proyección. Compila la interfaz y el main, crea SQLite ficticia de archivo y cuenta las peticiones a un proveedor de loopback. Desde Continuidad se navega al panel existente de Integraciones y se vuelve con foco en el encabezado. Entrar desde el menú no ofrece una vuelta ajena. Cancelar el consentimiento no llama al proveedor. Confirmarlo hace las cinco lecturas previstas. La observación se conserva al volver, recargar y reiniciar el main de prueba. Las pruebas verifican teclado, 1440, 390 y 320 y ausencia de errores de página.
+
+Se inspeccionaron `home253/continuidad-1440.png` y `home253/continuidad-320.png`. La evidencia de copia ya aparece leída porque 239 está registrada en el corte. El ensayo de relevo permanece no disponible porque main todavía no registra 216. Las dos cabeceras consecutivas del bloque agregan longitud y repiten tema, observación de acabado ya documentada por el autor. Los controles del recorrido permanecen legibles y utilizables.
+
+Se acepta la composición de ContinuityHome y su parche propuesto. App todavía debe recibir ese parche bajo reserva. La integración debe pasar la revisión autorizada de v2/state mediante 242 al Hub y retirar resultados al cambiar de ámbito. Esta revisión no atribuye al código de 253 un vínculo que no implementa. La API de relevo espera la corrección 216 R3 y el paquete 254 tiene su revisión. La candidata servida 236 conserva su versión.
+
+Logs y manifiesto del corte conservados. Los 24 casos de navegador del conjunto se reparten entre cinco del mapa, quince del Hub y estos cuatro. Se conserva un fallo de fixture de una sonda histórica de mapa y su repetición corregida, y la omisión de dos scripts del primer arnés del Kit con su repetición posterior. No se cambiaron fuentes presentadas de Claude durante la revisión.

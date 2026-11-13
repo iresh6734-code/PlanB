@@ -1,0 +1,44 @@
+{
+  "id": "CLAUDE-TASK-OUTCOMES-U2-171",
+  "agent": "claude",
+  "title": "U2: propietario estable del gestor y superficie «Resultados de guardado» montados en la App real (D7)",
+  "plan": "Monta en la App real el gestor 136 y TaskSaveOutcomesPanel. Propietario: un componente nuevo TaskOutcomesHost que App renderiza SOLO en la rama de sesión desbloqueada (hoy el bloqueo devuelve <Protection>, lo que desmonta el árbol): crea UNA instancia con useState al montar (por sesión y por montaje, sin singleton de módulo), la comparte por contexto con LocalOperations (que se la pasa EXACTAMENTE a LocalTaskFocus) y monta la superficie fuera de LocalOperations, en el contenido principal, para que sobreviva a la navegación; la oculta mientras haya una ficha abierta (evita duplicar el resultado de fondo). Ciclo de vida: bloquear → el host se desmonta y llama a dispose() (170): lo no despachado no se envía, lo ya enviado no se deshace, el seguimiento en memoria se pierde y App guarda solo el NÚMERO de operaciones sin resolver para avisar tras desbloquear («N guardados quedaron sin comprobar…»: sin texto de tareas ni borradores); desbloquear → instancia nueva y vacía; cambio de captura/instalación → la instancia se mantiene y cada operación sigue ligada a su contexto (verificar da «otra copia», aceptar/reenviar quedan bloqueados): nunca se aplica un intento antiguo a otra copia. onConfirmed estable por instancia, equivalente al flujo de 151: 1) refresh() del estado padre de App; 2) recargar la cola solo si Hoy está montada (LocalOperations registra y retira su recarga; si Hoy se desmonta durante la recarga se da por buena porque el siguiente montaje lee de nuevo); 3) rechazar con OutcomeRefreshError (170) si una lectura necesaria falla, con causa state o list. Solo lee: reintentar nunca hace PATCH. Conserva 155 (lectura sustituida rechaza) y 158 (bloqueo y orden de respuestas). La superficie ofrece «Abrir la tarea», que navega a Hoy y abre la ficha por ID. Invierte las aserciones marcadas «U2 DEBE INVERTIR» de tests/e2e/task-d7-real-app-baseline.spec.ts (153) y añade un recorrido D7 completo en la App real con barra lateral real: PATCH aplicado con respuesta retenida/perdida, cerrar ficha, navegar, resultado incierto en la superficie persistente, comprobar por lectura, aceptar como decisión humana, un único PATCH y los cambios esperados en el servidor; más respuesta tardía, doble clic, homónimas, cambio de copia, 401/404/409/422, recarga fallida, navegación durante la recarga, Hoy que se vuelve a montar con una actualización pendiente, foco cuando desaparece la fila, teclado y 1440/390/320. Contrapruebas contra el montaje anterior (que fallen por falta de seguimiento). Declara qué NO cubre: persistencia tras recargar, multipestaña, 128/160/166. Datos ficticios, servidor y procesos propios, red externa bloqueada. Presentar con submit; sin autoaceptar. Depende de U1 y del contrato 170 done.",
+  "acceptance": "Misma instancia del gestor durante sesión y navegación (prueba: recuento de instancias y de callbacks); la ficha recibe esa instancia; superficie fuera del subárbol de Hoy; sin singleton; bloqueo/desbloqueo/cambio de copia con ciclo de vida probado y declarado (incluida la pérdida en memoria y el aviso con solo un recuento); onConfirmed: confirmación tras salir de Hoy, con Hoy abierta, navegando durante la recarga y al remontar Hoy con una actualización pendiente, sin duplicar escrituras ni gestores; mensajes controlados para fallo del estado de App o de la lista; recorrido D7 completo en App real con un único PATCH; 151/155/158, 140, U1 y 136 repetidos; contraprueba contra el montaje anterior; 1440/390/320 con teclado y capturas inspeccionadas; hashes, límites y siguiente unidad.",
+  "files": [
+    "src/App.tsx",
+    "src/LocalOperations.tsx",
+    "src/TaskOutcomesHost.tsx",
+    "src/task-outcomes-host.css",
+    "tests/task-outcomes-host.test.ts",
+    "tests/e2e/task-d7-real-app.spec.ts",
+    "tests/e2e/task-d7-real-app-baseline.spec.ts",
+    "coordination/reports/CLAUDE-TASK-OUTCOMES-U2-171.md",
+    "coordination/plans/TASK-OUTCOMES-U2-171-HANDOFF.md"
+  ],
+  "readFiles": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "COORDINACION.md",
+    "CONTEXTO-PROYECTO.md",
+    "coordination/reports/CLAUDE-TASK-OUTCOMES-U1-148.md",
+    "coordination/plans/TASK-OUTCOMES-U1-148-HANDOFF.md",
+    "coordination/reports/CLAUDE-TASK-D7-BASELINE-153.md",
+    "coordination/reviews/CODEX-TASK-STATE-151-independent.md",
+    "coordination/reviews/CODEX-APP-REFRESH-NOTICE-155-independent.md",
+    "coordination/reviews/CODEX-AUTH-GATE-158-independent.md",
+    "src/LocalTaskFocus.tsx",
+    "src/task-save-outcome.ts",
+    "src/TaskSaveOutcomes.tsx",
+    "src/task-save-outcomes.css",
+    "src/local-operations-client.ts",
+    "tests/e2e/task-focus-main.spec.ts",
+    "tests/e2e/task-parent-state.spec.ts",
+    "tests/e2e/app-refresh-notice.spec.ts",
+    "tests/e2e/auth-gate-order.spec.ts",
+    "scripts/block-external.cjs"
+  ],
+  "dependencies": [
+    "CLAUDE-TASK-OUTCOMES-U1-148",
+    "CLAUDE-TASK-OUTCOMES-CONTRACT-170"
+  ]
+}

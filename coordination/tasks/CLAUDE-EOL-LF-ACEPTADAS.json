@@ -1,0 +1,37 @@
+{
+  "id": "CLAUDE-EOL-LF-ACEPTADAS",
+  "agent": "claude",
+  "title": "Normalizar a LF los archivos que convertí por error a CRLF en las unidades aceptadas 233, 230 y 208",
+  "plan": "Corrección de un error propio: en los informes de 233, 230 y 208 afirmé que el árbol está en CRLF; con un contador exacto el árbol es mayoritariamente LF y esos archivos eran LF al recibirlos. Esta unidad SOLO cambia terminaciones de línea (CRLF → LF) de los 17 archivos aceptados que quedaron en CRLF, sin tocar ningún otro byte: se comprueba que cada archivo, normalizado, es idéntico a su contenido anterior salvo los saltos de línea, y se repiten las suites de 233 (estrategia, gestor), 230 (cola estructurada, familia de Hoy) y 208 (diario y almacenamiento) más tsc. Se excluye src/task-save-outcome.ts: su huella está fijada en tests/task-focus-outcomes.test.ts, que reserva CLAUDE-HOY-POR-DECIDIR-A2 mientras esté en revisión; se normalizará junto con esa huella en una unidad posterior. Los hashes citados en los informes antiguos dejan de coincidir con los archivos (nota en el informe de esta unidad); las pruebas con huellas fijadas no se ven afectadas porque ninguno de los 17 está fijado.",
+  "acceptance": "Los 17 archivos quedan solo-LF; el texto es idéntico al anterior salvo los saltos de línea (comparación byte a byte tras normalizar); ningún otro archivo cambia; ninguna prueba con huella fijada pasa a rojo; las suites de 233, 230 y 208 y tsc pasan como antes; informe con la lista, los hashes nuevos y el límite de src/task-save-outcome.ts.",
+  "files": [
+    "shared/local-operations.ts",
+    "server/local-operations.ts",
+    "src/local-operations-client.ts",
+    "tests/local-work-queue.test.ts",
+    "coordination/reports/CLAUDE-TODAY-WORKQUEUE-230.md",
+    "coordination/plans/TODAY-WORKQUEUE-230-HANDOFF.md",
+    "shared/task-intent-journal.ts",
+    "server/task-intent-storage.ts",
+    "tests/task-intent-journal.test.ts",
+    "tests/task-intent-storage.test.ts",
+    "coordination/plans/INTENT-JOURNAL-208-CONTRACT.md",
+    "coordination/reports/CLAUDE-INTENT-JOURNAL-208.md",
+    "src/task-revision-strategy.ts",
+    "tests/task-revision-strategy.test.ts",
+    "coordination/reports/CLAUDE-TASK-REVISION-STRATEGY-233.md",
+    "coordination/plans/TASK-REVISION-STRATEGY-233-HANDOFF.md",
+    "coordination/reports/CLAUDE-EOL-LF-ACEPTADAS.md"
+  ],
+  "readFiles": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "COORDINACION.md",
+    "coordination/reports/CLAUDE-HOY-POR-DECIDIR-A2.md"
+  ],
+  "dependencies": [
+    "CLAUDE-TASK-REVISION-STRATEGY-233",
+    "CLAUDE-TODAY-WORKQUEUE-230",
+    "CLAUDE-INTENT-JOURNAL-208"
+  ]
+}

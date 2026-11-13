@@ -1,0 +1,35 @@
+# UI031 · Recuperar el CRM completo y conectar su navegación
+
+29/10/2026, Europe/Madrid. Codex. Petición expresa del usuario tras aclarar que Empresa/resumen no recuperaba los apartados originales.
+
+## Entregado y observado
+
+CRM completo activo en **http://127.0.0.1:4331/**, instalación de ejecución nueva `planb-local-crm-completo-2026-10-29/runtime`. Usa directamente la copia propia ya existente `planb-local-ux-2026-10-27/data/local/planb.sqlite`, sin copiar base, credenciales, semillas o conexiones del piloto. Se conserva Agencia Norte, 62 registros de ensayo, cero cambios locales pendientes y su sesión de continuidad anterior. No se arrancó la antigua demo de equipo4332 ni se crearon datos nuevos en estas instalaciones.
+
+Código CRM/worker/runtime compilado en `tests/.tmp/ui031-backend`; Vite en `tests/.tmp/ui031-dist`, desde copia de fuentes para aislar compilación. No se ejecutó npm run build ni se sobrescribieron build/dist de raíz. El metafile de esbuild comprobó que el servidor CRM no importa archivos reservados a Claude. Al congelar el frontend, SEC028 y FIX029 ya estaban done y sus archivos coincidían con los hashes aceptados: no había fuentes Claude reservadas de src que excluir en esta versión (manifiesto `tests/.tmp/ui031/pinned-sources.json`). No se atribuyen sus pruebas a esta tarea.
+
+App añade **Espacio comercial** al menú lateral con el origen configurado por `/api/v6/workspace`; el piloto añade **CRM completo**, conservando la guarda de borradores. Se mantiene la autenticación independiente: no se copian cookies ni se fuerza una sesión. Es **navegación conectada entre dos servicios**, no sincronización o fusión de sus bases.
+
+El navegador integrado comprobó los menús originales: Hoy, Continuidad, Trabajar desplegable (Clientes, Empresas, Oportunidades, Tareas), Cambios, Agentes, Copia de equipo, Integraciones, Preparación, Exportar y protección. Se abrió Empresas y cargaron sus ocho registros anteriores. Se navegó realmente por Espacio comercial al piloto4334 y por CRM completo de vuelta al CRM4331. Se dejó abierto Trabajar/Empresas en la pestaña2 del navegador integrado. Consola/avisos: ninguno en las comprobaciones. No se pulsaron acciones de edición, captura, ejecución externa, sincronización, cambios de protección o cierre de continuidad.
+
+Captura actual `C:/Users/iresh/.codex/visualizations/2026/10/29/01a1868d-19af-7341-9ce3-72d23e3a823c/crm-completo-recuperado.png`. `crm-completo-trabajar.png` corresponde al recorrido sintético, no a la instalación operativa.
+
+## Arranque y conservación
+
+`node scripts/start-full-workspace.cjs` inicia únicamente el CRM nuevo o reutiliza el existente tras cotejar instanceId con el endpoint de esa copia. Se comprobó un segundo arranque: `reused:true`, sin proceso duplicado. Primer PID confirmado12492; no asumir que siga vivo en una tarea posterior sin health. Red externa del proceso CRM bloqueada mediante el preloader existente; no habilita servicios externos o IA para recuperar menús. Variables sensibles/proveedores/configuraciones de otras instancias excluidas del entorno. La carpeta de ejecución rechaza semillas, `.env.local` o proveedores añadidos. La base debe existir; no se prepara una vacía si falta. Las dependencias se enlazan al node_modules de este mismo checkout, igual que la instalación anterior; no se instala nada. El exportador conserva runtime, worker, launcher y dependencias disponibles, sin afirmar una aceptación nueva de ZIP por ello.
+
+El piloto4334 mantiene su servidor anterior, hash **5f89c728938d5a713231cd9364431087d96674f34f70c79cef8157aa70e528c1**, sin reinicio. Solo sus activos de interfaz se actualizaron para el enlace de vuelta y las versiones aceptadas compiladas. Respaldo estático en `tests/.tmp/ui031/pilot-prior-dist`; index se sustituyó al final. Nuevo index SHA256 **966151a03b2646a50df89361f8dee8a9104511a6e449fed405881579bcc9f9c0**. Manifiesto `tests/.tmp/ui031/deployment.json`. Servidor CRM nuevo SHA256 **a8f152c93689cade9ec23f3c79dfe9b7d76b02b04c52bba5abf54c1b3890ea71**.
+
+La primera preparación asumió una carpeta runtime-assets inexistente: se corrigió a la junction de dependencias que ya utilizaba esta instalación. El primer intento restringido de crear la junction dio EPERM; se repitió con autorización de filesystem, sin cambiar protecciones. El CRM ya resolvía dependencias ascendiendo al checkout; la junction completa el soporte de empaquetado. El handle antiguo de la pestaña del piloto devolvía `browser.user is unavailable`; se releyó documentación, se solicitó abrir el CRM con open_in_codex (queued, no tomado como prueba) y se obtuvo su pestaña nueva por el conector oficial. La observación/navegación posteriores sí acreditan apertura real. No se usaron ventanas personales, perfiles, cookies o APIs privadas para recuperarlo.
+
+## Validación final
+
+- TypeScript `tsc --noEmit`: correcto.
+- `node --test tests/full-workspace-launcher.test.mjs`: **3/3**, cubre rutas de datos/runtime separadas, exclusión de secretos/configuración y rechazo de identidad/origen ajenos. No duplica el efecto del launcher sobre una base real.
+- Chromium1228 aislado: **2/2 E2E finales**, `company-home.spec.ts` y `full-workspace.spec.ts`. Servidor de pruebas4356 y carpeta nueva bajo tests/.tmp; sin acceso a los datos de usuario. Incluye los cuatro apartados CRM (Oportunidades es un tablero), enlaces con sus URL reales interceptadas íntegramente por el arnés, ida/vuelta, rechazar y aceptar descarte de borrador, navegación de resumen, aislamiento entre espacios y1440/390/320. Cero errores de consola/página, destinos externos o escrituras de piloto. Las escrituras de preparación solo ocurrieron en el servidor sintético4356, con aserción de baseURL para impedir apuntarlo al CRM4331.
+- Primer E2E buscaba una tabla en Oportunidades: corregido a su tablero existente. El relé de activos del arnés conservaba cabecera Origin de la URL simulada y recibía403 del servidor de prueba: se corrigieron sus cabeceras solo dentro del relé. No se debilitaron las guardas Host/Origin de las aplicaciones reales. La ejecución final completa pasa después de esas correcciones.
+- `git diff --check` correcto. Servidor de pruebas4356 cerrado al terminar; CRM4331 y piloto4334 conservados. Archivo histórico de contexto sigue SHA25665b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650.
+
+## Límites
+
+Se recuperó la copia histórica de ensayo Agencia Norte; no una captura nueva del portal personal149623262. No se añadieron muestras ni se presentó esa copia como producción. La sesión de continuidad y los servicios pausados siguen como estaban. El piloto conserva su backend previo: HS022/024 y SEC027/028 no quedan desplegados por actualizar su frontend. La unión de datos y el acceso de dispositivo siguen sus permisos y arquitectura propios; ningún enlace elude esas restricciones. No se han probado aquí nuevos envíos, API remota, exportaciones completas, recuperación cifrada, Edge o lector de pantalla. Sin acceso corporativo, proveedores externos, publicación o push.

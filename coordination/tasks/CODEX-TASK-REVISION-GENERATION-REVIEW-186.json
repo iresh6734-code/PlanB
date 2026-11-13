@@ -1,0 +1,10 @@
+{
+  "id": "CODEX-TASK-REVISION-GENERATION-REVIEW-186",
+  "agent": "codex",
+  "title": "Revisión independiente del fingerprint de generación185",
+  "plan": "Revisar cambio de fingerprint y control183actualizado, repetir58Node/tipos y cotejar seis hashes. Contrastar con pruebas normales saveGeneration/activate y candidata sin activar; comprobar que handoff183permanece intacto. Solo informe propio, sin editar185/Claude/demos.",
+  "acceptance": "Revisión antigua rechazada incluso para no-op tras nueva generación activada;freshno-op válido y no sobreinvalidación por candidata/samefecha. Resultados atribuidos,huellasintactas y límites ABA/escritorúnico/UIanteriores explícitos.",
+  "files": ["coordination/reviews/CODEX-TASK-REVISION-GENERATION-185-independent.md"],
+  "readFiles": ["server/task-revision.ts", "tests/task-revision-generation.test.ts", "tests/task-revision-context-client.test.ts", "coordination/reports/CODEX-TASK-REVISION-GENERATION-185.md", "coordination/plans/TASK-REVISION-GENERATION-185-HANDOFF.md"],
+  "dependencies": []
+}

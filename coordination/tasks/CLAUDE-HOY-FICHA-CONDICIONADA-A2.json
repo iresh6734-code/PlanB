@@ -1,0 +1,33 @@
+{
+  "id": "CLAUDE-HOY-FICHA-CONDICIONADA-A2",
+  "agent": "claude",
+  "title": "A2 · Ficha y host con guardado condicionado, comparador desde un 409 real y sondas de App",
+  "plan": "Encargo «Haz que Hoy funcione de principio a fin», fase A2 (233 y 199 aceptados). (1) src/TaskOutcomesHost.tsx: el gestor de sesión se crea con revisionStrategy() por defecto (prop explícita saveMode='legacy' para anfitriones sin el contrato); el contexto expone `revised`; se conservan seal(), resume(), dispose() y los dos puntos de creación. (2) src/LocalOperations.tsx: una sola línea, la ficha recibe `revised` del contexto (A3 tocará este archivo después, tras la presentación de esta unidad). (3) src/LocalTaskFocus.tsx: en modo condicionado la ficha abre con loadRevisedTask (registro, esquema, contexto y token de UNA lectura validada) y pasa el token a submit; un fallo de lectura, 401, 404 o cambio de contexto conserva el aviso y NUNCA cae al modo anterior; tras confirmar adopta el token que devuelve el servidor; un no-op se presenta como «sin cambios, sin historial»; un 409 TASK_REVISION_CHANGED (revisionConflict) lee la versión ACTUAL y abre TaskConflictReview 199 dentro de la ficha (base revisada, borrador, lectura actual), elegir o volver no envía nada, la propuesta vuelve al formulario con la base y el token de la lectura mostrada y un SEGUNDO guardado explícito la confirma; reabrir desde Resultados un rechazo por revisión abre también el comparador; volver conserva el borrador con un botón para volver a comparar; nombre accesible y foco al volver. (4) tests/task-focus-followup.test.ts: SOLO la huella de LocalTaskFocus.tsx tras repetir sus 7+19 pruebas de comportamiento; tests/task-outcomes-host.test.ts: adapta la aserción estática de las dos creaciones del gestor al nuevo argumento y añade las de modo y contexto. (5) tests/e2e/hoy-ficha-condicionada.spec.ts (nuevo, reutiliza el arnés CLAUDE-HOY-APP-PROBES-A sin modificarlo): guardado condicionado con cero PATCH legados, no-op sin petición, dos pestañas (un PATCH aplicado + un 409 sin escritura, comparador, elegir/volver con cero PATCH, segundo clic = tercer PATCH condicionado y 2 filas), segundo conflicto, 422, cambio de generación y homónimas. No toca TaskSaveOutcomes.tsx, App.tsx, servidor, Store ni los archivos del arnés. Los especificaciones e2e antiguas cuyo servidor de prueba no habilita taskRevisions se listan en el informe.",
+  "acceptance": "En la App compilada: guardar desde la ficha sale por /api/v7/task-revision con el token revisado y 0 PATCH legados (también en 401/404/409/422/errores); dos pestañas dan 2 PATCH condicionados, 1 aplicado y 1 409, 1 fila de historial; el comparador se abre desde el 409, conserva el cambio ajeno y las referencias, elegir/previsualizar/volver producen 0 PATCH; el segundo clic guarda contra el token de la lectura mostrada (3 PATCH condicionados, 2 aplicaciones, 2 filas); un cambio concurrente posterior da otro conflicto y conserva la intención; cambio de generación y homónimas probados; teclado, nombre accesible y foco al volver; no-op sin petición local y `unchanged` sin historial; las sondas rojas de A2 se vuelven verdes; las 7+19 pruebas de comportamiento de la ficha repetidas antes de renovar la huella; tsc limpio; informe con hashes, recuentos observados, estabilidad de las ejecuciones sin reintentos y límites.",
+  "files": [
+    "src/LocalTaskFocus.tsx",
+    "src/TaskOutcomesHost.tsx",
+    "src/LocalOperations.tsx",
+    "tests/task-focus-followup.test.ts",
+    "tests/task-outcomes-host.test.ts",
+    "tests/e2e/hoy-ficha-condicionada.spec.ts",
+    "coordination/reports/CLAUDE-HOY-FICHA-CONDICIONADA-A2.md",
+    "coordination/plans/HOY-FICHA-CONDICIONADA-A2-HANDOFF.md"
+  ],
+  "readFiles": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "COORDINACION.md",
+    "coordination/briefs/CLAUDE-HOY-TRABAJO-RECUPERABLE-240.md",
+    "coordination/plans/TASK-REVISION-STRATEGY-233-HANDOFF.md",
+    "coordination/reports/CLAUDE-TASK-CONFLICT-REVIEW-199.md",
+    "src/task-revision-strategy.ts",
+    "src/TaskConflictReview.tsx",
+    "shared/task-conflict-review.ts",
+    "tests/e2e/hoy-recuperable-harness.ts"
+  ],
+  "dependencies": [
+    "CLAUDE-TASK-REVISION-STRATEGY-233",
+    "CLAUDE-TASK-CONFLICT-REVIEW-199"
+  ]
+}

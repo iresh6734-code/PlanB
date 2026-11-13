@@ -1,0 +1,10 @@
+{
+  "id": "CODEX-HUBSPOT-READ-REVIEW-178",
+  "agent": "codex",
+  "title": "Revisión independiente del módulo HubSpot160 y CLI173 sin proveedor",
+  "plan": "Revisar las diez rutas presentadas sin editarlas. Repetir26pruebas sintéticas, comprobar documentación pública y añadir pruebas independientes causales sobre presupuesto, representación truncada, salida y límites. Dictámenes separados para módulo160 y CLI173; ninguna llamada al proveedor ni credenciales reales.",
+  "acceptance": "Hashes actuales cotejados,pruebas y tipos atribuidos,fallos reproducidos con datos ficticios. No aceptar173 antes de160; no confundir160conmontajeCodex160. Informar portal/autorización pendientes sin inventarlos. No App,instalaciones,cuentas,preview o cambios de fuentesClaude.",
+  "files": ["tests/independent-hubspot-read.test.ts", "coordination/reviews/CLAUDE-HUBSPOT-READ-160-173-independent.md"],
+  "readFiles": ["server/hubspot-read-check.ts", "server/hubspot-read-check-transport.ts", "shared/hubspot-read-check.ts", "scripts/hubspot-read-check.ts", "tests/hubspot-read-check.test.ts", "tests/hubspot-read-check-cli.test.ts"],
+  "dependencies": []
+}

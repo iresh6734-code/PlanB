@@ -1,0 +1,10 @@
+{
+  "id": "CODEX-GENERATION-HTTP-REVIEW-188",
+  "agent": "codex",
+  "title": "Revisión independiente del flujo HTTP de generación187",
+  "plan": "Repetir prueba187del principal compilado sobre ficción nueva y tipos;revisar generación demo,candidata,activación yoldrevisionwrite/noop. Cotejar2hashes y registrar identidad/cierre propios;solo informe,no código/Claude/demo181.",
+  "acceptance": "FlujoHTTPnativo1/1 ytipo0,candidatanoinvalida/activaciónsí,oldcontextsinPATCH/freshchanged-noop1historial/auth401. Atribuirbaselineycontrapruebadelautor,ningúnproveedorni instalaciónexistente.",
+  "files": ["coordination/reviews/CODEX-GENERATION-HTTP-187-independent.md"],
+  "readFiles": ["tests/task-revision-generation-launcher.test.ts", "coordination/reports/CODEX-GENERATION-HTTP-187.md"],
+  "dependencies": []
+}

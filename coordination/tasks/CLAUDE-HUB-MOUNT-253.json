@@ -1,0 +1,23 @@
+{
+  "id": "CLAUDE-HUB-MOUNT-253",
+  "agent": "claude",
+  "title": "Montar ContinuityHub dentro de Continuidad y definir el parche de App para la vuelta desde Integraciones",
+  "plan": "Tanda 2 del encargo 240 (Claude B). Montar el bloque de evidencia y ensayo (ContinuityHub 217 R2, pendiente de aceptacion) dentro de ContinuityHome sin tocar App.tsx: callbacks de navegacion opcionales (Hoy, Integraciones) y una accion ausente se explica, no se simula; foco de regreso al volver de Integraciones. Entregar a quien tenga App.tsx un parche preciso (estado returnTo, boton Volver a Continuidad, props nuevas) y probarlo en una proyeccion de la App con el parche aplicado, sin editar App.tsx. Comprobar que no hay dos acciones con textos contradictorios entre la portada y el hub, y que una fuente sin registrar (evidencia 239, relevo) muestra su disponibilidad verdadera.",
+  "acceptance": "ContinuityHome monta el hub con props opcionales y sin regresiones en su portada. Pruebas Node de render y E2E en navegador sobre una proyeccion de la App real compilada (servidor main, SQLite de archivo, red externa bloqueada): abrir Continuidad, ver fuentes con su estado real, Abrir Integraciones navega, la vuelta conserva foco y contexto, cero peticiones al proveedor al abrir. Informe con limites: App.tsx sin editar, hub 217 sin aceptar, fuentes de servidor sin registrar en main.",
+  "files": [
+    "src/ContinuityHome.tsx",
+    "src/continuity-home-hub.css",
+    "tests/continuity-home-hub.test.ts",
+    "tests/e2e/continuity-home-hub.spec.ts",
+    "coordination/plans/MONTAJE-APP-253.md",
+    "coordination/reports/CLAUDE-HUB-MOUNT-253.md"
+  ],
+  "readFiles": [
+    "src/App.tsx",
+    "src/ContinuityHub.tsx",
+    "src/LocalIntegrations.tsx",
+    "coordination/plans/MONTAJE-CONTINUIDAD-217.md",
+    "coordination/reports/CODEX-APP-INTEGRATION-AUDIT-240.md"
+  ],
+  "dependencies": []
+}

@@ -9,6 +9,18 @@
         "dev"
       ],
       "port": 5173
+    },
+    {
+      "name": "comprobar-fecha-demo",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "--require",
+        "./scripts/block-external.cjs",
+        "--import",
+        "tsx",
+        "tests/.tmp/opus-date-check/showcase/server.mts"
+      ],
+      "port": 4612
     }
   ]
 }

@@ -1,0 +1,10 @@
+{
+  "id": "CODEX-TASK-OUTCOMES-REVIEW-174",
+  "agent": "codex",
+  "title": "Revisión independiente de U1-148 sobre hashes presentados",
+  "plan": "Revisar contrato opcional outcomes de LocalTaskFocus, repetir Node y DOM del autor con recursos temporales propios, contrastar cierre/incertidumbre/recarga y compatibilidad sin gestor. No modificar las seis rutas reservadas por Claude. Emitir dictamen sobre hashes actuales y comunicar pendientes de contrato170 y montaje171.",
+  "acceptance": "Huellas presentadas intactas antes y después; evidencia atribuida de Node, navegador y tipos. Aceptar148 solo si cumple su alcance de ficha y declarar explícitamente D7 pendiente en App y pin130 sin actualizar. No adoptar cliente166, editar App/gestor/otros tests, proveedores ni previews existentes.",
+  "files": ["coordination/reviews/CLAUDE-TASK-OUTCOMES-U1-148-independent.md"],
+  "readFiles": ["src/LocalTaskFocus.tsx", "src/task-save-outcome.ts", "tests/task-focus-outcomes.test.ts", "tests/e2e/task-focus-outcomes.spec.ts", "coordination/plans/TASK-OUTCOMES-U1-148-HANDOFF.md"],
+  "dependencies": []
+}

@@ -1,0 +1,10 @@
+{
+  "id": "CODEX-CLAUDE-INTEGRATION-MISSION-198",
+  "agent": "codex",
+  "title": "Encargo sostenido a ClaudeB: integración HubSpot y pasaporte/relevo",
+  "plan": "Actualizarmisiónsobre173yaaceptada/QA136R2review;paquetesAPIespecífica,LocalIntegrationsyPasaporteindependiente,KittrasQAaceptada. MontajecentralCodex055087respetado,sin bloquearcódigoporportalnoautorizado. Solo briefpropio.",
+  "acceptance": "Promptautocontenido conrutaspropuestaslibres,puertasactuales,productoobservableytrabajoindependientedurante review,sinsecretos/proveedorrealni edicionesClaude/App. No repetirfasesdoneoaceptarQAporlecturadeinforme.",
+  "files": ["coordination/briefs/CLAUDE-MISION-INTEGRACION-REAL-198.md"],
+  "readFiles": ["coordination/briefs/CLAUDE-CONEXIONES-RELEVO-190.md", "coordination/reviews/CLAUDE-HUBSPOT-READ-160-173-independent.md", "coordination/reports/CLAUDE-RESCUE-KIT-QA-136.md"],
+  "dependencies": []
+}

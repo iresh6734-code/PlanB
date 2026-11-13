@@ -1,0 +1,25 @@
+{
+  "id": "CLAUDE-EOL-LF-A2-A3-ARNES",
+  "agent": "claude",
+  "title": "Claude A · Normalizar a LF los archivos aceptados de A2, el adaptador de la Jornada y el arnés que dejé en CRLF, y renovar sus dos huellas",
+  "plan": "Continuación de CLAUDE-EOL-LF-ACEPTADAS (la persona aprobó normalizar mis unidades). Una vez aceptadas A2, el adaptador A3 y el arnés, convierte a LF los 11 archivos que siguen en CRLF (el árbol es mayoritariamente LF y estos eran LF al recibirlos) sin tocar ningún otro byte: se comprueba que cada uno, sin sus CR, es idéntico al anterior. Se renuevan las únicas dos huellas afectadas (src/LocalTaskFocus.tsx en task-focus-followup y src/task-save-outcome.ts en task-focus-outcomes), un solo cambio por archivo de prueba, y se repiten las suites que las usan. Sin cambios de comportamiento.",
+  "acceptance": "Los 11 archivos quedan solo-LF y son idénticos a su contenido anterior salvo los saltos de línea (comparación byte a byte tras quitar los CR). Las dos huellas renovadas coinciden con los bytes nuevos y ninguna otra aserción cambia. Las pruebas Node de host, ficha, resultados, adaptador y cola pasan como antes; tsc limpio; los especificaciones del arnés pasan igual que antes. Informe con la lista, hashes viejos y nuevos.",
+  "files": [
+    "src/LocalTaskFocus.tsx",
+    "src/TaskOutcomesHost.tsx",
+    "src/task-save-outcome.ts",
+    "tests/task-focus-followup.test.ts",
+    "tests/task-outcomes-host.test.ts",
+    "tests/task-focus-outcomes.test.ts",
+    "shared/work-queue-day.ts",
+    "tests/work-queue-day.test.ts",
+    "tests/e2e/hoy-recuperable-harness.ts",
+    "tests/e2e/hoy-ficha-condicionada.spec.ts",
+    "coordination/reports/CLAUDE-HOY-FICHA-CONDICIONADA-A2.md",
+    "coordination/plans/HOY-FICHA-CONDICIONADA-A2-HANDOFF.md",
+    "coordination/reports/CLAUDE-HOY-APP-PROBES-A.md",
+    "coordination/reports/CLAUDE-EOL-LF-A2-A3-ARNES.md"
+  ],
+  "readFiles": ["AGENTS.md", "CLAUDE.md", "COORDINACION.md", "coordination/reports/CLAUDE-EOL-LF-ACEPTADAS.md"],
+  "dependencies": ["CLAUDE-HOY-FICHA-CONDICIONADA-A2", "CLAUDE-HOY-JORNADA-ADAPTADOR-A3", "CLAUDE-HOY-APP-PROBES-A", "CLAUDE-HOY-POR-DECIDIR-A2"]
+}

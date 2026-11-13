@@ -1,0 +1,11 @@
+# Relevo integrado en el arranque principal
+
+7/11/2026, Europe/Madrid. Autor Codex de este chat. Se integró la llamada única a `mountRelayRehearsal` en `server/main.ts` después de crear la App y registrar la comprobación de HubSpot. Consume 216 R4 y 254 R2 aceptadas. La ruta se habilita cuando la instalación incluye el Kit verificado. Si el Kit falta, fue alterado o es una unión, se conserva el 404 y la App sigue disponible.
+
+La prueba de composición empaqueta ahora `server/main.ts` directamente, con su registro real. La modificación del banco aceptado 254 tiene la reserva separada `CODEX-RELAY-MOUNT-TEST-COMPOSITION`. Se reutilizaron sus tres recorridos y no se creó un segundo archivo equivalente `operations-relay-main.spec.ts`.
+
+Resultado de `relay-packaged.spec.ts` con Chromium local y red externa bloqueada, 3/3 sin reintentos, 88,95 segundos. La instalación se creó fuera del repositorio y contiene servidor compilado, interfaz, paquete y datos ficticios nuevos. El montaje se comprobó desde Continuidad con consentimiento, cancelación a mitad de ejecución, segunda pestaña, cierre de procesos del Kit, un único create sin duplicados, ID erróneo rechazado, cuatro descargas y resultado conservado al reiniciar main. Cero tráfico externo y cero cambios CRM al final del recorrido. Se verificaron 1440/390/320 px y se inspeccionó la captura de 390 px. La configuración `PLANB_KEEP254=1` conservó la evidencia y evitó el borrado recursivo al terminar.
+
+El typecheck global `tsc --noEmit --pretty false` terminó con exit 0. La evidencia del navegador está en `tests/.tmp/relay-main-mount-ZqAmDZ`, con reporte JSON, tres casos y capturas adjuntas. Se aplicó `frontend-testing-debugging`. El Browser plugin y su skill browser estaban ausentes, por lo que se utilizó Playwright del proyecto. Este banco no incorpora un registro global de consola. La prueba de interacción y las capturas acreditan el contenido relevante que se mostró.
+
+El registro llegó al código de arranque y a una instalación nueva probada. La candidata 263 conserva su binario histórico. La nueva instalación local y la candidata conjunta requieren su propio montaje revisado. El ensayo conserva su alcance ficticio y de mismo equipo.

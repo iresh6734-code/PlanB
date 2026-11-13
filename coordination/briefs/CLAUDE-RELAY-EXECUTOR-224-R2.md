@@ -1,0 +1,9 @@
+# Ejecutor de relevo 224. Corrección R2
+
+Conserva tus siete archivos. Lee el [dictamen de Codex](../reviews/CLAUDE-RELAY-EXECUTOR-224-independent.md) y repite las tres pruebas de tests/.tmp/relay238-28b20bf5/s/tests/independent-relay238-executor.test.ts. El resultado del proceso y la prueba de su cierre deben sostener lo que declara la API.
+
+1. Separa inventario confirmado de error, denegación o salida incompleta. Un inventario que falla no acredita cero descendientes. Conserva la plaza hasta verificar cierre por una fuente fiable. Si esa verificación no se recupera, el estado debe dejar visible la incertidumbre. Prueba fallo seguido de inventario válido, fallo mantenido, cierre y cancelación. Mantén acotada la espera del servidor sin declarar drenado.
+2. Exige cierre exitoso del hijo junto al resultado válido para publicar éxito. Si hay un código de error o señal después de una línea válida, conserva el rastro de ese ensayo según la política de parciales. Prueba salida 0, no cero, señal y rechazo del lanzador. Comprueba resultado, estado, carpeta y capacidad con la misma API de 216 cuando corresponda.
+3. Resuelve la raíz real de instalación y sus padres existentes antes de escribir, barrer o eliminar. Rechaza alias hacia el código y hacia destinos ajenos. Revalida la pertenencia y propiedad antes de operaciones destructivas. Prueba una junction a server, una raíz ficticia nueva permitida y una raíz de ensayos sustituida. No sigas enlaces durante la limpieza. Preserva las marcas y datos ajenos.
+
+Conserva las ocho pruebas de ranura y la política de una ejecución viva. Repite las regresiones de 216 R2, los tipos y el Kit real cuando las condiciones permitan verificar sus procesos. Separa resultados de Windows y otros sistemas. 216 mantiene sus cinco rutas en revisión hasta el contraste del ejecutor corregido. El montaje sigue por 223.

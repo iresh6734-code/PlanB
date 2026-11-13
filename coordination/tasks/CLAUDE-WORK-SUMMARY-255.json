@@ -1,0 +1,25 @@
+{
+  "id": "CLAUDE-WORK-SUMMARY-255",
+  "agent": "claude",
+  "title": "Consumidor del resumen publico del diario en Continuidad: contrato, cliente, tarjeta y exportacion",
+  "plan": "Tanda 4 del encargo 240 (Claude B). El diario 208 de Claude A sigue en revision y no publica aun su resumen: esta unidad entrega SOLO el lado consumidor sobre un contrato propuesto y comunicado a la autora (ambito, fecha, origen, procedencia, estado read/unavailable, recuentos o null, cuarentena aparte): esquema estricto, adaptador a las fuentes del pasaporte y del hub, cliente de solo lectura con 401/404/formato distinguidos, tarjeta que muestra distintas las situaciones vacia, con trabajo, ilegible, sin cobertura, no disponible y no registrada, con enlaces a Hoy y a Trabajo por recuperar solo si el anfitrion los ofrece, y exportacion HTML/JSON acotada y por lista blanca. Se prueba con un doble del endpoint (declarado como doble). El montaje en ContinuityHome (253, en revision) y el endpoint real quedan como parche y dependencia documentados.",
+  "acceptance": "Contrato estricto con coherencia semantica (unavailable implica recuentos nulos; sin cobertura no es cero; vacia es todo cero con cobertura completa). Tarjeta con seis estados visualmente y textualmente distintos, enlaces funcionales o explicados, exportacion sin texto de borradores, parches ni datos personales, HTML autocontenido y escapado, JSON acotado, nombre y tipo que no se confundan con una capsula restaurable. Pruebas Node y DOM (1440/390/320, teclado). Informe con limites: endpoint real pendiente de 208, doble de pruebas, montaje pendiente.",
+  "files": [
+    "shared/work-summary.ts",
+    "src/work-summary-client.ts",
+    "src/WorkSummary.tsx",
+    "src/work-summary.css",
+    "tests/work-summary.test.ts",
+    "tests/e2e/work-summary.spec.ts",
+    "coordination/plans/MONTAJE-RESUMEN-255.md",
+    "coordination/reports/CLAUDE-WORK-SUMMARY-255.md"
+  ],
+  "readFiles": [
+    "shared/continuity-passport.ts",
+    "src/ContinuityHome.tsx",
+    "src/ContinuityHub.tsx",
+    "coordination/briefs/CLAUDE-HOY-TRABAJO-RECUPERABLE-240.md",
+    "coordination/briefs/CLAUDE-INTENT-JOURNAL-208-R2.md"
+  ],
+  "dependencies": []
+}

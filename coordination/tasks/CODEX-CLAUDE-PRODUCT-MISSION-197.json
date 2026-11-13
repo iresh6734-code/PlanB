@@ -1,0 +1,10 @@
+{
+  "id": "CODEX-CLAUDE-PRODUCT-MISSION-197",
+  "agent": "codex",
+  "title": "Encargo extenso para Claude: flujo completo de trabajo y decisiones",
+  "plan": "Responder a petición de trabajo sostenido con misión vertical grande:corregir170F1,171Appreal,componente de decisionesconflictosdisjuntomientrasreview,reaperturaintentos y adopcióncondicionalporunidadesexactas. No eliminar revisión o robarreservas;196QAajena/055087Codexpreservados.",
+  "acceptance": "Promptautocontenido conproductoobservable,backlogejecutable/rutasexactas/puertas/criterios,conocimientoactual170workingpor195;sin prometerhoras/modeloactivo. No cambiosdecódigoClaude/proveedor/demo;memoria035porpropietario.",
+  "files": ["coordination/briefs/CLAUDE-MISION-TRABAJO-REAL-197.md"],
+  "readFiles": ["coordination/reports/CLAUDE-TASK-OUTCOMES-CONTRACT-170.md", "coordination/reviews/CLAUDE-TASK-OUTCOMES-CONTRACT-170-independent.md", "coordination/briefs/CLAUDE-TRABAJO-CONTINUO-190.md"],
+  "dependencies": []
+}

@@ -1,0 +1,23 @@
+{
+  "id": "CLAUDE-RELAY-PACK-254",
+  "agent": "claude",
+  "title": "Ensayo de relevo empaquetado: paquete autonomo del Kit, modulo de registro para main y prueba en carpeta nueva",
+  "plan": "Tanda 3 del encargo 240 (Claude B). Sin editar archivos presentados (224, 216, 253) ni main.ts: (1) un constructor del paquete del Kit (kit/ con server, shared, cuatro scripts, package.json, la clausura minima de node_modules con tsx y manifiesto de hashes) que se pueda copiar a una candidata; (2) un modulo de registro mountRelayRehearsal(app, store, security, opciones) analogo a mountHubspotReadCheck, que verifica el paquete por manifiesto, crea el ejecutor 224 con raiz de la instalacion, barre carpetas propias vencidas y registra la API 216 una sola vez; si falta el paquete no registra nada (la fuente queda no disponible de verdad); (3) pruebas Node del modulo y una prueba E2E sobre una App compilada que arranca en una carpeta nueva FUERA del repositorio (sin tests/.tmp ni arbol de fuentes) con el Kit real: ensayo desde Continuidad, cancelacion con procesos medidos, segunda pestana, descarga del pasaporte, reinicio de main con el resultado persistido. El patch de main.ts se entrega a Codex (239) como cambio preciso.",
+  "acceptance": "Paquete verificable por hashes y resoluble sin el arbol de fuentes. Modulo con registro unico, fallo cerrado ante paquete ausente o alterado, autorizacion original, Host y Origin heredados. E2E en carpeta nueva: cero peticiones al proveedor, procesos del Kit contados en vivo y a cero tras cancelar y terminar, un solo create ficticio y ID equivocado rechazado, estados HTTP y archivos medidos, resultado persistido tras reiniciar, diferencia entre el ensayo ficticio y la copia activa visible. Limites declarados: Windows, main.ts sin editar (parche para Codex), tsx como dependencia de ejecucion del paquete.",
+  "files": [
+    "scripts/build-relay-kit.mjs",
+    "server/relay-rehearsal-mount.ts",
+    "tests/relay-rehearsal-mount.test.ts",
+    "tests/e2e/relay-packaged.spec.ts",
+    "coordination/plans/MONTAJE-RELEVO-254.md",
+    "coordination/reports/CLAUDE-RELAY-PACK-254.md"
+  ],
+  "readFiles": [
+    "server/relay-rehearsal-executor.ts",
+    "server/relay-rehearsal-api.ts",
+    "server/hubspot-read-check-mount.ts",
+    "server/main.ts",
+    "coordination/plans/RELAY-EXECUTOR-224-HANDOFF.md"
+  ],
+  "dependencies": []
+}

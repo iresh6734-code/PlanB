@@ -1,0 +1,10 @@
+{
+  "id": "CODEX-REVISION-PREVIEW-REVIEW-182",
+  "agent": "codex",
+  "title": "Revisión independiente de preview181 en4595 mediante lecturas",
+  "plan": "Contrastar hash del informe181,backend compilado/48inputs,15activos publicados e identidad del endpoint. Inspeccionar Hoy/Agentes/Integraciones y geometría1440/390/320 con navegador aislado, consultar revisiónv7 porGET y comprobar contador antes/después. No repetir escrituras ni auth del autor ni operar preview161.",
+  "acceptance": "Evidencia propia de identidad/activos/API/UIylecturassin cambios;atribuir escritura/authalautor. DeclararUI158sinU1/166gestor/170/U2 y backendnuevo. Solo informe propio, sin fuenteproducto/proveedor/instalacionesajenas o detener proceso principal.",
+  "files": ["coordination/reviews/CODEX-REVISION-PREVIEW-181-independent.md"],
+  "readFiles": ["coordination/reports/CODEX-REVISION-PREVIEW-181.md"],
+  "dependencies": []
+}

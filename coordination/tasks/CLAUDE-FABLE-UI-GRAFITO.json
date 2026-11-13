@@ -1,0 +1,10 @@
+{
+  "id": "CLAUDE-FABLE-UI-GRAFITO",
+  "agent": "claude",
+  "title": "Rediseño integral «Grafito» de la App local (orden directa del usuario, 11/11/2026)",
+  "plan": "Nueva capa final de diseño (tokens, marco, componentes), barra superior única, página de registros con cabecera-barra y barra de estado, Continuidad en cuatro secciones, Inicio/Hoy/Agentes/Exportar/Integraciones/Comprobar una fecha recompuestos y marco móvil de una sola tira. Sin cambios de servidor, contratos, permisos ni datos. Sin desplegar.",
+  "acceptance": "Tipos limpios; pruebas que leen los archivos tocados en verde; capturas antes/después y métricas de altura en tests/.tmp/rd/shots; sin desborde horizontal a 1440, 1366, 1280 y 390; paleta AA verificada por prueba. Los fallos ajenos de la batería completa se listan sin atribuirlos al rediseño.",
+  "files": ["src/planb-grafito.css", "src/App.tsx", "src/ContinuityHome.tsx", "src/LocalOperations.tsx", "src/main.tsx", "tests/design-tokens.test.ts", "coordination/reports/CLAUDE-FABLE-UI-GRAFITO.md"],
+  "readFiles": ["AGENTS.md", "COORDINACION.md", "DESIGN.md"],
+  "dependencies": []
+}

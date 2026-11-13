@@ -1,0 +1,30 @@
+{
+  "id": "CLAUDE-TASK-CONFLICT-REVIEW-199",
+  "agent": "claude",
+  "title": "Comparador de decisiones de conflicto de una tarea: modelo puro y componente (preparación; aún no montado en la ficha)",
+  "plan": "Bloque independiente de la misión 197 (apartado 3), reclamable mientras 170/171 están en revisión porque no toca ninguna de sus rutas. Construye (1) shared/task-conflict-review.ts: modelo puro que, dadas la identidad y el registro que la persona vio (base revisada), su borrador y la versión actual con su identidad, clasifica por campo cambio propio, ajeno, convergente, en conflicto o incompatible, comprueba que ambas identidades (instalación, captura, generación, cuenta, ID de tarea) coinciden —si no, NO ofrece mezcla y solo conserva y muestra el borrador— y, a partir de decisiones explícitas por campo, produce una propuesta validable (registro actual como nueva base + patch + incidencias + no-op) reutilizando buildPatch/validateDraft/displayFieldValue/sameValue de shared/local-task-focus.ts, sin cambiar el borrador de entrada; (2) src/TaskConflictReview.tsx + CSS: tres columnas «Lo que viste / Tu propuesta / Lo que hay ahora» (apiladas en móvil), una decisión radio por campo en conflicto sin valor preseleccionado, texto largo plegable, texto React seguro, teclado, foco y regiones accesibles; entrega la propuesta mediante onPropose y nunca guarda ni crea otro gestor; (3) pruebas Node del modelo (homónimos, mismo ID en otra captura, vacío/null, referencias, fechas, instantes, texto largo, solo lectura, enumerados desaparecidos, convergencia, no-op) y DOM en Chromium real a 1440/390/320 con teclado. Entrega una preparación: documenta la futura llamada desde la ficha (LocalTaskFocus) y desde el gestor para que la integración real vaya en el paquete 5 con su propia reserva; el arnés no cuenta como montaje. No usa red, proveedores ni datos reales.",
+  "acceptance": "Modelo y componente separados de la ficha y del gestor; identidades distintas ⇒ sin mezcla (borrador conservado y visible); cada campo en conflicto exige elección explícita antes de poder proponer; la propuesta usa la versión actual como base, solo incluye los campos que la persona decidió mantener y pasa por validateDraft; los campos ajenos nunca se sobrescriben sin decisión; no-op reconocido como tal; el borrador original no se muta; pruebas Node y DOM (1440/390/320, teclado, texto largo, homónimos) con mutaciones o contrapruebas que fallen por la causa correcta; tsc limpio; capturas abiertas; hashes, límites, llamada futura documentada y handoff; no se declara que el conflicto ya se resuelve desde Hoy.",
+  "files": [
+    "shared/task-conflict-review.ts",
+    "src/TaskConflictReview.tsx",
+    "src/task-conflict-review.css",
+    "tests/task-conflict-review.test.ts",
+    "tests/e2e/task-conflict-review.spec.ts",
+    "coordination/reports/CLAUDE-TASK-CONFLICT-REVIEW-199.md",
+    "coordination/plans/TASK-CONFLICT-REVIEW-199-HANDOFF.md"
+  ],
+  "readFiles": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "COORDINACION.md",
+    "coordination/briefs/CLAUDE-MISION-TRABAJO-REAL-197.md",
+    "shared/local-task-focus.ts",
+    "shared/model.ts",
+    "src/LocalTaskFocus.tsx",
+    "src/local-task-focus.css",
+    "src/ReferenceSelect.tsx",
+    "tests/e2e/task-save-outcome.spec.ts",
+    "scripts/block-external.cjs"
+  ],
+  "dependencies": []
+}

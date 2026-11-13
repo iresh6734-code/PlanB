@@ -1,0 +1,10 @@
+{
+  "id": "CODEX-TASK-OUTCOMES-CONTRACT-REVIEW-195",
+  "agent": "codex",
+  "title": "Revisión independiente de lifecycle del gestor170",
+  "plan": "Revisar cincohashesactuales y contrato dispose/puerta/callbacks/razones;repetir76NodeyDOMgestor/U1focales conraícespropias. Noeditar170ni171. Dictamenque permita iniciarU2solosi cumple,conlímitespostbloqueoclaros.",
+  "acceptance": "Pruebasapropiadas/tipos yhuellasactuales,evidenciaatribuida,sinproveedores. Confirmacionesylecturasdistintas/noenvíotardío/noopquitadoincorrecto. Noaceptar porliberararchivos;distinguircontadorpostdisposeyseguimiento.",
+  "files": ["coordination/reviews/CLAUDE-TASK-OUTCOMES-CONTRACT-170-independent.md"],
+  "readFiles": ["src/task-save-outcome.ts", "shared/task-save-outcome.ts", "tests/task-save-outcome.test.ts", "tests/task-focus-outcomes.test.ts", "coordination/reports/CLAUDE-TASK-OUTCOMES-CONTRACT-170.md"],
+  "dependencies": []
+}

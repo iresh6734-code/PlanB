@@ -1,0 +1,10 @@
+{
+  "id": "CLAUDE-A4-CONSUMER-PLAN",
+  "agent": "claude",
+  "title": "Claude A · Plan de adaptación del gestor y la estrategia al UUID estable y a los estados de recuperación de A4 (a acordar con Codex)",
+  "plan": "Con el contrato A4 aceptado, este documento fija QUÉ cambia en el consumidor (gestor de resultados, estrategia, cliente, superficie «Trabajo por recuperar» y host), en qué archivos exactos, con qué dueño, en qué orden, con qué pruebas y qué preguntas necesito que Codex cierre antes de reservar nada. No edita código; es la base para registrar las unidades de implementación una vez acordado.",
+  "acceptance": "Documento con cambios por archivo (nuevos y existentes), dueño, dependencias de aceptación, orden de reservas, huellas afectadas, pruebas por unidad, mapa de estados del servidor a estados del gestor y preguntas abiertas para Codex. Sin código de producto.",
+  "files": ["coordination/plans/A4-CONSUMER-ADAPTATION-PLAN.md"],
+  "readFiles": ["coordination/plans/A4-DURABLE-RECOVERY-HTTP-CONTRACT.md", "src/task-save-outcome.ts", "shared/task-save-outcome.ts", "src/task-revision-strategy.ts", "src/TaskOutcomesHost.tsx"],
+  "dependencies": []
+}

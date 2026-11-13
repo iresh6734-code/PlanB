@@ -1,0 +1,30 @@
+{
+  "id": "CLAUDE-TASK-REVISION-STRATEGY-233",
+  "agent": "claude",
+  "title": "Guardado condicionado en el gestor: estrategia 166/183/185 con puerta onDispatch, resultado changed/unchanged/current/token y comprobación solo por lectura",
+  "plan": "Apartado 4 del encargo «Termina el recorrido de Hoy», primera mitad (contrato + estrategia; el consumidor en ficha/host/panel es otra unidad posterior a 219). El gestor 136/170 solo conoce la estrategia anterior (legacyStrategy): su mapOutcome no conserva changed/unchanged/current ni el token de 166/183, un no-op se habría anunciado como guardado y no hay forma de guardar contra la revisión que la persona abrió. Esta unidad: (1) shared/task-save-outcome.ts: la operación conserva `revised` ({changed, token, current}) SOLO cuando el resultado procede de una escritura condicionada validada, y describeOperation distingue un no-op («sin cambios, no se añadió historial») de un guardado confirmado; (2) src/task-save-outcome.ts: tipo StrategyOutcome (SaveOutcome + unchanged + saved con revisión), mapOutcome para unchanged/saved revisado (confirmado con procedencia servidor, sin historial inventado), compatible con legacyStrategy sin cambios; (3) src/task-revision-strategy.ts (nuevo): revisionStrategy() sobre el cliente contextual 183 (que compone 166 y la lectura de contexto): la puerta síncrona onDispatch() de 170 se llama inmediatamente antes de la escritura (envolviendo fetch), el token es SIEMPRE el de la lectura que la persona revisó (nunca se renueva ni se relee para reenviar), conflicto 409 TASK_REVISION_CHANGED → rechazado sin escritura con revisionConflict, 422 → inválido con campos, no-op → unchanged, acuse perdido → incierto, y NINGÚN fallback a la ruta anterior ante un error condicionado; verify() solo hace GET (cliente 183 verify). Incluye loadRevisedTask(taskId, signal) para que la ficha obtenga contexto + token de UNA lectura validada. (4) tests/task-revision-strategy.test.ts contra el servidor REAL con taskRevisions (createBaseApp): guardado normal (un PATCH, un cambio de historial, token nuevo), no-op (sin historial ni contador, no es «guardado»), dos editores desde la misma revisión (gana uno, el otro recibe conflicto sin escritura y su intención se conserva en la operación), cambio de generación (409 sin escritura), acuse perdido → incierto y verificación solo por GET (cero PATCH extra, coincidencia no prueba autoría, aceptar sigue siendo humano), 422 con campos, pérdida de contexto (cambio de captura), puerta onDispatch tras dispose (ningún PATCH), 401, error del endpoint condicionado sin segundo envío por la ruta anterior, y regresión del legacyStrategy. (5) tests/task-focus-outcomes.test.ts: solo las dos huellas del gestor. No monta nada en la ficha, el host ni el panel; no activa el servidor opt-in por su cuenta; no toca LocalTaskFocus.tsx.",
+  "acceptance": "Las 43+ pruebas del gestor (task-save-outcome.test.ts) pasan sin cambios; legacyStrategy intacta; con revisionStrategy: un guardado = un PATCH condicionado con el token revisado y un cambio de historial; un no-op no escribe, no suma historial y se describe como «sin cambios»; dos editores desde la misma revisión: un ganador y un conflicto sin escritura que conserva patch y token original; ningún fallback legacy ante cualquier error condicionado (PATCH legacy = 0); onDispatch rechazado tras dispose no envía; la verificación solo hace GET y no acredita autoría; `revised` solo existe si la escritura fue condicionada y validada; contrapruebas por mutación; tsc limpio; hashes, límites y handoff para el consumidor en ficha.",
+  "files": [
+    "shared/task-save-outcome.ts",
+    "src/task-save-outcome.ts",
+    "src/task-revision-strategy.ts",
+    "tests/task-revision-strategy.test.ts",
+    "tests/task-focus-outcomes.test.ts",
+    "coordination/reports/CLAUDE-TASK-REVISION-STRATEGY-233.md",
+    "coordination/plans/TASK-REVISION-STRATEGY-233-HANDOFF.md"
+  ],
+  "readFiles": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "COORDINACION.md",
+    "coordination/plans/TASK-REVISION-GENERATION-185-HANDOFF.md",
+    "coordination/plans/TASK-REVISION-CONTEXT-183-HANDOFF.md",
+    "coordination/plans/TASK-REVISION-CLIENT-166-HANDOFF.md",
+    "src/task-revision-client.ts",
+    "src/task-revision-context-client.ts",
+    "shared/task-revision.ts",
+    "server/task-revision.ts",
+    "tests/task-save-outcome.test.ts"
+  ],
+  "dependencies": []
+}

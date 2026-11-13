@@ -1,0 +1,10 @@
+{
+  "id": "CODEX-TASK-REVISION-CYCLE-REVIEW-179",
+  "agent": "codex",
+  "title": "Revisión independiente del ciclo cliente166 con main167/runtime168",
+  "plan": "Revisar y repetir dos casos HTTP177 sobre lanzadores compilados con ficción nueva, cotejar fuentes aceptadas y dos hashes presentados. Comprobar que acuse perdido se verifica mediante lectura, sin fallback ni reenvío. Solo informe propio, sin editar pruebas del autor o producto.",
+  "acceptance": "2/2casos del autor repetidos,tiposfocales,huellasintactas,procesospropioscerrados. Declarar HTMLmínimo/sinUI,controllegacy separado y límites escritorúnico. Ninguna preview/proveedor/credencialreal ni rutasClaude.",
+  "files": ["coordination/reviews/CODEX-TASK-REVISION-CYCLE-177-independent.md"],
+  "readFiles": ["tests/task-revision-launcher-client.test.ts", "coordination/reports/CODEX-TASK-REVISION-CYCLE-177.md", "src/task-revision-client.ts"],
+  "dependencies": []
+}

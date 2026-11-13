@@ -1,0 +1,24 @@
+{
+  "id": "CLAUDE-HOY-JORNADA-ADAPTADOR-A3",
+  "agent": "claude",
+  "title": "A3 · Adaptador de la cola estructurada (230 R3) a la Jornada: candidatos, cobertura, identidad y casos límite",
+  "plan": "Encargo «Haz que Hoy funcione de principio a fin», fase A3, primera mitad (rutas independientes; el montaje en LocalOperations.tsx es otra unidad que espera a la presentación de A2). Modelo puro shared/work-queue-day.ts: dayInputFromWorkQueue(work: LocalWorkQueue) → { key, phase, candidates: DayCandidate[], notConsidered, coverage }. Usa estado, referencias y códigos de 230 R3: statusKnown = status==='open'; dueText = due.localDate ?? due.value; los motivos son textos de la interfaz derivados de reasonCodes y due.kind, IDÉNTICOS a los detalles de buildResponseQueue (una prueba los compara con candidatesFromQueue sobre la misma copia); `missing` se cuenta con referenceCoverage (no con references, que puede estar recortada a 50) y se muestra recortado a un ID legible sin perder cuántas son; `not-captured` NO es «falta»: se informa como no comprobable; las asociaciones omitidas por el límite se declaran. La cobertura distingue lista recortada por límite de tareas, por bytes y filas que no caben solas (omittedOversize), sin convertirlas en completadas ni en «fuera de la lista»; notConsidered = counts.notReturned. La clave de aislamiento es contextKey de la identidad completa (instalación, captura, fecha de captura, inicio, cuenta y generación): mismo ID de tarea en otra captura u otra generación = otra clave; copia vacía = clave null. Pruebas Node: equivalencia con candidatesFromQueue, identidad == contextKey de la ficha, vacío / importada / activa, página recortada por límite y por bytes, fila enorme omitida, IDs largos, refs missing más allá del límite de 50, not-captured, homónimas, mismo ID en otra captura y generación, función pura sin mutar la entrada, y contrapruebas por mutación. No toca LocalOperations.tsx, ContinuityDay, shared/continuity-day.ts ni el cliente.",
+  "acceptance": "Candidatos idénticos a los de candidatesFromQueue sobre la misma copia (misma cola, mismo orden, mismos motivos); cobertura explícita (límite, bytes, tamaño) y nunca un total deducido de una lista parcial; `missing` por cobertura aunque references esté recortada; not-captured separado de missing; claves distintas para otra captura/generación/instalación con IDs repetidos y null para copia vacía; ID largo recortado solo en presentación con su longitud real; entrada no mutada; contrapruebas por mutación; tsc limpio; informe con hashes y límites.",
+  "files": [
+    "shared/work-queue-day.ts",
+    "tests/work-queue-day.test.ts",
+    "coordination/reports/CLAUDE-HOY-JORNADA-ADAPTADOR-A3.md"
+  ],
+  "readFiles": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "COORDINACION.md",
+    "coordination/plans/TODAY-WORKQUEUE-230-HANDOFF.md",
+    "shared/continuity-day.ts",
+    "shared/local-operations.ts",
+    "shared/local-task-focus.ts"
+  ],
+  "dependencies": [
+    "CLAUDE-TODAY-WORKQUEUE-230"
+  ]
+}

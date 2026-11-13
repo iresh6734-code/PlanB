@@ -1,0 +1,28 @@
+{
+  "id": "CLAUDE-INTENT-JOURNAL-208",
+  "agent": "claude",
+  "title": "Cuaderno reiniciable de intenciones de guardado: contrato, modelo, almacenamiento sobre Store.meta y pruebas de fallo (sin montaje)",
+  "plan": "Paquete 4 del encargo «Claude A». Diseña y desarrolla, en rutas NUEVAS y sin tocar Store, Recovery, v2.ts ni operations, el registro local acotado de intentos de guardado y borradores recuperables: (1) coordination/plans/INTENT-JOURNAL-208-CONTRACT.md con el contrato corto (almacenamiento, ciclo de vida, datos mínimos, retención, límites, fallos y las tres fronteras de interrupción) y su comparación con el cifrado/autenticación/reservas existentes (Store.meta ya sella con la clave local; el diario de Rescate es el precedente de intención con idempotencia); (2) shared/task-intent-journal.ts: modelo puro y protocolo (draft → attempt → settled; ningún envío antes de que el intento sea duradero; lo que carece de acuse tras reiniciar queda incierto; el arranque solo CLASIFICA y nunca envía; registros corruptos o de otra copia se conservan sin aplicarse; retención sin borrar nunca lo no resuelto; resumen provisional por contexto para el pasaporte, a coordinar con la otra sesión); (3) server/task-intent-storage.ts: adaptador sobre la API pública de Store (get/set/transaction, prefijo de clave propio) que no edita store.ts y exige comparar-y-escribir; (4) pruebas Node con almacenamiento en memoria con inyección de fallos y con un Store real de archivo en carpeta temporal (reinicio entre fronteras, valor corrupto/truncado, esquema anterior y posterior, otra copia, escritura rechazada antes de intención durable). El montaje persistente (rutas HTTP en v2.ts, uso desde el gestor/ficha, bloqueo de sesión) y la prueba de dos procesos sobre la misma raíz quedan para una unidad acordada con Codex; esta unidad no los declara hechos. Datos ficticios, carpetas temporales propias, sin red.",
+  "acceptance": "Contrato corto presentado; protocolo en el que la escritura durable de «attempt» precede a cualquier envío y, si falla, no se envía; arranque que no escribe ni envía y clasifica draft/never-attempted/unknown-outcome/settled/other-context/quarantined; registros corruptos, truncados, de versión distinta o de otra captura/instalación conservados sin aplicarse; borrador de una captura nunca ofrecido en otra; retención que no borra lo no resuelto y rechaza nuevas altas con motivo claro al llegar al tope; compare-and-write con conflicto detectado; adaptador sobre Store real con reinicio; resumen provisional para el pasaporte solo con alcance, instante y recuentos; contrapruebas por mutación; tsc limpio; hashes, límites y handoff. No declara persistencia montada en la App.",
+  "files": [
+    "coordination/plans/INTENT-JOURNAL-208-CONTRACT.md",
+    "shared/task-intent-journal.ts",
+    "server/task-intent-storage.ts",
+    "tests/task-intent-journal.test.ts",
+    "tests/task-intent-storage.test.ts",
+    "coordination/reports/CLAUDE-INTENT-JOURNAL-208.md"
+  ],
+  "readFiles": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "COORDINACION.md",
+    "server/store.ts",
+    "server/crypto.ts",
+    "server/rescue-room-journal.ts",
+    "shared/task-save-outcome.ts",
+    "src/task-save-outcome.ts",
+    "shared/local-task-focus.ts",
+    "tests/rescue-room-journal.test.ts"
+  ],
+  "dependencies": []
+}

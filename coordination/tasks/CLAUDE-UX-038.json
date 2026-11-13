@@ -1,0 +1,43 @@
+{
+  "id": "CLAUDE-UX-038",
+  "agent": "claude",
+  "title": "Rediseño integral del piloto: sistema de diseño y pantallas",
+  "plan": "Sustituir la capa visual del piloto (y, por herencia de tokens, del CRM completo) por un sistema de diseño B2B sobrio con tokens CSS: tipografía, color, espaciado, radios, alturas de control y estados. Estrategia: tokens y componentes compartidos en src/design-system.css y una capa final src/planb-ui.css importada la última desde src/main.tsx; ajustes puntuales en las hojas libres de cada pantalla (contactos, agente, integraciones, ficha, selector de clientes, archivos, correo). Los archivos reservados por Codex (src/TeamApp.tsx, src/TeamCompanyHome.tsx, src/team-company.css, src/App.tsx) NO se editan: su aspecto se rediseña con reglas de mayor especificidad desde src/planb-ui.css y los cambios de marcado que serían deseables se proponen en el informe. Sin cambiar roles, nombres accesibles, aria ni textos que usen las pruebas E2E. Validación visual en navegador sobre una compilación y datos aislados (puertos 4337/4341, nunca 4331/4334) con capturas antes/después a 1440, 1024, 390 y 320 px; después tsc, npm test, E2E focales y consola sin errores. src/customer-combobox.css sigue reservado por CLAUDE-UX-032 (revisión R2 de Codex pendiente): el selector se adapta al sistema con reglas de mayor especificidad desde src/planb-ui.css.",
+  "acceptance": "Sistema de tokens documentado y aplicado; sidebar estrecha con estados activos discretos; cabeceras compactas; tablas de filas bajas con jerarquía y scroll horizontal contenido; controles con altura y estados consistentes; sin gradientes ni glassmorphism; sin desbordes horizontales de página a 1440/1024/390/320; contraste AA en pares de tokens comprobado por prueba; foco visible; npx tsc --noEmit y npm test en verde; E2E focales existentes sin cambios de aserción. Informe con auditoría, principios, sistema, capturas, resultados y límites. No se descartan ni se pisan cambios ajenos.",
+  "files": [
+    "src/main.tsx",
+    "src/design-system.css",
+    "src/planb-ui.css",
+    "src/styles.css",
+    "src/refinements.css",
+    "src/sales.css",
+    "src/team.css",
+    "src/integrations.css",
+    "src/team-agent.css",
+    "src/customer-dossier.css",
+    "src/customer-files.css",
+    "src/integration-evidence.css",
+    "src/commercial-email.css",
+    "src/TeamContacts.tsx",
+    "src/TeamIntegrations.tsx",
+    "src/TeamAgentWorkspace.tsx",
+    "src/components.tsx",
+    "tests/design-tokens.test.ts",
+    "tests/e2e/ui-redesign.spec.ts",
+    "coordination/reports/CLAUDE-UX-037.md"
+  ],
+  "readFiles": [
+    "AGENTS.md",
+    "COORDINACION.md",
+    "CLAUDE.md",
+    "DESIGN.md",
+    "PRODUCT.md",
+    "src/TeamApp.tsx",
+    "src/TeamCompanyHome.tsx",
+    "src/team-company.css",
+    "src/App.tsx",
+    "src/CommercialWorkspace.tsx",
+    "src/CustomerDossier.tsx"
+  ],
+  "dependencies": []
+}

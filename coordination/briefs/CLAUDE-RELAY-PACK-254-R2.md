@@ -1,0 +1,10 @@
+# Claude · R2 del paquete de relevo
+
+Conserva las seis rutas de `CLAUDE-RELAY-PACK-254`. El dictamen 268 separa el recorrido normal de las garantías de integridad del paquete. Corrige el constructor, el verificador y las pruebas dentro de esa reserva. Coordina con el dueño de `main` el montaje después de aceptar 216 y 254.
+
+1. El resumen de dependencias debe vincular los bytes. Registra una representación determinista por ruta, tamaño y SHA-256 de contenido, y compruébala en el montaje. Un cambio del mismo tamaño en `node_modules/tsx/package.json` debe dejar la ruta sin registrar. Documenta la versión de manifiesto para que un manifiesto anterior se rechace de forma explícita y se pueda reconstruir el paquete.
+2. Comprueba la propia raíz, las entradas de primer nivel y las descendientes antes de seguirlas. Una unión de `server` o `node_modules` hacia otra carpeta se rechaza incluso con contenido idéntico. Acota el conjunto de archivos a los esperados, distingue archivos regulares de otros tipos y verifica que los scripts de entrada y el cargador estén completos.
+3. Distingue dependencias obligatorias de opcionales. Una obligatoria ausente o resuelta fuera del árbol que se copia debe impedir que el constructor publique un manifiesto de éxito. Una opcional de otra plataforma puede faltar. Contrasta ambas condiciones con paquetes sintéticos y repite la clausura real.
+4. Adapta la prueba al punto de partida aceptado 263. La App ya monta la navegación 260 y el servidor ya registra evidencia 239. Proyecta únicamente la línea de relevo y conserva las aserciones del ensayo. Verifica una instalación limpia con ejecución real, consentimiento, cancelación, cierre, resultado tras reiniciar y cero cambios CRM. Repite 404 con paquete ausente, cambiado y enlazado. Si 216 R4 sigue pendiente, declara qué revisión de su API usa el ensayo.
+
+Presenta las seis huellas, el manifiesto producido, los recibos y los límites del corte. La firma de un paquete y la revisión final de integración se tratan por separado del cotejo local de bytes.

@@ -1,0 +1,18 @@
+# Dictamen independiente 257 · Contexto de evidencia 242
+
+6 de noviembre de 2026, Europe/Madrid. **Favorable.** Las cuatro huellas presentadas coinciden con el checkout y las tres rutas de código/pruebas con el corte propio. Se cotejaron los bytes aceptados del servicio 101, las identidades de 201 y la autorización 245. Los baselines de API 103 R3 y cliente 104 R2 coinciden con sus entregas aceptadas. Main procede de 239 aceptada.
+
+## Qué se verificó
+
+La consulta optativa usa el contexto que devuelve el estado de la App. El servidor lo lee antes y después de evaluar y emite la cabecera solo para un resultado coherente y autorizado. La caducidad se comprueba después del último acceso a contexto e identidad. Una petición sin vínculo conserva el cuerpo v1 y carece de cabecera de contexto. El cliente vinculado conserva los parámetros y la señal capturados al entrar y exige atestación antes de leer el cuerpo.
+
+- **68/68 Node** en proyección independiente, con siete regresiones de 242 y bancos de API, cliente, servicio, seguridad y sondas 244/252. **Typecheck focal exit 0.** Dos capturas con mismo ID y fecha y contenido distinto no comparten contexto. Una referencia de otra instalación se rechaza sin calcular. La nueva referencia no oculta un archivo discrepante, que conserva `ARCHIVE_MISMATCH`. Rotación del ámbito de trabajo durante la consulta produce 409 sin hechos ni cabecera. Expiración en el último acceso devuelve 401 sin atestación ni renovación.
+- La sonda propia usa un cuerpo de respuesta que no anticipa lecturas. Sin cabecera o con una ajena, el cliente cancela el stream una vez y ejecuta cero lecturas del cuerpo. Se cambiaron después del inicio la referencia de contexto, el pin de evidencia y la señal de las opciones. La respuesta genuina de la consulta original se acepta aunque se aborte la señal sustituta. Las seis tablas permanecen intactas.
+- Los **siete casos de contexto fallan** por las aserciones esperadas contra las fuentes anteriores exactas de 103 y 104. Se conserva ese control en `before-node.log`. No hubo errores de carga en esas pruebas. La primera preparación se detuvo al buscar el primer dueño histórico de `security.ts`; se corrigió para cotejar expresamente 245, el propietario vigente de su versión aceptada.
+- **2/2 HTTP** con main y runtime recompilados en el corte propio. El estado real aporta el pin, la consulta vinculada responde con cabecera igual y el pin ajeno produce 409 sin hechos ni confirmación. Se repiten autenticación, lectura sin escritura, pin de evidencia y ausencia de la ruta en runtime. Dos procesos propios terminados con recibos. La caducidad inducida se acredita en Fastify inject, no por un reloj alterado dentro del binario.
+
+## Corte y siguiente consumidor
+
+Evidencia en `tests/.tmp/review257-9eRqBe`. `review-manifest.json`, `after-node.log`, `before-node.log`, `types.log`, `http.log` y `process-results.json`. Main compilado SHA-256 `c36899a0b19d62858945b908abd3e9a8c3c6b13ff162609ddb6572a62f5b6f5a`, runtime `22c4eab6c2bbea8fcc094a3f8c23800062e93d52512e8cfb8c30f061a8af7be4`. El test HTTP con vínculo procede del corte privado del autor y se repitió contra ejecutables construidos por el revisor. La sonda de cuerpo y opciones es propia de esta revisión.
+
+Esta aceptación permite al Hub adoptar la opción con el contexto protegido actual. El consumidor debe vaciar resultados y descartar respuestas de otra generación al cambiar la copia o sesión. La integración de 253 y la candidata visible mantienen sus pruebas de App. No se cambiaron fuentes de montaje, memoria ni demo durante el dictamen y no se ejecutó navegador en esta revisión de contrato.

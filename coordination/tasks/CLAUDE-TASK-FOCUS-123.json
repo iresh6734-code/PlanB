@@ -1,0 +1,29 @@
+{
+  "id": "CLAUDE-TASK-FOCUS-123",
+  "agent": "claude",
+  "title": "Hoy accionable: abrir una tarea concreta y conservar su edición local",
+  "plan": "Ejecutar coordination/briefs/CLAUDE-TASK-FOCUS-123.md después de aceptación119. Crear componente LocalTaskFocus con carga porID, contexto comprobado y editor existente RecordDrawer, sin editar App/LocalOperations/components/backend. Usar APIs locales existentes para lectura y guardado manual explícito; no automatizar acciones ni prometer CAS/idempotencia que el contrato actual no ofrece. Separar acuse guardado de recarga fallida. Probar copia importada/activa/vacía, identidades, errores tardíos, borradores y retorno a la cola. Entregar módulo integrable, pruebas y contrato; montaje por otro encargo de Codex tras revisión. Nueva mejora de la app principal, no nueva demo independiente de producto.",
+  "acceptance": "Export LocalTaskFocus({taskId,onClose,onSaved,onPrepare}) con contrato preciso. Carga tarea de entidadtasks y contexto de la instalación/captura; respuesta de otraID/entidad o contexto obsoleto no abre editor equivocado. Copia sin activar conserva lectura y CTApreparación. Reutiliza validación/campos/opciones/relaciones de la especificación actual; no estados inventados ni creación remota. Guardado manual confirmado enStore ychanges, persistente tras nueva lectura; error422 conserva valores; falloGETdespuésdePATCHconfirmado no repitePATCH ni dicefallóguardado. 401respeta bloqueo,404no recrea,409no sobreescribe. Conflicto entrepestañas se describe según garantías reales deAPI; si nohayCAS, no lo afirma. DOMreal1440/390/320,teclado/foco/cierre y carrera de respuestas con mismo nombre/distintoID. Informeconhashes/resultados/capturas/límites y handoffexacto paraCodex; sin autoaceptación o montaje ajeno.",
+  "files": [
+    "shared/local-task-focus.ts",
+    "src/LocalTaskFocus.tsx",
+    "src/local-task-focus-client.ts",
+    "src/local-task-focus.css",
+    "tests/local-task-focus.test.ts",
+    "tests/local-task-focus-client.test.ts",
+    "tests/e2e/local-task-focus.spec.ts",
+    "coordination/reports/CLAUDE-TASK-FOCUS-123.md",
+    "coordination/reports/CLAUDE-TASK-FOCUS-123-CHECKPOINT.md",
+    "coordination/plans/TASK-FOCUS-123-HANDOFF.md",
+    "design/task-focus123/README.md"
+  ],
+  "readFiles": [
+    "AGENTS.md", "CLAUDE.md", "COORDINACION.md", "CONTEXTO-PROYECTO.md", "PRODUCT.md", "DESIGN.md",
+    "coordination/briefs/CLAUDE-TASK-FOCUS-123.md", "coordination/plans/HOY-ACCIONES-123.md",
+    "src/LocalOperations.tsx", "src/local-operations-client.ts", "shared/local-operations.ts",
+    "src/components.tsx", "src/ReferenceSelect.tsx", "src/api.ts", "src/App.tsx",
+    "shared/model.ts", "server/app.ts", "server/v2.ts", "server/store.ts",
+    "shared/fixtures.ts", "src/planb-ui.css", "scripts/block-external.cjs"
+  ],
+  "dependencies": ["CLAUDE-INTEGRATIONS-119"]
+}

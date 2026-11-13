@@ -1,0 +1,21 @@
+{
+  "id": "CLAUDE-HOY-APP-PROBES-A",
+  "agent": "claude",
+  "title": "Sondas de App de Hoy (A2-A4): arnés, fixture ficticia y pruebas que fallan por la función ausente",
+  "plan": "Encargo 240 (Claude A), apartado A1.4: mientras 233, 230 y 208 están en revisión, preparar en rutas NUEVAS el arnés y las sondas de App de las fases A2-A4, sin tocar código de producto. (1) tests/e2e/hoy-recuperable-harness.ts: congela los fuentes del cliente con manifiesto de hashes (como task-d7-real-app.spec.ts), compila la App con Vite, arranca un servidor real (createBaseApp con taskRevisions: true, SQLite de ARCHIVO en una raíz ficticia nueva, red exterior bloqueada con scripts/block-external.cjs) con rutas de ayuda para contar PATCH condicionados, PATCH legados y filas de historial, y permite REINICIAR el proceso sobre la misma raíz. (2) tests/e2e/hoy-recuperable-240.spec.ts: CONTROLES que hoy pasan (la App carga y Hoy lista tareas; la ficha abre; el servidor tiene el endpoint condicionado y devuelve token; el guardado actual usa la ruta anterior) y SONDAS que hoy deben fallar SOLO por la función ausente: guardar desde la ficha por el endpoint condicionado con cero PATCH legado; dos pestañas sobre la misma revisión → un ganador y un conflicto sin escritura que abre el comparador; filtro «Por decidir» en Resultados; «Organizar mi jornada» en Hoy; Hoy lee la cola estructurada; tras perder un acuse y reiniciar el servidor aparece «Trabajo por recuperar» con el intento exacto; y GET del resumen público de trabajo. Cada sonda declara qué función espera. (3) Informe con la ejecución real contra la compilación actual: qué pasa, qué falla y por qué; cada fallo debe ser por la ausencia de la función y no por el arnés. No monta nada, no cambia App.tsx, LocalOperations.tsx ni servidor; no declara ninguna capacidad terminada.",
+  "acceptance": "Los controles pasan contra la compilación actual y las sondas fallan por la función ausente (mensaje y localizador que lo muestren, no por tiempo de arranque, error de compilación ni selectores equivocados). Raíz nueva con datos ficticios, SQLite de archivo, red exterior bloqueada, manifiesto de fuentes congelado, reinicio de proceso sobre la misma base. El recuento de PATCH condicionados, legados y filas de historial se obtiene del servidor, no de la interfaz. El arnés no modifica el repositorio ni las fuentes. tsc limpio en los archivos de la unidad. Informe con hashes, comandos, resultado observado de cada sonda, y límites: no prueba el montaje, solo lo que falta.",
+  "files": [
+    "tests/e2e/hoy-recuperable-harness.ts",
+    "tests/e2e/hoy-recuperable-240.spec.ts",
+    "coordination/reports/CLAUDE-HOY-APP-PROBES-A.md"
+  ],
+  "readFiles": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "COORDINACION.md",
+    "coordination/briefs/CLAUDE-HOY-TRABAJO-RECUPERABLE-240.md",
+    "coordination/reports/CODEX-APP-INTEGRATION-AUDIT-240.md",
+    "tests/e2e/task-d7-real-app.spec.ts"
+  ],
+  "dependencies": []
+}

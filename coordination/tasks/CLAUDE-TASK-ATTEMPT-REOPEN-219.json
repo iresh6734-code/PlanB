@@ -1,0 +1,34 @@
+{
+  "id": "CLAUDE-TASK-ATTEMPT-REOPEN-219",
+  "agent": "claude",
+  "title": "Abrir el intento exacto desde un resultado pendiente: adopción por instalación, captura, tarea e intento (sin PATCH, sin formulario listo para reenviar)",
+  "plan": "Paquete 2 del encargo «Claude A», sobre U2-171 aceptada. Hoy «Abrir la tarea» (superficie «Resultados de guardado») solo abre la ficha por ID: si la tarea tiene un intento sin resolver, guardar da busy y remite a la superficie, y no se retoma el intento que generó el aviso. Esta unidad: (1) shared/task-attempt-adoption.ts: función pura resolveAdoption(operaciones, {taskId, contexto cargado, intento pedido}) que decide adoptar / restaurar borrador / rechazar con motivo (otra copia, intento desaparecido, otra tarea, ambiguo con varios intentos abiertos), comparando instalación, captura, generación y taskId completos y nunca por título o ID de tarea; (2) src/TaskSaveOutcomes.tsx: «Abrir la tarea» entrega también el attemptId y se ofrece para intentos inciertos y en curso (compatible con el uso anterior); (3) src/TaskOutcomesHost.tsx, src/App.tsx y src/LocalOperations.tsx: la petición de abrir lleva {taskId, attemptId}; (4) src/LocalTaskFocus.tsx: prop opcional de adopción: la ficha enlaza SU seguimiento a ese intento y muestra el mismo estado (incierto, en curso, confirmado, aceptado) sin hacer ningún PATCH y sin convertir lo incierto en un formulario de reenvío; rechazado/no enviado restauran el borrador rebasado sobre la tarea actual sin descartar el aviso; si cambió la copia el aviso se conserva en su contexto y la tarea actual se abre como recorrido nuevo y separado; con varios intentos abiertos de la misma tarea no se fuerza una adopción ambigua y se explica cuál sigue abierto; reabrir sin intento pedido adopta solo si hay exactamente un intento compatible sin resolver. Pruebas Node de la función pura con contrapruebas y recorrido en la App real (servidor real, barra lateral, Hoy): incierto → cerrar → navegar → Abrir la tarea → mismo estado, un único PATCH; homónimas; mismo ID en otra captura; respuesta tardía; fila completada; cierre y reapertura; foco y borrador conservados; 1440/390/320 con capturas abiertas. No cubre: persistencia tras recargar (cuaderno 208), comparador 199 ni guardado condicionado 166/183/185 (unidades aparte), ni la vista «Por decidir» (siguiente unidad).",
+  "acceptance": "resolveAdoption exacta por instalación+captura+generación+tarea+intento y sin adoptar por homonimia ni por ID de otra captura; Abrir la tarea desde un resultado incierto o en curso reabre la ficha mostrando ESE intento, sin PATCH nuevo (un único PATCH en el servidor) y sin ofrecer reenviar; con acuse retenido que llega tarde la ficha reabierta refleja el resultado; mismo ID en otra captura: aviso conservado en su contexto y tarea actual como recorrido nuevo sin poder confirmar ni aceptar el intento antiguo; dos intentos de una tarea y dos tareas homónimas sin adopción ambigua; rechazado/no enviado restauran borrador rebasado sin descartar el aviso; foco y borrador conservados; 1440/390/320 con capturas abiertas; 136/U1/123/140 DOM y 171 sin regresión; contrapruebas por mutación; tsc limpio; hashes, límites y handoff.",
+  "files": [
+    "shared/task-attempt-adoption.ts",
+    "src/LocalTaskFocus.tsx",
+    "src/TaskSaveOutcomes.tsx",
+    "src/TaskOutcomesHost.tsx",
+    "src/LocalOperations.tsx",
+    "src/App.tsx",
+    "tests/task-attempt-adoption.test.ts",
+    "tests/e2e/task-attempt-reopen.spec.ts",
+    "coordination/reports/CLAUDE-TASK-ATTEMPT-REOPEN-219.md",
+    "coordination/plans/TASK-ATTEMPT-REOPEN-219-HANDOFF.md"
+  ],
+  "readFiles": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "COORDINACION.md",
+    "coordination/plans/TASK-OUTCOMES-U2-171-HANDOFF.md",
+    "coordination/reports/CLAUDE-TASK-OUTCOMES-U2-171.md",
+    "shared/task-save-outcome.ts",
+    "src/task-save-outcome.ts",
+    "shared/local-task-focus.ts",
+    "tests/e2e/task-d7-real-app.spec.ts",
+    "scripts/block-external.cjs"
+  ],
+  "dependencies": [
+    "CLAUDE-TASK-OUTCOMES-U2-171"
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "id": "CLAUDE-HOY-POR-DECIDIR-A2",
+  "agent": "claude",
+  "title": "A2 · «Por decidir» en Resultados sobre el mismo gestor, con su especificación de App y la huella final de TaskSaveOutcomes",
+  "plan": "Encargo «Haz que Hoy funcione de principio a fin», A2 apartado «Por decidir» (unidad propia, sin tocar la ficha ni el host en revisión). (1) src/TaskSaveOutcomes.tsx: filtro «Todos / Por decidir» en el panel de Resultados (grupo de botones con aria-pressed y recuentos), sobre el MISMO gestor. «Por decidir» agrupa por acción disponible: «Sin saber si se aplicó» (incierto: comprobar por lectura, aceptar el estado leído, abrir), «No se aplicó» (rechazado o no enviado: abrir y recuperar lo escrito), «Lista sin actualizar» (confirmado o aceptado con la recarga fallida: reintentar la actualización, que solo lee) y «En curso» (nada que decidir, solo abrir). Los confirmados sin incidencias no aparecen en el filtro; sí en «Todos». «Abrir la tarea» entrega tarea e intento exactos (ya existente). Vacío explícito, foco que no salta al alternar, teclado, nombre accesible. (2) src/task-save-outcomes.css: estilos del filtro y de los grupos (≥44 px en móvil). (3) tests/task-focus-outcomes.test.ts: SOLO la huella final de TaskSaveOutcomes.tsx y de su CSS (sustituye a CLAUDE-TASK-PINS-220, que queda sin objeto) tras repetir sus 7 pruebas Node y las 27 DOM. (4) tests/e2e/hoy-por-decidir.spec.ts (nuevo, reutiliza el arnés sin modificarlo): mezcla de incierto, rechazado, confirmado con la recarga fallida y confirmado limpio; qué aparece en cada vista; abrir desde el filtro lleva al intento exacto; 422 recupera lo escrito sin perder el aviso; cierre de ficha, navegación y reapertura; comprobar por lectura sin PATCH; mismo ID en otra captura con un resultado pendiente (no se adopta, 0 PATCH) y homónimas; teclado y 390/320 px con capturas inspeccionadas. No define un filtro por contexto activo (el gestor es de sesión y la adopción ya rechaza otra copia).",
+  "acceptance": "En la App compilada: el filtro aparece junto a Resultados con recuentos correctos; «Por decidir» muestra exactamente incierto, rechazado, lista sin actualizar y en curso, cada uno en su grupo con las acciones que le corresponden, y oculta los confirmados limpios; abrir desde el filtro lleva a la tarea e intento exactos tras cerrar la ficha, navegar y volver; un 422 recupera lo escrito y conserva el aviso; comprobar por lectura no añade ningún PATCH; con el mismo ID en otra captura no se adopta ni se escribe; homónimas no se confunden; teclado, foco y 390/320 px sin desbordamiento; las 7+27 pruebas de U1 repetidas antes de renovar la huella; tsc limpio; informe con hashes, recuentos observados, estabilidad sin reintentos y límites.",
+  "files": [
+    "src/TaskSaveOutcomes.tsx",
+    "src/task-save-outcomes.css",
+    "tests/task-focus-outcomes.test.ts",
+    "tests/e2e/hoy-por-decidir.spec.ts",
+    "coordination/reports/CLAUDE-HOY-POR-DECIDIR-A2.md",
+    "coordination/plans/HOY-POR-DECIDIR-A2-HANDOFF.md"
+  ],
+  "readFiles": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "COORDINACION.md",
+    "coordination/briefs/CLAUDE-HOY-TRABAJO-RECUPERABLE-240.md",
+    "src/TaskOutcomesHost.tsx",
+    "shared/task-save-outcome.ts",
+    "tests/e2e/hoy-recuperable-harness.ts"
+  ],
+  "dependencies": [
+    "CLAUDE-TASK-ATTEMPT-REOPEN-219"
+  ]
+}

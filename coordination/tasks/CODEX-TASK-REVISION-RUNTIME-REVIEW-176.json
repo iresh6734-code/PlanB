@@ -1,0 +1,10 @@
+{
+  "id": "CODEX-TASK-REVISION-RUNTIME-REVIEW-176",
+  "agent": "codex",
+  "title": "Revisión independiente de activación de revisiones en runtime168",
+  "plan": "Cotejar las tres huellas presentadas y el único cambio respecto al runtime090 aceptado. Repetir prueba HTTP del binario real, comprobaciones de montaje y bootstrap con datos ficticios/raíz nueva. No editar runtime, main ni cliente o gestor. Dictamen independiente con límites de escritor y preview antigua.",
+  "acceptance": "Prueba del proceso propietario, auth, una revisión ganadora/conflicto/no-op y segundo lanzamiento rechazado sin mutaciones; tipos focales; hashes finales intactos. Atribuir las pruebas repetidas y no prometer instalación ni montaje en UI.",
+  "files": ["coordination/reviews/CODEX-TASK-REVISION-RUNTIME-168-independent.md"],
+  "readFiles": ["server/runtime.ts", "tests/task-revision-runtime.test.ts", "coordination/reports/CODEX-TASK-REVISION-RUNTIME-168.md"],
+  "dependencies": []
+}

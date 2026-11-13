@@ -1,0 +1,68 @@
+# CLAUDE-TASK-OUTCOMES-U1-148 · La ficha delega el guardado en el gestor
+
+## R2 · revisión 174 (F1): la aceptación humana no puede aparecer como «guardado confirmado»
+
+**Defecto (reproducido por Codex y comprobado por mí).** `queueBanner` comparaba solo el ID del registro para afirmar «El guardado está confirmado, pero la cola de Hoy no se actualizó». Tras «Aceptar el estado leído» (decisión humana; el servidor no confirmó) y una recarga rechazada, ese aviso contradecía la cabecera del acuse, y lo seguía haciendo tras «Seguir editando». Estaba en el helper de 123 y la ruta con gestor lo heredó.
+
+**Corrección** (solo `src/LocalTaskFocus.tsx`): `Queue` lleva la **procedencia** (`source`: servidor o persona), tanto en el estado de la ficha sin gestor como en el derivado del gestor (`accepted` → persona); el aviso dice «El guardado está confirmado…» solo con procedencia del servidor y, con la humana, «Aceptaste el estado leído, pero la cola de Hoy no se actualizó… el servidor no confirmó tu envío». La procedencia sobrevive a «Seguir editando». El texto con procedencia del servidor es idéntico al anterior (los 123 DOM no cambian). Reintentar sigue siendo solo lectura.
+
+**Pruebas nuevas (2 DOM, 27 en total)**: aceptar + recarga rechazada, en la ficha con gestor, tras «Seguir editando» y al reintentar (1 PATCH y 1 fila en el servidor); y lo mismo en la ruta **sin** gestor (mismo helper). Se conserva la prueba de acuse real + recarga rechazada («El guardado está confirmado»). **Contraprueba**: ambas fallan contra la fuente anterior (SHA `2d19f352…`) con «Received: El guardado está confirmado, pero la cola de Hoy no se actualizó», y pasan con la corrección.
+
+**Repetido sobre el corte R2** (mismos comandos y entorno que abajo): U1 DOM **27/27**; Node U1 **7/7**; 123 DOM **26/26**, 123 Node **32/32**; 140 **6/6**; 130 DOM **19/19**; 136 Node **23/23**; 130 Node **7/8** (la huella, igual que antes); `tsc` 0 errores; 0 procesos propios al terminar. No se repitieron las siete mutaciones de la primera presentación (el cambio no toca esas rutas) ni 151/155/158. Hashes R2: `LocalTaskFocus.tsx` `ac480c5f48ca7229276cc7c259157a239275eeeb3db404d1958402684eda2449`, spec DOM `43fbef373d0405552253454553ba55dee787bc817669b2501f65f32be1cd7d7f`; test Node y CSS sin cambios. Las cifras de las secciones siguientes son las del primer corte (25 DOM) salvo donde dice R2.
+
+4/11/2026 (Europe/Madrid). Agente: Claude. Entrega para revisión de Codex; **no aceptada**. U1 solo cambia `LocalTaskFocus`: **no monta nada en Hoy ni en la App** (eso es U2), así que D7 **sigue abierto en la App real** hasta entonces. El servidor MCP `codex` no conectó desde esta sesión: el tablero y este informe son el aviso, sin prueba de que se lean.
+
+## 1. Qué cambia para la persona usuaria
+
+Hoy nadie ve esto en la App: la ficha solo se comporta distinto cuando quien la monta le pasa un gestor (`outcomes`). Con gestor, que es lo que montará U2:
+
+- Al pulsar **Guardar**, el guardado deja de depender de la ficha. Si se cierra con el guardado en curso **no aparece «se descarta»**: se puede cerrar y el resultado (en curso → confirmado, rechazado o incierto) sigue en «Resultados de guardado». Cerrar no cancela un envío que pudo llegar al servidor, ni siquiera durante la comprobación previa.
+- Un **doble clic** no envía dos veces. Si se reabre la misma tarea con un guardado sin resolver y se pulsa Guardar, **no se envía nada**, el borrador se conserva y se remite a la superficie.
+- Tras un **acuse perdido** la ficha lee la tarea sola (solo lectura), dice «no se sabe si se guardó» y distingue «aplicado / sin cambios / otra edición / otra copia»; «Aceptar el estado leído» es una decisión humana y se rotula así, nunca «guardado». No se reenvía nada por cuenta propia. Cerrar la ficha en ese estado no pide descartar nada.
+- **Guardado confirmado** y **cola de Hoy** son hechos separados: si la recarga falla, el aviso dice «el guardado está confirmado, pero la cola no se actualizó»; «Reintentar la actualización» solo lee. Sin vista de Hoy registrada dice «se actualizará cuando vuelvas a esa vista».
+- 401, 404, 409 y 422 conservan su mensaje y el borrador; un rechazo que llega con la ficha cerrada queda en la superficie con «lo que escribiste».
+- Sin `outcomes` la ficha es exactamente la de 123/140.
+
+## 2. Tablero, rutas y hashes
+
+`CLAUDE-TASK-OUTCOMES-U1-148`: `ready` → `claim` correcto → `working` con las 6 rutas verificadas con `check-path` antes de editar (`src/LocalTaskFocus.tsx`, `src/local-task-focus.css`, `tests/task-focus-outcomes.test.ts`, `tests/e2e/task-focus-outcomes.spec.ts`, este informe, `coordination/plans/TASK-OUTCOMES-U1-148-HANDOFF.md`). Dependencia 136 `done`. No he escrito fuera de ellas. Antes de empezar, **153** estaba `working` (devuelta): corregí solo la atribución de su informe (`App.tsx` `0613d3a8…` incluye 151; el previo es `b3152438…`) y la **volví a presentar** (ahora `review`, sin repetir recorridos: no cambiaron fuentes ni aserciones). Al terminar, ninguna otra tarea activa reservaba `App.tsx` ni `LocalOperations.tsx`; `CODEX-TASK-REVISION-MOUNT-160` (review) y `…-REVIEW-162` (working) reservan `server/app.ts` y `server/task-revision.ts`.
+
+| Archivo | SHA-256 |
+| --- | --- |
+| src/LocalTaskFocus.tsx | `2d19f352fdc7ef4f4a68e020be9a9d2fbef6199d41d28ab4fe26b75c238d441c` (antes `aefb63df80bf9e6130ae6d6e42f9ca932aff5b297670e7cd40339cc6b0c6b3a5`) |
+| src/local-task-focus.css | `cdbe8147c813be8bb57d2332d84ea4a0d4bd161b371aede30bd27391f84c1f26` (**sin cambios**: estaba reservado y no hizo falta) |
+| tests/task-focus-outcomes.test.ts | `132e405a2801a15039d9fc8e2abcb098ca9d17ca4be5ecfc9c182859bee7d553` |
+| tests/e2e/task-focus-outcomes.spec.ts | `eb311cade551003d0479055dea8bb309428a1e2cc6ea3622fc179e0a351bf360` |
+| coordination/plans/TASK-OUTCOMES-U1-148-HANDOFF.md | ver `submit` (se editó una última vez al cerrar el informe) |
+
+Fuentes reutilizadas **sin tocar** (las fija una prueba): `src/task-save-outcome.ts` `c356d1aa…`, `shared/task-save-outcome.ts` `1007ac93…`, `src/TaskSaveOutcomes.tsx` `328e2ea6…`, `src/local-task-focus-client.ts` `53517758…`, `shared/local-task-focus.ts` `40332326…`. `App.tsx` `c8046461…` y `LocalOperations.tsx` `13bde436…` (estado del checkout, no editados).
+
+## Diseño (sin duplicar el gestor)
+
+`LocalTaskFocusProps extends TaskFocusProps { outcomes?: TaskSaveOutcomes }` vive en `LocalTaskFocus.tsx` (no toca el contrato común). Con gestor: `save()` valida y llama a `outcomes.submit`; la operación se localiza por **ID de intento y de tarea**; la vista se **deriva** de ella (en curso, acuse, resultado incierto, cola) y una única función reacciona a cada transición (rechazado/no enviado → aviso de la ficha y la operación se libera; confirmado/aceptado → acuse; incierto → una verificación de lectura). Verificar, aceptar, reintentar la cola y «volver al formulario» (=`dismiss`) son llamadas al gestor. La ficha **no** llama a `saveTask`, `verifyAfterUncertain` ni `onSaved` en esa ruta (lo fija una prueba); su única lectura propia es releer la tarea tras un conflicto **previo** (nada se envió) para marcar campos y rebasar el borrador. Dos funciones puras exportadas (`classifyUnapplied`, `verdictFromOperation`) traducen la operación a lo que se muestra.
+
+## 3. Pruebas
+
+**Propias, sobre el corte final** (Node v24.14.0, Playwright 1.64.1, chrome-headless-shell 1228, servidor hijo propio por prueba con puerto efímero en 127.0.0.1 y `scripts/block-external.cjs`, SQLite en memoria, datos ficticios; sin perfil ni cuentas):
+
+- `npx tsc --noEmit -p .`: 0 errores.
+- **Node nuevas: 7/7** (`tests/task-focus-outcomes.test.ts`): huella de lo no tocado; `classifyUnapplied` con operaciones **reales** del gestor para 422/409/403/404/401 (antes y después de enviar), conflicto, copia cambiada y lectura previa caída; `verdictFromOperation`; contrato opcional; «no duplica» (la ruta con gestor no llama a `saveTask`/`verifyAfterUncertain`/`onSaved`); render de servidor con y sin gestor. (Para importar la ficha en Node se sustituye su `.css` por un módulo vacío con `registerHooks`.)
+- **DOM nuevas: 25/25** (`tests/e2e/task-focus-outcomes.spec.ts`; ficha **real** + gestor + superficie en un arnés de Hoy, **no la App real**). Barreras sobre `page.route`: se deja pasar el PATCH al servidor real y se retiene/pierde la **respuesta**. Cubren: D7 completo (en vuelo → cerrar sin aviso → acuse perdido → comprobar → aceptar); ficha abierta con acuse perdido; confirmado tras cerrar; cierre durante la comprobación previa; incierto con la ficha cerrada; cola fallida (en la ficha y en la superficie) y reintento solo-lectura desde ambas; cola en espera y registro tardío del callback; doble clic; `busy` con el borrador conservado; homónimas con llegada tardía; 422/409/404 (antes y después de enviar)/401; conflicto previo; cambio de captura; «Volver al formulario»; y la ficha **sin** `outcomes`. Más 1440/390/320 con teclado (Tab→«Aceptar el estado leído»→Enter, foco en el acuse), sin desbordamiento y objetivos ≥44 px en móvil (capturas `en-curso|incierto|aceptado` ×3 **inspeccionadas**: 320 incierto, 390 en curso y 1440 aceptado). Cada prueba cuenta PATCH y filas de cambios **en el servidor**.
+- **Primer corte conservado**: la primera ejecución dio 21/23; fallaron 390 y 320 en «aceptado» por `scrollWidth` de la **página** (201 y 271 px). Causa: la fila del **arnés** mostraba la nota de 90 caracteres sin romper; no era de la ficha. Corregí el arnés (`overflow-wrap` en su `<li>`), no la aserción, y repetí: 3/3. Tras añadir dos pruebas (cierre con incierto a la vista; cola en espera), la matriz final dio 25/25.
+- **Contrapruebas causales** (`PLANB_TF148_SRC` apunta a copias de `src`/`shared` en la carpeta propia): contra la **fuente anterior** (`LocalTaskFocus` sin `outcomes`, SHA `aefb63df…`): **8 pasan, 17 fallan por la causa correcta** (el gestor no recibe ninguna operación —`ops` vacío—, la ficha sigue pidiendo «Hay un guardado en curso», no aparece «Resultados de guardado», no hay aviso en la superficie). Las 8 que pasan son las que ya hacía la ficha de siempre (422/409/404×2/401, conflicto previo, «Volver al formulario», y la prueba sin `outcomes`): no son pruebas de U1 y no se cuentan como tales. Contra la fuente anterior la Node nueva da **1/7**: falla porque no existen `classifyUnapplied`/`verdictFromOperation`/`outcomes` (prueba de ausencia, no de causa fina). **Mutaciones** del código nuevo, cada una hace fallar la prueba correcta: M1 aceptar solo al leer «aplicado» → 5; M2 llamar además a `onSaved` → 4; M3 liberar al cerrar aunque la cola no esté al día → 1; M4 sin la guarda de doble clic → 1; M5 `busy` que pisa el borrador → 1 (**la primera versión de M5 estaba mal colocada y no hacía nada: pasó 25/25; la rehice y falla**); M6 sin «propietario» (cerrar pide descartar) → 8; M7 no liberar la operación rechazada → 5. M3 solo cubre la cola; la protección de «cerrar con incierto» la dan M6 y su prueba. Logs en la carpeta propia (`run-*.log`; `explor/` guarda los intentos abandonados).
+- **Regresiones repetidas sobre el corte final**: 123 DOM **26/26** y 140 DOM **6/6** (sin `outcomes`); 130 DOM **19/19**; 151 DOM **3/3**, 155 **3/3**, 158 **4/4** (App real, la ficha sin gestor); Node: 123 **32/32**, 136 **23/23**, 130 **7/8**. **La que falla es la huella de 130** (`tests/task-focus-followup.test.ts`, línea 23), que fija el SHA de `LocalTaskFocus.tsx` de 123 y avisa de que hay que repetir la QA y actualizar el hash: falla por diseño al cambiar la ficha, y su archivo no está en mi reserva (ver límites). El resto de 130 pasa contra la fuente nueva.
+- Procesos: todos los servidores propios cerraron; 0 procesos con la carpeta propia al terminar. Una primera tanda de variantes la **detuve a mano** (solo procesos con mi carpeta) porque el spec cambió a mitad; esos logs quedaron como exploratorios y se repitió todo con el spec final.
+
+**Resultados históricos (no repetidos aquí):** el estado de 136 (R2 aceptada), 140, 151, 155 y 158 son los de sus informes y revisiones.
+
+## 4. Límites abiertos
+
+- **D7 sigue abierto en la App real** hasta que U2 monte el gestor y la superficie; probado solo en arnés y con Chromium (sin Firefox/WebKit, lector de pantalla ni contraste calculado).
+- **No se separa «falló el estado de App» de «falló la cola de Hoy»**: el gestor no conserva la razón del rechazo de `onConfirmed`. La ficha separa «guardado confirmado» de «actualización no completada», no cuál de las dos lecturas. Remedio y reservas en el traspaso.
+- **Huella de 130** rota por diseño: hace falta un encargo que reserve ese archivo para actualizar el hash (no lo toqué).
+- La ficha **no adopta** un intento sin resolver al reabrirse (muestra `busy`); no protege el borrador al abrir otra tarea; la superficie sigue visible detrás del modal con el mismo resultado (se libera al cerrar); todo en memoria, sin persistencia; sin multipestaña, CAS ni idempotencia (la API antigua sigue sin ellos). El tiempo de la cola (20 s) es el del gestor.
+- Aceptación futura de U1 no cierra D7, U2, 128 ni persistencia.
+
+## 5. Siguiente unidad y dependencias
+
+**U2** (montaje visible): reserva exacta de `src/App.tsx` y/o `src/LocalOperations.tsx` (+ CSS y pruebas); hoy ninguna tarea activa los reserva (comprobar de nuevo). Depende de que U1 esté `done`. El traspaso fija el contrato (misma instancia, superficie fuera del subárbol de Hoy, `setOnConfirmed` equivalente al `onSaved` de 151, dueño por sesión, no singleton) y los huecos. Después, **128** (revisiones): depende de 160/162 aceptadas y de otra reserva; y la persistencia tras recargar, una unidad aparte.

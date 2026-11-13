@@ -1,0 +1,10 @@
+{
+  "id": "CODEX-TASK-REVISION-CONTEXT-REVIEW-184",
+  "agent": "codex",
+  "title": "Revisión independiente del puente de contexto183",
+  "plan": "Revisar las cuatro fuentes presentadas sin editarlas, repetir57Node y tipos, contrastar tokens/identidades/errores/acuseperdido y límites documentados. Dictamen propio sin estrategia136,UI,demos ni proveedores.",
+  "acceptance": "Cuatrohashesactuales,pruebasrepetidasatribuidas y tipo focal. DistinguirobservacionesdelcontextodeCAS128,manteneruncertain/unchanged/current. Hallazgoscausales si existen y reservasdelautorpreservadas.",
+  "files": ["coordination/reviews/CODEX-TASK-REVISION-CONTEXT-183-independent.md"],
+  "readFiles": ["src/task-revision-context-client.ts", "tests/task-revision-context-client.test.ts", "coordination/reports/CODEX-TASK-REVISION-CONTEXT-183.md", "coordination/plans/TASK-REVISION-CONTEXT-183-HANDOFF.md"],
+  "dependencies": []
+}

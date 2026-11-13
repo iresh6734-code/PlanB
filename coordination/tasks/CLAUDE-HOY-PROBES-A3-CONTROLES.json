@@ -1,0 +1,10 @@
+{
+  "id": "CLAUDE-HOY-PROBES-A3-CONTROLES",
+  "agent": "claude",
+  "title": "Claude A · Sustituir el control legado «Hoy no lee la cola» del arnés 240 y convertir las sondas A3 en controles verdes",
+  "plan": "Tras montar la Jornada, el control de línea base «Hoy NO lee la cola estructurada» del arnés 240 es rojo por diseño y las dos sondas A3 pasan. Esta unidad sustituye ese control por su sucesor (Hoy lee la cola una vez al abrirse, sin escribir) y reclasifica las dos sondas A3 como controles que deben pasar, conservando intactas las sondas A4 como referencia causal roja y el resto de controles. No toca producto ni el arnés.",
+  "acceptance": "tests/e2e/hoy-recuperable-240.spec.ts: el control legado deja de existir como aserción de cero lecturas y pasa a verificar una lectura de la cola estructurada con cero PATCH; las dos sondas A3 pasan como controles; las sondas A4 siguen rojas por función ausente; informe con el recuento antes y después y las ejecuciones.",
+  "files": ["tests/e2e/hoy-recuperable-240.spec.ts", "coordination/reports/CLAUDE-HOY-PROBES-A3-CONTROLES.md"],
+  "readFiles": ["coordination/reports/CLAUDE-HOY-COLA-JORNADA-A3.md", "tests/e2e/hoy-recuperable-harness.ts"],
+  "dependencies": ["CLAUDE-HOY-APP-PROBES-A"]
+}

@@ -1,0 +1,29 @@
+{
+  "id": "CLAUDE-CONTINUITY-DAY-205",
+  "agent": "claude",
+  "title": "Jornada de continuidad: modelo y componente del plan de trabajo por tiempo declarado (bloque independiente; aún no montado en Hoy)",
+  "plan": "Paquete 5 del encargo «Claude A · Trabajar sin perder el hilo». Construye, sobre los contratos aceptados buildResponseQueue y buildRescuePlan (se reutilizan; no se reimplementa su cola ni su heurística de cabida), una «Jornada de continuidad» para convertir un tiempo disponible declarado en una selección editable. (1) shared/continuity-day.ts: modelo puro con candidatos normalizados (adaptador exacto desde ResponseQueue y adaptador conservador desde las tareas de Hoy), decisiones manuales separadas (fijadas, elegidas, descartadas, bloqueadas por el operador, orden) que sobreviven a cambiar de presupuesto o de filtro, relleno automático con buildRescuePlan sobre el tiempo restante, motivo de inclusión y de exclusión, tareas de duración desconocida separadas, avisos por referencias que faltan, desbordes de lo fijado sin descartarlo, filtro por responsable solo si el llamador aporta el dato, pistas de resultados pendientes limitadas a in_flight/uncertain (solo estado, sin texto), tareas que salieron de la cola y una vista imprimible por lista blanca. (2) src/ContinuityDay.tsx + CSS: pantalla que responde a «qué puedo hacer en los próximos 30 minutos» y «qué requiere una decisión», distingue estimación, trabajo elegido, trabajo guardado y finalización, con selección manual, reordenación con teclado y apertura de la ficha por ID mediante un callback; no guarda, no escribe y no crea otro gestor. (3) Pruebas Node del modelo (con contrapruebas) y DOM en Chromium real a 1440/390/320 con teclado e impresión. Datos ficticios, sin red. El montaje en Hoy (LocalOperations/App, reservados por otra unidad) y la fuente de datos de responsable/referencias de Hoy quedan documentados como siguiente unidad; el arnés no cuenta como montaje.",
+  "acceptance": "Modelo y componente separados de la ficha, del gestor y de Hoy; reutiliza buildRescuePlan; decisiones manuales intactas al cambiar presupuesto o filtros; sin escrituras (pruebas con red cerrada y entrada congelada); lo fijado que desborda se avisa y no se descarta; duración desconocida separada de lo que no cabe; homónimas distinguidas por ID; la vista imprimible solo contiene ID, título, minutos y orden; resultados pendientes solo desde in_flight/uncertain; tsc limpio; Node y DOM con contrapruebas que fallen por la causa correcta; capturas 1440/390/320 abiertas; hashes, límites, llamada futura y handoff. No declara que la jornada ya esté en Hoy.",
+  "files": [
+    "shared/continuity-day.ts",
+    "src/ContinuityDay.tsx",
+    "src/continuity-day.css",
+    "tests/continuity-day.test.ts",
+    "tests/e2e/continuity-day.spec.ts",
+    "coordination/reports/CLAUDE-CONTINUITY-DAY-205.md",
+    "coordination/plans/CONTINUITY-DAY-205-HANDOFF.md"
+  ],
+  "readFiles": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "COORDINACION.md",
+    "shared/response-queue.ts",
+    "shared/rescue-plan.ts",
+    "shared/rescue-room.ts",
+    "shared/local-operations.ts",
+    "src/LocalOperations.tsx",
+    "src/local-operations.css",
+    "scripts/block-external.cjs"
+  ],
+  "dependencies": []
+}

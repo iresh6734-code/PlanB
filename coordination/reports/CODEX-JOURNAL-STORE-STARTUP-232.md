@@ -1,0 +1,11 @@
+# Apertura con una fila dañada del diario · 232
+
+Store deja intacta una fila no JSON de la familia task-intent: durante la migración de una base de archivo. Esa fila ya no impide abrir el espacio de trabajo. Su lectura sigue fallando individualmente, lo que permite al adaptador del diario clasificarla como ilegible. Las filas JSON válidas siguen migrando a cifrado. El fallo de una clave ajena a esa familia sigue propagándose. El tratamiento de recoveryPlan conserva sus reglas anteriores.
+
+Con la fuente anterior, una base SQLite ficticia con una fila no JSON aborta createBaseApp dentro de migrateEncryption. El control de una clave ajena pasa. Con el cambio, dos aperturas de la misma base dan 200 en estado y contactos, conservan un cambio de historial y el valor de la ficha, mantienen los bytes de la fila dañada y cifran una fila legible de legado. En la segunda apertura la fila cifrada conserva esos bytes. Los endpoints de estado y contactos no exponen la fila dañada.
+
+Pasaron 2 pruebas de arranque, 16 de recuperación y 44 del diario con su versión R3 preservada y siete sondas anteriores. En una prueba de compatibilidad separada, el adaptador real del diario clasificó una fila como quarantined y un borrador válido como restorable-draft. La poda no retiró ninguna. Su resumen devolvió uno en drafts y uno en unreadable. Los tipos focales y los bundles aislados de main y runtime están limpios. Los bundles se compilaron. La prueba funcional arranca createBaseApp con Fastify inject y SQLite de archivo, sin publicar HTTP.
+
+Evidencia de antes en tests/.tmp/s232-before-00f8f7ae y de después en tests/.tmp/s232-after-8981b46f. Manifiestos, resultados, prueba de compatibilidad y hashes de bundles en el corte. SHA-256 de Store revisado: 990baafc88e636a667fbf9848ce2bbd5f87aae318398d1ced3e5d3f19d6af12c. SHA-256 de la regresión: 048dd6eb2a398af75cbb472b63acb15153ea6d14189fbc351290190c033f6ceb. Las bases y claves se generaron para la prueba. Se trabaja con una fila que ya existía en texto plano y se conserva con esos mismos bytes. Esta tolerancia no introduce una reparación ni un recifrado de filas dañadas.
+
+Store sigue bajo 055, que vuelve a revisión con su nueva huella. 232 presenta la prueba y este informe. El diario 208 sigue con su corrección R4. El montaje de su API y la candidata 222 pertenecen a sus respectivos cortes.

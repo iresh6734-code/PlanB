@@ -1,0 +1,26 @@
+{
+  "id": "CLAUDE-TODAY-WORKQUEUE-230",
+  "agent": "claude",
+  "title": "API de Hoy: cola de trabajo estructurada (estado, referencias e identidad completa de la copia) sin romper el contrato actual",
+  "plan": "Apartado 2 del encargo «Termina el recorrido de Hoy». La respuesta actual de /api/v7/local-operations usa un esquema estricto y proyecta ID, etiqueta, vencimiento, motivos y siguiente acción, sin estado de la tarea ni referencias y sin la identidad completa de la copia: la Jornada (205) no puede planificar con fiabilidad ni aislar sus decisiones por copia. Estrategia de compatibilidad elegida: ADITIVA. Se mantiene intacto el recurso v1 (un cliente anterior con esquema estricto sigue funcionando byte a byte) y se añade un recurso nuevo GET /api/v7/local-operations/work con su propio formato planb-local-work-queue-v1, registrado dentro de registerLocalOperations (sin tocar app.ts ni v2.ts). Contenido: identidad con instalación, captura, fecha, inicio de captura, cuenta y generación (la misma que calcula la ficha con contextKey desde /api/v2/state; una prueba exige que coincidan), fase de la copia, recuentos (tareas, completadas, abiertas conocidas, estado desconocido, en cola, devueltas y NO devueltas por el límite), y por tarea: ID, etiqueta, bucket, estado open|unknown, vencimiento (kind/value/localDate), referencias con estado found|missing|not-captured (distingue registro ausente de entidad fuera del alcance de la captura) y códigos de motivo sin textos de presentación (nextAction y los detalles quedan para la interfaz). Distingue cero (recuento exacto 0), desconocido (estado unknown, referencia not-captured) y copia sin captura (counts null). Cliente: loadLocalWorkQueue con esquema estricto compartido. Pruebas de contrato: v1 sin cambios, nuevo recurso con cola real de la fixture, identidad == contextKey de la ficha, límite y recuento de lo no devuelto, copia vacía/importada/activa, referencias found/missing/not-captured, y cliente anterior y nuevo contra el mismo servidor. No monta nada en Hoy (la integración de la Jornada es otra unidad) y no cambia LocalOperations.tsx.",
+  "acceptance": "El recurso v1 y sus pruebas existentes pasan sin cambios; el nuevo recurso valida con su esquema estricto; la identidad coincide con la que calcula la ficha para la misma copia (contextKey igual); estado y referencias provienen de buildResponseQueue; no-capturado distinto de ausente; sin textos de presentación; límite y no devueltas correctos con más de 200 tareas; copia vacía devuelve counts null; cliente anterior (esquema v1) y nuevo contra el mismo servidor; cabeceras no-store; contrapruebas por mutación; tsc limpio; hashes, límites y handoff.",
+  "files": [
+    "shared/local-operations.ts",
+    "server/local-operations.ts",
+    "src/local-operations-client.ts",
+    "tests/local-work-queue.test.ts",
+    "coordination/reports/CLAUDE-TODAY-WORKQUEUE-230.md",
+    "coordination/plans/TODAY-WORKQUEUE-230-HANDOFF.md"
+  ],
+  "readFiles": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "COORDINACION.md",
+    "shared/response-queue.ts",
+    "shared/local-task-focus.ts",
+    "tests/local-operations.test.ts",
+    "tests/local-operations-client.test.ts",
+    "shared/continuity-day.ts"
+  ],
+  "dependencies": []
+}

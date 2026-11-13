@@ -2,6 +2,10 @@
 
 Herramienta local de coordinación del desarrollo. No es un agente comercial de Plan B ni una integración de Claude para usuarios de la app.
 
+## Herdr · prueba local 2/11/2026
+
+Herdr App 0.1.11 y Core 0.1.16 se instalaron en este ordenador para complementar este tablón con terminales persistentes. El adaptador y su guía están en `tools/herdr/`: usan una sesión local dedicada y ofrecen vista de lectura y pruebas. Las reservas, revisiones y aceptación siguen aquí; cerrar una terminal no libera una reserva. Se recibió una respuesta conceptual real de Claude sin archivos, herramientas ni MCP, y se comprobó el envío de texto a un proceso de prueba. Se creó un espacio y una terminal cuya salida del tablón se comprobó por `hc read`; la captura de ventana oculta no permitió confirmar visualmente el resultado. No se ha comprobado que dos modelos interactivos se comuniquen entre sí. La prueba, versiones y límites constan en `coordination/reports/CODEX-HERDR-124.md`.
+
 ## Estado vigente · colaboración real28/10/2026
 
 El usuario autenticó personalmente Claude Code y autorizó de forma expresa seis archivos de código/informes para Anthropic con su cuenta personal Pro. Se obtuvo una respuesta real de4385 caracteres, atribuida a Claude, y Codex implementó/ejecutó nueve regresiones basadas en ella. No confundirlo con una sesión interactiva de Claude Desktop o con el agente comercial de la app. Los párrafos siguientes sobre una integración no iniciada describen la entrega original del tablón.

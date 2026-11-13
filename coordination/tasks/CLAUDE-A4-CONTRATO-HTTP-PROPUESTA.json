@@ -1,0 +1,10 @@
+{
+  "id": "CLAUDE-A4-CONTRATO-HTTP-PROPUESTA",
+  "agent": "claude",
+  "title": "Claude A · Propuesta de contrato HTTP, archivos y cuatro cortes para la recuperación duradera A4",
+  "plan": "Paquete 4 del encargo: acordar primero con Codex el contrato HTTP y los archivos de A4 antes de escribir código. Esta unidad solo entrega una PROPUESTA documentada (rutas, cuerpos, estados, orden persistir-despachar-liquidar, evidencia de cobertura para el resumen 283, reparto de archivos entre Codex y Claude A, cuatro cortes de prueba y decisiones abiertas). No toca App, main, Store, rutas ni contratos compartidos y no equivale a un acuerdo: queda pendiente de la respuesta de Codex.",
+  "acceptance": "Documento con rutas y esquemas exactos, códigos de error, semántica de idempotencia, relación con el diario 208 R5 y el lector 283, propuesta de reservas por archivo y dueño, plan de los cuatro cortes con los recuentos que cada uno debe observar y lista de decisiones abiertas para Codex. Sin código de producto.",
+  "files": ["coordination/plans/A4-DURABLE-RECOVERY-HTTP-PROPOSAL.md"],
+  "readFiles": ["coordination/plans/INTENT-JOURNAL-208-CONTRACT.md", "coordination/plans/WORK-SUMMARY-283-CONTRACT.md", "shared/task-intent-journal.ts", "server/task-intent-storage.ts", "server/work-summary-api.ts", "coordination/briefs/ASDD-TRABAJO-POR-RECUPERAR-251.md"],
+  "dependencies": ["CLAUDE-INTENT-JOURNAL-208"]
+}

@@ -1,0 +1,20 @@
+{
+  "id": "CLAUDE-TASK-PINS-220",
+  "agent": "claude",
+  "title": "Actualizar la huella de TaskSaveOutcomes.tsx en la prueba de U1 tras aceptar la unidad 219",
+  "plan": "Tras aceptar CLAUDE-TASK-ATTEMPT-REOPEN-219 (que cambia src/TaskSaveOutcomes.tsx para entregar el attemptId y ofrecer «Abrir la tarea» en inciertos y en curso), la prueba tests/task-focus-outcomes.test.ts de U1 falla por diseño en su huella de ese archivo. Esta unidad solo actualiza ese hash con el de las fuentes aceptadas, conserva todas sus aserciones de comportamiento y repite U1 (7 Node, 27 DOM), 136 y 219. No toca tests/task-focus-followup.test.ts: su huella de LocalTaskFocus.tsx pertenece a la reserva de Codex 196 y se actualizará allí.",
+  "acceptance": "La huella de src/TaskSaveOutcomes.tsx coincide con la fuente aceptada de 219; las demás aserciones de la prueba intactas; U1 Node 7/7, U1 DOM 27/27, 136 DOM 13/13 y los 8 recorridos de 219 repetidos; tsc limpio; informe con hashes y límite sobre la huella pendiente de LocalTaskFocus.tsx.",
+  "files": [
+    "tests/task-focus-outcomes.test.ts",
+    "coordination/reports/CLAUDE-TASK-PINS-220.md"
+  ],
+  "readFiles": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "COORDINACION.md",
+    "coordination/reports/CLAUDE-TASK-ATTEMPT-REOPEN-219.md"
+  ],
+  "dependencies": [
+    "CLAUDE-TASK-ATTEMPT-REOPEN-219"
+  ]
+}

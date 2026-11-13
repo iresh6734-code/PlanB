@@ -1,0 +1,10 @@
+{
+  "id": "CLAUDE-A4-UUID-ESTABLE",
+  "agent": "claude",
+  "title": "Claude A · A4 paquete 1: el UUID del intento viaja desde el gestor a la estrategia y a la verificación (compatible con las estrategias actuales)",
+  "plan": "Paquete 1 del encargo de 9/11: la operación ya tiene su UUID antes de ejecutar la estrategia. Se transmite exactamente ese UUID en SaveRequest y VerifyRequest (campo opcional por compatibilidad) sin cambiar estados, host ni recuperación. Un doble clic conserva un único intento, la verificación no crea otro, un reintento humano crea una operación nueva enlazada y las guardias de dispose y la frontera síncrona de onDispatch no cambian. No necesita la API A4.",
+  "acceptance": "Una estrategia de prueba observa el mismo UUID que ve la superficie del gestor, en save y en verify; doble envío ⇒ un solo save; verify ⇒ cero operaciones nuevas y cero save; retry ⇒ UUID nuevo y previousAttemptId; estrategias de revisión y legado intactas; las 48 pruebas anteriores sin cambiar aserciones; la huella fijada de src/task-save-outcome.ts se renueva DESPUÉS de ejecutar las pruebas de comportamiento; tipos limpios.",
+  "files": ["src/task-save-outcome.ts", "tests/task-save-outcome.test.ts", "tests/task-focus-outcomes.test.ts", "coordination/reports/CLAUDE-A4-UUID-ESTABLE.md"],
+  "readFiles": ["coordination/plans/A4-DURABLE-RECOVERY-HTTP-CONTRACT.md", "coordination/plans/A4-CONSUMER-ADAPTATION-PLAN.md", "src/task-revision-strategy.ts"],
+  "dependencies": []
+}

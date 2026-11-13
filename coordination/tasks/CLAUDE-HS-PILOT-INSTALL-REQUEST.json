@@ -1,0 +1,10 @@
+{
+  "id": "CLAUDE-HS-PILOT-INSTALL-REQUEST",
+  "agent": "claude",
+  "title": "Claude A · Petición a Codex: instalación nueva y propia para la primera lectura real de HubSpot de ensayo (portal 149623262)",
+  "plan": "El usuario ya inició sesión en HubSpot (portal observado en la URL: 149623262, el que consta como portal personal autorizado en CLAUDE-001). La demo 4601 es de Codex, datos ficticios, sin protección local y sin credencial: guardar allí una credencial real la modificaría silenciosamente. Esta unidad solo entrega una petición concreta y verificable a Codex (qué instalación, qué pasos humanos, qué comprobación y qué evidencia) y fija quién controla cada ventana. No edita App, main, Store ni contratos.",
+  "acceptance": "Documento con la instalación pedida (raíz y puerto nuevos, sin tocar 4601 ni datos existentes), los pasos del usuario, las cinco lecturas, la verificación de identidad contra 149623262, la evidencia exigida en la App y los límites (sin escritura, sin paginación, sin importación, Radar sigue ficticio).",
+  "files": ["coordination/plans/HS-PILOT-INSTALL-REQUEST.md"],
+  "readFiles": ["coordination/reports/CODEX-HS-READ-MOUNT-218.md", "coordination/reports/CLAUDE-HS-READ-API-212.md"],
+  "dependencies": []
+}

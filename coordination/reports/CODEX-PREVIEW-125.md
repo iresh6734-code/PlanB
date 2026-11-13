@@ -1,0 +1,19 @@
+# CODEX-PREVIEW-125 · Copia integrada abierta
+
+2/11/2026 Europe/Madrid. Preview propio de ficción, no despliegue comercial. URL: http://127.0.0.1:4591/. Instancia: 7f450941-82a3-41f9-912b-614492524c69. PID hijo: 34572; proceso padre: 26528. Handle de ejecución33077, confirmado vivo por health e identidad/PID; no garantiza disponibilidad permanente tras cerrar la app o equipo.
+
+Carpeta nueva: D:/AI/Plan-B-CRM-v2.1/source/tests/.tmp/preview125-2a58f080-a806-40ae-8b15-ddc5e83f35b0. Runtime: D:/AI/Plan-B-CRM-v2.1/source/tests/.tmp/preview125-2a58f080-a806-40ae-8b15-ddc5e83f35b0/runtime. Fuente congelada: D:/AI/Plan-B-CRM-v2.1/source/tests/.tmp/navigation117-3815e3c2-b659-474e-a2b4-5b6e53ac8849/app120-final-4a912811-7757-4061-9232-3dc8931cf44f.14artefactosVite copiados con igualdad SHA-256 del corte132Node/11AppDOM/tsc; backendprincipal server/main.ts empaquetado con esbuild desde ese snapshot. Hashbackend: 02ef2f51c667bf09ad7ded420acab56e3503f5b34ba90ee117af957aedc71238. backend-metafile.json/manifest.json conservan inputs/artefactos, sin claves. No sustituye4451,100/104,4511/4515 o el equipo original.
+
+Datos nuevos62 registros deAgenciaNorte, nombre«Plan B · Copia integrada de ensayo125», copia activa propia. Antes de abrir Store se creó .planb-key nueva kind:test y se usa NODE_ENV=test, por lo que esta instancia no usaDPAPI ni claves existentes. Esa clave es de ensayo y no apta para custodiar datos reales. No se imprime ni se guarda su valor en el informe. Los datos se guardan bajo runtime/fixture-data; ninguna carpeta anterior se importó. El bundle semilla solo contiene esta ficción recién creada.
+
+Backendprincipal real: createBaseApp, registradores de generación/captura ya existentes, copia y equipo como en server/main. ConfiguraciónProviderSettings nueva/vacía en su cwd propio, sin .env.local/credenciales. Entorno de sistema por allowlist, sin tokens/origen de equipo; PLANB_PORT4591 y PLANB_DATA_DIR carpeta nueva. Node bloquea red externa mediante scripts/block-external.cjs. Ninguna autorizaciónrealdeHubSpot/Google o IA configurada. Importar/generar ensayo solo actúa sobre esta copia si el usuario lo pide; no fue necesario conectar servicios para demostrar Hoy.
+
+## Verificación actual
+
+Recorrido de navegador propio1/1: backendcompilado/h1/título correctos → Hoy14 tareas abiertas → Agentes,unPOSTde revisión yacusepersistido → recarga y mismoID → Integraciones6filas,Google sin configurar/ensayo plegado → Preparaciónabre/pliega → workspaceTareas18 → Hoy390/320sin overflow. Hashde/api/records antes/después idéntico,un soloPOST local,0peticiones externas,0pageerror/warnings/errorsconsola. Instancia yPIDseguían iguales al cerrarcheck.
+
+Evidencia D:/AI/Plan-B-CRM-v2.1/source/tests/.tmp/preview125-2a58f080-a806-40ae-8b15-ddc5e83f35b0/check-14317905-520a-4206-93d1-40783fdffc04:results.json/browser.log/observed.json/capturas/trazas;today1440/320inspeccionadas. Browser plugin not available; CLIPlaywright/Chromium1228 existente,contextonuevo,sinperfildelusuario. La revisión guardada de ficción sigue en la base para inspección, no se eliminó ni se presentó como operaciónCRM. No se configuró contraseña de usuario en4591.
+
+owner.jsonregistraPID/entry/cwd/nombresdevariablesdelentorno;server.log/exit.json(si termina)identificanesteproceso. Se eligió fallar si4591estaba ocupado, sin matar a nadie. Parar/reanudar requiere comprobar identidad de este proceso y trabajar solo en esta carpeta; no ejecutar de nuevo el preparador para «reanudar» porque crea otraUUID. El lanzador de ensayo local está en tests/.tmp/preview125-run.cjs y el manifiesto en tests/.tmp/preview125-latest.json;no es un servicioautostart/instalador. No lanzar si el proceso actual sigue vivo.
+
+125presentada para revisión, no autoaceptada.121delotrochat puede inspeccionar esta URL/instancia y los hashes publicados sin reiniciar/migrar una instalación. Toda aceptación de producto/proveedores/retorno real es independiente de esta ficción.

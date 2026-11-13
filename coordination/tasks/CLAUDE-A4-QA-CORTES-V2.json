@@ -1,0 +1,10 @@
+{
+  "id": "CLAUDE-A4-QA-CORTES-V2",
+  "agent": "claude",
+  "title": "Claude A · QA de A4: guion congelado de los cuatro cortes con recuento de efectos y sondas que señalan el primer paso que falta",
+  "plan": "Mientras Codex decide el contrato A4, congela el guion de los cuatro cortes (falla persistir, reinicio antes de aplicar, acuse perdido tras aplicar, falla la liquidación) con el recuento de efectos de cada uno. Cada sonda ejecuta lo que el producto actual permite, comprueba los efectos observables (PATCH, filas del ID exacto, reinicio con PID distinto, cierre de procesos del arnés 293) y se detiene en una barrera que nombra el PRIMER paso ausente. Conserva intactas las sondas A4 de 240. No inventa rutas acordadas: las usa como propuesta rotulada.",
+  "acceptance": "Cuatro sondas: la parte ejecutable pasa y es estable; cada una falla solo en su barrera con un mensaje que nombra el primer paso ausente; las aserciones posteriores a la barrera (superficie, intento exacto, cero PATCH al abrir/comprobar) quedan escritas. Informe con el guion, los recuentos esperados y la lista de ganchos que Codex debe ofrecer al servidor de prueba.",
+  "files": ["tests/e2e/hoy-trabajo-por-recuperar-cortes.spec.ts", "coordination/reports/CLAUDE-A4-QA-CORTES.md"],
+  "readFiles": ["coordination/plans/A4-DURABLE-RECOVERY-HTTP-PROPOSAL.md", "coordination/briefs/ASDD-TRABAJO-POR-RECUPERAR-251.md", "tests/e2e/hoy-recuperable-240.spec.ts", "tests/e2e/hoy-recuperable-harness.ts"],
+  "dependencies": ["CLAUDE-HOY-APP-PROBES-A"]
+}

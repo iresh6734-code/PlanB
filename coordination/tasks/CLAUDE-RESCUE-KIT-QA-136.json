@@ -1,0 +1,33 @@
+{
+  "id": "CLAUDE-RESCUE-KIT-QA-136",
+  "agent": "claude",
+  "title": "QA complementaria del Kit de Relevo: aislamiento, reclamos de importación, caídas y traspaso",
+  "plan": "Preparar CLAUDE-RESCUE-KIT-116 (en review, no se modifica ninguna de sus 25 rutas) para una revisión independiente. (1) Aclarar la procedencia exacta del 48/48 y de las capturas inspeccionadas, separando resultados propios, repetidos e históricos. (2) Arnés con raíz temporal propia: cada prueba identifica solo sus destinos, staging, reclamos y procesos (a partir de su propio reclamo y de los pasos del servicio), sin listar ni contar carpetas ajenas; dos ejecuciones simultáneas en raíces separadas con carpetas señuelo intactas; reproducción mínima de la interferencia que 116 declaró. (3) Pruebas deterministas con barreras sobre el código entregado: importaciones concurrentes, caídas en cada punto, fallo al escribir la confirmación del reclamo DESPUÉS de publicar, reclamos huérfanos (ilegible, PID vivo/ausente, destino publicado), barrido de staging frente a una importación activa y carpetas ajenas parecidas, contenido modificado entre inspección e importación, exportación durante mutación del escritor propio y cambios externos del simulador. Clasificar cada punto: reproducido, inferido del código o no comprobado; reproducción mínima de cualquier defecto. (4) Traspaso para Codex: reservas y rutas de montaje, funciones solo de ensayo, integridad/cifrado/autenticidad, contraseña, tamaño, destino nuevo, incertidumbre, aprobación retirada, simulador, enlaces simbólicos, pruebas que faltan (otro ordenador, otro SO, HubSpot, relaciones, datos reales), accesibilidad y dimensiones. Solo archivos nuevos exactos. Datos ficticios, este equipo, carpetas y procesos propios, loopback; sin red, proveedores, instalaciones, worktrees, commit/push ni el ordenador corporativo.",
+  "acceptance": "Informe y checkpoint con comandos, resultados propios, hashes de las fuentes ensayadas (proyección comparada con el árbol), carpetas de evidencia y procesos cerrados. Cada hallazgo clasificado como reproducido, inferido o no comprobado, con reproducción mínima y efecto observable; una interferencia del arnés no se declara defecto del producto sin demostrarla. Pruebas aisladas: dos ejecuciones simultáneas sin contaminación cruzada; ninguna cuenta carpetas ajenas ni limpia lo que no es suyo. Las repeticiones no se suman como casos nuevos. Sin autoaceptación; 116 permanece intacta mientras esté en review. Límites explícitos: no se acredita otro ordenador, otro sistema operativo, HubSpot real ni relaciones; sin enlaces simbólicos si el equipo no puede crearlos.",
+  "files": [
+    "tests/helpers/rescue-capsule-followup-harness.ts",
+    "tests/helpers/rescue-capsule-followup-child.ts",
+    "tests/helpers/rescue-capsule-followup-parallel.mjs",
+    "tests/rescue-capsule-followup-claims.test.ts",
+    "tests/rescue-capsule-followup-capture.test.ts",
+    "tests/rescue-capsule-followup-isolation.test.ts",
+    "tests/e2e/rescue-capsule-followup.spec.ts",
+    "coordination/reports/CLAUDE-RESCUE-KIT-QA-136.md",
+    "coordination/reports/CLAUDE-RESCUE-KIT-QA-136-CHECKPOINT.md",
+    "coordination/plans/RESCUE-KIT-QA-136-HANDOFF.md"
+  ],
+  "readFiles": [
+    "AGENTS.md", "CLAUDE.md", "COORDINACION.md", "CONTEXTO-PROYECTO.md", "DESIGN.md",
+    "coordination/reports/CLAUDE-RESCUE-KIT-116.md", "coordination/reports/CLAUDE-RESCUE-KIT-116-CHECKPOINT.md",
+    "coordination/plans/RESCUE-KIT-116-INTEGRACION.md", "design/rescue-capsule/README.md",
+    "shared/rescue-capsule.ts", "server/rescue-capsule.ts", "server/rescue-capsule-api.ts",
+    "server/rescue-room.ts", "server/rescue-room-journal.ts", "shared/rescue-room.ts",
+    "scripts/demo-rescue-capsule.ts", "scripts/rehearse-rescue-capsule.ts",
+    "src/RescueCapsule.tsx", "src/rescue-capsule-client.ts",
+    "tests/rescue-capsule.test.ts", "tests/rescue-capsule-integrity.test.ts", "tests/rescue-capsule-context.test.ts",
+    "tests/rescue-capsule-rehearsal.test.ts", "tests/rescue-capsule-api.test.ts", "tests/rescue-capsule-client.test.ts",
+    "tests/e2e/rescue-capsule.spec.ts", "tests/helpers/rescue-capsule-harness.ts", "tests/helpers/rescue-room-harness.ts",
+    "server/store.ts", "server/recovery.ts", "server/crypto.ts", "server/instance.ts", "scripts/block-external.cjs"
+  ],
+  "dependencies": []
+}

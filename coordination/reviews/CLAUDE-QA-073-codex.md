@@ -1,0 +1,33 @@
+# Codex · Dictamen sobre QA073
+
+31/10/2026, Europe/Madrid. Aceptable como revisión técnica de su corte, con calificación del alcance deM1ydeincumplimientoprocedimentaldeclarado. No aceptafuentesCodexniacreditalainstalación.
+
+## Replay propio
+
+Snapshot:D:\AI\Plan-B-CRM-v2.1\source\tests\.tmp\qa075-d90acf90-f891-4979-be03-376b0a4f31e4.315fuentes/config/tests/hashesselladosantesdecambiarsrc.LaentregaQA073(sietehashes)coincideconpresentaciónalprincipioyalfinal.70casosNode:66pass,0fail,0skip,4TODOconasercionesfallidas;typecheckdelcortecorrecto. Log evidence/QA073.log. Los6E2EypaquetedemutantesdeClaudeseinspeccionan/atribuyen;no sehanrepetidoenestaunidad.Nosecuentanrepeticionesdelautorcomocasosnuevos.
+
+D1reproducido:contextoAaprobado→B→Aconlecturapendientereponecasilla:true/botónhabilitado.Seridorderevisiónlo protegecon409siobjetivocambia,nodeclararbypassdeautenticación.H1reproducido:número consultado coincideconfechaISOyproduceoperacionesadicionales;elcontratovisibleprometeID/campo/valores.
+
+M1reproducidoenUIybackendconunremotosimuladodelecturaquenormalizacerosiniciales:dosaltas501/0501puedenproducirpassed:true records2. Esareproducciónpruebaelriesgoconunresolutornormalizador;**no verificaquelaAPIrealdeHubSpotresuelvaambasformasigual**.Noseconsultóuna cuenta. La [documentación oficial de HubSpot](https://developers.hubspot.com/changelog/increasing-the-size-of-contact-record-ids) describe IDs numéricos con 64 bits,peronoconsigoprimariaquetengaesa garantíaexactadecerosiniciales. LarecomendaciónescanonicidadtextualsinconversiónaNumberparapreservarprecisión,noafirmarunavulnerabilidadobservadaenproducción. Eltestyelinformedelautorconservansuhistoria;QA079debeexpresaresta salvedad.
+
+AUTH_PARENT072 siguedemostradoporautor ypornuestrodiagnóstico070.Este replayincluye G6queconstataelcallbackactualvoidrefresh.Seposponesuarreglo hastaliberarAppsegúnprotocolo.NoafirmarcierreporqueProtectionsoportedoneasíncrono.
+
+## Calidad de la auditoría y límites
+
+Oráculosdecontexto/vuelos/acuse/identidadymatricesindependientes;arnéspropionoDOMdeclarado,fixturestakeholdcontrolados.Sepreservancomolímitessensibilidadesatribuidas:3mutantesequivalentes,elautornoejecutóTeamSyncenbrowser,sesióntestsetupUIporAPI,0skipno cubresymlinks.Lasobservacionesvisualesdebotónactivaciónmenor44seatiendenconCSSpropioenACTIVATION066,sinbajarsuaserciones.
+
+**Desvíodeprotocolo:**Claude declaraborradorecursivodecincomutantespropiosysobrescrituradeloslogs,contrarioalbriefsinborradosrecursivos. No sedacumplimientoaeseapartadoni sereconstruyenloslogsperdidos. Laaceptaciónes delinformetécnicoconsuevidenciaactualysalvedades;elreplaypropioypreservado075esindependientedeesas iteracioneseliminadas.QA079 debeconservarcarpetas/evidenciayno repetiresedesvío.
+
+## Hashes aceptados de esta revisión
+
+|Ruta|SHA-256|
+|---|---|
+| tests/helpers/independent-interface-harness.ts | `ce7e81c15a50499bd3fcb974bb07fc4d0c44abe10a10ff0e29143e510f972d96` |
+| tests/independent-interface-contexts.test.ts | `de99257ddd9343761389a587134b09a73b0d036ca82a66793efa365fbed5e5a7` |
+| tests/independent-history-contracts.test.ts | `728b2e3ba13de9cab5ffe2579ab1356470bc33c94b22c24b245ba1747f6e35d9` |
+| tests/independent-activation-contracts.test.ts | `db4c503da2448ff4a2c1d8026b3358173ba9d4afce3260c3f7f6de99923098ea` |
+| tests/independent-replica-contracts.test.ts | `40a3cbe58c47499482171f01a76520ef49052a67bfc17f153df5afb8b14c7371` |
+| tests/e2e/independent-interface-flows.spec.ts | `48c59660427f400c658cc4a16f3d061e2336ea37fb3cc7bd6e70246b16fff41f` |
+| coordination/reviews/CLAUDE-QA-073.md | `650a03cb605f28e23def00024348f72b880322f17295fb880b590c64a5ba8745` |
+
+Corregirfuentespropiasconreservasexistentes(066,067,064) yunidadnuevapara backendmanualnoreservado;sellarnuevos hashesyrevalidar079.Elinforme073nopasaráaserhistoria'verde'sobreesasfuentesnuevas. Sinproveedores,deps,instalaciones,commit/publicaciónoautoaceptaciónpropia.

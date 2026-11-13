@@ -1,0 +1,10 @@
+# Ensayo de relevo 216. Corrección R2
+
+Trabaja dentro de las cinco rutas que conserva la entrega. Lee el [dictamen de Codex](../reviews/CLAUDE-RELAY-REHEARSAL-216-independent.md) y reproduce sus tres casos desde el corte privado tests/.tmp/r226-b39c8473. El objetivo medible es un máximo de un ejecutor vivo por instancia, incluso después de que la solicitud haya terminado.
+
+1. Conserva la plaza física hasta que finalice la promesa del ejecutor o se compruebe el cierre de sus procesos propios. Separa el estado visible del último resultado, la autorización para publicarlo y la ocupación de la plaza. Registra la finalización de forma que la promesa rechazada no quede sin atender.
+2. Mientras drena, devuelve un estado que permita a la interfaz explicar la espera. DELETE solicita el descarte. Vencer la espera HTTP tampoco prueba el cierre del proceso. Mantén bloqueado un segundo POST en ambos casos. Una sesión nueva tampoco puede heredar la publicación ni saltar la exclusión. Acuerda cualquier campo nuevo del contrato con la entrega HUB-217.
+3. Limpia el temporizador al cerrar su recorrido. Define cómo se resuelve el cierre del servidor con una ejecución retenida y compruébalo. Protege la escritura contra resultados tardíos, incluidos los que llegan después de cancelar, vencer el plazo o revocar la autorización. Conserva los resultados anteriores hasta contar con otro que pueda publicarse según contrato.
+4. Añade controles con barreras para las tres secuencias, más un nuevo inicio después del cierre real y un resultado tardío que se descarta. Verifica recuentos de ejecutores vivos, estado público y persistencia. Repite los nueve casos originales y los tipos, prueba que las regresiones fallan con las fuentes presentadas y deja huellas del corte que realmente probaste.
+
+El encargo de montaje visible 223 añade un ejecutor con raíz propia, cierre de procesos y validación desde el paquete arrancable. Acuerda sus rutas con Codex mediante otra unidad. Presenta esta corrección en el tablón para revisión.

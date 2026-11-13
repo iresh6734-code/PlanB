@@ -1,0 +1,10 @@
+{
+  "id": "CLAUDE-RADAR-ENTRY-MOUNT-READY",
+  "agent": "claude",
+  "title": "Claude A · Radar listo para montar: entrada con capacidad y activación explícita, rótulos de procedencia ficticia y guion de montaje para Codex",
+  "plan": "Paquete 4 del encargo de 9/11. El servidor ya ofrece /api/v7/commitment-radar (estado de la capacidad, activación explícita con semilla persistente 289/291). Esta unidad entrega el componente de entrada que el coordinador monta en la App: lee la capacidad con el pin, distingue copia inactiva, copia no ficticia, escenario sin inicializar (activación explícita con aviso), no disponible y disponible, y solo entonces muestra el Radar. La ficha rotula cada proveedor como dato de ensayo no conectado y muestra las advertencias del conjunto multisistema. Además deja el guion de montaje (props, rutas, requisitos, recorrido). No monta nada en App ni main.",
+  "acceptance": "Componente CommitmentRadarEntry con los cinco estados de capacidad probados contra mountCommitmentRadar real (servidor real, SQLite de archivo, reloj fijo, red bloqueada): activar crea la semilla una vez (201) y leer no escribe; cambio de pin y bloqueo retiran lo anterior; la ficha dice que pedidos y tickets son ficticios y que ningún proveedor está conectado sin romper las pruebas aceptadas del Radar; props y guion de montaje documentados; tipos limpios; capturas 1440/390/320 inspeccionadas.",
+  "files": ["src/CommitmentRadarEntry.tsx", "src/commitment-radar-client.ts", "src/CommitmentRadar.tsx", "src/commitment-radar.css", "tests/e2e/commitment-radar-entry.spec.ts", "coordination/plans/RADAR-MOUNT-HANDOFF.md", "coordination/reports/CLAUDE-RADAR-ENTRY-MOUNT-READY.md"],
+  "readFiles": ["server/commitment-radar-mount.ts", "server/commitment-scenario-seed.ts", "shared/commitment-multisystem-demo.ts", "coordination/reports/CODEX-RADAR-ACTIVATION-291.md", "coordination/reports/CODEX-COMMITMENT-SCENARIO-SEED-289.md"],
+  "dependencies": ["CLAUDE-COMMITMENT-RADAR-SCENARIOS"]
+}

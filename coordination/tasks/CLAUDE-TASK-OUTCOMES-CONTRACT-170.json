@@ -1,0 +1,32 @@
+{
+  "id": "CLAUDE-TASK-OUTCOMES-CONTRACT-170",
+  "agent": "claude",
+  "title": "Contrato del gestor 136: razón segura del fallo de actualización, dispose() y reanudar tras un callback sustituido",
+  "plan": "Unidad previa a U2. Una sonda de solo lectura sobre el gestor aceptado (136) reprodujo tres huecos con servidor real en memoria: (A) no hay forma de cancelar trabajo pendiente al terminar una sesión: una operación en «comprobando» sigue y envía su PATCH aunque su propietario ya se descartó; (B) si se sustituye el callback onConfirmed mientras una recarga está en curso y esa recarga rechaza (p. ej. Hoy se desmontó), la operación queda «failed» y el nuevo callback no se ejecuta; (D) el rechazo de onConfirmed no conserva ninguna razón, así que no se distingue un fallo del estado padre de uno de la lista de Hoy. Cambios mínimos y compatibles: 1) en shared/task-save-outcome.ts, un error tipado OutcomeRefreshError con causa cerrada (state | list) y textos controlados («No se pudo actualizar el estado de la aplicación», «No se pudo actualizar la lista de Hoy»); cualquier otro Error conserva razón vacía (nunca se copia su mensaje: puede llevar URLs o datos); 2) en src/task-save-outcome.ts, queue.reason toma solo esos textos controlados; dispose() aborta las operaciones aún no despachadas (pasan a not_sent con causa «sesión terminada»), desregistra onConfirmed y rechaza nuevas entradas (refused), sin tocar un PATCH ya enviado (no se puede deshacer); 3) si el callback se sustituye durante una recarga que luego rechaza, la operación se reencola para el nuevo callback en vez de quedar failed. No cambia la superficie ni la ficha. Actualiza la huella de las fuentes de 136 en tests/task-focus-outcomes.test.ts (U1) con los hashes nuevos y conserva sus aserciones de comportamiento. Pruebas contra servidor real con barreras; contrapruebas que fallen contra el gestor actual por la causa correcta; regresiones 136 (23 Node + 13 DOM), U1 y 123. No introduce persistencia, 128 ni nada multipestaña. Datos ficticios, procesos propios, red externa bloqueada. Presentar con submit; sin autoaceptar. Depende de que U1-148 esté done (su prueba fija los hashes del gestor).",
+  "acceptance": "OutcomeRefreshError y textos controlados; ningún mensaje arbitrario llega a queue.reason (prueba con un Error que contenga URL y datos); dispose() con operación en «comprobando» → ningún PATCH sale, queda not_sent; dispose() con PATCH ya enviado → el resultado se sigue registrando pero no se llama a ningún callback; callback sustituido a mitad de recarga que rechaza → una sola recarga del nuevo callback y estado ok; compatibilidad: 23 Node y 13 DOM de 136 sin tocar, U1 25 DOM y 7 Node con la huella actualizada, 123/140; tsc limpio; hashes, límites y handoff para U2.",
+  "files": [
+    "shared/task-save-outcome.ts",
+    "src/task-save-outcome.ts",
+    "tests/task-save-outcome.test.ts",
+    "tests/task-focus-outcomes.test.ts",
+    "coordination/reports/CLAUDE-TASK-OUTCOMES-CONTRACT-170.md"
+  ],
+  "readFiles": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "COORDINACION.md",
+    "CONTEXTO-PROYECTO.md",
+    "coordination/reports/CLAUDE-TASK-UNCERTAINTY-136.md",
+    "coordination/plans/TASK-UNCERTAINTY-136-HANDOFF.md",
+    "coordination/reports/CLAUDE-TASK-OUTCOMES-U1-148.md",
+    "coordination/plans/TASK-OUTCOMES-U1-148-HANDOFF.md",
+    "src/TaskSaveOutcomes.tsx",
+    "src/local-task-focus-client.ts",
+    "src/LocalTaskFocus.tsx",
+    "tests/e2e/task-save-outcome.spec.ts",
+    "scripts/block-external.cjs"
+  ],
+  "dependencies": [
+    "CLAUDE-TASK-OUTCOMES-U1-148"
+  ]
+}

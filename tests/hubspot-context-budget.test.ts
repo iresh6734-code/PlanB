@@ -18,7 +18,7 @@ async function setup(){
   const space=await repo.createSpace(user,'Context budget contract'),key=randomBytes(32),requests:{path:string;signal:AbortSignal}[]=[];
   let transport:undefined|((path:string,signal:AbortSignal)=>Promise<Response>);
   const fetcher:typeof fetch=async(input,init)=>{
-    const url=new URL(String(input));assert.equal(url.origin,'https://api.hubapi.com');assert.equal(init?.method??'GET','GET');assert.equal(init?.redirect,'error');const signal=init?.signal as AbortSignal;assert.ok(signal);requests.push({path:url.pathname,signal});
+    const url=new URL(String(input));assert.equal(url.origin,'https://api.hubapi.com');assert.equal(init?.method??'GET',url.pathname.endsWith('/search')?'POST':'GET');assert.equal(init?.redirect,'error');const signal=init?.signal as AbortSignal;assert.ok(signal);requests.push({path:url.pathname,signal});
     if(transport)return transport(url.pathname,signal);
     return Response.json({id:'42',properties:{},associations:{}});
   };
@@ -28,13 +28,13 @@ async function setup(){
 }
 const timeout=(error:unknown)=>error instanceof AppError&&error.status===504;
 
-test('presupuesto: contacto y detalles comparten plazo absoluto;404 no reinicia el reloj',{timeout:10000},async t=>{
+test('presupuesto: contacto y búsquedas comparten plazo absoluto; un índice vacío no reinicia el reloj',{timeout:10000},async t=>{
   const s=await setup(),contact=deferred<Response>(),detail=deferred<Response>(),last=deferred<Response>(),firstEntered=deferred<void>(),secondEntered=deferred<void>(),lastEntered=deferred<void>();
-  s.override(async path=>{if(path.includes('/contacts/')){firstEntered.resolve();return contact.promise;}if(path.endsWith('/gone')){secondEntered.resolve();return detail.promise;}lastEntered.resolve();return last.promise;});
+  s.override(async path=>{if(path.includes('/contacts/')){firstEntered.resolve();return contact.promise;}if(path.endsWith('/notes/search')){secondEntered.resolve();return detail.promise;}lastEntered.resolve();return last.promise;});
   t.mock.timers.enable({apis:['setTimeout']});
   const read=s.read(),result=assert.rejects(read,error=>timeout(error)&&/total/.test((error as Error).message));await firstEntered.promise;t.mock.timers.tick(40);
   contact.resolve(Response.json({id:'42',properties:{},associations:{notes:{results:[{id:'gone'}]},emails:{results:[{id:'kept'}]}}}));await secondEntered.promise;t.mock.timers.tick(40);
-  detail.resolve(new Response('',{status:404}));await lastEntered.promise;t.mock.timers.tick(20);await result;assert.equal(s.requests.length,3);assert.equal(s.requests[2].signal.aborted,true);
+  detail.resolve(Response.json({results:[],total:0}));await lastEntered.promise;t.mock.timers.tick(20);await result;assert.equal(s.requests.length,3);assert.equal(s.requests[2].signal.aborted,true);
   last.reject(new Error('LATE_REJECTION_CONSUMED'));await settle();assert.equal(s.requests.length,3);
 });
 test('presupuesto: transporte que ignora señal termina por timeout individual y consume rechazo tardío',{timeout:10000},async t=>{

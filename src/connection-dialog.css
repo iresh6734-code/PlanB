@@ -1,0 +1,6 @@
+body .connection-dialog .connection-dialog-fields { min-width:0; border:0; padding:0; margin:0; max-height:none; overflow:visible; }
+body .connection-dialog .connection-dialog-fields > fieldset { min-width:0; margin:16px 0; padding:12px; border:1px solid var(--line); border-radius:5px; max-height:260px; overflow:auto; }
+body .connection-dialog :is(.field input,.field select,.button,.text-button) { min-height:44px; }
+body .connection-dialog .connection-dialog-fields .field :is(input,select) { min-height:44px; }
+body .connection-dialog .checkbox-label { min-height:44px; align-items:center; margin-block:4px; }
+.connection-dialog p,.connection-dialog label,.connection-dialog legend { overflow-wrap:anywhere; }

@@ -16,7 +16,7 @@ export type SavedConnection=z.infer<typeof ConnectionSchema>;
 export function readonlyFetch(fetcher:typeof fetch):typeof fetch {
   return async(input,init)=>{
     const url=new URL(String(input)),method=(init?.method??'GET').toUpperCase();
-    const allowedPost=/^\/crm\/((objects\/2026-09|v3\/objects)\/(contacts|companies|deals|tasks)\/search|(associations\/2026-09|v4\/associations)\/(contacts|companies|deals|tasks)\/(contacts|companies|deals|tasks)\/batch\/read)$/.test(url.pathname);
+    const allowedPost=/^\/crm\/((objects\/2026-09|v3\/objects)\/(contacts|companies|deals|tasks)\/search|objects\/2026-09\/(notes|meetings|calls|emails)\/search|(associations\/2026-09|v4\/associations)\/(contacts|companies|deals|tasks)\/(contacts|companies|deals|tasks)\/batch\/read)$/.test(url.pathname);
     if(url.origin!=='https://api.hubapi.com'||!(method==='GET'||method==='POST'&&allowedPost))throw new AppError(403,'Esta conexión solo permite lecturas de HubSpot.');
     return fetcher(input,{...init,redirect:'error'});
   };

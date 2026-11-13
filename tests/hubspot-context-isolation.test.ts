@@ -25,9 +25,9 @@ async function setup({production=false,demo=false}={}){
   const space=await repo.createSpace(user,'Context contract'),key=randomBytes(32),app=Fastify({logger:false});
   let requests:string[]=[],duringRead:undefined|((path:string)=>Promise<void>),currentUser=user,associated=false;
   const fetcher:typeof fetch=async(input,init)=>{
-    const url=new URL(String(input));assert.equal(url.origin,'https://api.hubapi.com');assert.equal(init?.method??'GET','GET');assert.equal(init?.redirect,'error');requests.push(url.pathname);await duringRead?.(url.pathname);
+    const url=new URL(String(input));assert.equal(url.origin,'https://api.hubapi.com');assert.equal(init?.method??'GET',url.pathname.endsWith('/search')?'POST':'GET');assert.equal(init?.redirect,'error');requests.push(url.pathname);await duringRead?.(url.pathname);
     if(url.pathname.includes('/contacts/'))return Response.json({id:'42',properties:{firstname:'Synthetic'},associations:associated?{notes:{results:[{id:'7'}]}}:{}});
-    return Response.json({id:'7',properties:{hs_note_body:'SYNTHETIC_PRIVATE_ACTIVITY'}});
+    return Response.json({results:[{id:'7',properties:{hs_createdate:'2026-10-29T07:00:00Z',hs_note_body:'SYNTHETIC_PRIVATE_ACTIVITY'}}]});
   };
   const oauth=new TeamOAuth(repo,null,fetcher,key);
   app.setErrorHandler((error,request,reply)=>reply.code(error instanceof AppError?error.status:500).send({error:error instanceof AppError?error.message:'Unexpected test failure'}));

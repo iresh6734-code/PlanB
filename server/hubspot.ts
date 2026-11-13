@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { setTimeout as delay } from 'node:timers/promises';
 import { entityNames, MAX_RECORDS, type ConnectionMode, type CrmSnapshot, type Entity, type EntityName, type Field, type FieldValue, type Link, type Rule } from '../shared/model.js';
 import { AppError } from './store.js';
 import { readonlyFetch } from './connection.js';
@@ -38,6 +39,7 @@ export async function importHubspot(options: HubspotOptions, fetcher: typeof fet
   async function request<T>(currentPath: string, legacyPath?: string, body?: unknown, partialAssociations=false): Promise<T> {
     const get = async (path: string) => {
       for (let attempt = 0; attempt < 3; attempt++) {
+        options.signal?.throwIfAborted();
         let response: Response;
         try {
           response = await fetcher('https://api.hubapi.com' + path, {
@@ -46,23 +48,31 @@ export async function importHubspot(options: HubspotOptions, fetcher: typeof fet
             ...(body === undefined ? {} : { body: JSON.stringify(body) }),
             signal: options.signal ? AbortSignal.any([options.signal,AbortSignal.timeout(30000)]) : AbortSignal.timeout(30000), redirect: 'error'
           });
-        } catch { throw new AppError(502, 'No se pudo conectar con HubSpot. La captura anterior se conserva.'); }
+        } catch { options.signal?.throwIfAborted(); throw new AppError(502, 'No se pudo conectar con HubSpot. La captura anterior se conserva.'); }
+        if (options.signal?.aborted) {
+          if (response.body) void response.body.cancel().catch(() => undefined);
+          options.signal.throwIfAborted();
+        }
         if ((response.status === 429 || response.status >= 500) && attempt < 2) {
           const seconds = Math.min(Math.max(Number(response.headers.get('retry-after')) || 1, 1), 5);
-          await new Promise(resolve => setTimeout(resolve, seconds * 1000));options.signal?.throwIfAborted(); continue;
+          if (response.body) void response.body.cancel().catch(() => undefined);
+          await delay(seconds * 1000, undefined, { signal: options.signal });
+          options.signal?.throwIfAborted(); continue;
         }
         return response;
       }
       throw new AppError(502, 'HubSpot no completó la lectura.');
     };
     let response = await get(currentPath);
+    options.signal?.throwIfAborted();
     if (response.status === 404 && legacyPath) response = await get(legacyPath);
     if (response.status === 401) throw new AppError(502, 'HubSpot no aceptó la credencial.');
     if (response.status === 403) throw new AppError(403, 'Faltan permisos de lectura en HubSpot. Revisa los objetos, sus propiedades y external-settings-access.');
     if (!response.ok || response.status === 207&&!partialAssociations) throw new AppError(502, 'HubSpot devolvió una lectura incompleta (' + response.status + ').');
     let rawData: unknown;
     try { rawData = await response.json(); }
-    catch { throw new AppError(502, 'HubSpot devolvió una respuesta no válida. La captura anterior se conserva.'); }
+    catch { options.signal?.throwIfAborted(); throw new AppError(502, 'HubSpot devolvió una respuesta no válida. La captura anterior se conserva.'); }
+    options.signal?.throwIfAborted();
     if (!rawData || typeof rawData !== 'object' || Array.isArray(rawData)) {
       throw new AppError(502, 'HubSpot devolvió una respuesta no válida. La captura anterior se conserva.');
     }

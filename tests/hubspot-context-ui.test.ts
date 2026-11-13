@@ -32,7 +32,7 @@ function harness(){
   const text=(node:any):string=>Array.isArray(node)?node.map(child=>text(child)).join(''):typeof node==='string'||typeof node==='number'?String(node):node?.props?text(node.props.children):'';
   const button=(label:string)=>{const result=nodes(tree).find(node=>node.type==='button'&&text(node)===label);assert.ok(result,'Button missing: '+label);return result;};
   render();render();
-  return {render,requests,text:()=>text(tree),button,writes:()=>writes,unmount:()=>{for(const slot of slots)if(slot?.cleanup)slot.cleanup();}};
+  return {render,requests,text:()=>text(tree),articles:()=>nodes(tree).filter(node=>node.type==='article').map(node=>text(node)),button,writes:()=>writes,unmount:()=>{for(const slot of slots)if(slot?.cleanup)slot.cleanup();}};
 }
 const compare='Comparar últimas capturas',read='Leer ficha y actividad HubSpot';
 const diff=(added:number)=>({available:true,counts:{added,changed:2,removed:3,linksAdded:4,linksRemoved:5}});
@@ -61,4 +61,20 @@ test('comparación: una lectura más nueva en el mismo contexto descarta el resu
 });
 test('comparación: resultado o error tras desmontar no escribe estado',async()=>{
   for(const fail of [false,true]){const h=harness();h.button(compare).props.onClick();h.unmount();const before=h.writes();if(fail)h.requests[0].reject(new Error('UNMOUNTED_FAILURE'));else h.requests[0].resolve(diff(99));await settle();assert.equal(h.writes(),before);}
+});
+
+test('actividad: fecha futura de tarea es vencimiento y otras actividades muestran fecha CRM',async()=>{
+  const h=harness();h.button(read).props.onClick();h.requests[0].resolve({...context,timeline:['tasks','notes','calls','emails','meetings'].map(kind=>({id:kind,kind,at:'2027-01-01T09:00:00.000Z',title:'TITLE',body:'BODY'}))});await settle();h.render();
+  const articles=h.articles();assert.match(articles[0],/Vencimiento:/);assert.match(articles[0],/Tarea/);assert.ok(!articles[0].includes('Fecha CRM:'));
+  for(const article of articles.slice(1)){assert.match(article,/Fecha CRM:/);assert.ok(!article.includes('Vencimiento:'));assert.doesNotMatch(article,/Enviado|Realizada|Completada/);}
+  assert.equal(h.requests.length,1,'renderizar no inicia lecturas nuevas');
+});
+test('actividad: fechas ausentes o inválidas se explican sin Invalid Date',async()=>{
+  const h=harness();h.button(read).props.onClick();h.requests[0].resolve({...context,timeline:[{id:'due',kind:'tasks',at:null,title:'TASK',body:''},{id:'bad',kind:'notes',at:'bad-date',title:'NOTE',body:''}]});await settle();h.render();
+  const articles=h.articles();assert.match(articles[0],/Vencimiento: Sin fecha/);assert.match(articles[1],/Fecha CRM: Sin fecha/);assert.doesNotMatch(h.text(),/Invalid Date/);
+});
+test('actividad: horas siguen la zona local del navegador sin fijar Madrid',async()=>{
+  const previous=process.env.TZ;
+  try{for(const [zone,hour] of [['UTC','12:00:00'],['America/New_York','8:00:00']]){process.env.TZ=zone;const h=harness();h.button(read).props.onClick();h.requests[0].resolve({...context,timeline:[{id:'due',kind:'tasks',at:'2026-10-29T12:00:00.000Z',title:'TASK',body:''}]});await settle();h.render();assert.ok(h.articles()[0].includes('Vencimiento: 29/10/2026, '+hour+' · Tarea'),zone+': '+h.text());}}
+  finally{if(previous===undefined)delete process.env.TZ;else process.env.TZ=previous;}
 });

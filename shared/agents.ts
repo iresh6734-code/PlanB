@@ -18,6 +18,7 @@ export interface SimulationArtifact { key:string; proposalId:string; action:Agen
 export interface AgentState { runs:AgentRun[]; proposals:ActionProposal[]; artifacts:SimulationArtifact[]; }
 export interface TodayStatus {
   available:boolean; date:string; openDeals:number; overdueTasks:number; dueToday:number;
+  listTotals?:{opportunities:number;tasks:number};
   opportunities:{id:string;label:string;reason:string;contactId:string|null}[];
   tasks:{id:string;label:string;dueDate:string;overdue:boolean}[];
 }

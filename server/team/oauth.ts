@@ -7,6 +7,7 @@ import { importHubspot } from '../hubspot.js';
 import type { TeamPrincipal } from '../../shared/team.js';
 import type { Sql } from './database.js';
 import { digest, TeamRepository } from './repository.js';
+import { normalizeHubspotActivityTime, compareHubspotActivityTime } from './hubspot-activity-time.js';
 const scopes=['oauth','crm.objects.contacts.read','crm.objects.companies.read','crm.objects.deals.read','crm.schemas.contacts.read','crm.schemas.companies.read','crm.schemas.deals.read'];
 const tokenSchema=z.object({access_token:z.string().min(1),refresh_token:z.string().min(1),expires_in:z.number().positive(),hub_id:z.union([z.number(),z.string()]).optional(),scopes:z.array(z.string()).optional()});
 type ContextSource={accountId:string;mode:'test'|'production_readonly'};
@@ -136,7 +137,7 @@ export class TeamOAuth {
     const policy=z.object({timeoutMs:z.number().int().min(1).max(30000).default(30000),requestTimeoutMs:z.number().int().min(1).max(12000).default(12000)}).parse({timeoutMs:options.timeoutMs,requestTimeoutMs:options.requestTimeoutMs});
     const callerSignal=options.signal,cancelled=()=>new AppError(409,'La lectura de la ficha se ha cancelado.');
     if(callerSignal?.aborted)throw cancelled();
-    if(!/^\d+$/.test(contactId))throw new AppError(422,'Esta ficha no tiene un ID remoto de HubSpot.');const connection=await this.access(tenant,source),safe=readonlyFetch(this.fetcher);
+    if(!/^\d{1,100}$/.test(contactId))throw new AppError(422,'Esta ficha no tiene un ID remoto de HubSpot.');const connection=await this.access(tenant,source),safe=readonlyFetch(this.fetcher);
     // One deadline for the read phase, including identity checks and JSON bodies. OAuth access is separate.
     const budget=new AbortController(),deadline=setTimeout(()=>budget.abort(new AppError(504,'HubSpot agotó el tiempo total de lectura de la ficha. Vuelve a intentarlo.')),policy.timeoutMs);
     const cancel=()=>budget.abort(cancelled());callerSignal?.addEventListener('abort',cancel,{once:true});if(callerSignal?.aborted)cancel();
@@ -157,22 +158,85 @@ export class TeamOAuth {
       if(!row||row.status!=='readonly'||row.account_id!==connection.accountId||row.account_type!==connection.identity.accountType||row.verified_at!==connection.identity.verifiedAt)throw new AppError(409,'La conexión cambió mientras se leía la ficha. Vuelve a abrirla.');
     });
     const notFound=Symbol('not-found');
-    const get=(path:string,optional=false)=>bounded(async signal=>{await assertCurrent();signal.throwIfAborted();const response=await safe('https://api.hubapi.com'+path,{headers:{Authorization:'Bearer '+connection.token},signal});signal.throwIfAborted();if(optional&&response.status===404)return notFound;if(!response.ok)throw new AppError(response.status===403?403:502,'No se pudo leer la ficha. Revisa los permisos de esta conexión.');const value=await response.json();signal.throwIfAborted();if(!value||typeof value!=='object'||Array.isArray(value))throw new AppError(502,'HubSpot no confirmó una ficha válida.');return value;},policy.requestTimeoutMs);
-    const contact=await get('/crm/v3/objects/contacts/'+contactId+'?properties=firstname,lastname,email,hubspot_owner_id&associations=notes,tasks,meetings,calls,emails');
+    const pause=(ms:number,signal:AbortSignal)=>new Promise<void>((resolve,reject)=>{
+      const abort=()=>{clearTimeout(timer);signal.removeEventListener('abort',abort);reject(signal.reason);};
+      const timer=setTimeout(()=>{signal.removeEventListener('abort',abort);resolve();},ms);
+      signal.addEventListener('abort',abort,{once:true});if(signal.aborted)abort();
+    });
+    const retryDelay=(header:string|null)=>{
+      const value=header?.trim()??'';
+      if(/^\d+$/.test(value))return Number(value)*1000;
+      // HTTP dates begin with a weekday; do not parse negative/fractional numbers as dates.
+      const at=/^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)(?:[a-z]*,|,| )/.test(value)?Date.parse(value):NaN;
+      return Number.isFinite(at)?Math.max(0,at-Date.now()):1000;
+    };
+    let logicalReads=0,physicalAttempts=0;
+    const request=(path:string,body:Record<string,unknown>|null=null,optional=false)=>{
+      if(++logicalReads>7)throw new AppError(502,'La ficha supera el presupuesto de lecturas permitido.');
+      // A retry reuses these exact bytes, the same deadline and the same connection identity.
+      const init:RequestInit={headers:{Authorization:'Bearer '+connection.token,...(body?{'Content-Type':'application/json'}:{})},...(body?{method:'POST',body:JSON.stringify(body)}:{})};
+      return bounded(async signal=>{
+      for(let attempt=0;attempt<2;attempt++){
+        await assertCurrent();signal.throwIfAborted();
+        if(++physicalAttempts>14)throw new AppError(502,'La ficha supera el presupuesto de intentos permitido.');
+        const response=await safe('https://api.hubapi.com'+path,{...init,signal});signal.throwIfAborted();
+        await assertCurrent();signal.throwIfAborted();
+        if(response.status===429){
+          // Release a response we will not parse. Cancellation failure must not hide the rate limit.
+          try{void response.body?.cancel().catch(()=>{});}catch{}
+        }
+        if(response.status===429&&attempt===0){
+          const delay=retryDelay(response.headers.get('Retry-After'));
+          if(!Number.isFinite(delay)||delay>5000)throw new AppError(502,'HubSpot ha limitado las lecturas. Vuelve a intentarlo más tarde.');
+          // The wait and second attempt share this request's original timer and the global deadline.
+          await pause(delay,signal);continue;
+        }
+        if(optional&&response.status===404)return notFound;
+        if(!response.ok)throw new AppError(response.status===403?403:502,'No se pudo leer la ficha. Revisa los permisos de esta conexión.');
+        const value=await response.json();signal.throwIfAborted();await assertCurrent();signal.throwIfAborted();if(!value||typeof value!=='object'||Array.isArray(value))throw new AppError(502,'HubSpot no confirmó una ficha válida.');return value;
+      }
+      throw new AppError(502,'HubSpot no confirmó la lectura de la ficha.');
+      },policy.requestTimeoutMs);
+    };
+    const invalid=()=>new AppError(502,'HubSpot no confirmó una ficha o búsqueda válida.');
+    const isObject=(value:unknown):value is Record<string,any>=>!!value&&typeof value==='object'&&!Array.isArray(value);
+    const isId=(value:unknown):value is string=>typeof value==='string'&&/^[A-Za-z0-9_-]{1,100}$/.test(value);
+    const contact=await request('/crm/v3/objects/contacts/'+contactId+'?properties=firstname,lastname,email,hubspot_owner_id&associations=notes,tasks,meetings,calls,emails');
+    if(contact.id!==contactId||!isObject(contact.properties)||contact.associations!==undefined&&!isObject(contact.associations))throw invalid();
     const timeline:{kind:string;id:string;at:string|null;title:string;body:string}[]=[];
     const fields:Record<string,string>={notes:'hs_note_body,hs_timestamp',tasks:'hs_task_subject,hs_task_body,hs_task_status,hs_task_priority,hs_task_type,hs_timestamp,hubspot_owner_id',meetings:'hs_meeting_title,hs_meeting_body,hs_timestamp',calls:'hs_call_title,hs_call_body,hs_timestamp',emails:'hs_email_subject,hs_email_text,hs_timestamp'};
-    const selected:{kind:string;properties:string;id:string}[]=[];
-    // Give every available type one slot before spending the remainder on second details.
-    for(let index=0;index<2;index++)for(const [kind,properties] of Object.entries(fields)){
-      const item=contact.associations?.[kind]?.results?.[index];
-      if(item&&selected.length<8)selected.push({kind,properties,id:item.id});
+    const content:Record<string,{title:string|null;body:string}>={notes:{title:null,body:'hs_note_body'},tasks:{title:'hs_task_subject',body:'hs_task_body'},meetings:{title:'hs_meeting_title',body:'hs_meeting_body'},calls:{title:'hs_call_title',body:'hs_call_body'},emails:{title:'hs_email_subject',body:'hs_email_text'}};
+    const available=new Map<string,number>(),quotas=new Map<string,number>();
+    for(const kind of Object.keys(fields)){
+      const association=contact.associations?.[kind];
+      if(association===undefined){available.set(kind,0);continue;}
+      if(!isObject(association)||!Array.isArray(association.results))throw invalid();
+      const ids=association.results.slice(0,2).map((item:unknown)=>{if(!isObject(item)||!isId(item.id))throw invalid();return item.id;});
+      if(new Set(ids).size!==ids.length)throw invalid();
+      available.set(kind,ids.length);
     }
-    let omitted=0;
-    for(const {kind,properties,id} of selected){const object=await get('/crm/v3/objects/'+kind+'/'+encodeURIComponent(id)+'?properties='+properties,true);if(object===notFound){omitted++;continue;}const p=object.properties??{};timeline.push({kind,id:object.id,at:p.hs_timestamp??null,title:p.hs_task_subject??p.hs_meeting_title??p.hs_call_title??p.hs_email_subject??'Nota',body:String(p.hs_note_body??p.hs_task_body??p.hs_meeting_body??p.hs_call_body??p.hs_email_text??'').replace(/<[^>]*>/g,'').slice(0,4000)});}
-    const ownerId=contact.properties?.hubspot_owner_id,ownerRequested=!!ownerId&&connection.scopes.includes('crm.objects.owners.read'),ownerResult=ownerRequested?await get('/crm/v3/owners/'+encodeURIComponent(ownerId),true):null,owner=ownerResult===notFound?null:ownerResult;
+    // Fix the diverse quotas before reading the index; sparse results never trigger refills or paging.
+    let allocated=0;
+    for(let round=0;round<2;round++)for(const kind of Object.keys(fields))if((available.get(kind)??0)>round&&allocated<8){quotas.set(kind,(quotas.get(kind)??0)+1);allocated++;}
+    for(const [kind,limit] of quotas){
+      const result=await request('/crm/objects/2026-09/'+kind+'/search',{filterGroups:[{filters:[{propertyName:'associations.contact',operator:'EQ',value:contactId}]}],sorts:['-hs_createdate'],properties:['hs_createdate',...fields[kind].split(',')],limit});
+      if(!Array.isArray(result.results)||result.results.length>limit||result.total!==undefined&&(!Number.isSafeInteger(result.total)||result.total<result.results.length))throw invalid();
+      const seen=new Set<string>();let previousCreation=Infinity;
+      for(const object of result.results){
+        if(!isObject(object)||!isId(object.id)||seen.has(object.id)||object.archived!==undefined&&object.archived!==false||!isObject(object.properties))throw invalid();
+        seen.add(object.id);const p=object.properties,created=normalizeHubspotActivityTime(p.hs_createdate);
+        if(created===null||Date.parse(created)>previousCreation)throw invalid();previousCreation=Date.parse(created);
+        for(const field of fields[kind].split(','))if(field!=='hs_timestamp'&&p[field]!==undefined&&p[field]!==null&&typeof p[field]!=='string')throw invalid();
+        const shown=content[kind];timeline.push({kind,id:object.id,at:normalizeHubspotActivityTime(p.hs_timestamp),title:(shown.title?p[shown.title]:null)??'Nota',body:(p[shown.body]??'').replace(/<[^>]*>/g,'').slice(0,4000)});
+      }
+    }
+    const ownerId=contact.properties.hubspot_owner_id;
+    if(ownerId!==undefined&&ownerId!==null&&ownerId!==''&&!isId(ownerId))throw invalid();
+    const ownerRequested=!!ownerId&&connection.scopes.includes('crm.objects.owners.read'),ownerResult=ownerRequested?await request('/crm/v3/owners/'+encodeURIComponent(ownerId),null,true):null,owner=ownerResult===notFound?null:ownerResult;
+    if(owner&&(String(owner.id)!==ownerId||['firstName','lastName'].some(field=>owner[field]!==undefined&&owner[field]!==null&&typeof owner[field]!=='string')))throw invalid();
     await bounded(()=>assertCurrent());
-    const unavailable=(omitted?' '+(omitted===1?'1 actividad ya no está disponible.':omitted+' actividades ya no están disponibles.'):'')+(ownerResult===notFound?' El propietario asociado ya no está disponible.':'');
-    return {contactId,owner:owner?{name:[owner.firstName,owner.lastName].filter(Boolean).join(' '),id:String(owner.id)}:null,ownerPermission:connection.scopes.includes('crm.objects.owners.read'),timeline:timeline.sort((a,b)=>(b.at??'').localeCompare(a.at??'')),partial:true,description:'Muestra acotada: hasta dos actividades por tipo y ocho detalles, dando una primera plaza a cada tipo disponible. La selección de asociaciones no garantiza incluir las actividades más recientes. No sustituye el historial completo de HubSpot.'+unavailable};
+    const unavailable=ownerResult===notFound?' El propietario asociado ya no está disponible.':'';
+    return {contactId,owner:owner?{name:[owner.firstName,owner.lastName].filter(Boolean).join(' '),id:String(owner.id)}:null,ownerPermission:connection.scopes.includes('crm.objects.owners.read'),timeline:timeline.sort(compareHubspotActivityTime),partial:true,description:'Muestra acotada: hasta dos actividades por tipo y ocho objetos, dando una primera plaza a cada tipo observado en las asociaciones del contacto. Selección por creación del registro CRM en el índice de búsqueda; se muestran ordenadas por la fecha de actividad o vencimiento de tarea. La indexación puede demorarse, los archivados no se incluyen y los campos pueden no estar disponibles. Una búsqueda vacía no demuestra ausencia de historial. No garantiza la última interacción ni sustituye el historial completo de HubSpot.'+unavailable};
     }finally{clearTimeout(deadline);callerSignal?.removeEventListener('abort',cancel);}
   }
 

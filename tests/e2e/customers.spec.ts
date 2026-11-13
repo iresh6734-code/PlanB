@@ -1,5 +1,7 @@
 import { test,expect } from '@playwright/test';
 import { resolve } from 'node:path';
+// El selector de clientes es un combobox accesible: se abre y se elige la opción por el ID del cliente (no hay select nativo).
+const pickCustomer=async(page:import('@playwright/test').Page,label:string,id:string)=>{await page.getByRole('combobox',{name:label,exact:true}).click();await page.locator('[role="option"][data-contact-id="'+id+'"]').click();};
 const team='http://127.0.0.1:4341',output=resolve(process.env.PLANB_EVIDENCE_DIR||'test-results');
 
 test('ficha comercial: acción interna persistente, cierre y borrador sin acciones externas',async({page})=>{
@@ -32,7 +34,7 @@ test('piloto personal: aviso y aprobación bloqueada para destinatario ajeno en 
   // Contract fixture for the personal policy; no real accounts or Google calls.
   await page.route('**/v6/commercial',async route=>{const response=await route.fetch();const data=await response.json();data.ownAccountOnly=true;data.connection={account:'propio@ficticio.example',revision:'fixture'};await route.fulfill({response,json:data});});
   await page.goto(team+'/team?view=commercial');await expect(page.getByText('Piloto personal.',{exact:true})).toBeVisible();
-  await page.getByLabel('Cliente del seguimiento',{exact:true}).selectOption('contact-1');page.once('dialog',dialog=>void dialog.accept());await page.getByRole('button',{name:'Preparar seguimiento',exact:true}).click();
+  await pickCustomer(page,'Cliente del seguimiento','contact-1');page.once('dialog',dialog=>void dialog.accept());await page.getByRole('button',{name:'Preparar seguimiento',exact:true}).click();
   const proposal=page.locator('.commercial-proposal[open]');await expect(proposal.getByRole('alert')).toContainText('propia cuenta');
   await proposal.getByLabel('He revisado el destinatario, el mensaje, las acciones y el horario.',{exact:true}).check();await expect(proposal.getByRole('button',{name:'Aprobar seguimiento',exact:true})).toBeDisabled();
   await page.screenshot({path:resolve(output,'piloto-destinatario-bloqueado.png'),fullPage:true});

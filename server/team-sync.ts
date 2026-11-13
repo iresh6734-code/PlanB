@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { FastifyInstance } from 'fastify';
 import { AppSpecSchema, RecordSchema, SnapshotSchema, validateRecord, type AppSpec, type CrmRecord } from '../shared/model.js';
@@ -8,9 +8,11 @@ interface Replica {url:string;token:string;tenantId:string;spec:AppSpec;records:
 const bootstrapSchema=z.object({tenantId:z.string().uuid(),demo:z.boolean(),blueprint:z.object({snapshot:SnapshotSchema,spec:AppSpecSchema}),records:z.array(z.object({entity:z.string(),id:z.string(),version:z.number().int().positive(),value:RecordSchema})).max(10000),cursor:z.number().int().nonnegative()});
 export class TeamSyncClient {
   private busy=false;
+  private linking=false;
   constructor(private store:Store,private allowedOrigin?:string,private demo=false,private fetcher:typeof fetch=fetch){}
   private get(){return this.store.get<Replica|null>('teamReplica',null);}
   private save(replica:Replica|null){this.store.set('teamReplica',replica);}
+  private revision(state:Replica){return createHash('sha256').update(JSON.stringify({url:state.url,tenant:state.tenantId,cursor:state.cursor,records:state.records,outbox:state.outbox,conflicts:state.conflicts})).digest('hex');}
   private available(){if(this.store.get('continuitySession',null))throw new AppError(409,'Cierra la sesión de continuidad antes de intercambiar datos con el equipo.');}
   private target(raw:string){const url=new URL(raw);if(!this.allowedOrigin||url.origin!==this.allowedOrigin||url.username||url.password||url.search||url.hash)throw new AppError(403,'El origen del equipo debe coincidir con el configurado para esta instalación.');
     if(url.protocol!=='https:'&&!(this.demo&&url.protocol==='http:'&&url.hostname==='127.0.0.1'))throw new AppError(403,'La vinculación requiere HTTPS.');return url.origin;
@@ -20,21 +22,29 @@ export class TeamSyncClient {
     const text=await response.text();if(text.length>20_000_000)throw new AppError(413,'Respuesta de sincronización demasiado grande.');return JSON.parse(text);
   }
   status(){const state=this.get();if(!state)return {linked:false,configured:!!this.allowedOrigin,origin:this.allowedOrigin??null,records:[],pending:0,conflicts:[],lastSync:null,error:null};
-    const {token,outbox,...safe}=state;const projected=structuredClone(state.records.slice(0,100));for(const row of projected)for(const operation of outbox)if(operation.entity===row.entity&&operation.recordId===row.id)Object.assign(row.value.values,operation.values);
-    return {...safe,linked:true,configured:true,pending:outbox.length,pendingOperations:outbox,records:projected};
+    const {token,outbox,...safe}=state;const projected=structuredClone(state.records),byIdentity=new Map(projected.map(row=>[JSON.stringify([row.entity,row.id]),row]));
+    for(const operation of outbox){const row=byIdentity.get(JSON.stringify([operation.entity,operation.recordId]));if(row)Object.assign(row.value.values,operation.values);}
+    return {...safe,linked:true,configured:true,pending:outbox.length,pendingOperations:outbox,records:projected,totalRecords:state.records.length,recordsComplete:true,revision:this.revision(state)};
   }
   async link(url:string,token:string,expectedTenantId:string){
     this.available();
+    if(this.linking||this.busy)throw new AppError(409,'Ya hay un intercambio de equipo en curso.');
     if(!this.store.get('password',null))throw new AppError(409,'Protege primero esta copia local antes de guardar una vinculación.');
     if(this.get())throw new AppError(409,'Esta copia ya tiene una vinculación. Revísala antes de cambiar de empresa.');
+    this.linking=true;
+    try{
     const data=bootstrapSchema.parse(await this.request(url,token,'/api/team/device/bootstrap'));
     if(data.tenantId!==expectedTenantId)throw new AppError(403,'La clave pertenece a otra empresa.');
     if(!data.blueprint.snapshot.source.isTestData&&this.demo)throw new AppError(403,'La demo local solo admite datos ficticios.');
     if(data.records.some(record=>record.entity!==record.value.entity||record.id!==record.value.id))throw new AppError(422,'La réplica contiene registros incoherentes.');
+    if(new Set(data.records.map(record=>JSON.stringify([record.entity,record.id]))).size!==data.records.length)throw new AppError(422,'La réplica contiene fichas duplicadas.');
+    this.available();if(this.get())throw new AppError(409,'La copia ya tiene una vinculación; actualiza su estado.');
     this.save({url:this.target(url),token,tenantId:data.tenantId,spec:data.blueprint.spec,records:data.records,outbox:[],conflicts:[],cursor:data.cursor,lastSync:new Date().toISOString(),error:null});return this.status();
+    }finally{this.linking=false;}
   }
-  queue(entity:CrmRecord['entity'],id:string,values:CrmRecord['values']){
+  queue(entity:CrmRecord['entity'],id:string,values:CrmRecord['values'],expectedRevision?:string){
     const state=this.get();if(!state)throw new AppError(409,'Vincula una copia de equipo.');if(state.outbox.length>=100)throw new AppError(409,'Sincroniza los cien cambios pendientes antes de añadir más.');
+    if(expectedRevision!==undefined&&expectedRevision!==this.revision(state))throw new AppError(409,'La réplica cambió desde que abriste la ficha. Actualiza la copia y revisa el teléfono antes de guardarlo.');
     const row=state.records.find(r=>r.entity===entity&&r.id===id);if(!row)throw new AppError(404,'Registro no encontrado en esta copia.');
     const pending=state.outbox.filter(op=>op.entity===entity&&op.recordId===id),previous=structuredClone(row.value) as CrmRecord;
     for(const op of pending)Object.assign(previous.values,op.values);const record={...previous,values:{...previous.values,...values}};
@@ -59,13 +69,14 @@ export class TeamSyncClient {
     }catch{const state=this.get();if(state){state.error='La sincronización no terminó. Se conservan la copia y los cambios pendientes.';this.save(state);}throw new AppError(502,'No se completó la sincronización. Comprueba la conexión o la revocación del dispositivo.');}
     finally{this.busy=false;}
   }
-  unlink(){const state=this.get();if(this.busy||state?.outbox.length)throw new AppError(409,'Resuelve la sincronización pendiente antes de desvincular.');this.save(null);return {unlinked:true};}
+  unlink(){const state=this.get();if(this.linking||this.busy||state?.outbox.length)throw new AppError(409,'Resuelve la sincronización pendiente antes de desvincular.');this.save(null);return {unlinked:true};}
 }
-export function registerTeamSync(app:FastifyInstance,store:Store,origin?:string,demo=false){const client=new TeamSyncClient(store,origin,demo);
+export function registerTeamSync(app:FastifyInstance,store:Store,origin?:string,demo=false,fetcher:typeof fetch=fetch){const client=new TeamSyncClient(store,origin,demo,fetcher);
   app.get('/api/v6/workspace',async()=>({origin:origin??null}));
   app.get('/api/v5/team-sync',async()=>client.status());
   app.post('/api/v5/team-sync/link',async request=>{const body=z.object({url:z.string().url(),token:z.string().regex(/^[a-f0-9]{64}$/),tenantId:z.string().uuid()}).strict().parse(request.body);return client.link(body.url,body.token,body.tenantId);});
   app.post('/api/v5/team-sync/edit',async request=>{const body=z.object({entity:z.enum(['contacts','companies','deals','tasks']),id:z.string(),values:SyncOperationSchema.shape.values}).strict().parse(request.body);return client.queue(body.entity,body.id,body.values);});
+  app.post('/api/v6/team-sync/edit',async request=>{const body=z.object({entity:z.enum(['contacts','companies','deals','tasks']),id:z.string().min(1).max(100),values:SyncOperationSchema.shape.values,revision:z.string().regex(/^[a-f0-9]{64}$/)}).strict().parse(request.body);return client.queue(body.entity,body.id,body.values,body.revision);});
   app.post('/api/v5/team-sync/run',async request=>{z.object({reviewed:z.literal(true)}).strict().parse(request.body);return client.synchronize();});
   app.post('/api/v5/team-sync/unlink',async request=>{z.object({reviewed:z.literal(true)}).strict().parse(request.body);return client.unlink();});
 }

@@ -61,7 +61,7 @@ export class SalesAgents {
   }
   today():TodayStatus {
     const date=madridDate(this.clock());
-    if(!this.available())return {available:false,date,openDeals:0,overdueTasks:0,dueToday:0,opportunities:[],tasks:[]};
+    if(!this.available())return {available:false,date,openDeals:0,overdueTasks:0,dueToday:0,opportunities:[],tasks:[],listTotals:{opportunities:0,tasks:0}};
     const spec=this.store.spec!,records=this.store.records();
     const tasks=records.filter(r=>r.entity==='tasks'&&!completed(r,spec));
     const deals=records.filter(r=>r.entity==='deals'&&!closed(r,spec));
@@ -73,9 +73,10 @@ export class SalesAgents {
     }
     const opportunities=deals.filter(deal=>{
       const contact=reference(deal,'contacts',spec);return !coveredDeals.has(deal.id)&&!(contact&&coveredContacts.has(contact));
-    }).slice(0,20).map(deal=>({id:deal.id,label:label(deal,spec),contactId:reference(deal,'contacts',spec),reason:'No tiene una tarea abierta con fecha en los próximos siete días.'}));
+    }).map(deal=>({id:deal.id,label:label(deal,spec),contactId:reference(deal,'contacts',spec),reason:'No tiene una tarea abierta con fecha en los próximos siete días.'}));
+    const commitments=taskRows.filter(t=>t.overdue||t.dueDate===date).sort((a,b)=>a.dueDate.localeCompare(b.dueDate)||a.id.localeCompare(b.id));
     return {available:true,date,openDeals:deals.length,overdueTasks:taskRows.filter(t=>t.overdue).length,dueToday:taskRows.filter(t=>t.dueDate===date).length,
-      opportunities,tasks:taskRows.filter(t=>t.overdue||t.dueDate===date).sort((a,b)=>a.dueDate.localeCompare(b.dueDate)).slice(0,20)};
+      opportunities,tasks:commitments,listTotals:{opportunities:opportunities.length,tasks:commitments.length}};
   }
   run():AgentRun {
     this.assertAvailable();const state=this.state();
@@ -89,7 +90,7 @@ export class SalesAgents {
       step();const today=this.today();step();const spec=this.store.spec!;
       const proposals:ActionProposal[]=[];
       for(const item of today.opportunities){
-        if(state.proposals.length+proposals.length>=100)break;
+        if(proposals.length>=20||state.proposals.length+proposals.length>=100)break;
         if(state.proposals.some(p=>p.dealId===item.id&&p.revision===revision&&p.status!=='rejected'))continue;
         const contact=item.contactId?this.store.record('contacts',item.contactId):null;
         const email=contact?String(contact.values.email??''):'';

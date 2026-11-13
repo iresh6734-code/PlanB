@@ -1,60 +1,114 @@
-import { useCallback, useEffect, useState } from 'react';
-import { ArrowRight, Bot, Building2, CalendarDays, CheckCircle2, ChevronDown, ChevronRight, Circle, Database, Download, GitBranch, LayoutDashboard, ListTodo, PlugZap, Plus, Search, Settings2, ShieldCheck, Unplug, Users, X } from 'lucide-react';
-import type { AppState, CrmRecord, EntityName } from '../shared/model.js';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { CheckCircle2, Circle, ShieldCheck, X } from 'lucide-react';
+import { validateRecord, type AppState, type CrmRecord, type EntityName } from '../shared/model.js';
 import { api, post } from './api.js';
-import { Brand, Modal, RecordDrawer, Spinner, displayValue, recordName } from './components.js';
-import { Settings } from './Settings.js';
-import { Preparation } from './Preparation.js';
-import { ContinuityHome } from './ContinuityHome.js';
-import { ChangesView } from './ChangesView.js';
-import { PortableExport } from './PortableExport.js';
+import { Brand, Modal, RecordDrawer, Spinner, recordName } from './components.js';
 import { Protection } from './Protection.js';
-import { APP_VERSION } from '../shared/version.js';
-import { SalesWorkspace } from './SalesWorkspace.js';
-import { TeamSync } from './TeamSync.js';
+import { type PageId, rememberPlace, storedEntity, storedPage } from './app-shell/session.js';
+import { useShortcuts } from './app-shell/useShortcuts.js';
+import { ShortcutsHelp } from './app-shell/ShortcutsHelp.js';
+import { RecordsPage } from './app-shell/RecordsPage.js';
+import { Sidebar } from './app-shell/Sidebar.js';
+import { TopBar } from './app-shell/TopBar.js';
+import { RelatedPanel } from './app-shell/RelatedPanel.js';
+import { RecordTimeline } from './app-shell/RecordTimeline.js';
+import { CommandPalette } from './app-shell/CommandPalette.js';
+import { FocusRun } from './app-shell/FocusRun.js';
+import { MobileNav } from './app-shell/MobileNav.js';
+import type { Command } from './app-shell/commands.js';
+import { toggleTheme } from './app-shell/theme.js';
+import { LocalOperations, type OpenTaskRequest } from './LocalOperations.js';
+import { OutcomesLockNotice, TaskOutcomesHost, TaskOutcomesSurface, addLockSummary, type TaskOutcomesControl } from './TaskOutcomesHost.js';
+import { WorkspaceSearch } from './WorkspaceSearch.js';
+import { RehearsalTodayEntry } from './RehearsalTodayEntry.js';
+import { HomeOverview } from './HomeOverview.js';
+// Apartados que se descargan al visitarlos por primera vez (misma interfaz de uso que los originales).
+import { ChangesView, ContinuityHome, DateCheck, DecisionReview, LocalIntegrations, OperationalRehearsal, PortableExport, Preparation, RadarHost, Settings, TeamSync } from './app-shell/lazy-pages.js';
+import type { WorkspaceSearchContext } from '../shared/workspace-search.js';
 
-const navigation = [
-  { id: 'contacts', label: 'Clientes', icon: Users },
-  { id: 'companies', label: 'Empresas', icon: Building2 },
-  { id: 'deals', label: 'Oportunidades', icon: GitBranch },
-  { id: 'tasks', label: 'Tareas', icon: ListTodo }
-] as const;
-const singular: Record<EntityName, string> = { contacts: 'Nuevo cliente', companies: 'Nueva empresa', deals: 'Nueva oportunidad', tasks: 'Nueva tarea' };
+type LocalAppState = AppState & { workspaceSearchContext?: WorkspaceSearchContext | null };
+
+class SupersededStateRead extends Error {
+  constructor() { super('Otra consulta sustituyó esta lectura. Reintenta la actualización.'); }
+}
+
 export default function App() {
-  const [state, setState] = useState<AppState | null>(null);
+  const [state, setState] = useState<LocalAppState | null>(null);
   const [records, setRecords] = useState<CrmRecord[]>([]);
-  const [page, setPage] = useState<'continuity' | 'changes' | 'prepare' | 'workspace' | 'export' | 'today' | 'agents' | 'integrations' | 'team-sync'>('continuity');
-  const [entityName, setEntity] = useState<EntityName>('contacts');
-  const [workOpen,setWorkOpen]=useState(false);
-  useEffect(()=>{setWorkOpen(page==='workspace');},[page]);
+  const [page, setPage] = useState<PageId>(storedPage);
+  const [rehearseFromToday, setRehearseFromToday] = useState<string | null>(null);
+  const [integrationsFrom, setIntegrationsFrom] = useState<'continuity' | null>(null), [returnedFrom, setReturnedFrom] = useState<'integrations' | null>(null);
+  useEffect(() => { if (page !== 'integrations') setIntegrationsFrom(null); }, [page]);
+  const [entityName, setEntity] = useState<EntityName>(storedEntity);
+  useEffect(() => { rememberPlace(page, entityName); }, [page, entityName]);
+  const [signals, setSignals] = useState<{ overdue: number | null; atRisk: number | null }>({ overdue: null, atRisk: null });
+  const [help, setHelp] = useState(false);
+  const [commandsOpen, setCommandsOpen] = useState(false);
+  const [focusOpen, setFocusOpen] = useState(false);
+  const [workOpen,setWorkOpen]=useState(true);
+  const [preparationOpen,setPreparationOpen]=useState(false);
+  useEffect(()=>{if(page==='workspace')setWorkOpen(true);},[page]);
+  // En la tira de navegación móvil, el apartado activo queda siempre a la vista.
+  useEffect(()=>{if(typeof window==='undefined'||!window.matchMedia?.('(max-width: 760px)').matches)return;const frame=requestAnimationFrame(()=>document.querySelector('.sidebar [aria-current="page"]')?.scrollIntoView({inline:'center',block:'nearest'}));return()=>cancelAnimationFrame(frame);},[page,entityName]);
   const [teamOrigin,setTeamOrigin]=useState<string|null>(null);
   useEffect(()=>{if(!state||state.runtime)return;let active=true;void api<{origin:string|null}>('/v6/workspace').then(value=>{if(active)setTeamOrigin(value.origin);}).catch(()=>{});return()=>{active=false;};},[state?.runtime]);
   const [step, setStep] = useState(0);
   const [connectRequest,setConnectRequest]=useState(0);
   const [selected, setSelected] = useState<CrmRecord | 'new' | null>(null);
   const [query, setQuery] = useState('');
+  const [globalSearch, setGlobalSearch] = useState(false);
   const [offset,setOffset]=useState(0),[total,setTotal]=useState(0),[pipeline,setPipeline]=useState('');
   const [rows,setRows]=useState<CrmRecord[]>([]);
   const [recordsLoading,setRecordsLoading]=useState(true),[recordsError,setRecordsError]=useState('');
   const [auth,setAuth]=useState<'loading'|'open'|'locked'|'setup'>('loading');
   const [dataRevision,setDataRevision]=useState(0);
+  const [lockEpoch,setLockEpoch]=useState(0);
+  // Solo un RECUENTO de lo que quedó sin resolver al bloquear (el seguimiento detallado vive en memoria y se pierde): sin textos de tareas ni borradores.
+  const [lockedOutcomes,setLockedOutcomes]=useState<{notDispatched:number;dispatched:number}|null>(null);
+  const [lockFailed,setLockFailed]=useState(false);
+  const outcomesControl=useRef<TaskOutcomesControl|null>(null);
+  const [taskRequest,setTaskRequest]=useState<OpenTaskRequest|null>(null);
+  const refreshSequence = useRef(0);
+  const accessSequence = useRef(0);
+  useEffect(() => {
+    const key = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k' && auth === 'open' && state?.ready && !selected && !document.querySelector('[role="dialog"]')) { event.preventDefault(); setGlobalSearch(true); }
+    };
+    document.addEventListener('keydown', key); return () => document.removeEventListener('keydown', key);
+  }, [auth, state?.ready, selected]);
+  useEffect(() => { if (auth !== 'open' || !state?.ready) setGlobalSearch(false); }, [auth, state?.ready]);
   const [modal, setModal] = useState<'settings' | 'coverage' | null>(null);
+  useShortcuts({ active: auth === 'open' && !!state, ready: !!state?.ready, runtime: !!state?.runtime, blocked: !!selected, onRecords: page === 'workspace',
+    openEntity: entity => openEntity(entity), go: next => { setPage(next); setSelected(null); }, openHelp: () => setHelp(true), openSearch: () => setGlobalSearch(true), newRecord: () => setSelected('new'), openCommands: () => setCommandsOpen(true) });
+  // Una copia restaurada no tiene Hoy, Agentes, Integraciones ni copia de equipo: si la sesión recordaba uno, se vuelve a Inicio.
+  useEffect(() => { if (state?.runtime && (page === 'today' || page === 'agents' || page === 'integrations' || page === 'team-sync')) setPage('home'); }, [state?.runtime, page]);
+
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [probe, setProbe] = useState<{ checks: { id: string; label: string; passed: boolean }[] } | null>(null);
   const refresh = useCallback(async () => {
-    const next=await api<AppState>('/v2/state');
+    const sequence = ++refreshSequence.current;
+    let next: LocalAppState;
+    try { next = await api<LocalAppState>('/v2/state'); }
+    catch (failure) { if (sequence !== refreshSequence.current) throw new SupersededStateRead(); throw failure; }
+    if (sequence !== refreshSequence.current) throw new SupersededStateRead();
     setState(next);setDataRevision(r=>r+1);return next;
   }, []);
   useEffect(() => {
-    const check=()=>api<{configured:boolean;authenticated:boolean}>('/v2/auth/status').then(async gate=>{
-      if(!gate.authenticated){setAuth('locked');setLoading(false);return;}
-      setAuth('open');const next=await refresh();setStep(next.candidate?.spec?2:next.spec?2:next.snapshot?1:0);setLoading(false);
-    }).catch(f=>{setError(f.message);setLoading(false);});
-    void check();const lock=()=>void check();window.addEventListener('planb:locked',lock);
-    return()=>window.removeEventListener('planb:locked',lock);
+    const check=()=>{
+      const sequence=++accessSequence.current;
+      return api<{configured:boolean;authenticated:boolean}>('/v2/auth/status').then(async gate=>{
+        if(sequence!==accessSequence.current)return;
+        if(!gate.authenticated){refreshSequence.current++;setAuth('locked');setLoading(false);return;}
+        setAuth('open');const next=await refresh();
+        if(sequence!==accessSequence.current)return;
+        setStep(next.candidate?.spec?2:next.spec?2:next.snapshot?1:0);setLoading(false);
+      }).catch(f=>{if(sequence!==accessSequence.current||f instanceof SupersededStateRead)return;setError(f.message);setLoading(false);});
+    };
+    void check();const lock=()=>{setLockEpoch(epoch=>epoch+1);void check();};window.addEventListener('planb:locked',lock);
+    return()=>{accessSequence.current++;refreshSequence.current++;window.removeEventListener('planb:locked',lock);};
   }, [refresh]);
   useEffect(()=>{
     if(auth!=='open'||page!=='workspace'||!state?.ready)return;
@@ -79,95 +133,108 @@ export default function App() {
     finally { setBusy(false); }
   };
   const openEntity = (id: EntityName) => { setWorkOpen(true);setEntity(id); setSelected(null); setQuery('');setOffset(0);setPipeline('');setRows([]);setRecords([]);setRecordsLoading(true);setTotal(0);setDataRevision(r=>r+1); setPage('workspace'); };
+  const openPreparation = (nextStep?: number) => { setPage('prepare'); setSelected(null); setPreparationOpen(true); if(nextStep!==undefined)setStep(nextStep); };
   const viewCoverage = async () => {
     setModal('coverage'); setProbe(null);
     try { setProbe(await post('/probe', {})); } catch (failure) { setError((failure as Error).message); }
   };
-  const filtered=rows;
   const protect=async()=>{
-    const gate=await api<{configured:boolean}>('/v2/auth/status');
-    if(gate.configured){await post('/v2/auth/lock',{});setAuth('locked');}else setAuth('setup');
+    // Se SELLA la frontera de despacho al INICIAR el cierre, antes de cualquier espera de red: un guardado que seguía en su comprobación previa no puede salir mientras el bloqueo viaja.
+    const outcomes=outcomesControl.current;outcomes?.seal();
+    try{
+      const gate=await api<{configured:boolean}>('/v2/auth/status');
+      if(gate.configured){await post('/v2/auth/lock',{});accessSequence.current++;refreshSequence.current++;setAuth('locked');}
+      else{accessSequence.current++;refreshSequence.current++;setAuth('setup');}
+    }catch(failure){
+      // El cierre no se completó: el propietario sellado NO se reactiva; empieza uno nuevo y vacío y la persona ve qué quedó sellado y cómo reintentar.
+      outcomes?.resume();setError(failure instanceof Error?failure.message:'No se pudo bloquear Plan B.');
+    }
   };
 
-  if(auth==='locked'||auth==='setup')return <Protection setup={auth==='setup'} cancel={auth==='setup'?()=>setAuth('open'):undefined} done={()=>{setAuth('open');void refresh();}}/>;
+  if(auth==='locked'||auth==='setup')return <Protection key={lockEpoch} setup={auth==='setup'} cancel={auth==='setup'?()=>setAuth('open'):undefined} done={async()=>{const sequence=++accessSequence.current;await refresh();if(sequence!==accessSequence.current)throw new SupersededStateRead();setAuth('open');}}/>;
   if (loading||auth==='loading') return <main className="loading-page"><Brand /><Spinner text="Abriendo tu copia local…" /></main>;
   if (!state) return <main className="loading-page"><Brand /><p role="alert">{error || 'No se puede conectar con el servidor local.'}</p><button className="button primary" onClick={() => location.reload()}>Volver a intentar</button></main>;
+  const openTaskFromOutcomes=(taskId:string,attemptId?:string)=>{setPage('today');setSelected(null);setTaskRequest(previous=>({taskId,attemptId:attemptId??null,nonce:(previous?.nonce??0)+1}));};
   const spec = state.spec;
   const entity = spec?.entities.find(e => e.id === entityName);
+  const pageLabel = page==='workspace'?(entity?.label??'Trabajar'):({home:'Inicio',today:'Hoy',changes:'Cambios',agents:'Agentes',radar:'Radar','date-check':'Comprobar una fecha',continuity:'Continuidad','team-sync':'Copia de equipo',export:'Exportar',integrations:'Integraciones',prepare:'Preparación'} as Record<string,string>)[page]??'';
+  // Mover una oportunidad de etapa desde el tablero: misma validación y mismo guardado que la ficha. Devuelve el motivo si no se puede.
+  // Cambiar un campo desde la tabla o el tablero: misma validación y mismo guardado que la ficha. Devuelve el motivo si no se puede.
+  const saveField = async (record: CrmRecord, key: string, value: string | null): Promise<string | null> => {
+    if (!spec) return 'La aplicación todavía no está lista.';
+    const next: CrmRecord = { ...record, values: { ...record.values, [key]: value } };
+    const issues = validateRecord(spec, next, record);
+    if (Object.keys(issues).length) return Object.values(issues)[0];
+    try { await api('/records/' + record.entity + '/' + encodeURIComponent(record.id), { method: 'PATCH', body: JSON.stringify({ values: next.values }) }); await refresh(); return null; }
+    catch (failure) { return failure instanceof Error ? failure.message : 'No se pudo guardar el cambio.'; }
+  };
+  const moveDeal = (record: CrmRecord, stageId: string) => saveField(record, spec?.roles?.stage ?? 'dealstage', stageId);
+  // Órdenes de la paleta (Ctrl J): las mismas acciones que ya ofrecen el menú y los botones, con las mismas condiciones.
+  const goTo = (next: PageId) => () => { setPage(next); setSelected(null); };
+  const commandList: Command[] = [
+    { id: 'home', label: 'Ir a Inicio', group: 'Ir a', hint: 'G I', run: goTo('home') },
+    ...(!state.runtime ? [{ id: 'today', label: 'Ir a Hoy', group: 'Ir a', hint: 'G H', run: goTo('today') }] : []),
+    ...(state.ready && spec ? spec.entities.map(item => ({ id: 'open-' + item.id, label: 'Ir a ' + item.label, group: 'Ir a', run: () => openEntity(item.id) })) : []),
+    ...(state.ready ? [{ id: 'changes', label: 'Ir a Cambios', group: 'Ir a', hint: 'G M', run: goTo('changes') }] : []),
+    ...(!state.runtime ? [{ id: 'agents', label: 'Ir a Agentes', group: 'Ir a', run: goTo('agents') }] : []),
+    ...(state.ready ? [{ id: 'radar', label: 'Ir al Radar', group: 'Ir a', hint: 'G R', run: () => { setRehearseFromToday(null); goTo('radar')(); } }, { id: 'date-check', label: 'Comprobar una fecha', group: 'Ir a', hint: 'G F', run: goTo('date-check') }] : []),
+    { id: 'continuity', label: 'Ir a Continuidad', group: 'Ir a', hint: 'G N', run: goTo('continuity') },
+    ...(!state.runtime ? [{ id: 'team-sync', label: 'Ir a Copia de equipo', group: 'Ir a', run: goTo('team-sync') }, { id: 'integrations', label: 'Ir a Integraciones', group: 'Ir a', run: goTo('integrations') }] : []),
+    ...(state.ready ? [{ id: 'export', label: 'Ir a Exportar', group: 'Ir a', hint: 'G X', run: goTo('export') }] : []),
+    ...(state.ready && spec ? spec.entities.map(item => ({ id: 'new-' + item.id, label: 'Crear: ' + item.singular, group: 'Crear', run: () => { openEntity(item.id); setSelected('new'); } })) : []),
+    ...(state.ready && spec ? [{ id: 'focus', label: 'Despachar vencidas', group: 'Acción', hint: signals.overdue ? signals.overdue + ' vencidas' : undefined, run: () => setFocusOpen(true) }] : []),
+    ...(state.ready ? [{ id: 'search', label: 'Buscar en toda la copia', group: 'Acción', hint: 'Ctrl K', run: () => setGlobalSearch(true) }, { id: 'coverage', label: 'Ver la cobertura de la copia', group: 'Acción', run: () => void viewCoverage() }] : []),
+    ...(!state.runtime ? [{ id: 'prepare', label: 'Ir a Preparación', group: 'Ir a', run: () => openPreparation() }] : []),
+    ...(!state.runtime && state.snapshot?.source.isTestData !== false ? [{ id: 'provider', label: 'Proveedor de IA', group: 'Ajustes', run: () => setModal('settings') }] : []),
+    ...(!state.runtime && teamOrigin ? [{ id: 'commercial', label: 'Ir al espacio comercial', group: 'Ir a', run: () => { location.href = teamOrigin + '/team?view=company'; } }] : []),
+    { id: 'lock', label: 'Proteger o bloquear Plan B', group: 'Acción', run: () => void protect() },
+    { id: 'theme', label: typeof document !== 'undefined' && document.documentElement?.dataset?.theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro', group: 'Acción', run: toggleTheme },
+    { id: 'help', label: 'Ver los atajos de teclado', group: 'Acción', hint: '?', run: () => setHelp(true) }
+  ];
+  // Registros para la paleta: hasta 4 por tipo, de la copia local, en el orden de la búsqueda del servidor.
+  const findRecords = async (text: string): Promise<Command[]> => {
+    if (!spec || !state.ready) return [];
+    const lists = await Promise.all(spec.entities.map(item => api<{ records: CrmRecord[] }>('/v2/records/' + item.id + '?q=' + encodeURIComponent(text) + '&offset=0&limit=4&pipeline=').then(data => data.records.map(record => ({ record, item }))).catch(() => [])));
+    return lists.flat().map(({ record, item }) => ({ id: 'rec-' + record.entity + '-' + record.id, label: recordName(record, spec), hint: item.singular[0].toUpperCase() + item.singular.slice(1), group: 'Registros', run: () => { openEntity(record.entity); setRecords([record]); setSelected(record); } }));
+  };
   const date = state.snapshot ? new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(state.snapshot.capturedAt)) : '';
-  return <div className={'app-shell ' + (selected ? 'has-drawer' : '')}>
+  return <TaskOutcomesHost refreshState={refresh} onOpenTask={openTaskFromOutcomes} onClosed={(summary,reason)=>{setLockedOutcomes(previous=>addLockSummary(previous,summary));if(summary.dispatched+summary.notDispatched>0)setLockFailed(reason==='lock-not-completed');}} controlRef={outcomesControl}><div className={'app-shell ' + (selected ? 'has-drawer' : '')}>
     <a className="skip-link" href="#main-content">Saltar al contenido</a>
-    <aside className="sidebar">
-      <Brand /><p className="sidebar-caption">{page === 'prepare' ? 'PREPARACIÓN' : 'ESPACIO LOCAL'}</p>
-      <nav aria-label="Navegación principal">
-        {!state.runtime?<button className={'nav-item '+(page==='today'?'active':'')} aria-current={page==='today'?'page':undefined} onClick={()=>{setPage('today');setSelected(null);}}><CalendarDays size={19}/>Hoy</button>:null}
-        <button className={'nav-item '+(page==='continuity'?'active':'')} aria-current={page==='continuity'?'page':undefined} onClick={()=>{setPage('continuity');setSelected(null);}}><ShieldCheck size={19}/>Continuidad</button>
-        <button className={'nav-item work-toggle '+(page==='workspace'?'active':'')} aria-expanded={workOpen} aria-controls="work-navigation" disabled={!state.ready} onClick={()=>page==='workspace'?setWorkOpen(open=>!open):openEntity(entityName)}><Users size={19}/><span>Trabajar</span><ChevronDown size={15} aria-hidden="true" className={workOpen?'expanded':''}/></button>
-        <div id="work-navigation" className={'work-disclosure '+(workOpen?'is-open':'')} aria-hidden={!workOpen} inert={!workOpen}><div><nav className="work-subnav" aria-label="Secciones de trabajo">{navigation.map(item=><button key={item.id} className={'nav-item '+(page==='workspace'&&entityName===item.id?'active':'')} aria-current={page==='workspace'&&entityName===item.id?'page':undefined} onClick={()=>openEntity(item.id)}><item.icon size={16}/>{item.label}</button>)}</nav></div></div>
-        <button className={'nav-item '+(page==='changes'?'active':'')} aria-current={page==='changes'?'page':undefined} disabled={!state.ready} onClick={()=>{setPage('changes');setSelected(null);}}><GitBranch size={19}/>Cambios</button>
-        {!state.runtime?<button className={'nav-item '+(page==='agents'?'active':'')} aria-current={page==='agents'?'page':undefined} onClick={()=>{setPage('agents');setSelected(null);}}><Bot size={19}/>Agentes</button>:null}
-      </nav>
-      {page==='prepare'?<nav className="entity-nav" aria-label="Secciones de preparación">{['Origen','Procesos','Generar','Exportar'].map((label,index)=><button key={label} className={'nav-item '+(step===index?'active':'')} aria-current={step===index?'step':undefined} disabled={index>0&&!state.snapshot||index===3&&!state.ready} onClick={()=>index===3?setPage('export'):setStep(index)}><span className="step-number">{index+1}</span>{label}</button>)}</nav>:null}
-      <div className="sidebar-secondary">
-        {!state.runtime?<button className={'nav-item '+(page==='team-sync'?'active':'')} aria-current={page==='team-sync'?'page':undefined} onClick={()=>{setPage('team-sync');setSelected(null);}}><Building2 size={19}/>Copia de equipo</button>:null}
-        {!state.runtime?<button className={'nav-item '+(page==='integrations'?'active':'')} aria-current={page==='integrations'?'page':undefined} onClick={()=>{setPage('integrations');setSelected(null);}}><PlugZap size={19}/>Integraciones</button>:null}
-        {!state.runtime && page !== 'prepare' ? <button className="nav-item" onClick={() => { setPage('prepare'); setSelected(null); }}><LayoutDashboard size={19} />Preparación</button> : null}
-        {page === 'prepare' ? <button className="nav-item" disabled={!state.ready} onClick={() => setPage('workspace')}><ArrowRight size={19} />Abrir aplicación</button> : null}
-        <button className={'nav-item ' + (page === 'export' ? 'active' : '')} aria-current={page==='export'?'page':undefined} disabled={!state.ready} onClick={() => { setPage('export'); setSelected(null); }}><Download size={19} />Exportar</button>
-        {!state.runtime&&state.snapshot?.source.isTestData!==false ? <button className="nav-item" onClick={() => setModal('settings')}><Settings2 size={19} />Proveedor de IA</button> : null}
-        <button className="nav-item" onClick={()=>void protect()}><ShieldCheck size={19}/>Proteger / bloquear</button>
-      </div>
-      <div className="sidebar-bottom"><span className="dot" />{state.snapshot?.source.isTestData===false?'Producción · lectura':'Datos de ensayo'}<small>{state.snapshot?.name ?? 'Tu copia, en tu ordenador'} · v{APP_VERSION}</small></div>
-    </aside>
+    <Sidebar state={state} page={page} entityName={entityName} selected={!!selected} signals={signals} teamOrigin={teamOrigin} step={step} workOpen={workOpen} preparationOpen={preparationOpen}
+      setPage={setPage} setSelected={setSelected} setWorkOpen={setWorkOpen} setPreparationOpen={setPreparationOpen} setGlobalSearch={setGlobalSearch} setModal={setModal}
+      openEntity={openEntity} openPreparation={openPreparation} protect={() => void protect()} />
     <div className="mobile-brand"><Brand /><span className="badge">{state.snapshot?.source.isTestData===false?'Producción · lectura':'Local · Ensayo'}</span></div>
-    <main id="main-content" className="main-content" tabIndex={-1}><div className="workspace-context"><span>Espacio local</span><strong>{state.snapshot?.name??'Preparación de tu copia'}</strong><span>{teamOrigin?<a className="text-button" href={teamOrigin+'/team?view=commercial'}>Espacio de equipo <ArrowRight size={13}/></a>:state.snapshot?.source.isTestData===false?'Producción · lectura':'Datos de ensayo'}</span></div>
+    <main id="main-content" className="main-content" tabIndex={-1}><TopBar state={state} pageLabel={pageLabel} date={date} teamOrigin={teamOrigin} openContinuity={() => { setPage('continuity'); setSelected(null); }} openHelp={() => setHelp(true)} openCommands={() => setCommandsOpen(true)} />
       {error ? <div role="alert" className="global-error"><span>{error}</span><button className="icon-button" aria-label="Cerrar aviso" onClick={() => setError('')}><X size={18} /></button></div> : null}
-      {page==='continuity'?<ContinuityHome state={state} refresh={refresh} work={()=>openEntity('contacts')} prepare={()=>{setPage('prepare');setStep(0);}} protect={()=>void protect()} exportCopy={()=>setPage('export')} connectRequest={connectRequest}/>
-      :page==='today'||page==='agents'||page==='integrations'?<SalesWorkspace key={page} view={page} openProposals={()=>setPage('changes')} openDeal={label=>{openEntity('deals');setQuery(label);}}/>
+      <OutcomesLockNotice summary={lockedOutcomes} failed={lockFailed} onRetry={()=>void protect()} onDismiss={()=>{setLockedOutcomes(null);setLockFailed(false);}}/>
+      {!state.runtime?<TaskOutcomesSurface/>:null}
+      {page==='home'?<HomeOverview state={state} onSignals={setSignals} onDispatch={state.ready ? () => setFocusOpen(true) : undefined} onOpenRecord={record => { openEntity(record.entity); setRecords([record]); setSelected(record); }}contextRevision={state.workspaceSearchContext?.contextRevision??null} onOpenToday={()=>{setPage('today');setSelected(null);}} onOpenTask={id=>openTaskFromOutcomes(id)} onOpenRadar={()=>{setRehearseFromToday(null);setPage('radar');setSelected(null);}} onRehearse={id=>{setRehearseFromToday(id);setPage('radar');setSelected(null);}} onOpenDateCheck={()=>{setPage('date-check');setSelected(null);}} onOpenContinuity={()=>{setPage('continuity');setSelected(null);}} onOpenChanges={()=>{setPage('changes');setSelected(null);}}/>
+      :page==='continuity'?<ContinuityHome state={state} workspaceContextRevision={state.workspaceSearchContext?.contextRevision??null} refresh={refresh} work={()=>openEntity('contacts')} prepare={()=>openPreparation(0)} protect={()=>void protect()} exportCopy={()=>setPage('export')} connectRequest={connectRequest} onOpenToday={()=>{setPage('today');setSelected(null);}} onOpenIntegrations={()=>{setIntegrationsFrom('continuity');setPage('integrations');setSelected(null);}} returnedFrom={returnedFrom} onReturnHandled={()=>setReturnedFrom(null)}/>
+      :page==='today'||page==='agents'?<>{page==='today'?<RehearsalTodayEntry contextRevision={state.workspaceSearchContext?.contextRevision??null} onOpen={id=>{setRehearseFromToday(id);setPage('radar');setSelected(null);}} onOpenRadar={()=>{setRehearseFromToday(null);setPage('radar');setSelected(null);}}/>:null}<LocalOperations key={page} view={page} onOpenTasks={()=>openEntity('tasks')} onOpenDeals={()=>openEntity('deals')} onOpenProposals={()=>setPage('changes')} onPrepare={()=>openPreparation(0)} onRecordSaved={refresh} openTaskRequest={taskRequest} onOpenTaskHandled={()=>setTaskRequest(null)}/></>
+        :page==='integrations'?<>{integrationsFrom?<p className="back-link"><button type="button" className="text-button" onClick={()=>{setIntegrationsFrom(null);setPage('continuity');setSelected(null);setReturnedFrom('integrations');}}>← Volver a Continuidad</button></p>:null}<LocalIntegrations onConnectHubspot={()=>{setPage('continuity');setSelected(null);setConnectRequest(n=>n+1);}}/></>
       :page==='team-sync'?<TeamSync/>
+      :page==='date-check'?<div className="gx-datecheck"><h1 className="sr-only">Comprobar una fecha</h1><DateCheck contextRevision={state.workspaceSearchContext?.contextRevision??null} onContextStale={()=>void refresh()}/><div className="gx-datecheck-side"><DecisionReview contextRevision={state.workspaceSearchContext?.contextRevision??null} onContextStale={()=>void refresh()}/></div></div>
+      :page==='radar'?(rehearseFromToday?<OperationalRehearsal contextRevision={state.workspaceSearchContext?.contextRevision??null} commitmentId={rehearseFromToday} onContextStale={()=>void refresh()} onClose={()=>setRehearseFromToday(null)}/>:<RadarHost contextRevision={state.workspaceSearchContext?.contextRevision??null} refresh={()=>void refresh()}/>)
       :page==='changes'?<ChangesView runtime={state.runtime} production={state.snapshot?.source.isTestData===false}/>
       :page==='export'?<PortableExport/>
       :page === 'prepare' ? <Preparation state={state.candidate?{...state,...state.candidate,lastError:state.candidate.error}:state} step={step} setStep={setStep} refresh={refresh}
         openWorkspace={() => setPage('workspace')} configure={() => setModal('settings')} onConnect={()=>{setPage('continuity');setConnectRequest(n=>n+1);}} onError={setError} />
       : !state.ready || !spec || !entity ? <section className="empty-state"><ShieldCheck size={36} /><h1>Revisa la preparación</h1><p>La captura y las reglas deben estar verificadas antes de editar.</p>
-          <button className="button primary" onClick={() => { setPage('prepare'); setStep(2); }}>Revisar aplicación</button></section>
-      : <section className="workspace">
-        <header className="page-header"><div><h1>{entity.label}</h1><p className="page-subtitle">{entityName === 'contacts' ? 'Las relaciones siguen contigo.' : entityName === 'deals' ? 'Cada oportunidad, en su siguiente paso.' : entityName === 'tasks' ? 'Lo importante sigue en marcha.' : 'Todo tu contexto, en un solo lugar.'}</p></div>
-          <button className="button primary" onClick={() => setSelected('new')}><Plus size={18} />{singular[entityName]}</button></header>
-        <div className="status-strip"><span className={'status-label ' + (state.disconnected ? 'independent' : '')}><span className="dot" />{state.disconnected ? 'Modo independiente' : 'Copia local activa'}</span>
-          <span className="copy-date">Última copia · {date}</span><button className="text-button" onClick={() => void viewCoverage()}>Ver cobertura<ChevronRight size={15} /></button>
-          {!state.runtime ? <button className="text-button disconnect" disabled={busy} onClick={() => act(() => post('/disconnect', { disconnected: !state.disconnected }), state.disconnected ? 'Servicios habilitados para importar o generar.' : 'HubSpot e IA desconectados. Sigue trabajando con tus datos locales.')}>
-            {state.disconnected ? <PlugZap size={15} /> : <Unplug size={15} />}{state.disconnected ? 'Habilitar servicios' : 'Desconectar servicios'}</button> : null}</div>
-        {state.generation?.provider === 'demo' ? <p className="demo-caption">Especificación de ensayo · campos y reglas de la captura · sin generación por IA</p> : null}
-        <div className="table-toolbar"><label className="search-field"><Search size={18} /><input aria-label={'Buscar ' + entity.label.toLowerCase()} placeholder={'Buscar ' + entity.label.toLowerCase() + '…'} value={query} onChange={event => {setQuery(event.target.value);setOffset(0);}} /></label>
-          {entityName==='deals'&&state.snapshot?.pipelines?.length?<select aria-label="Proceso comercial" value={pipeline} onChange={e=>{setPipeline(e.target.value);setOffset(0);}}><option value="">Todos los procesos</option>{state.snapshot.pipelines.map(p=><option key={p.id} value={p.id}>{p.label}</option>)}</select>:null}
-          <span className="muted">{total} {entity.label.toLowerCase()}</span></div>
-        {entityName === 'deals' ? <div className="kanban" aria-label="Tablero de oportunidades">{spec.stages.filter(s=>!pipeline||!s.pipelineId||s.pipelineId===pipeline).map(stage => {
-          const deals = filtered.filter(r => r.values.dealstage === stage.id);
-          return <section className="kanban-column" key={stage.id}><h2><span className="dot" style={{ background: stage.color }} />{stage.label}<small>{deals.length}</small></h2>
-            {deals.map(record => <button key={record.id} className="deal-card" onClick={() => setSelected(record)}><strong>{recordName(record, spec)}</strong>
-              <span>{new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(Number(record.values.amount ?? 0))}</span>
-              <small>{entity.fields.filter(f => f.type === 'reference').slice(0, 1).map(f => displayValue(record.values[f.key], f, records, spec)).join('')}</small><span className="card-edit">Abrir oportunidad <ArrowRight size={14} /></span></button>)}
-            {!deals.length ? <p className="column-empty">Sin oportunidades</p> : null}</section>;
-        })}</div>
-        : <div className="table-container"><table><thead><tr>{entity.columns.map(key => <th key={key}>{entity.fields.find(f => f.key === key)!.label}</th>)}<th><span className="sr-only">Editar</span></th></tr></thead>
-          <tbody>{filtered.map(record => <tr key={record.id} className={selected !== 'new' && selected?.id === record.id ? 'selected-row' : ''}>
-            {entity.columns.map((key, index) => { const field = entity.fields.find(f => f.key === key)!; const value = displayValue(record.values[key], field, records, spec);
-              return <td key={key}>{index === 0 ? <button className="record-link" onClick={() => setSelected(record)}>
-                {entityName === 'contacts' ? <span className="avatar">{String(record.values.firstname || '?')[0]}{String(record.values.lastname || '')[0]}</span> : null}
-                {entityName === 'contacts' && key === entity.displayField ? recordName(record, spec) : value}</button>
-                : <span className={field.type === 'enum' ? 'enum-label' : ''}>{value}</span>}</td>; })}
-            <td><button className="icon-button" aria-label={'Editar ' + recordName(record, spec)} onClick={() => setSelected(record)}><ChevronRight size={18} /></button></td></tr>)}</tbody></table>
-          {recordsLoading?<div className="empty-table" role="status"><Spinner text="Cargando registros…"/></div>:recordsError?<p className="error-box">No se pudieron cargar los registros. Vuelve a seleccionar la sección para intentarlo de nuevo.</p>:!filtered.length ? <div className="empty-table"><Search size={24} /><h3>{query ? 'Sin resultados' : 'Todavía no hay registros'}</h3><p>{query ? 'Prueba con otro nombre, correo o empresa.' : 'Crea el primer registro para empezar.'}</p></div> : null}
-        </div>}
-        <footer className="pagination"><span>{recordsLoading?'Cargando…':<>{total?offset+1:0}–{Math.min(offset+50,total)} de {total}</>}</span><button className="button secondary" disabled={recordsLoading||offset===0} onClick={()=>setOffset(Math.max(0,offset-50))}>Anterior</button><button className="button secondary" disabled={recordsLoading||offset+50>=total} onClick={()=>setOffset(offset+50)}>Siguiente</button></footer>
-        <footer className="workspace-footer"><Database size={14} />Guardado en este ordenador<span>{state.changes} cambios locales</span></footer>
-      </section>}
+          <button className="button primary" onClick={() => openPreparation(2)}>Revisar aplicación</button></section>
+      : <RecordsPage state={state} spec={spec} entity={entity} entityName={entityName} rows={rows} records={records} total={total} offset={offset} setOffset={setOffset}
+          query={query} setQuery={setQuery} pipeline={pipeline} setPipeline={setPipeline} selected={selected} setSelected={setSelected} recordsLoading={recordsLoading} recordsError={recordsError} busy={busy} date={date} moveDeal={moveDeal} saveField={saveField}
+          viewCoverage={() => void viewCoverage()} toggleServices={() => act(() => post('/disconnect', { disconnected: !state.disconnected }), state.disconnected ? 'Servicios habilitados para importar o generar.' : 'HubSpot e IA desconectados. Sigue trabajando con tus datos locales.')} />}
     </main>
+    {globalSearch && state.ready && state.snapshot ? <WorkspaceSearch captureId={state.snapshot.id+':'+state.snapshot.capturedAt} expectedContext={state.workspaceSearchContext??null} localRevision={dataRevision} close={() => setGlobalSearch(false)} openRecord={(record, related) => { setGlobalSearch(false); openEntity(record.entity); setRecords([record,...related]); setSelected(record); }}/>:null}
     {selected && spec && state.ready ? <><div className="drawer-shade" onClick={() => setSelected(null)} /><RecordDrawer key={selected === 'new' ? entityName + '-new' : selected.id} entityName={entityName} selected={selected} spec={spec} records={records}
+      extra={selected === 'new' ? undefined : dirty => <><RelatedPanel spec={spec} record={selected} dirty={dirty} onOpen={record => { openEntity(record.entity); setRecords([record]); setSelected(record); }} /><RecordTimeline spec={spec} record={selected} records={records} /></>}
       close={() => setSelected(null)} saved={async () => { await refresh(); setSelected(null); setNotice('Guardado en tu copia local.'); }} /></> : null}
     {notice ? <div className="toast" role="status"><CheckCircle2 size={19} />{notice}</div> : null}
     {modal === 'settings' ? <Settings state={state} close={() => setModal(null)} done={async () => { await refresh(); setNotice('Proveedor guardado.'); }} /> : null}
+    {help ? <ShortcutsHelp close={() => setHelp(false)} /> : null}
+    <MobileNav page={page} entityName={entityName} runtime={!!state.runtime} ready={!!state.ready} overdue={signals.overdue} go={next => { setPage(next); setSelected(null); }} openEntity={openEntity} openMore={() => setCommandsOpen(true)} />
+    {focusOpen && spec && state.ready ? <FocusRun spec={spec} saveField={saveField} onOpen={record => { openEntity(record.entity); setRecords([record]); setSelected(record); }} close={() => setFocusOpen(false)} /> : null}
+    {commandsOpen ? <CommandPalette commands={commandList} close={() => setCommandsOpen(false)} findRecords={state.ready && spec ? findRecords : undefined} /> : null}
     {modal === 'coverage' ? <Modal title="Cobertura de tu copia" close={() => setModal(null)} wide><div className="modal-body">
       <p className="muted">Comprobaciones sobre la captura y la aplicación que estás utilizando.</p>
       <div className="check-list">{probe ? probe.checks.map(check => <div key={check.id}>{check.passed ? <CheckCircle2 size={19} className="green" /> : <Circle size={19} className="muted" />}<span>{check.label}</span><small>{check.passed ? 'Verificado' : 'Pendiente'}</small></div>) : <Spinner />}</div>
@@ -175,5 +242,5 @@ export default function App() {
       <h3>Pendiente de cobertura</h3><ul className="plain-list">{spec?.coverage.unsupported.map(item => <li key={item}>{item}</li>)}</ul>
       <p className="helper">Una copia completa de estos datos no equivale a reproducir todas las funciones del CRM. El paquete incluye los resultados de las pruebas de reinicio y red.</p>
     </div></Modal> : null}
-  </div>;
+  </div></TaskOutcomesHost>;
 }

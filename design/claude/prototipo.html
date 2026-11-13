@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<!-- Refuerzo, no sustituto, de "sin red": el navegador bloquea conexiones, imágenes, fuentes y marcos. Los estilos y el script locales no se ven afectados. -->
+<meta http-equiv="Content-Security-Policy" content="connect-src 'none'; img-src 'none'; font-src 'none'; frame-src 'none'; object-src 'none'; form-action 'none'">
+<title>Prototipo de trabajo comercial · sin conexión</title>
+<link rel="stylesheet" href="prototipo.css">
+</head>
+<body>
+
+<div class="banner" role="note" id="aviso">
+  <strong>Prototipo local sin conexión</strong>
+  <span>No lee ni escribe datos de Plan B, no envía, no autoriza y no ejecuta. Los campos están vacíos a propósito y lo que escribas se pierde al recargar.</span>
+</div>
+
+<div class="stage" id="escenario">
+  <div class="app" id="app">
+
+    <aside class="side" id="lateral" aria-label="Navegación y comparación del prototipo">
+      <p class="brand">Plan B <span>Prototipo de trabajo comercial</span></p>
+
+      <nav class="nav" aria-label="Vistas del prototipo">
+        <button type="button" class="nav-btn" data-vista="hoy">Hoy</button>
+        <button type="button" class="nav-btn" data-vista="comercial">Comercial</button>
+        <button type="button" class="nav-btn" data-vista="conexiones">Conexiones</button>
+      </nav>
+
+      <div class="controles">
+        <fieldset class="seg-grupo">
+          <legend>Composición</legend>
+          <label class="seg"><input type="radio" name="comp" value="A" class="sr-only"><span>A · Lista operativa</span></label>
+          <label class="seg"><input type="radio" name="comp" value="B" class="sr-only"><span>B · Mesa de preparación</span></label>
+        </fieldset>
+        <p class="ayuda" id="recomendacion"></p>
+
+        <fieldset class="seg-grupo">
+          <legend>Estado de los datos</legend>
+          <label class="seg"><input type="radio" name="datos" value="estructura" class="sr-only"><span>Estructura con campos vacíos</span></label>
+          <label class="seg"><input type="radio" name="datos" value="vacio" class="sr-only"><span>Sin capturas (vacío)</span></label>
+        </fieldset>
+        <p class="ayuda">Son variantes de interfaz. Ninguna acredita datos, conexiones ni resultados reales.</p>
+      </div>
+    </aside>
+
+    <main class="main" id="principal">
+      <noscript><p class="aviso-js">Este prototipo necesita JavaScript para mostrar sus pantallas. No usa red ni almacenamiento.</p></noscript>
+
+      <section class="view" id="vista-hoy" aria-labelledby="t-hoy" hidden>
+        <header class="cabecera">
+          <div>
+            <h1 id="t-hoy" tabindex="-1">Hoy</h1>
+            <p class="sub">Elige el siguiente seguimiento: prioridad, motivo y siguiente acción de cada oportunidad.</p>
+          </div>
+          <span class="tag tag-info" data-comp-etq></span>
+        </header>
+        <div id="cuerpo-hoy"></div>
+      </section>
+
+      <section class="view" id="vista-comercial" aria-labelledby="t-comercial" hidden>
+        <header class="cabecera">
+          <div>
+            <h1 id="t-comercial" tabindex="-1">Comercial</h1>
+            <p class="sub">Cliente, contexto, borrador y revisión juntos. Lo que escribas es temporal.</p>
+          </div>
+          <span class="tag tag-info" data-comp-etq></span>
+        </header>
+        <div id="cuerpo-comercial"></div>
+      </section>
+
+      <section class="view" id="vista-conexiones" aria-labelledby="t-conexiones" hidden>
+        <header class="cabecera">
+          <div>
+            <h1 id="t-conexiones" tabindex="-1">Conexiones</h1>
+            <p class="sub">Configuración, autorización, alcance y evidencia de una operación, por separado.</p>
+          </div>
+          <span class="tag tag-info" data-comp-etq></span>
+        </header>
+        <div id="cuerpo-conexiones"></div>
+      </section>
+    </main>
+  </div>
+
+  <div class="overlay" id="overlay" hidden>
+    <div class="drawer" id="ficha" role="dialog" aria-modal="true" aria-labelledby="ficha-titulo">
+      <header class="drawer-cab">
+        <div>
+          <h2 id="ficha-titulo" tabindex="-1">Ficha comercial</h2>
+          <p class="ayuda">Ficha de maquetación. No consulta servicios ni muestra datos de ningún cliente.</p>
+        </div>
+        <button type="button" class="btn btn-sec" id="ficha-cerrar" aria-label="Cerrar ficha">Cerrar <span aria-hidden="true">(Esc)</span></button>
+      </header>
+      <div class="drawer-cuerpo" id="ficha-cuerpo"></div>
+    </div>
+  </div>
+</div>
+
+<p class="sr-only" id="anuncio" role="status" aria-live="polite"></p>
+
+<script src="prototipo.js"></script>
+</body>
+</html>

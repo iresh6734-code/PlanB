@@ -1,0 +1,8 @@
+.reference-picker { display:grid; gap:7px; min-width:0; }
+body .field > .reference-picker { display:grid; grid-template-columns:minmax(0,1fr); align-items:stretch; gap:7px; font-weight:400; letter-spacing:normal; color:inherit; }
+body .reference-picker :is(.reference-search,.reference-select),
+body .field .reference-picker :is(.reference-search,.reference-select) { width:100%; min-width:0; min-height:44px; }
+body .reference-picker .reference-picker-status { margin-left:0; font-size:11px; line-height:1.5; font-weight:400; color:var(--muted); white-space:normal; overflow-wrap:anywhere; }
+.reference-picker-status:empty { display:none; }
+body .reference-picker .reference-picker-error { display:grid; gap:3px; white-space:normal; overflow-wrap:anywhere; line-height:1.6; font-weight:400; color:var(--danger,#a53232); }
+body .reference-picker .reference-picker-error .text-button { min-height:44px; justify-self:start; }

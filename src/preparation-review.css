@@ -1,0 +1,7 @@
+.preparation-review-tools { display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin-block:18px; }
+.preparation-review-tools p { margin:0; }
+.preparation-review-identity { border-left:3px solid var(--primary,#3155bd); padding:10px 14px; background:var(--bg-subtle,#f1f4fa); font-size:12px; line-height:1.8; overflow-wrap:anywhere; margin-block:14px 20px; }
+body .preparation .preparation-review-tools .button { min-height:44px; }
+body .preparation .review-approval { min-height:44px; align-items:center; }
+
+body .preparation .prepare-footer .button { min-height:44px; }

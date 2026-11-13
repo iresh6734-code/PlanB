@@ -1,0 +1,12 @@
+import { ArrowRight, Command, Moon, Sun } from 'lucide-react';
+import { useTheme } from './theme.js';
+import type { AppState } from '../../shared/model.js';
+
+/** Barra superior: dónde estás, antigüedad de la copia (ámbar a partir de 75 minutos, el mismo umbral que avisa Continuidad) y modo de datos. */
+export function TopBar({ state, pageLabel, date, teamOrigin, openContinuity, openHelp, openCommands }: { state: AppState; pageLabel: string; date: string; teamOrigin: string | null; openContinuity: () => void; openHelp: () => void; openCommands: () => void }) {
+  const [theme, toggleTheme] = useTheme();
+  const copyMinutes = state.snapshot ? Math.max(0, (Date.now() - Date.parse(state.snapshot.capturedAt)) / 60_000) : 0;
+  const copyStale = copyMinutes > 75;
+  const copyAge = copyMinutes < 1 ? 'ahora mismo' : copyMinutes < 60 ? 'hace ' + Math.round(copyMinutes) + ' min' : copyMinutes < 2880 ? 'hace ' + Math.floor(copyMinutes / 60) + ' h' : 'hace ' + Math.floor(copyMinutes / 1440) + ' días';
+  return <div className="workspace-context gx-topbar"><span>Espacio local</span><strong>{state.snapshot?.name??'Preparación de tu copia'}</strong><span className="gx-crumb" aria-hidden="true">{pageLabel}</span>{state.snapshot?<button type="button" className={'gx-copy '+(state.disconnected?'independent':'')} data-stale={copyStale?'true':undefined} title={'Última copia: '+date+'. Abrir Continuidad'} onClick={openContinuity}><i className="dot"/>{state.disconnected?'Independiente':'Copia activa'} · {copyAge}{state.changes?<b>{state.changes} {state.changes===1?'cambio':'cambios'}</b>:null}</button>:null}<button type="button" className="gx-help gx-cmd gx-theme" aria-pressed={theme === 'dark'} aria-label="Modo oscuro" title={theme === 'dark' ? 'Volver al modo claro' : 'Cambiar a modo oscuro'} onClick={toggleTheme}>{theme === 'dark' ? <Sun size={13} aria-hidden="true" /> : <Moon size={13} aria-hidden="true" />}<span>{theme === 'dark' ? 'Claro' : 'Oscuro'}</span></button><button type="button" className="gx-help gx-cmd" aria-label="Órdenes" title="Órdenes (Ctrl J)" onClick={openCommands}><Command size={13} aria-hidden="true" /></button><button type="button" className="gx-help" aria-label="Atajos de teclado" title="Atajos de teclado (?)" onClick={openHelp}>?</button><span>{teamOrigin?<a className="text-button" href={teamOrigin+'/team?view=commercial'}>Espacio de equipo <ArrowRight size={13}/></a>:state.snapshot?.source.isTestData===false?'Producción · lectura':'Datos de ensayo'}</span></div>;
+}

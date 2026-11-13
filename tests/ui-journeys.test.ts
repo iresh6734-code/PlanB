@@ -218,7 +218,7 @@ test('R-06 un fallo en la primera carga ofrece Reintentar en lugar de un spinner
 test('R-05 preparar con un borrador abierto para el mismo cliente pide confirmación', async () => {
   const state = { current: overview([proposal('A', { contact_id: 'c1', content: content('A', { subject: 'Seguimiento abierto' }) })], { contacts: [contact('c1', 'Ana', 'García', 'ana@a.es')] }) };
   const { h, server, settleRender } = await boot(state, { '/v6/proposals': () => ({ id: 'NEW' }) });
-  h.named('ContactSelect')[0].props.onChange('c1'); await settleRender();
+  h.named('CustomerCombobox')[0].props.onChange('c1'); await settleRender();
   setConfirm(false); h.button(/Preparar seguimiento/).props.onClick(); await settleRender();
   assert.ok(!server.log.some(r => r.path.endsWith('/v6/proposals') && r.body));
   setConfirm(true); h.button(/Preparar seguimiento/).props.onClick(); await settleRender(); await settleRender();
@@ -230,7 +230,7 @@ test('R-05 sin borrador abierto no pregunta; R-07 el botón explica por qué est
   const { h, server, settleRender } = await boot(state, { '/v6/proposals': () => ({ id: 'NEW' }) });
   const prepare = () => h.button(/Preparar seguimiento/);
   assert.equal(prepare().props.disabled, true); assert.ok(prepare().props['aria-describedby'], 'el botón apunta a su motivo'); const reason = h.nodes().find(n => n.props.id === prepare().props['aria-describedby']); assert.ok(reason, 'el motivo existe como elemento'); assert.match(h.text(reason), /Selecciona un cliente/);
-  h.named('ContactSelect')[0].props.onChange('c1'); await settleRender();
+  h.named('CustomerCombobox')[0].props.onChange('c1'); await settleRender();
   assert.equal(prepare().props.disabled, false); assert.equal(prepare().props['aria-describedby'], undefined);
   prepare().props.onClick(); await settleRender(); await settleRender();
   assert.equal(server.log.filter(r => r.path.endsWith('/v6/proposals') && r.body).length, 1);
@@ -504,7 +504,7 @@ test('FIX-019 Comercial: el POST lleva un uuid, el reintento tras un fallo lo re
   setConfirm(() => { throw new Error('No debía preguntar'); });
   const state = { current: overview([], { contacts: [contact('c1', 'Ana', 'García', 'ana@a.es')] }) };
   const { h, server, settleRender } = await boot(state, { '/v6/proposals': failThenSucceed() });
-  h.named('ContactSelect')[0].props.onChange('c1'); await settleRender();
+  h.named('CustomerCombobox')[0].props.onChange('c1'); await settleRender();
   const click = async () => { h.button(/Preparar seguimiento/).props.onClick(); await settleRender(); await settleRender(); };
   await click(); await click(); await click();
   const ids = postsTo(server, '/v6/proposals').map(r => r.body.id);
@@ -516,8 +516,8 @@ test('FIX-019 Comercial: cambiar de cliente cambia la clave y confirmar «prepar
   const state = { current: overview([proposal('A', { contact_id: 'c1' })], { contacts: [contact('c1', 'Ana', 'García', 'ana@a.es'), contact('c2', 'Luis', 'Pérez', 'luis@a.es')] }) };
   const { h, server, settleRender } = await boot(state, { '/v6/proposals': () => new Error('fallo') });
   const click = async () => { h.button(/Preparar seguimiento/).props.onClick(); await settleRender(); await settleRender(); };
-  h.named('ContactSelect')[0].props.onChange('c2'); await settleRender(); await click(); await click();
-  h.named('ContactSelect')[0].props.onChange('c1'); await settleRender(); await click(); await click();
+  h.named('CustomerCombobox')[0].props.onChange('c2'); await settleRender(); await click(); await click();
+  h.named('CustomerCombobox')[0].props.onChange('c1'); await settleRender(); await click(); await click();
   const [a1, a2, b1, b2] = postsTo(server, '/v6/proposals').map(r => r.body);
   assert.equal(a1.id, a2.id, 'sin borrador abierto y tras fallo, misma clave'); assert.equal(a1.contactId, 'c2');
   assert.notEqual(b1.id, a1.id, 'otro cliente, otra clave'); assert.notEqual(b1.id, b2.id, 'con borrador abierto confirmar «otro» renueva la clave');
@@ -563,8 +563,8 @@ test('FIX-019 Comercial: tras un fallo, cambiar de cliente (sin borrador abierto
   const state = { current: overview([], { contacts: [contact('c1', 'Ana', 'García', 'ana@a.es'), contact('c2', 'Luis', 'Pérez', 'luis@a.es')] }) };
   const { h, server, settleRender } = await boot(state, { '/v6/proposals': () => new Error('fallo') });
   const click = async () => { h.button(/Preparar seguimiento/).props.onClick(); await settleRender(); await settleRender(); };
-  h.named('ContactSelect')[0].props.onChange('c1'); await settleRender(); await click();
-  h.named('ContactSelect')[0].props.onChange('c2'); await settleRender(); await click();
+  h.named('CustomerCombobox')[0].props.onChange('c1'); await settleRender(); await click();
+  h.named('CustomerCombobox')[0].props.onChange('c2'); await settleRender(); await click();
   const [first, second] = postsTo(server, '/v6/proposals').map(r => r.body);
   assert.equal(first.contactId, 'c1'); assert.equal(second.contactId, 'c2'); assert.notEqual(first.id, second.id, 'otro cliente nunca hereda la clave del anterior');
 });
@@ -684,4 +684,45 @@ test('SEC-028 documentos: «Leer contexto del documento» solo se ofrece a quien
     h.render(); h.render(); await settle(); h.render();
     assert.equal(h.byTag('button').some(b => h.text(b) === 'Leer contexto del documento'), offered, 'canWrite=' + canWrite);
   }
+});
+
+// ---------- CLAUDE-UX-032: selector accesible de clientes (R-12) integrado en Comercial ----------
+test('UX-032 Comercial: sin elegir por ID no se puede preparar; el valor del selector es el ID elegido', async () => {
+  const state = { current: overview([], { contacts: [contact('c1', 'Ana', 'García', 'ana@a.es'), contact('c2', 'Luis', 'Pérez', 'luis@a.es')] }) };
+  const { h, server, settleRender } = await boot(state, { '/v6/proposals': () => ({ id: 'NEW' }) });
+  const combo = () => h.named('CustomerCombobox')[0];
+  assert.equal(combo().props.value, ''); assert.equal(combo().props.label, 'Cliente del seguimiento'); assert.equal(h.button(/Preparar seguimiento/).props.disabled, true);
+  assert.equal(combo().props.contacts.length, 2, 'recibe los contactos de la fuente activa');
+  combo().props.onChange('c2'); await settleRender(); assert.equal(combo().props.value, 'c2'); assert.equal(h.button(/Preparar seguimiento/).props.disabled, false);
+  h.button(/Preparar seguimiento/).props.onClick(); await settleRender(); await settleRender();
+  assert.equal(server.log.filter(r => r.path.endsWith('/v6/proposals') && r.body).length, 1); assert.equal(server.log.find(r => r.path.endsWith('/v6/proposals') && r.body)!.body.contactId, 'c2');
+});
+test('UX-032 Comercial: una selección que no existe no habilita preparar, no se envía a HubSpot ni a Documentos y no se sustituye', async () => {
+  setConfirm(() => { throw new Error('No debía preguntar'); });
+  const state = { current: overview([], { contacts: [contact('c1', 'Ana', 'García', 'ana@a.es')] }) };
+  const { h, server, settleRender } = await boot(state, { '/v6/proposals': () => ({ id: 'NEW' }) });
+  h.named('CustomerCombobox')[0].props.onChange('de-otro-espacio'); await settleRender();
+  assert.equal(h.named('CustomerCombobox')[0].props.value, 'de-otro-espacio', 'no se cambia por otro cliente'); assert.equal(h.button(/Preparar seguimiento/).props.disabled, true);
+  assert.equal(h.named('HubspotContext')[0].props.contact, '', 'HubSpot no recibe un cliente inexistente');
+  h.button(/Preparar seguimiento/).props.onClick(); await settleRender(); assert.equal(server.log.filter(r => r.path.endsWith('/v6/proposals') && r.body).length, 0);
+  h.named('TabList')[0].props.onChange('files'); await settleRender(); assert.equal(h.named('CustomerFiles').length, 0, 'Documentos no se abre para un cliente inexistente');
+  assert.equal(h.named('CustomerCombobox')[0].props.label, 'Cliente para los documentos');
+});
+test('UX-032 Comercial: la selección se comparte entre pestañas y los borradores sin guardar se conservan', async () => {
+  const state = { current: overview([proposal('A')], { contacts: [contact('c1', 'Ana', 'García', 'ana@a.es'), contact('c2', 'Luis', 'Pérez', 'luis@a.es')] }) };
+  const { h, editor, settleRender } = await boot(state);
+  h.named('CustomerCombobox')[0].props.onChange('c1'); await settleRender(); editor('A').props.onChange('body', 'TEXTO SIN GUARDAR'); await settleRender();
+  h.named('TabList')[0].props.onChange('files'); await settleRender();
+  assert.equal(h.named('CustomerCombobox')[0].props.value, 'c1', 'el selector de Documentos recibe la misma selección'); assert.equal(h.named('CustomerCombobox')[0].props.label, 'Cliente para los documentos');
+  assert.equal(h.named('CustomerFiles')[0].props.contact, 'c1');
+  h.named('CustomerCombobox')[0].props.onChange('c2'); await settleRender();
+  h.named('TabList')[0].props.onChange('followup'); await settleRender();
+  assert.equal(h.named('CustomerCombobox')[0].props.value, 'c2', 'lo elegido en Documentos vale también en Seguimientos');
+  assert.equal(editor('A').props.dirty, true); assert.equal(editor('A').props.proposal.content.body, 'TEXTO SIN GUARDAR', 'el borrador sigue sin guardar');
+});
+test('UX-032 Comercial: un lector ve el selector pero no puede preparar', async () => {
+  const state = { current: overview([], { contacts: [contact('c1', 'Ana', 'García', 'ana@a.es')] }) };
+  const { h, settleRender } = await boot(state, {}, { canWrite: false });
+  h.named('CustomerCombobox')[0].props.onChange('c1'); await settleRender();
+  assert.equal(h.button(/Preparar seguimiento/).props.disabled, true); assert.match(h.text(), /Tu acceso es de solo lectura/);
 });

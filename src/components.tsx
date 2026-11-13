@@ -67,9 +67,11 @@ export function displayValue(value: FieldValue | undefined, field: Field, record
   if(field.type==='multiselect')return String(value).split(';').map(v=>field.options.find(o=>o.id===v)?.label??v).join(', ');
   return String(value);
 }
-export function RecordDrawer({ entityName, selected, spec, records, close, saved }: {
+export function RecordDrawer({ entityName, selected, spec, records, close, saved, extra }: {
   entityName: EntityName; selected: CrmRecord | 'new'; spec: AppSpec; records: CrmRecord[];
   close: () => void; saved: (record: CrmRecord) => Promise<void>;
+  /** Contenido adicional bajo los campos (p. ej. lo relacionado). Recibe si la ficha tiene cambios sin guardar. */
+  extra?: (dirty: boolean) => ReactNode;
 }) {
   const entity = spec.entities.find(e => e.id === entityName)!;
   const dialog = useRef<HTMLElement>(null);
@@ -110,7 +112,7 @@ export function RecordDrawer({ entityName, selected, spec, records, close, saved
       <div className="drawer-fields">
         {entity.fields.map(field => <label className="field" key={field.key} htmlFor={'record-' + field.key}>
           <span>{field.label}{field.required ? <span className="required"> *</span> : null}{field.readOnly ? <small>Solo lectura</small> : null}</span>
-          {field.type==='reference'?<ReferenceSelect id={'record-'+field.key} value={String(values[field.key]??'')} entity={field.referenceEntity!} spec={spec} disabled={field.readOnly||saving} onChange={value=>set(field.key,value)}/>
+          {field.type==='reference'?<ReferenceSelect id={'record-'+field.key} label={field.label} value={String(values[field.key]??'')} entity={field.referenceEntity!} spec={spec} disabled={field.readOnly||saving} onChange={value=>set(field.key,value)}/>
             : field.type === 'enum' || field.type==='multiselect'
             ? <select id={'record-' + field.key} multiple={field.type==='multiselect'} value={field.type==='multiselect'?String(values[field.key]??'').split(';').filter(Boolean):String(values[field.key] ?? '')} disabled={field.readOnly || saving} aria-invalid={!!errors[field.key]}
                 onChange={event => set(field.key,field.type==='multiselect'?[...event.target.selectedOptions].map(o=>o.value).join(';')||null: event.target.value || null)}>
@@ -135,6 +137,7 @@ export function RecordDrawer({ entityName, selected, spec, records, close, saved
           {spec.rules.filter(rule => rule.entity === entityName).map(rule => <div key={rule.id}><p>{rule.description}</p>
             <small>{rule.origin === 'configuration' ? 'Configuración importada' : 'Instrucción del usuario'}</small></div>)}
         </div> : null}
+        {extra ? extra(!isNew && JSON.stringify(values) !== JSON.stringify(selected.values)) : null}
       </div>
       <footer className="drawer-footer"><button type="button" className="button secondary" onClick={close} disabled={saving}>Cancelar</button>
         <button type="submit" className="button primary" disabled={saving}>{saving ? <Spinner text="Guardando…" /> : isNew ? 'Crear ' + entity.singular : 'Guardar cambios'}</button></footer>

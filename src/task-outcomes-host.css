@@ -1,0 +1,28 @@
+/* Superficie compacta de resultados de guardado y aviso tras bloquear (clases toh-*). Reutiliza los estilos ltso-* del detalle. Sin estilos globales. */
+.toh{margin:0 0 14px;padding:8px 12px;border:1px solid var(--border,#e0e5ee);border-left:3px solid var(--info-border,#c4d3f2);border-radius:8px;background:var(--bg-surface,#fff);color:var(--text-1,#0f1a2b);font-size:13px}
+.toh[hidden]{display:none}
+.toh[data-attention="true"]{border-left-color:var(--warning,#80510a)}
+.toh *{min-width:0}
+.toh-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 12px}
+.toh-line{margin:0;line-height:1.5;overflow-wrap:anywhere}
+.toh-title{font-weight:600}
+.toh-label{color:var(--text-2,#394659)}
+.toh-toggle{display:inline-flex;align-items:center;gap:4px;min-height:32px}
+.toh-toggle svg{transition:transform .12s}.toh-toggle svg.expanded{transform:rotate(180deg)}
+.toh-toggle:focus-visible,.toh-lock button:focus-visible{outline:2px solid var(--primary,#2c58dc);outline-offset:2px}
+.toh #toh-detail{margin-top:6px}
+.toh #toh-detail .ltso{margin:0;padding:8px 0 0;border:0;border-radius:0;background:transparent}
+/* El detalle ya está bajo el título de la barra: su encabezado se conserva para lectores de pantalla, sin repetirlo a la vista. */
+.toh .ltso>h2{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.toh-lock{display:flex;align-items:flex-start;gap:10px;margin:0 0 14px;padding:10px 12px;border:1px solid var(--warning-border,#e6cf92);border-left-width:3px;border-radius:8px;background:var(--warning-bg,#fbefd2);color:var(--text-1,#0f1a2b);font-size:13px;line-height:1.5}
+.toh-lock>div{flex:1;min-width:0;overflow-wrap:anywhere}
+.toh-lock p{margin:4px 0 0}
+.toh-lock-limit{color:var(--text-2,#394659)}
+.toh-lock>svg{flex:none;margin-top:2px}
+@media (max-width:600px){
+  .toh{padding:8px 10px}
+  .toh-bar{align-items:flex-start}
+  body .toh .toh-toggle{min-height:44px}
+  .toh-lock{padding:10px}
+}
+@media (prefers-reduced-motion:reduce){.toh *{transition:none!important}}

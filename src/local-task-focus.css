@@ -1,0 +1,53 @@
+/* Ficha lateral de una tarea. Reutiliza Modal side; los estilos del panel solo se aplican si contiene .ltf. */
+.modal-backdrop:has(.ltf){justify-content:flex-end;padding:0}
+.modal.modal-side:has(.ltf){width:min(560px,100%);height:100dvh;max-height:100dvh;margin:0;border-radius:0;border-left:1px solid var(--border,#e0e5ee);overflow:auto;box-shadow:-12px 0 35px #152b4914}
+.modal.modal-side:has(.ltf) .modal-header{position:sticky;top:0;background:var(--bg-subtle,#eef1f6);z-index:2;border-bottom:1px solid var(--border,#e0e5ee);padding:16px 20px}
+.modal.modal-side:has(.ltf) .modal-header h2{font-size:17px;line-height:1.35;overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;overflow:hidden}   /* el asunto completo está en su campo */
+
+.ltf{display:flex;flex-direction:column;flex:1;min-height:0;padding:0 20px;color:var(--text-1,#0f1a2b);font-size:13px}
+.ltf *{min-width:0}
+.ltf-status{margin:8px 0 8px;min-height:0;color:var(--text-2,#394659);outline:0}
+.ltf-status:empty{display:none}
+.ltf-context{display:flex;flex-wrap:wrap;gap:4px 14px;margin:14px 0 12px;color:var(--text-2,#394659);font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+.ltf-context code,.ltf-banner code{font-size:12px;background:var(--bg-subtle,#eef1f6);padding:0 4px;border-radius:4px;overflow-wrap:anywhere}
+.ltf-muted{color:var(--text-2,#394659);margin:12px 0}
+.ltf-banner{margin:0 0 14px;padding:10px 12px;border:1px solid var(--info-border,#c4d3f2);border-left-width:3px;border-radius:6px;background:var(--info-bg,#e8eefd);color:var(--text-1,#0f1a2b);line-height:1.5;outline:0}
+.ltf-banner p{margin:4px 0}.ltf-banner ul{margin:4px 0 4px 18px;padding:0}
+.ltf-banner.ltf-warning{background:var(--warning-bg,#fbefd2);border-color:var(--warning-border,#e6cf92)}
+.ltf-banner.ltf-danger{background:var(--danger-bg,#fdeae8);border-color:var(--danger-border,#efbab6)}
+.ltf-banner:focus-visible,.ltf-ack h3:focus-visible,.ltf-readonly:focus-visible{outline:2px solid var(--primary,#2c58dc);outline-offset:2px}
+.ltf-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+
+.ltf-form{display:flex;flex-direction:column;flex:1;min-height:0}
+.ltf-fields{display:grid;gap:14px;padding-bottom:12px}
+.ltf-field{display:grid;gap:5px}
+.ltf-field>label{font-weight:600;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline}
+.ltf-field>label small{font-weight:400;color:var(--text-3,#586680)}
+.ltf-required{color:var(--danger,#ac2a24)}
+.ltf-field input,.ltf-field select{width:100%;min-height:var(--control-h,32px);font:inherit}
+.ltf-field[data-invalid] input,.ltf-field[data-invalid] select{border-color:var(--danger,#ac2a24)}
+.ltf-readonly{margin:0;padding:6px 0;color:var(--text-2,#394659);overflow-wrap:anywhere;outline:0}
+.ltf-error{font-style:normal;color:var(--danger,#ac2a24);font-size:12px;line-height:1.4}
+.ltf-note{color:var(--warning,#80510a);line-height:1.4}
+.ltf-more{border-top:1px solid var(--border,#e0e5ee);padding:0}
+.ltf-more>summary{display:flex;align-items:center;min-height:40px;cursor:pointer;font-weight:600;color:var(--text-2,#394659)}
+.ltf-more>summary:focus-visible{outline:2px solid var(--primary,#2c58dc);outline-offset:2px}
+.ltf-more p,.ltf-more ul{margin:0 0 12px;line-height:1.5;color:var(--text-2,#394659)}.ltf-more ul{padding-left:18px}
+.ltf-footer{position:sticky;bottom:0;margin-top:auto;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;padding:12px 0;background:var(--bg-surface,#fff);border-top:1px solid var(--border,#e0e5ee)}
+.ltf-footer .button[aria-disabled="true"]{opacity:.55;cursor:not-allowed;box-shadow:none}
+
+.ltf-ack{display:grid;gap:8px;padding:6px 0 18px}
+.ltf-ack h3{display:flex;align-items:center;gap:8px;margin:0;font-size:16px;color:var(--success,#17684a);outline:0}
+.ltf-ack p,.ltf-ack ul{margin:0}.ltf-ack ul{padding-left:18px;line-height:1.6;overflow-wrap:anywhere}
+.ltf-values{display:grid;gap:10px;margin:0 0 18px}.ltf-values div{display:grid;gap:2px}.ltf-values dt{font-size:12px;color:var(--text-3,#586680)}.ltf-values dd{margin:0;overflow-wrap:anywhere}
+.ltf-sr{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+body .ltf .button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:var(--control-h,32px);height:auto;padding-block:6px;max-width:100%;text-align:center}
+@media (max-width:600px){
+  .ltf{padding:0 14px}
+  body .ltf .button{min-height:44px}
+  body .ltf .ltf-actions .button,body .ltf .ltf-footer .button{flex:1 1 100%}
+  .ltf-field input,.ltf-field select{min-height:44px}
+  .ltf-more>summary{min-height:44px}
+}
+@media (prefers-reduced-motion:reduce){.ltf *{transition:none!important;animation:none!important}}

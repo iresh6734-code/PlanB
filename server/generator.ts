@@ -7,7 +7,7 @@ import { generateWithAI } from './ai.js';
 import { importHubspot } from './hubspot.js';
 import { ProviderSettings } from './provider.js';
 
-export function registerGenerator(app: FastifyInstance, store: Store, providers: ProviderSettings) {
+export function registerGenerator(app: FastifyInstance, store: Store, providers: ProviderSettings, generate: typeof generateWithAI = generateWithAI) {
   let working = false;
   async function exclusively<T>(fn: () => Promise<T>): Promise<T> {
     if (working) throw new AppError(409, 'Hay una importación o generación en curso. Espera a que termine.');
@@ -40,12 +40,14 @@ export function registerGenerator(app: FastifyInstance, store: Store, providers:
   app.post('/api/generate', async request => {
     const body = z.object({ mode: z.enum(['demo', 'ai']), prompt: z.string().max(8000).default('') }).strict().parse(request.body);
     return exclusively(async () => {
+      store.assertRecoveryIntegrity();
       if(store.get('continuitySession',null))throw new AppError(409,'No se generan propuestas durante una sesión de continuidad.');
       const snapshot = store.candidate?.snapshot ?? store.snapshot;
       if (!snapshot) throw new AppError(409, 'Elige o importa primero una captura.');
       const config = providers.read();
       try {
-        const spec = body.mode === 'demo' ? makeDemoSpec(snapshot) : await generateWithAI(store, snapshot, body.prompt, config);
+        store.assertRecoveryIntegrity();
+        const spec = body.mode === 'demo' ? makeDemoSpec(snapshot) : await generate(store, snapshot, body.prompt, config);
         store.saveGeneration(spec, {
           provider: body.mode === 'demo' ? 'demo' : 'ai', model: body.mode === 'demo' ? null : config!.model,
           generatedAt: new Date().toISOString(), prompt: body.mode === 'demo' ? '' : body.prompt, approved: false
@@ -53,7 +55,10 @@ export function registerGenerator(app: FastifyInstance, store: Store, providers:
         return { spec, generation: store.candidate?.generation ?? store.generation,
           note: body.mode === 'demo' ? 'Especificación de ensayo construida a partir de la captura. No se ha llamado a una IA ni se han procesado instrucciones nuevas.' : 'Especificación generada por tu proveedor y validada localmente. Revisa las reglas antes de activarla.' };
       } catch (error) {
-        store.failGeneration(error instanceof AppError ? error.message : 'No se pudo completar la generación.');
+        store.transaction(() => {
+          store.assertRecoveryIntegrity();
+          store.failGeneration(error instanceof AppError ? error.message : 'No se pudo completar la generación.');
+        });
         throw error;
       }
     });

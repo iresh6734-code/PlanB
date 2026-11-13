@@ -3,8 +3,10 @@ import { z } from 'zod';
 import type { Store } from './store.js';
 import { SalesAgents } from './agents.js';
 import { exportSummary } from './recovery-copy.js';
+import { registerActivationReview } from './activation-review.js';
 
 export function registerV4(app:FastifyInstance,store:Store,runtime:boolean) {
+  registerActivationReview(app,store,runtime);
   const agents=new SalesAgents(store,runtime);
   const id=z.object({id:z.string().uuid()}).strict();
   const approval=z.object({mode:z.literal('simulation'),contentHash:z.string().regex(/^[a-f0-9]{64}$/),reviewed:z.literal(true)}).strict();

@@ -1,4 +1,5 @@
 import type { CrmRecord, CrmSnapshot, EntityName, FieldValue } from './model.js';
+import type {RecoveryIntegrity} from './recovery-integrity.js';
 export interface Job {
   id: string; kind: 'capture' | 'drill' | 'return'; status: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled' | 'interrupted';
   createdAt: string; updatedAt: string; message: string; progress: number; result?: unknown;
@@ -19,6 +20,7 @@ export interface ContinuityStatus {
   latestCapture:CaptureSummary|null; readiness:DrillReadiness;
   connection?:{accountId:string;mode:'test'|'production_readonly';accountType:string;verifiedAt:string|null;selectedFields:Record<string,string[]>}|null;
   recoveryCopy?:RecoveryCopy|null;
+  recoveryIntegrity?:RecoveryIntegrity;
   operations?:{lastAttempt:string|null;lastSuccess:string|null;error:{at:string;message:string;action:string}|null;paused:boolean};
 }
 export interface RecoveryCopy {

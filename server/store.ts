@@ -4,6 +4,7 @@ import { dirname } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { localKey, open, seal } from './crypto.js';
 import type { RecoveryPlan } from '../shared/operations.js';
+import {inspectPersistedRecoveryPlan,INVALID_RECOVERY_MESSAGE} from '../shared/recovery-integrity.js';
 import {
   AppSpecSchema, BundleSchema, RecordSchema, SnapshotSchema, reconcile, validateRecord, validateSpec,
   type AppSpec, type Change, type ContinuityBundle, type CrmRecord, type CrmSnapshot,
@@ -16,6 +17,7 @@ export class AppError extends Error {
 export class Store {
   db: DatabaseSync;
   private key: Buffer | null;
+  private recoveryCache:{encoded:string|null;state:ReturnType<typeof inspectPersistedRecoveryPlan>}|null=null;
   constructor(public filename: string) {
     if (filename !== ':memory:') mkdirSync(dirname(filename), { recursive: true });
     this.key = filename === ':memory:' ? null : localKey(dirname(filename));
@@ -41,11 +43,21 @@ export class Store {
     let changed = false;
     this.transaction(() => {
       for (const [table, columns] of Object.entries({ meta: ['value'], records: ['value'], changes: ['before_json','after_json'], archives: ['bundle'], captures: ['payload'] })) {
-        const rows = this.db.prepare('SELECT rowid AS rid,' + columns.join(',') + ' FROM ' + table).all() as Record<string, string | number | null>[];
+        const rows = this.db.prepare('SELECT rowid AS rid,' + (table === 'meta' ? 'key,' : '') + columns.join(',') + ' FROM ' + table).all() as Record<string, string | number | null>[];
         for (const row of rows) for (const column of columns) {
           const value = row[column];
           if (typeof value === 'string' && !value.startsWith('enc1:')) {
-            JSON.parse(value);
+            const recoveryPlanRow = table === 'meta' && row.key === 'recoveryPlan';
+            let parsed: unknown;
+            try { parsed = JSON.parse(value); }
+            catch (error) {
+              // The journal reader quarantines unreadable entries individually. Leave the original bytes available to it.
+              const journalRow = table === 'meta' && typeof row.key === 'string' && row.key.startsWith('task-intent:');
+              if (recoveryPlanRow || journalRow) continue;
+              throw error;
+            }
+            // Preserve invalid recovery evidence exactly; its reader exposes the fixed R1 diagnostic.
+            if (recoveryPlanRow && inspectPersistedRecoveryPlan(parsed).integrity.state === 'invalid') continue;
             this.db.prepare('UPDATE ' + table + ' SET ' + column + '=? WHERE rowid=?').run(seal(value,this.key!),row.rid);
             changed = true;
           }
@@ -61,6 +73,18 @@ export class Store {
   set(key: string, value: unknown) {
     this.db.prepare('INSERT INTO meta(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run(key, this.encode(value));
   }
+  private checkedRecoveryState(){
+    const row=this.db.prepare('SELECT value FROM meta WHERE key=?').get('recoveryPlan') as {value:string}|undefined,encoded=row?.value??null;
+    if(!this.recoveryCache||this.recoveryCache.encoded!==encoded){
+      let raw:unknown=null;try{if(encoded!==null)raw=this.decode<unknown>(encoded);}catch{raw=undefined;}
+      this.recoveryCache={encoded,state:inspectPersistedRecoveryPlan(raw)};
+    }
+    return this.recoveryCache.state;
+  }
+  recoveryIntegrity(){return {...this.checkedRecoveryState().integrity};}
+  recoveryState(){const state=this.checkedRecoveryState();return {integrity:{...state.integrity},plan:state.plan?structuredClone(state.plan):null};}
+  assertRecoveryIntegrity(){if(this.checkedRecoveryState().integrity.state==='invalid')throw new AppError(409,INVALID_RECOVERY_MESSAGE,{code:'RECOVERY_PLAN_INVALID'});}
+  validatedRecoveryPlan(){const state=this.checkedRecoveryState();if(state.integrity.state==='invalid')throw new AppError(409,INVALID_RECOVERY_MESSAGE,{code:'RECOVERY_PLAN_INVALID'});return state.plan?structuredClone(state.plan):null;}
   get snapshot() { return this.get<CrmSnapshot | null>('snapshot', null); }
   get spec() { return this.get<AppSpec | null>('spec', null); }
   get generation() { return this.get<Generation | null>('generation', null); }
@@ -83,6 +107,7 @@ export class Store {
     catch (error) { this.db.exec('ROLLBACK'); throw error; }
   }
   importSnapshot(raw: unknown, replace = false): Reconciliation {
+    this.assertRecoveryIntegrity();
     if(this.get('returnBusy',false))throw new AppError(409,'Hay una devolución en curso.');
     if(this.get('continuitySession',null))throw new AppError(409,'Cierra la sesión de continuidad antes de importar otra captura.');
     const parsed = SnapshotSchema.safeParse(raw);
@@ -107,6 +132,7 @@ export class Store {
       return report;
     }
     this.transaction(() => {
+      this.assertRecoveryIntegrity();
       const existing = this.bundleOrNull();
       if (existing) this.db.prepare('INSERT INTO archives(id,at,bundle) VALUES(?,?,?)').run(randomUUID(), new Date().toISOString(), this.encode(existing));
       this.db.exec('DELETE FROM records; DELETE FROM changes;');
@@ -120,6 +146,7 @@ export class Store {
     return report;
   }
   saveGeneration(raw: unknown, generation: Generation) {
+    this.assertRecoveryIntegrity();
     if(this.get('returnBusy',false))throw new AppError(409,'Hay una devolución en curso.');
     if(this.get('continuitySession',null))throw new AppError(409,'La generación queda pausada durante una sesión de continuidad.');
     const candidate = this.candidate;
@@ -132,8 +159,8 @@ export class Store {
       this.failGeneration('La generación no superó la validación.');
       throw new AppError(422, 'La aplicación no está preparada. Revisa la generación.', errors);
     }
-    if (this.ready) this.set('candidate', { ...(candidate ?? { snapshot, reconciliation: this.reconciliation!, replaceRecords: false, replaceApproved: false, baselineChanges: this.changesCount }), spec: parsed.data, generation: { ...generation, approved: false }, error: null });
-    else this.transaction(() => { this.set('spec', parsed.data); this.set('generation', { ...generation, approved: false }); this.set('lastError', null); });
+    if (this.ready) this.transaction(()=>{this.assertRecoveryIntegrity();this.set('candidate', { ...(candidate ?? { snapshot, reconciliation: this.reconciliation!, replaceRecords: false, replaceApproved: false, baselineChanges: this.changesCount }), spec: parsed.data, generation: { ...generation, approved: false }, error: null });});
+    else this.transaction(() => { this.assertRecoveryIntegrity();this.set('spec', parsed.data); this.set('generation', { ...generation, approved: false }); this.set('lastError', null); });
   }
   get candidate() { return this.get<{ snapshot: CrmSnapshot; reconciliation: Reconciliation; spec: AppSpec | null; generation: Generation | null; error: string | null; replaceRecords: boolean; replaceApproved: boolean; baselineChanges: number } | null>('candidate',null); }
   failGeneration(message: string) {
@@ -144,6 +171,7 @@ export class Store {
     } else this.set('lastError', message);
   }
   activate() {
+    this.assertRecoveryIntegrity();
     if(this.get('continuitySession',null))throw new AppError(409,'Cierra la sesión de continuidad antes de activar otra versión.');
     const candidate = this.candidate;
     const spec = candidate?.spec ?? (!candidate ? this.spec : null), snapshot = candidate?.snapshot ?? this.snapshot, generation = candidate?.generation ?? (!candidate ? this.generation : null);
@@ -160,6 +188,7 @@ export class Store {
       throw new AppError(422, 'No se puede activar todavía.', errors.slice(0, 50));
     }
     this.transaction(() => {
+      this.assertRecoveryIntegrity();
       if (candidate) {
         const old = this.bundleOrNull();
         if (old) this.db.prepare('INSERT INTO archives(id,at,bundle) VALUES(?,?,?)').run(randomUUID(),new Date().toISOString(),this.encode(old));
@@ -183,9 +212,10 @@ export class Store {
     return row ? this.decode<CrmRecord>(row.value) : null;
   }
   saveRecord(entity: EntityName, values: CrmRecord['values'], id?: string): CrmRecord {
+    this.assertRecoveryIntegrity();
     if(!id&&this.records().length>=MAX_RECORDS)throw new AppError(413,'El piloto admite hasta 10.000 registros totales.');
     if(this.get('returnBusy',false))throw new AppError(409,'Espera a que termine la devolución revisada.');
-    const plan=this.get<RecoveryPlan|null>('recoveryPlan',null);
+    const plan=this.validatedRecoveryPlan();
     if(plan&&plan.status!=='complete'&&plan.operations.some(o=>['applied','sending','uncertain'].includes(o.status)))throw new AppError(409,'Resuelve la devolución parcial antes de seguir editando. Tus cambios actuales se conservan.');
     if (!this.ready || !this.spec) throw new AppError(409, 'Revisa y activa primero la aplicación.');
     const previous = id ? this.record(entity, id) : null;
@@ -202,6 +232,7 @@ export class Store {
     }
     if (Object.keys(errors).length) throw new AppError(422, 'Revisa los campos señalados.', errors);
     this.transaction(() => {
+      this.assertRecoveryIntegrity();
       this.insertRecord(record);
       this.db.prepare('INSERT INTO changes(at,entity,record_id,operation,before_json,after_json) VALUES(?,?,?,?,?,?)')
         .run(new Date().toISOString(), entity, record.id, previous ? 'update' : 'create', previous ? this.encode(previous) : null, this.encode(record));
@@ -219,9 +250,10 @@ export class Store {
     }));
   }
   bundleOrNull(): ContinuityBundle | null {
+    this.assertRecoveryIntegrity();
     const snapshot = this.snapshot, spec = this.spec, generation = this.generation;
     if (!snapshot || !spec || !generation) return null;
-    const plan=this.get<RecoveryPlan|null>('recoveryPlan',null);
+    const plan=this.validatedRecoveryPlan();
     const manualReport=this.get<NonNullable<ContinuityBundle['returnState']>['manualReport']|null>('manualRecoveryReport',null);
     return { format: snapshot.version===3?'planb-continuity-v3':'planb-continuity-v2', exportedAt: new Date().toISOString(), sessionId: this.get('sessionId',''),
       returnState:{accountId:snapshot.source.accountId,watermark:this.get('returnWatermark:hubspot',0),mapping:this.get('remoteMapping:hubspot',{}),plan:plan?.source==='hubspot'?plan:null,...(manualReport?{manualReport}:{})},
@@ -232,6 +264,7 @@ export class Store {
     return this.bundleOrNull()!;
   }
   restoreBundle(raw: unknown) {
+    this.assertRecoveryIntegrity();
     if(this.get('returnBusy',false))throw new AppError(409,'Espera a que termine la revisión de cambios.');
     const parsed = BundleSchema.safeParse(raw);
     if (!parsed.success) throw new AppError(422, 'El paquete de continuidad no es válido.');
@@ -277,6 +310,7 @@ export class Store {
     }
     if (!report.complete || errors.length || !bundle.generation.approved) throw new AppError(422, 'El paquete no superó la comprobación de integridad.', [...report.errors, ...errors]);
     this.transaction(() => {
+      this.assertRecoveryIntegrity();
       this.db.exec('DELETE FROM records; DELETE FROM changes;');
       for (const record of bundle.records) this.insertRecord(record);
       for (const change of bundle.changes) this.db.prepare('INSERT INTO changes(id,at,entity,record_id,operation,before_json,after_json) VALUES(?,?,?,?,?,?,?)')
@@ -290,8 +324,10 @@ export class Store {
         if(returned.manualReport)this.set('manualRecoveryReport',returned.manualReport);
         const plan=returned.plan;
         if(plan){
-          if(plan.status==='applying'){for(const op of plan.operations)if(op.status==='sending'){op.status='uncertain';op.error='La copia se exportó durante un envío. Verifica el resultado remoto antes de repetir.';}plan.status='partial';}
-          if(plan.status==='approved'){plan.status='review';plan.approvedAt=null;}
+          // No sender survives a restore. Treat every outstanding send as unknown even if the saved plan status is inconsistent.
+          for(const op of plan.operations)if(op.status==='sending'){op.status='uncertain';op.error='La copia se exportó durante un envío. Verifica el resultado remoto antes de repetir.';}
+          if(plan.status==='applying'||plan.operations.some(op=>op.status==='uncertain')){plan.status='partial';plan.approvedAt=null;}
+          else if(plan.status==='approved'){plan.status='review';plan.approvedAt=null;}
           this.set('recoveryPlan',plan);
         }
       }
@@ -322,6 +358,7 @@ export class Store {
     return total;
   }
   private resetReturnState() {
+    this.assertRecoveryIntegrity();
     this.set('agentState',{runs:[],proposals:[],artifacts:[]});
     this.set('manualRecoveryReport',null);
     for(const key of ['recoveryPlan','continuitySession','simulatedRemote'])this.set(key,null);
@@ -374,9 +411,11 @@ export class Store {
     return { usedUsd: row.used, reservedUsd: row.reserved, limitUsd: 25, requests: row.requests };
   }
   reserveUsage(worstCaseUsd: number): string {
+    this.assertRecoveryIntegrity();
     if (!Number.isFinite(worstCaseUsd) || worstCaseUsd < 0) throw new AppError(422, 'La reserva de presupuesto no es válida.');
     const id = randomUUID(), month = new Date().toISOString().slice(0, 7);
     this.transaction(() => {
+      this.assertRecoveryIntegrity();
       const used = this.usage();
       if (used.usedUsd + used.reservedUsd + worstCaseUsd > used.limitUsd) throw new AppError(429, 'Se alcanzó el límite local de 25 USD para pruebas de IA.');
       this.db.prepare("INSERT INTO usage(id,month,reserved_usd,used_usd,status) VALUES(?,?,?,0,'pending')").run(id, month, worstCaseUsd);

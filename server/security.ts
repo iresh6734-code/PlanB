@@ -4,6 +4,14 @@ import { z } from 'zod';
 import { AppError, Store } from './store.js';
 import { APP_VERSION } from '../shared/version.js';
 
+const localAuthorization = Symbol('planb.localAuthorization');
+type CaptureAuthorization = (cookieHeader?: string) => () => boolean;
+
+/** Retrieve the original authorization capture for this app. Requires registerSecurity. */
+export function getLocalAuthorizationCapture(app: FastifyInstance): CaptureAuthorization {
+  return app.getDecorator<CaptureAuthorization>(localAuthorization);
+}
+
 export function registerSecurity(app: FastifyInstance, store: Store) {
   const sessions = new Map<string,number>(), attempts = new Map<string,{at:number;count:number}>();
   const credential = () => store.get<{salt:string;hash:string}|null>('password',null);
@@ -13,6 +21,27 @@ export function registerSecurity(app: FastifyInstance, store: Store) {
     if (!expiry || expiry < Date.now()) { sessions.delete(id); return false; }
     if(extend)sessions.set(id,Date.now()+30*60_000); return true;
   };
+  // Operations that await I/O can recheck their original authorization without renewing it.
+  function captureAuthorization(cookieHeader?: string): () => boolean {
+    let protectedAtStart: boolean;
+    try {
+      protectedAtStart = !!credential();
+      if (protectedAtStart && !authenticated(cookieHeader)) return () => false;
+    } catch {
+      return () => false;
+    }
+    let current = true;
+    return () => {
+      if (!current) return false;
+      try {
+        current = !!credential() === protectedAtStart && (!protectedAtStart || authenticated(cookieHeader));
+      } catch {
+        current = false;
+      }
+      return current;
+    };
+  }
+  app.decorate(localAuthorization, captureAuthorization);
   app.addHook('onRequest',async (request,reply) => {
     const path = request.url.split('?')[0];
     if (!path.startsWith('/api/') || path.startsWith('/api/v2/auth/') || path === '/api/health') return;
@@ -41,4 +70,5 @@ export function registerSecurity(app: FastifyInstance, store: Store) {
     reply.header('Set-Cookie','planb_session='+id+'; HttpOnly; SameSite=Strict; Path=/; Max-Age=1800'); return {authenticated:true};
   });
   app.post('/api/v2/auth/lock',async(request,reply)=>{sessions.delete(cookie(request.headers.cookie)); reply.header('Set-Cookie','planb_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0');return {locked:true};});
+  return { captureAuthorization };
 }

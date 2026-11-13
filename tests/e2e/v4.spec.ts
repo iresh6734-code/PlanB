@@ -62,6 +62,7 @@ test('v4: exportación muestra revisión e invalida custodia al editar',async({p
   const summary=await request.get('/api/v4/export-summary').then(r=>r.json());
   await page.getByLabel('Contraseña de recuperación',{exact:true}).fill('recuperacion-sintetica-2026');
   await page.getByLabel('Repite la contraseña',{exact:true}).fill('recuperacion-sintetica-2026');
+  await page.getByLabel('He revisado la captura y los cambios incluidos en esta descarga.',{exact:true}).check();
   const download=page.waitForEvent('download');await page.getByRole('button',{name:'Solo copia cifrada',exact:true}).click();await download;
   expect((await request.post('/api/v3/recovery-copy/confirm',{data:{storedSeparately:true,revision:summary.revision}})).ok()).toBeTruthy();
   await request.patch('/api/records/contacts/contact-1',{data:{values:{phone:'600 777 777'}}});

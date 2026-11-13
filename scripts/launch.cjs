@@ -27,7 +27,8 @@ function open(url){
   fs.mkdirSync(data,{recursive:true});
   const logfile=path.join(data,'startup.log');
   if(fs.existsSync(logfile)&&fs.statSync(logfile).size>1024*1024)fs.writeFileSync(logfile,'');
-  const env=Object.fromEntries(Object.entries(process.env).filter(([name])=>!/API_KEY|TOKEN|SECRET|NODE_OPTIONS|NODE_ENV|^PLANB_/i.test(name)));
+  const platformVariables=new Set(['path','systemroot','windir','comspec','pathext','temp','tmp','tmpdir','lang','lc_all','lc_ctype','tz','processor_architecture','number_of_processors']);
+  const env=Object.fromEntries(Object.entries(process.env).filter(([name])=>platformVariables.has(name.toLowerCase())));
   env.PLANB_DATA_DIR=data;
   const log=fs.openSync(logfile,'a');
   const child=spawn(process.execPath,[path.join(root,entry)],{cwd:root,env,windowsHide:true,detached:true,stdio:['ignore',log,log]});child.unref();fs.closeSync(log);

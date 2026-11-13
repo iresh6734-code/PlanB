@@ -9,6 +9,11 @@ import { registerSecurity } from './security.js';
 import { registerV2, type ExternalServices } from './v2.js';
 import { randomUUID } from 'node:crypto';
 import { registerV4 } from './v4.js';
+import { registerResponseQueue } from './response-queue.js';
+import { registerWorkspaceSearch, workspaceSearchIdentity } from './workspace-search.js';
+import type { WorkspaceSearchContext } from '../shared/workspace-search.js';
+import { registerLocalOperations } from './local-operations.js';
+import { registerTaskRevision } from './task-revision.js';
 
 /** Celda CSV entrecomillada. Una celda que una hoja de cálculo ejecutaría como fórmula (= + - @ o tabulador/retorno iniciales) se
  *  prefija con una comilla simple; los números, incluso negativos, no se tocan. */
@@ -21,14 +26,16 @@ export interface AppOptions {
   dbPath: string; root: string; staticDir: string; runtime?: boolean;
   aiConfigured?: () => boolean; aiPublic?: () => AppState['aiSettings'];
   hubspotConfigured?: () => boolean;
+  /** Enable only for launchers that enforce one cooperative writer per data directory. */
+  taskRevisions?: boolean;
   external?:ExternalServices;
 }
-export async function createBaseApp(options: AppOptions): Promise<{ app: FastifyInstance; store: Store }> {
+export async function createBaseApp(options: AppOptions): Promise<{ app: FastifyInstance; store: Store; security: ReturnType<typeof registerSecurity> }> {
   const store = new Store(options.dbPath);
   if(!store.get('instanceId',null))store.set('instanceId',randomUUID());
   if (options.runtime) store.set('disconnected', true);
   const app = Fastify({ logger: false, bodyLimit: 20 * 1024 * 1024, requestTimeout: 180000 });
-  registerSecurity(app,store);
+  const security = registerSecurity(app,store);
   app.addHook('onClose', async () => { store.close(); });
   app.addHook('onRequest', async (request, reply) => {
     const host = request.headers.host ?? '';
@@ -54,7 +61,7 @@ export async function createBaseApp(options: AppOptions): Promise<{ app: Fastify
     const status = error && typeof error === 'object' && 'statusCode' in error ? Number(error.statusCode) : 500;
     return reply.code(status >= 400 && status < 500 ? status : 500).send({ error: status === 413 ? 'El archivo es demasiado grande.' : 'No se pudo completar la operación. La última copia válida sigue guardada.' });
   });
-  const readState = async (): Promise<AppState> => ({
+  const readState = async (): Promise<AppState & { workspaceSearchContext: WorkspaceSearchContext | null }> => ({
     snapshot: store.snapshot, spec: store.spec, generation: store.generation,
     reconciliation: store.reconciliation, disconnected: store.disconnected, runtime: !!options.runtime,
     ready: store.ready, changes: store.changesCount, usage: store.usage(),
@@ -62,7 +69,7 @@ export async function createBaseApp(options: AppOptions): Promise<{ app: Fastify
     hubspotConfigured: !options.runtime && (!!store.get('hubspotConnection',null)||(options.hubspotConfigured?.() ?? false)),
     lastError: store.get<string | null>('lastError', null),
     aiSettings: options.runtime ? null : options.aiPublic?.() ?? null
-    ,candidate: store.candidate
+    ,candidate: store.candidate, workspaceSearchContext: workspaceSearchIdentity(store)
   });
   app.get('/api/state',readState);
   app.get('/api/v2/state',async()=>{
@@ -135,6 +142,10 @@ export async function createBaseApp(options: AppOptions): Promise<{ app: Fastify
   });
   registerV2(app,store,options.root,!!options.runtime,options.external);
   registerV4(app,store,!!options.runtime);
+  registerResponseQueue(app,store);
+  registerWorkspaceSearch(app,store);
+  registerLocalOperations(app,store);
+  if (options.taskRevisions) registerTaskRevision(app,store);
   if (existsSync(options.staticDir)) {
     await app.register(staticPlugin, { root: options.staticDir, prefix: '/', decorateReply: true });
     app.setNotFoundHandler((request, reply) => {
@@ -142,5 +153,5 @@ export async function createBaseApp(options: AppOptions): Promise<{ app: Fastify
       return reply.sendFile('index.html');
     });
   }
-  return { app, store };
+  return { app, store, security };
 }

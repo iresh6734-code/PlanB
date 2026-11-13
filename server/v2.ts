@@ -13,12 +13,15 @@ import { ConnectionSchema, type inspectConnection } from './connection.js';
 import { verifyManualRecovery } from './manual-recovery.js';
 import { APP_VERSION, RUNTIME_ZIP } from '../shared/version.js';
 import { rememberExport, confirmRecoveryCopy, bundleRevision } from './recovery-copy.js';
+import { registerCaptureComparison } from './capture-comparison.js';
 
 export interface ExternalServices { capture:CaptureImporter; remote:(token:string,accountId:string,spec:import('../shared/model.js').AppSpec,fetcher?:typeof fetch,readOnly?:boolean)=>Remote; inspect?:typeof inspectConnection; }
 export function registerV2(app:FastifyInstance,store:Store,root:string,runtime=false,external?:ExternalServices) {
+  registerCaptureComparison(app,store);
   const continuity=new Continuity(store,root,runtime,external?.capture),recovery=new Recovery(store);
   const remoteSchema=z.object({simulation:z.boolean().default(false),token:z.string().max(4096).optional()});
   function remote(raw:unknown){
+    store.assertRecoveryIntegrity();
     if(runtime)throw new AppError(403,'La devolución se prepara en el generador, no en el paquete independiente.');
     const options=remoteSchema.parse(raw);
     if(options.simulation)return simulatedRemote(store);
@@ -82,8 +85,9 @@ export function registerV2(app:FastifyInstance,store:Store,root:string,runtime=f
     if(continuity.status().session&&enabled)throw new AppError(409,'Cierra la sesión de continuidad para habilitar importación e IA. La devolución usa su propio recorrido revisado.');
     store.set('disconnected',!enabled);return {connected:enabled};
   });
-  app.get('/api/v2/changes',async()=>({changes:store.changes(),plan:recovery.plan(),revision:recovery.revision(),pendingChanges:store.pendingChangesCount,watermark:store.get('returnWatermark:hubspot',0),manualReport:store.get('manualRecoveryReport',null)}));
+  app.get('/api/v2/changes',async()=>{const recoveryState=store.recoveryState();return {changes:store.changes(),plan:recoveryState.plan,recoveryIntegrity:recoveryState.integrity,revision:recovery.revision(),pendingChanges:store.pendingChangesCount,watermark:store.get('returnWatermark:hubspot',0),manualReport:store.get('manualRecoveryReport',null)};});
   if(!runtime)app.post('/api/v3/manual-recovery/verify',async request=>{
+    store.assertRecoveryIntegrity();
     const body=z.object({revision:z.string().min(1),mapping:z.array(z.object({entity:EntityNameSchema,localId:z.string(),remoteId:z.string().regex(/^\d+$/)}).strict()).max(10000),reviewed:z.literal(true)}).strict().parse(request.body);
     const connection=continuity.connection();
     if(!connection||connection.mode!=='production_readonly'||!store.spec||store.get<{mode?:string}|null>('connectionPublic',null)?.mode!=='production_readonly')throw new AppError(403,'Autoriza primero la conexión de producción de esta instalación.');

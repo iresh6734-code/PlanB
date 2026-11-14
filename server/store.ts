@@ -18,6 +18,18 @@ export class Store {
   db: DatabaseSync;
   private key: Buffer | null;
   private recoveryCache:{encoded:string|null;state:ReturnType<typeof inspectPersistedRecoveryPlan>}|null=null;
+  /**
+   * Texto descifrado indexado por el texto cifrado exacto (LRU con tope de entradas y de caracteres).
+   * Cada escritura sella con un IV nuevo, así que cualquier cambio —de esta conexión, de otra o de otro
+   * proceso— produce otra clave: nunca se sirve contenido antiguo y no hace falta invalidar. decode()
+   * sigue analizando el JSON en cada llamada, de modo que quien llama recibe siempre objetos nuevos.
+   * No amplía la exposición: la clave local ya permanece en memoria mientras el proceso vive.
+   */
+  private plainCache=new Map<string,string>();
+  private plainCacheChars=0;
+  // entry: una captura de 10.000 registros ocupa ~5 M (cifrado + claro) y se lee en cada «ready»; un paquete
+  // mucho mayor (archivos, copias) no se guarda, para no expulsar de golpe todo lo demás.
+  private plainCacheLimit={entries:4*MAX_RECORDS,chars:48*1024*1024,entry:16*1024*1024};
   constructor(public filename: string) {
     if (filename !== ':memory:') mkdirSync(dirname(filename), { recursive: true });
     this.key = filename === ':memory:' ? null : localKey(dirname(filename));
@@ -35,9 +47,24 @@ export class Store {
     // A killed generation must not silently release its worst-case reservation.
     this.db.prepare("UPDATE usage SET status='interrupted' WHERE status='pending'").run();
   }
-  close() { this.db.close(); }
+  close() { this.forgetPlain(); this.db.close(); }
+  /** Olvida todo el texto descifrado; se llama al vaciar la tabla de registros (coherente con secure_delete). */
+  private forgetPlain() { this.plainCache.clear(); this.plainCacheChars = 0; }
   encode(value: unknown) { const text = JSON.stringify(value); return this.key ? seal(text, this.key) : text; }
-  decode<T>(value: string): T { return JSON.parse(this.key ? open(value,this.key) : value) as T; }
+  decode<T>(value: string): T { return JSON.parse(this.key ? this.plain(value) : value) as T; }
+  private plain(value: string): string {
+    if (!value.startsWith('enc1:')) return open(value, this.key!);
+    const cached = this.plainCache.get(value);
+    if (cached !== undefined) { this.plainCache.delete(value); this.plainCache.set(value, cached); return cached; }
+    const text = open(value, this.key!), size = value.length + text.length, limit = this.plainCacheLimit;
+    if (size > limit.entry || size > limit.chars) return text;
+    this.plainCache.set(value, text); this.plainCacheChars += size;
+    for (const [oldest, old] of this.plainCache) {
+      if (this.plainCache.size <= limit.entries && this.plainCacheChars <= limit.chars) break;
+      this.plainCache.delete(oldest); this.plainCacheChars -= oldest.length + old.length;
+    }
+    return text;
+  }
   private migrateEncryption() {
     if (!this.key) return;
     let changed = false;
@@ -135,7 +162,7 @@ export class Store {
       this.assertRecoveryIntegrity();
       const existing = this.bundleOrNull();
       if (existing) this.db.prepare('INSERT INTO archives(id,at,bundle) VALUES(?,?,?)').run(randomUUID(), new Date().toISOString(), this.encode(existing));
-      this.db.exec('DELETE FROM records; DELETE FROM changes;');
+      this.db.exec('DELETE FROM records; DELETE FROM changes;'); this.forgetPlain();
       for (const record of snapshot.records) this.insertRecord(record);
       this.set('snapshot', snapshot); this.set('reconciliation', report);
       this.set('spec', null); this.set('generation', null); this.set('lastError', null);
@@ -192,7 +219,7 @@ export class Store {
       if (candidate) {
         const old = this.bundleOrNull();
         if (old) this.db.prepare('INSERT INTO archives(id,at,bundle) VALUES(?,?,?)').run(randomUUID(),new Date().toISOString(),this.encode(old));
-        if (candidate.replaceRecords) { this.db.exec('DELETE FROM records; DELETE FROM changes;'); for (const record of snapshot.records) this.insertRecord(record);this.resetReturnState(); }
+        if (candidate.replaceRecords) { this.db.exec('DELETE FROM records; DELETE FROM changes;'); this.forgetPlain(); for (const record of snapshot.records) this.insertRecord(record);this.resetReturnState(); }
         this.set('snapshot',snapshot); this.set('spec',spec); this.set('reconciliation',candidate.reconciliation);
       }
       this.set('generation', { ...generation, approved: true }); this.set('candidate',null); this.set('lastError',null);
@@ -213,7 +240,7 @@ export class Store {
   }
   saveRecord(entity: EntityName, values: CrmRecord['values'], id?: string): CrmRecord {
     this.assertRecoveryIntegrity();
-    if(!id&&this.records().length>=MAX_RECORDS)throw new AppError(413,'El piloto admite hasta 10.000 registros totales.');
+    if(!id&&Number((this.db.prepare('SELECT COUNT(*) AS n FROM records').get() as {n:number}).n)>=MAX_RECORDS)throw new AppError(413,'El piloto admite hasta 10.000 registros totales.');
     if(this.get('returnBusy',false))throw new AppError(409,'Espera a que termine la devolución revisada.');
     const plan=this.validatedRecoveryPlan();
     if(plan&&plan.status!=='complete'&&plan.operations.some(o=>['applied','sending','uncertain'].includes(o.status)))throw new AppError(409,'Resuelve la devolución parcial antes de seguir editando. Tus cambios actuales se conservan.');
@@ -311,7 +338,7 @@ export class Store {
     if (!report.complete || errors.length || !bundle.generation.approved) throw new AppError(422, 'El paquete no superó la comprobación de integridad.', [...report.errors, ...errors]);
     this.transaction(() => {
       this.assertRecoveryIntegrity();
-      this.db.exec('DELETE FROM records; DELETE FROM changes;');
+      this.db.exec('DELETE FROM records; DELETE FROM changes;'); this.forgetPlain();
       for (const record of bundle.records) this.insertRecord(record);
       for (const change of bundle.changes) this.db.prepare('INSERT INTO changes(id,at,entity,record_id,operation,before_json,after_json) VALUES(?,?,?,?,?,?,?)')
         .run(change.id, change.at, change.entity, change.recordId, change.operation, change.before ? this.encode(change.before) : null, this.encode(change.after));
@@ -399,8 +426,11 @@ export class Store {
     const needle = normalize(query);
     const matching = all.filter(r => r.entity === entity && (!pipeline || r.values.pipeline === pipeline) && (!needle || normalize(Object.values(r.values).join(' ') + ' ' + fields.filter(f=>f.type==='reference').map(f=>names.get(f.referenceEntity+':'+r.values[f.key]) ?? '').join(' ')).includes(needle)));
     const records = matching.slice(offset,offset+limit), related = new Map<string,CrmRecord>();
+    const byKey = new Map<string,CrmRecord>();
+    for (const r of all) if (!byKey.has(r.entity+':'+r.id)) byKey.set(r.entity+':'+r.id, r);
     for (const record of records) for (const field of fields) if (field.type === 'reference' && record.values[field.key]) {
-      const item = all.find(r=>r.entity===field.referenceEntity && r.id===record.values[field.key]);
+      const target = record.values[field.key]; // Igual que la búsqueda anterior: solo un ID de texto idéntico.
+      const item = typeof target === 'string' ? byKey.get(field.referenceEntity+':'+target) : undefined;
       if (item) related.set(item.entity+':'+item.id,item);
     }
     return { records, related: [...related.values()], total: matching.length, offset, limit };

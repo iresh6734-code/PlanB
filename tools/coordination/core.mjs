@@ -73,6 +73,19 @@ export function createBoard(root){
       task.baseline=snapshot(task.files);task.status='working';task.reserved=true;return task;
     }),
     checkPath:(id,actor,name)=>{const task=taskFor(load(),id,actor);guardTask(task,actor);name=safePath(name);requireValue(task.files.includes(name),'Archivo fuera del alcance reservado.');snapshot([name]);return {allowed:true,file:name};},
+    takeOver:(id,actor,note)=>mutate(actor,'take-over',id,board=>{
+      requireValue(actor==='codex','Solo Codex registra un traspaso autorizado por el usuario.');
+      const task=board.tasks.find(t=>t.id===id);
+      requireValue(task?.agent==='claude'&&task.reserved&&task.status==='working','El traspaso requiere una reserva de Claude en curso.');
+      const reason=text(note,'Motivo del traspaso',2000);
+      task.handoff={
+        from:task.agent, to:actor, at:new Date().toISOString(),
+        previousNote:task.note, received:snapshot(task.files), reason,
+      };
+      task.agent=actor;
+      task.note=reason;
+      return task;
+    }),
     submit:(id,actor,note)=>mutate(actor,'submit',id,board=>{
       const task=taskFor(board,id,actor);guardTask(task,actor);const current=snapshot(task.files);
       requireValue(task.files.some(p=>current[p]!==task.baseline[p]),'No hay entrega modificada en los archivos asignados.');task.submitted=current;task.status='review';task.note=text(note,'Evidencia',2000);return task;

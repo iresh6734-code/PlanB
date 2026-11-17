@@ -194,18 +194,35 @@ test('un acierto renueva la recencia: se desaloja el menos usado, no el más ant
 test('una entrada mayor que el tope por entrada no se guarda ni expulsa a las demás', t => {
   const { store } = encrypted(t);
   const v = view(store);
+  const [small, ...rest] = store.records('contacts');
+  const big = rest[0];
+  // Un registro con un campo muy largo supera el tope de prueba; el pequeño no.
+  store.saveRecord('contacts', { ...big.values, lastname: 'x'.repeat(4_000) }, big.id);
+  v.plainCache.clear(); v.plainCacheChars = 0;
+  v.plainCacheLimit = { ...v.plainCacheLimit, entry: 3_000 };
+  store.record('contacts', small.id);
+  const kept = [...v.plainCache.keys()];
+  assert.equal(kept.length, 1);
+  assert.ok(cipherOf(store, 'contacts', big.id).length > 3_000, 'el registro grande supera el tope de prueba');
+  assert.equal(store.record('contacts', big.id)?.values.lastname, 'x'.repeat(4_000), 'se lee igual aunque no se guarde');
+  assert.ok(!v.plainCache.has(cipherOf(store, 'contacts', big.id)), 'el registro grande no se guarda');
+  assert.ok(kept.every(key => v.plainCache.has(key)), 'no expulsa ninguna entrada que ya estaba');
+});
+
+test('los metadatos nunca quedan en la caché: desvincular la réplica no deja su texto en memoria', t => {
+  const { store } = encrypted(t);
+  const v = view(store);
   store.records();
-  const before = v.plainCache.size, snapshotCipher = (store.db.prepare("SELECT value FROM meta WHERE key='snapshot'").get() as { value: string }).value;
-  v.plainCache.delete(snapshotCipher);
-  v.plainCacheChars = [...v.plainCache].reduce((n, [k, val]) => n + k.length + val.length, 0);
-  const others = [...v.plainCache.keys()];
-  v.plainCacheLimit = { ...v.plainCacheLimit, entry: 5_000 };
-  assert.ok(before > others.length && others.length > 0);
-  assert.ok(snapshotCipher.length > 5_000, 'la captura del fixture supera el tope de prueba');
-  assert.equal(store.ready, true);
-  assert.ok(!v.plainCache.has(snapshotCipher), 'la captura grande no se guarda');
-  assert.ok(others.every(key => v.plainCache.has(key)), 'no expulsa ninguna entrada que ya estaba');
-  assert.deepEqual(store.snapshot, store.decode((store.db.prepare("SELECT value FROM meta WHERE key='snapshot'").get() as { value: string }).value));
+  const size = v.plainCache.size;
+  store.set('teamReplica', { token: 'token-ficticio-357', origin: 'http://127.0.0.1:1' });
+  assert.equal(store.get<{ token: string } | null>('teamReplica', null)?.token, 'token-ficticio-357');
+  store.set('teamReplica', null);
+  assert.equal(store.get('teamReplica', 'sin-valor'), null);
+  assert.equal(store.ready, true); // lee captura, especificación y generación
+  assert.equal(v.plainCache.size, size, 'leer metadatos no añade entradas');
+  assert.ok(![...v.plainCache.values()].some(text => text.includes('token-ficticio-357')), 'ningún texto de la réplica retenido');
+  const metaCiphers = (store.db.prepare('SELECT value FROM meta').all() as { value: string }[]).map(r => r.value);
+  assert.ok(metaCiphers.every(c => !v.plainCache.has(c)), 'ninguna fila de meta en la caché');
 });
 
 test('al sustituir la tabla de registros se olvida el texto en claro de los registros retirados', t => {

@@ -13,3 +13,9 @@ La proyección distingue el no-op, el acuse recuperado y la confirmación nueva.
 ## R2 · Revalidación con la huella de la copia · 11/11/2026
 
 Se actualizaron las dos guardias de SHA-256 después de repetir las pruebas con la corrección 334. Los dos archivos de producto del gestor y su prueba de acuse compacto conservan sus huellas R1. El banco pin334-rehash-Jk1KRZ pasó 131/131 y tipos limpios, incluidas las guardias. El navegador aislado de 329 pasó 47/47. Ver CODEX-A4-TASK-CAPTURE-PIN-334.md para el alcance de la validación y el montaje pendiente.
+
+## R3 · Separar el plazo de lectura del de escritura en la prueba · 17/11/2026
+
+La batería 397 observó `not_sent` donde la prueba esperaba `uncertain`. El mismo caso pasó aislado. Al retrasar artificialmente la lectura previa 120 ms, el plazo anterior de 40 ms de lectura venció y se reprodujo exactamente la diferencia. La prueba corregida conserva el plazo normal en la comprobación previa, limita a 40 ms el PATCH que se retiene y aplica un plazo de lectura breve solo a la verificación que deliberadamente nunca responde. Cuenta las dos escrituras que llegan al transporte de ensayo y comprueba que ninguna llega al servidor ni se vuelve a enviar.
+
+El mismo retraso controlado pasó con la separación de plazos. La versión final pasó **65/65** sobre gestor, ficha y acuse compacto, y la comprobación de tipos pasó. No cambió el cliente, el gestor, la API ni un plazo de producción. No se repitió la batería global después de esta corrección. Banco `tests/.tmp/timeout413-8e88212f63204e48a7bf1ca0c8d4a177`, con los registros del fallo provocado, el control corregido y las pruebas finales.

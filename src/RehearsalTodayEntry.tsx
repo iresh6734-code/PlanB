@@ -26,7 +26,7 @@ export function RehearsalTodayEntry({ contextRevision, onOpen, onOpenRadar }: { 
   if (overview.status === 'radar-not-ready') {
     return (
       <aside className="or-today" aria-label="Ensayar mi semana">
-        <p><span className="or-chip">Ensayo · ficción</span> Activa el Radar de compromisos para ver qué promesas de esta semana no caben y ensayar respuestas.</p>
+        <p><span className="or-chip">Datos de prueba</span> Activa el Radar de compromisos para ver qué promesas de esta semana no caben y ensayar respuestas.</p>
         <button type="button" className="button secondary" onClick={onOpenRadar}>Abrir el Radar</button>
       </aside>
     );
@@ -35,7 +35,7 @@ export function RehearsalTodayEntry({ contextRevision, onOpen, onOpenRadar }: { 
   const due = new Date(overview.focus.dueAt).toLocaleString('es-ES', { weekday: 'long', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: overview.week?.timeZone ?? 'Europe/Madrid' });
   return (
     <aside className="or-today" aria-label="Ensayar mi semana" data-projection={overview.diagnosis.projection}>
-      <p><span className="or-chip">Ensayo · ficción</span> <strong>{overview.focus.title}</strong>, comprometido para el {due}: {SHORT[overview.diagnosis.projection]}.</p>
+      <p><span className="or-chip">Datos de prueba</span> <strong>{overview.focus.title}</strong>, comprometido para el {due}: {SHORT[overview.diagnosis.projection]}.</p>
       <button type="button" className="button secondary" onClick={() => onOpen(overview.focus!.commitmentId)}>Ensayar mi semana</button>
     </aside>
   );

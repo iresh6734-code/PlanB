@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { chmodSync, existsSync, mkdirSync, readFileSync, readdirSync, rmdirSync, unlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { Worker } from 'node:worker_threads';
 import { pathToFileURL } from 'node:url';
 import { join, resolve } from 'node:path';
@@ -16,14 +16,13 @@ import { PASSWORD, TMP, clock, envelope, freePort, newKit, openDest, originAt, o
 // Kit de Relevo · ensayo con PROCESOS reales: CLI de ensayo, interrupciones (el proceso muere en cada paso), exclusión de escritores y escala. Los artefactos que se leen son los reales en disco.
 const REPO = resolve('.');
 function runRehearsal(args: string[], stdin: string): Promise<{ code: number | null; out: string; err: string }> {
+  mkdirSync(TMP, { recursive: true });
   return new Promise(ok => {
     const p = spawn(process.execPath, ['--require', join(REPO, 'scripts', 'block-external.cjs'), '--import', 'tsx', 'scripts/rehearse-rescue-capsule.ts', '--now', '2026-11-02T07:00:00.000Z', ...args], { cwd: REPO, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
-    let out = '', err = ''; p.stdout!.on('data', d => { out += d; }); p.stderr!.on('data', d => { err += d; }); p.on('exit', code => ok({ code, out, err })); p.stdin!.end(stdin);
+    let out = '', err = ''; p.stdout!.on('data', d => { out += d; }); p.stderr!.on('data', d => { err += d; }); p.on('close', code => ok({ code, out, err })); p.stdin!.end(stdin);
   });
 }
 const line = (out: string, key: string) => new RegExp('^' + key + ' (.+)$', 'm').exec(out)?.[1].trim();
-const dirsNow = () => readdirSync(TMP);
-const destinations = () => dirsNow().filter(n => /^rescue106-[0-9a-f-]{36}$/.test(n) && existsSync(join(TMP, n, 'rescue-room.marker.json')));
 
 test('CLI de ensayo: recorre el mismo contrato que la interfaz; la contraseña entra por STDIN y no aparece en argumentos, salida ni errores', async () => {
   assert.throws(() => parseRehearsal(['--password', 'x']), /no se pasa por argumentos/); assert.throws(() => parseDemo(['--password=x']), /no se pasa por argumentos/); assert.throws(() => parseDemo(['--clave', 'x']));
@@ -37,30 +36,67 @@ const CRASH: { step: string; expect: 'no-capsule' | 'tmp' | 'capsule' | 'staging
   { step: 'import:staging-created', expect: 'staging' }, { step: 'import:components-written', expect: 'staging' }, { step: 'import:published', expect: 'published' },
 ];
 for (const c of CRASH) test('interrupción · el proceso MUERE en «' + c.step + '»: artefactos reales, origen intacto y continuación segura', async () => {
-  const before = new Set(dirsNow()); const run = await runRehearsal(['--crash', c.step], PASSWORD + '\n'); assert.equal(run.code, 86, 'el proceso murió en el paso pedido: ' + run.err.slice(-200));
+  const run = await runRehearsal(['--crash', c.step], PASSWORD + '\n'); assert.equal(run.code, 86, 'el proceso murió en el paso pedido: ' + run.err.slice(0, 800));
   const kitDir = line(run.out, 'KIT')!, originDir = line(run.out, 'ORIGIN')!; trackKit(kitDir); trackFolder(originDir); const kit: Kit = { dir: kitDir, capsules: join(kitDir, 'capsules'), clock };
   const files = readdirSync(kit.capsules), real = files.filter(n => n.endsWith('.capsule')), tmp = files.filter(n => n.endsWith('.tmp'));
-  const origin = track(RescueRoom.open(originDir, { clock })); assert.equal(viewOf(origin).stage, 'return-partial', 'el origen abre y conserva su estado'); assert.equal(origin.crm.stats().calls.create, 1); assert.equal(origin.logicalDigest(), origin.logicalDigest());
-  const created = dirsNow().filter(n => !before.has(n)), staging = created.filter(n => /^rescue116-staging-/.test(n)), published = created.filter(n => /^rescue106-/.test(n) && n !== originDir.split(/[\\/]/).pop() && existsSync(join(TMP, n, 'rescue-room.marker.json')));
-  for (const n of published) trackFolder(join(TMP, n)); for (const n of staging) trackFolder(join(TMP, n));
+  const origin = track(RescueRoom.open(originDir, { clock })); assert.equal(viewOf(origin).stage, 'return-partial', 'el origen abre y conserva su estado'); assert.equal(origin.crm.stats().calls.create, 1);
+  const originDigest = origin.logicalDigest();
   if (c.expect === 'no-capsule') { assert.equal(real.length, 0); assert.equal(tmp.length, 0); const again = await exportCapsule(origin, PASSWORD, kit); assert.ok(loadCapsule(kit, again.name, PASSWORD).capsule, 'se puede exportar de nuevo'); }
   if (c.expect === 'tmp') { assert.equal(real.length, 0, 'sin cápsula publicada'); assert.equal(tmp.length, 1, 'queda el temporal'); assert.throws(() => loadCapsule(kit, tmp[0], PASSWORD), CapsuleError, 'un temporal no es una cápsula cargable'); const again = await exportCapsule(origin, PASSWORD, kit); assert.ok(loadCapsule(kit, again.name, PASSWORD).capsule); }
   if (c.expect === 'capsule' || c.expect === 'staging' || c.expect === 'published') assert.equal(real.length, 1, 'la cápsula publicada es real');
   if (c.expect !== 'no-capsule' && c.expect !== 'tmp') {
     const insp = await inspectCapsule(kit, real[0], PASSWORD);
-    if (c.expect === 'capsule') { const imp = await importCapsule(kit, { name: real[0], password: PASSWORD, expectedSha256: insp.sha256, expectedRevision: insp.revision }); trackFolder(join(TMP, imp.destination.folder)); assert.ok(existsSync(join(TMP, imp.destination.folder, 'rescue-room.marker.json'))); }
-    if (c.expect === 'staging') {
-      assert.equal(staging.length, 1, 'queda un staging huérfano'); assert.equal(published.length, 0, 'ningún destino publicado'); assert.throws(() => assertOwnRoot(join(TMP, staging[0])), RescueError_, 'el staging NO es reanudable');
-      const claim = JSON.parse(readFileSync(join(kit.capsules, real[0] + '.import-claim'), 'utf8')); assert.equal(claim.status, 'importing');
-      const imp = await importCapsule(kit, { name: real[0], password: PASSWORD, expectedSha256: insp.sha256, expectedRevision: insp.revision }); trackFolder(join(TMP, imp.destination.folder)); assert.equal(destinations().filter(n => !before.has(n) && n !== originDir.split(/[\\/]/).pop()).length, 1, 'un único destino tras reintentar (reclamo obsoleto recuperado)');
-      assert.deepEqual(sweepStaging().includes(staging[0]), true, 'el barrido retira el staging propio huérfano'); assert.ok(!existsSync(join(TMP, staging[0])));
+    const input = { name: real[0], password: PASSWORD, expectedSha256: insp.sha256, expectedRevision: insp.revision };
+    if (c.expect === 'capsule') {
+      assert.equal(readClaim(kit, input.name), null, 'la interrupción de exportación aún no reclamó la cápsula');
+      const imp = await importCapsule(kit, input);
+      trackFolder(join(TMP, imp.destination.folder));
+      assert.ok(isPublished(imp.destination.roomId));
     }
-    if (c.expect === 'published') {
-      assert.equal(published.length, 1, 'el destino ya estaba publicado'); const dest = track(RescueRoom.open(join(TMP, published[0]), { clock })); assert.equal(viewOf(dest).stage, 'return-partial', 'abre con normalidad'); dest.close();
-      await assert.rejects(importCapsule(kit, { name: real[0], password: PASSWORD, expectedSha256: insp.sha256, expectedRevision: insp.revision }), (e: unknown) => e instanceof CapsuleError && e.code === 'ALREADY_IMPORTED' && JSON.stringify(e.details).includes(published[0]), 'no se crea un segundo destino');
-      assert.equal(destinations().filter(n => !before.has(n) && n !== originDir.split(/[\\/]/).pop()).length, 1);
+    if (c.expect === 'staging' || c.expect === 'published') {
+      const claim = readClaim(kit, input.name);
+      assert.ok(claim?.destination && /^[0-9a-f-]{36}$/.test(claim.destination));
+      assert.equal(claim.status, 'importing');
+      assert.equal(describeClaim(kit, input.name).claim?.pidAlive, false);
+      const id = claim.destination;
+      const stagingName = 'rescue116-staging-' + id;
+      const staging = trackFolder(join(TMP, stagingName));
+      const destination = trackFolder(join(TMP, 'rescue106-' + id));
+      const expectedLocation = c.expect === 'staging' ? staging : destination;
+      const marker = JSON.parse(readFileSync(join(expectedLocation, 'rescue-room.marker.json'), 'utf8'));
+      assert.equal(marker.roomId, id);
+      assert.equal(marker.capsuleRevision, insp.revision);
+      if (c.expect === 'staging') {
+        assert.ok(!existsSync(destination), 'el destino del reclamo todavía no existe');
+        assert.throws(() => assertOwnRoot(staging), RescueError_, 'el staging NO es reanudable');
+        const own = watchClaim(kit, input.name);
+        const imp = await importCapsule(kit, input);
+        own.track();
+        assert.notEqual(imp.destination.roomId, id);
+        assert.deepEqual(own.published(), [imp.destination.roomId]);
+        assert.equal(readClaim(kit, input.name)?.destination, imp.destination.roomId);
+        const sweepRoot = mkdtempSync(join(TMP, 'sweep363-'));
+        const isolatedStaging = trackFolder(join(sweepRoot, stagingName));
+        renameSync(staging, isolatedStaging);
+        assert.deepEqual(sweepStaging(sweepRoot), [stagingName]);
+        assert.ok(!existsSync(isolatedStaging));
+        rmdirSync(sweepRoot);
+      } else {
+        assert.ok(!existsSync(staging), 'la publicación ya movió el staging propio');
+        const dest = track(RescueRoom.open(destination, { clock }));
+        assert.equal(viewOf(dest).stage, 'return-partial', 'abre con normalidad');
+        dest.close();
+        const own = watchClaim(kit, input.name);
+        await assert.rejects(importCapsule(kit, input), (e: unknown) =>
+          e instanceof CapsuleError && e.code === 'ALREADY_IMPORTED' &&
+          (e.details as { destination?: string } | null)?.destination === 'rescue106-' + id);
+        own.track();
+        assert.equal(readClaim(kit, input.name)?.status, 'imported');
+        assert.deepEqual(own.published(), [id]);
+      }
     }
   }
+  assert.equal(origin.logicalDigest(), originDigest, 'la recuperación preserva el origen');
   origin.close();
 });
 const RescueError_ = Error;
@@ -82,11 +118,20 @@ test('exclusión · un escritor AJENO que cambia el simulador durante la captura
 });
 
 test('exclusión · dos importaciones concurrentes de la MISMA cápsula: exactamente una crea destino y las demás se rechazan (ALREADY_IMPORTED)', async () => {
-  const kit = newKit(), origin = await originAt('local-work'), e = await exportCapsule(origin, PASSWORD, kit), insp = await inspectCapsule(kit, e.name, PASSWORD), before = destinations().length;
-  const input = { name: e.name, password: PASSWORD, expectedSha256: insp.sha256, expectedRevision: insp.revision }; const results = await Promise.allSettled([importCapsule(kit, input), importCapsule(kit, input), importCapsule(kit, input)]);
+  const kit = newKit(), origin = await originAt('local-work'), e = await exportCapsule(origin, PASSWORD, kit), insp = await inspectCapsule(kit, e.name, PASSWORD);
+  const input = { name: e.name, password: PASSWORD, expectedSha256: insp.sha256, expectedRevision: insp.revision };
+  const own = watchClaim(kit, input.name);
+  const results = await Promise.allSettled([importCapsule(kit, input), importCapsule(kit, input), importCapsule(kit, input)]);
+  own.track();
   const ok = results.filter(r => r.status === 'fulfilled'), failed = results.filter(r => r.status === 'rejected');
-  assert.equal(ok.length, 1, 'una sola importación'); assert.ok(failed.every(r => (r as PromiseRejectedResult).reason instanceof CapsuleError && (r as PromiseRejectedResult).reason.code === 'ALREADY_IMPORTED')); assert.equal(destinations().length, before + 1, 'un único destino');
-  trackFolder(join(TMP, (ok[0] as PromiseFulfilledResult<{ destination: { folder: string } }>).value.destination.folder)); origin.close();
+  assert.equal(ok.length, 1, 'una sola importación');
+  assert.equal(failed.length, 2);
+  assert.ok(failed.every(r => r.reason instanceof CapsuleError && r.reason.code === 'ALREADY_IMPORTED'));
+  const id = ok[0].value.destination.roomId;
+  assert.deepEqual(own.published(), [id], 'un único destino de esta cápsula');
+  assert.equal(readClaim(kit, input.name)?.destination, id);
+  assert.equal(readClaim(kit, input.name)?.status, 'imported');
+  origin.close();
 });
 
 test('exclusión · un segundo escritor sobre el DESTINO abierto falla con el motivo del bloqueo sin escribir en él; tras parar el primero, la reapertura en otro proceso conserva el estado', async () => {

@@ -17,3 +17,9 @@ La relectura y el comparador contrastan la huella original, además de la identi
 ## R3 · Comparador de incompatibilidad desde Hoy · 11/11/2026
 
 335 mueve la comprobación de procedencia al modelo de comparación. La ficha conserva la pantalla de incompatibilidad y bloquea el guardado al volver al borrador anterior. R3 renueva la guardia de QA130. Banco comparator335-new-6JKEJY, 16/16 Chromium, 8/8 Node y tipos limpios. El acuse compacto sigue cubierto. El informe 335 conserva el 409 real, los recuentos y la contraprueba, además de la corrección de un localizador antiguo en 336.
+
+## R4 · Etiqueta de prueba y acuse compacto · 17/11/2026, Europe/Madrid
+
+La diferencia de LocalTaskFocus respecto de la huella presentada cambia «Datos de ensayo» por «Datos de prueba». Antes de renovar la huella, QA130 dio siete pruebas de comportamiento correctas y falló la aserción de huella, como se esperaba. En Chromium se comprobó el texto visible de la ficha y el recorrido del acuse compacto emitido por la API real de ensayo. Pasó 1/1 con la recuperación por GET y el control de cambio de captura. Se renovó solo la huella de la ficha en QA130 y pasó 8/8 con las aserciones de comportamiento intactas.
+
+Banco `tests/.tmp/task410-b1eee30c4e2741959448d1441a355627`, con huellas, logs y captura. Se probó la ficha aislada con la estrategia de ensayo indicada en el E2E, sin montar la estrategia de Claude en Hoy. No se editaron la ficha, la API ni el código de la estrategia.

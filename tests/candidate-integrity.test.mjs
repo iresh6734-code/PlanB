@@ -34,6 +34,19 @@ function fixture(){
 const code=r=>r.issues[0]?.code;
 const changed=(f,kind,name,value)=>{const bytes=Buffer.isBuffer(value)?value:Buffer.from(value);fs.writeFileSync(path.join(kind==='source'?f.source:f.runtime,name),bytes);return bytes;};
 
+test('423 · acepta activos opacos de src/assets y exige avisos idénticos en el runtime',()=>{
+  for(const mode of ['missing','different','match']){
+    const f=fixture();
+    f.put('source','src/assets/fonts/local.woff2',Buffer.from([0,255,1,7]));
+    f.put('source','src/assets/fonts/OFL.txt','Aviso sintético de prueba');
+    if(mode!=='missing')f.put('runtime','dist/assets/fonts/OFL.txt',mode==='match'?'Aviso sintético de prueba':'otro texto');
+    f.save();
+    const report=f.check();
+    if(mode==='match')assert.equal(report.state,'matches-manifest',JSON.stringify(report));
+    else assert.equal(code(report),'ASSET_NOTICE_MAPPING');
+  }
+});
+
 test('095 full inventory includes opaque assets/public data and both guards, without approving or following metadata paths',()=>{
   const f=fixture(),r=f.check();assert.equal(r.state,'matches-manifest');assert.equal(r.sourcesChecked,17);assert.equal(r.artifactsChecked,14);assert.equal(r.approvalGranted,false);assert.equal(r.deploymentPerformed,false);assert.equal(r.liveCheckout,'not_compared');assert.equal(r.manifestAuthenticity,'not_verified');assert.equal(r.buildEvidence,'declared_not_reexecuted');assert.equal(r.declaredBlockerCount,2);assert.equal(r.declaredExclusionCount,1);assert.ok(!JSON.stringify(r).includes('DO-NOT-FOLLOW'));assert.deepEqual(r.issues,[]);
 });

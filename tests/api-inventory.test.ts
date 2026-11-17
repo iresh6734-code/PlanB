@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 // @ts-expect-error módulo JavaScript de herramientas sin declaraciones de tipos
-import { ENTRIES, captureEntry, childEnvironment, groupOf, mergeInventory, renderMarkdown, routeDiff } from '../tools/api/inventory.mjs';
+import { ENTRIES, UsageError, captureEntry, childEnvironment, groupOf, mergeInventory, parseArgs, renderMarkdown, routeDiff } from '../tools/api/inventory.mjs';
 
 type Route = { method: string; url: string; file: string | null; line: number | null };
 type Row = { method: string; url: string; group: string; entries: string[]; origins: { entry: string; origin: string | null; file: string | null }[] };
@@ -117,4 +117,68 @@ test('captura el servicio de equipo en modo demo con su base incrustada temporal
   assert.ok(routes.length > 20);
   assert.ok(routes.every(r => r.file?.startsWith('server/team/') || r.file?.startsWith('server/')), 'orígenes dentro de server/');
   assert.ok(routes.some(r => r.method === 'GET' && r.url === '/api/team/health'));
+});
+
+test('la línea de órdenes se valida antes de capturar, leer o escribir', () => {
+  const bad: [string[], RegExp][] = [
+    [['--entries', ','], /piezas vacías/],
+    [['--entries', 'main,,runtime', '--out', 'x.md'], /piezas vacías/],
+    [['--entries', 'main,otra', '--out', 'x.md'], /desconocidas: otra/],
+    [['--entries', 'main,main', '--out', 'x.md'], /repite/],
+    [['--entries'], /necesita un valor/],
+    [['--out'], /necesita un valor/],
+    [['--out', '--check'], /necesita un valor/],
+    [['--doc', 'x.md'], /solo tiene sentido con --check/],
+    [['--json', '--check'], /no se pueden combinar/],
+    [['--json', '--out', 'x.md'], /no admite --out/],
+    [['--check', '--out', 'x.md'], /no escribe/],
+    [['--entries', 'main'], /destino explícito/],
+    [['--check', '--entries', 'main'], /destino explícito/],
+    [['--rutas'], /desconocida/],
+    [['--check', '--check'], /repetida/],
+  ];
+  for (const [argv, message] of bad) assert.throws(() => parseArgs(argv), (e: unknown) => e instanceof UsageError && message.test((e as Error).message), argv.join(' '));
+  assert.deepEqual(parseArgs([]), { mode: 'write', entries: ['main', 'runtime', 'team'], out: undefined, doc: undefined });
+  assert.equal(parseArgs(['--json', '--entries', 'main']).mode, 'json', 'una selección parcial a la salida estándar no sustituye nada');
+  assert.deepEqual(parseArgs(['--check', '--entries', 'main', '--doc', 'x.md']).entries, ['main']);
+});
+
+test('con argumentos inválidos el CLI sale con código 2 y no toca el documento existente', t => {
+  const dir = scratch(t), doc = path.join(dir, 'api.md');
+  fs.writeFileSync(doc, 'MARCADOR-PREVIO-358');
+  for (const args of [['--entries', ',', '--out', doc], ['--entries', 'main,otra', '--out', doc], ['--check', '--entries', ',', '--doc', doc], ['--out', doc, '--json']]) {
+    const run = cli(...args);
+    assert.equal(run.status, 2, args.join(' ') + ': ' + run.stderr);
+    assert.match(run.stderr, /Uso: node tools\/api\/inventory\.mjs/);
+    assert.equal(fs.readFileSync(doc, 'utf8'), 'MARCADOR-PREVIO-358', 'el documento previo se conserva: ' + args.join(' '));
+  }
+});
+
+test('el Markdown conserva a qué entrada corresponde cada archivo cuando difieren', () => {
+  const r = (url: string, file: string): Route => ({ method: 'GET', url, file, line: 1 });
+  const same = renderMarkdown(mergeInventory({ main: [r('/api/x', 'server/a.ts')], runtime: [r('/api/x', 'server/a.ts')] }), ['main', 'runtime']) as string;
+  assert.match(same, /\| GET \| `\/api\/x` \| ● \| ● \| `server\/a\.ts` \|/);
+  const split = renderMarkdown(mergeInventory({ main: [r('/api/x', 'server/a.ts')], runtime: [r('/api/x', 'server/b.ts')] }), ['main', 'runtime']) as string;
+  const swapped = renderMarkdown(mergeInventory({ main: [r('/api/x', 'server/b.ts')], runtime: [r('/api/x', 'server/a.ts')] }), ['main', 'runtime']) as string;
+  assert.match(split, /main: `server\/a\.ts` · runtime: `server\/b\.ts`/);
+  assert.notEqual(split, swapped, 'cambiar la atribución cambia el documento');
+});
+
+test('R3: una selección parcial nunca escribe ni comprueba el documento canónico, y las claves heredadas no son entradas', () => {
+  const canonical = path.resolve('docs/api.md');
+  const before = fs.existsSync(canonical) ? fs.statSync(canonical).mtimeMs : null;
+  for (const argv of [['--entries', 'runtime', '--out', 'docs/api.md'], ['--entries', 'runtime', '--out', canonical], ['--entries', 'main', '--out', './docs/../docs/api.md'],
+    ['--check', '--entries', 'runtime', '--doc', 'docs/api.md']]) {
+    assert.throws(() => parseArgs(argv), (e: unknown) => e instanceof UsageError && /docs\/api\.md/.test((e as Error).message), argv.join(' '));
+  }
+  if (process.platform === 'win32') assert.throws(() => parseArgs(['--entries', 'runtime', '--out', 'DOCS/API.MD']), UsageError, 'Windows no distingue mayúsculas');
+  for (const inherited of ['constructor', 'toString', '__proto__', 'hasOwnProperty']) {
+    assert.throws(() => parseArgs(['--entries', inherited, '--json']), (e: unknown) => e instanceof UsageError && /desconocidas/.test((e as Error).message), inherited);
+    assert.throws(() => captureEntry(inherited), /Entrada desconocida/, 'captureEntry también: ' + inherited);
+    assert.throws(() => childEnvironment({}, inherited, 'w', 'o'), /Entrada desconocida/);
+  }
+  assert.equal(parseArgs(['--entries', 'runtime', '--out', 'otra.md']).entries.join(), 'runtime', 'una salida separada sigue permitida');
+  const run = cli('--entries', 'runtime', '--out', 'docs/api.md');
+  assert.equal(run.status, 2, run.stderr);
+  assert.equal(fs.existsSync(canonical) ? fs.statSync(canonical).mtimeMs : null, before, 'docs/api.md intacto');
 });

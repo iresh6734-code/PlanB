@@ -23,7 +23,7 @@ async function rig() {
 }
 const sig = () => new AbortController().signal;
 
-test('observation F1: after a lost acknowledgement the verification can read a different installation and call its matching value applied', async () => {
+test('regression F1: a matching value from another installation cannot confirm a lost acknowledgement', async () => {
   const first = await rig(), second = await rig();
   try {
     await first.activate('snapshot-a', '2026-11-01T09:00:00Z'); await second.activate('snapshot-b', '2026-11-01T09:00:00Z');
@@ -39,25 +39,44 @@ test('observation F1: after a lost acknowledgement the verification can read a d
     const outcome = await saveTask({ taskId: 'task-2', baseline: a.record, entity: a.schema!.entity, patch: { status: 'completed' }, context: a.context }, lost);
     assert.equal(outcome.kind, 'uncertain'); assert.equal(first.store.changesCount, before + 1);
     second.calls.length = 0;
-    const verification = await verifyAfterUncertain({ taskId: 'task-2', baseline: a.record, patch: { status: 'completed' } }, second.transport);
+    const request = { taskId: 'task-2', baseline: a.record, patch: { status: 'completed' } };
+    assert.deepEqual(await verifyAfterUncertain(request, second.transport), { kind: 'unknown' });
+    assert.deepEqual(second.calls, [], 'unbound verification does not consult a record');
+    const bound = { ...request, context: a.context };
+    assert.deepEqual(await verifyAfterUncertain(bound, second.transport), { kind: 'context-changed' });
+    assert.deepEqual(second.calls.sort(), ['GET /api/health', 'GET /api/v2/state'], 'a foreign context terminates verification before the record is read');
+
+    first.calls.length = 0;
+    const verification = await verifyAfterUncertain(bound, first.transport);
     assert.equal(verification.kind, 'read');
     if (verification.kind === 'read') assert.equal(verification.evidence, 'applied');
-    assert.deepEqual(second.calls, ['GET /api/v2/records/tasks/task-2'], 'the current implementation never checks installation or capture during verification');
+    assert.ok(first.calls.every(call => call.startsWith('GET ')));
+    assert.equal(first.store.changesCount, before + 1, 'verification never repeats the original PATCH');
   } finally { await first.app.close(); await second.app.close(); }
 });
 
-test('observation F2: a new capture sharing its old ID but not its date is treated as the same context and can be edited', async () => {
+test('regression F2: an old task editor cannot write to a replacement capture with the same ID', async () => {
   const r = await rig();
   try {
     await r.activate('same-capture-id', '2026-11-01T09:00:00Z');
     const original = await loadTask('task-2', sig(), r.transport); assert.equal(original.kind, 'ok'); if (original.kind !== 'ok') return;
     await r.activate('same-capture-id', '2026-11-02T09:00:00Z');
     const replacement = await loadTask('task-2', sig(), r.transport); assert.equal(replacement.kind, 'ok'); if (replacement.kind !== 'ok') return;
+    assert.equal(original.context.instanceId, replacement.context.instanceId);
+    assert.equal(original.context.snapshotId, replacement.context.snapshotId);
     assert.notEqual(original.context.capturedAt, replacement.context.capturedAt);
+    const before = r.store.changesCount;
     r.calls.length = 0;
     const outcome = await saveTask({ taskId: 'task-2', baseline: original.record, entity: original.schema!.entity, patch: { status: 'completed' }, context: original.context }, r.transport);
-    assert.equal(outcome.kind, 'saved');
+    assert.equal(outcome.kind, 'context-changed');
+    assert.deepEqual(r.store.record('tasks', 'task-2'), replacement.record);
+    assert.equal(r.store.changesCount, before);
+    assert.ok(r.calls.every(call => call.startsWith('GET ')));
+
+    const current = await saveTask({ taskId: 'task-2', baseline: replacement.record, entity: replacement.schema!.entity, patch: { status: 'completed' }, context: replacement.context }, r.transport);
+    assert.equal(current.kind, 'saved');
     assert.equal(r.store.record('tasks', 'task-2')!.values.status, 'completed');
-    assert.ok(r.calls.includes('PATCH /api/records/tasks/task-2'), 'the edit was applied to the replacement capture');
+    assert.equal(r.store.changesCount, before + 1);
+    assert.deepEqual(r.calls.filter(call => call.startsWith('PATCH ')), ['PATCH /api/records/tasks/task-2']);
   } finally { await r.app.close(); }
 });

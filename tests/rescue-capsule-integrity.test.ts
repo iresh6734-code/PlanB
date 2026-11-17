@@ -1,15 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdirSync, readFileSync, readdirSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync, rmdirSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { encodePortable } from '../server/crypto.js';
-import { exportCapsule, importCapsule, inspectCapsule, loadCapsule, sha256, type Kit } from '../server/rescue-capsule.js';
+import { describeClaim, exportCapsule, importCapsule, inspectCapsule, loadCapsule, sha256, type Kit } from '../server/rescue-capsule.js';
 import { stableStringify } from '../server/rescue-room-journal.js';
 import { CapsuleError, MAX_CAPSULE_BYTES, type Capsule } from '../shared/rescue-capsule.js';
 import { OTHER_PASSWORD, PASSWORD, TMP, capsuleFiles, envelope, newKit, newRoom, originAt, originUncertain, trackFolder, viewOf, workLocally } from './helpers/rescue-capsule-harness.js';
 // Kit de Relevo · integridad: contraseña, daños, formato, componentes de otras revisiones, diario/idempotencia/remoto incoherentes. Ante cualquier fallo NO se publica un destino y el origen conserva su digest.
-const folders = () => readdirSync(TMP).filter(n => /^rescue(106|116-staging)-/.test(n)).sort().join();
 const digest = (v: unknown) => sha256(stableStringify(v));
 /** Fabrica una cápsula VÁLIDA en forma (cifrada con la contraseña real) a partir de otra, aplicando una mutación y, si se pide, recalculando digests para que solo la coherencia/semántica la delate. */
 function forge(kit: Kit, base: Capsule, mutate: (c: Capsule) => void, options: { recompute?: boolean } = {}) {
@@ -22,7 +21,7 @@ const fails = async (promise: Promise<unknown>, code: string) => { try { await p
 const failsSync = (fn: () => unknown, code: string) => { try { fn(); } catch (e) { assert.ok(e instanceof CapsuleError, String(e)); assert.equal(e.code, code, e.message); return e; } throw new Error('Se esperaba ' + code); };
 
 test('contraseña incorrecta, truncado y alteración se rechazan con el MISMO mensaje, sin revelar contenido y sin publicar nada', async () => {
-  const { kit, origin, e, digestBefore } = await fixture(), dirs = folders(), path = join(kit.capsules, e.name), raw = readFileSync(path, 'utf8');
+  const { kit, origin, e, digestBefore } = await fixture(), path = join(kit.capsules, e.name), raw = readFileSync(path, 'utf8');
   const wrong = failsSync(() => loadCapsule(kit, e.name, OTHER_PASSWORD), 'DECRYPT_FAILED');
   writeFileSync(join(kit.capsules, 'truncada-0001.capsule'), raw.slice(0, Math.floor(raw.length / 2))); const cut = failsSync(() => loadCapsule(kit, 'truncada-0001.capsule', PASSWORD), 'DECRYPT_FAILED');
   const parsed = JSON.parse(raw) as { data: string }; const i = Math.floor(parsed.data.length / 2); writeFileSync(join(kit.capsules, 'alterada-0001.capsule'), JSON.stringify({ ...parsed, data: parsed.data.slice(0, i) + (parsed.data[i] === 'A' ? 'B' : 'A') + parsed.data.slice(i + 1) }));
@@ -30,7 +29,7 @@ test('contraseña incorrecta, truncado y alteración se rechazan con el MISMO me
   assert.equal(wrong.message, cut.message); assert.equal(wrong.message, flipped.message, 'un único mensaje: no distingue qué falló');
   for (const m of [wrong.message, cut.message]) { assert.ok(!m.includes(PASSWORD) && !m.includes(OTHER_PASSWORD) && !/Confirmar entrega|demo-rescue/.test(m)); }
   writeFileSync(join(kit.capsules, 'basura-0001.capsule'), 'esto no es una cápsula'); failsSync(() => loadCapsule(kit, 'basura-0001.capsule', PASSWORD), 'DECRYPT_FAILED');
-  assert.equal(folders(), dirs, 'ningún destino ni staging'); assert.equal(origin.logicalDigest(), digestBefore); origin.close();
+  assert.equal(describeClaim(kit, e.name).claim, null); assert.equal(origin.logicalDigest(), digestBefore); origin.close();
 });
 
 test('el tamaño se comprueba ANTES de leer o descifrar: una cápsula mayor que el límite se rechaza (413) sin leer su contenido', async () => {
@@ -54,11 +53,12 @@ test('formato desconocido y esquema desconocido se rechazan; un campo extra no s
 });
 
 test('un componente alterado con su digest sin actualizar se detecta (DIGEST_MISMATCH); con digests recalculados lo delatan la coherencia o la comprobación estándar', async () => {
-  const { kit, origin, base, digestBefore } = await fixture(), dirs = folders();
+  const { kit, origin, base, digestBefore } = await fixture();
   const stale = forge(kit, base, c => { c.components.sim.records.pop(); }, { recompute: false }); failsSync(() => loadCapsule(kit, stale, PASSWORD), 'DIGEST_MISMATCH');
   const tamperSet = forge(kit, base, c => { c.digests.set = 'a'.repeat(64); }, { recompute: false }); failsSync(() => loadCapsule(kit, tamperSet, PASSWORD), 'DIGEST_MISMATCH');
   const recomputed = forge(kit, base, c => { c.components.sim.records.pop(); }); failsSync(() => loadCapsule(kit, recomputed, PASSWORD), 'INCOHERENT');
-  assert.equal(folders(), dirs); assert.equal(origin.logicalDigest(), digestBefore); origin.close();
+  for (const name of [stale, tamperSet, recomputed]) assert.equal(describeClaim(kit, name).claim, null);
+  assert.equal(origin.logicalDigest(), digestBefore); origin.close();
 });
 
 test('componentes de REVISIONES DISTINTAS (copia anterior + diario/simulador posteriores, digests coherentes) se rechazan como incoherentes', async () => {
@@ -83,19 +83,61 @@ test('diario, idempotencia y remoto incoherentes: espacio ajeno, secuencia rota,
 });
 
 test('un paquete de la capa estándar incompatible (válido en forma, rechazado por restoreBundle) se rechaza al inspeccionar e importar, sin destino ni staging y con el origen intacto', async () => {
-  const { kit, origin, base, digestBefore } = await fixture(), dirs = folders();
+  const { kit, origin, base, digestBefore } = await fixture();
   const bad = forge(kit, base, c => { const rec = c.components.bundle.records.find(r => r.entity === 'contacts')!; rec.values = { ...rec.values, email: 'no-es-un-correo' }; c.capture.recordCount = c.components.bundle.records.length; });
   await fails(inspectCapsule(kit, bad, PASSWORD), 'BUNDLE_REJECTED');
   const insp = { sha256: sha256(readFileSync(join(kit.capsules, bad), 'utf8')) }, rev = loadCapsule(kit, bad, PASSWORD).revision;
-  await assert.rejects(importCapsule(kit, { name: bad, password: PASSWORD, expectedSha256: insp.sha256, expectedRevision: rev }), /integridad|no supera|Error|paquete/i);
-  assert.equal(folders(), dirs, 'no se publicó ningún destino ni quedó staging'); assert.ok(!existsSync(join(kit.capsules, bad + '.import-claim')), 'el reclamo se liberó para poder reintentar con otra cápsula'); assert.equal(origin.logicalDigest(), digestBefore); origin.close();
+  const staged: string[] = [];
+  const observedKit: Kit = { ...kit, onStep(step) {
+    if (step !== 'import:staging-created') return;
+    const id = describeClaim(kit, bad).claim?.destination;
+    assert.match(id ?? '', /^[0-9a-f-]{36}$/);
+    staged.push(id!);
+  } };
+  await assert.rejects(importCapsule(observedKit, { name: bad, password: PASSWORD, expectedSha256: insp.sha256, expectedRevision: rev }), /integridad|no supera|Error|paquete/i);
+  assert.equal(staged.length, 1, 'se alcanzó la restauración del paquete');
+  assert.ok(!existsSync(join(TMP, 'rescue116-staging-' + staged[0])), 'se limpió el staging propio');
+  assert.ok(!existsSync(join(TMP, 'rescue106-' + staged[0])), 'no se publicó el destino propio');
+  assert.equal(describeClaim(kit, bad).claim, null, 'el reclamo se liberó para poder reintentar');
+  assert.equal(origin.logicalDigest(), digestBefore); origin.close();
 });
 
-test('la aprobación está ligada al contenido exacto: otro SHA, otra revisión o un archivo sustituido tras inspeccionar se rechazan (409) y liberan el reclamo', async () => {
-  const kit = newKit(), origin = await originAt('local-work'), e = await exportCapsule(origin, PASSWORD, kit), insp = await inspectCapsule(kit, e.name, PASSWORD), dirs = folders();
-  await fails(importCapsule(kit, { name: e.name, password: PASSWORD, expectedSha256: 'f'.repeat(64), expectedRevision: insp.revision }), 'CONTENT_CHANGED'); await fails(importCapsule(kit, { name: e.name, password: PASSWORD, expectedSha256: insp.sha256, expectedRevision: 'f'.repeat(64) }), 'CONTENT_CHANGED');
-  assert.equal(folders(), dirs); const ok = await importCapsule(kit, { name: e.name, password: PASSWORD, expectedSha256: insp.sha256, expectedRevision: insp.revision }); assert.match(ok.destination.folder, /^rescue106-/); trackFolder(join(TMP, ok.destination.folder));
-  await fails(importCapsule(kit, { name: e.name, password: PASSWORD, expectedSha256: insp.sha256, expectedRevision: insp.revision }), 'ALREADY_IMPORTED'); origin.close();
+test('la aprobación está ligada al contenido exacto: otro SHA, otra revisión o un archivo sustituido tras inspeccionar se rechazan (409) y liberan el reclamo', async t => {
+  const kit = newKit(), origin = await originAt('local-work'), e = await exportCapsule(origin, PASSWORD, kit), insp = await inspectCapsule(kit, e.name, PASSWORD);
+  const unrelated = join(TMP, 'rescue106-' + randomUUID());
+  let unrelatedCreated = false;
+  t.after(() => { if (unrelatedCreated) rmdirSync(unrelated); });
+  const steps: string[] = [];
+  const observedKit: Kit = { ...kit, onStep(step) {
+    steps.push(step);
+    if (!unrelatedCreated) {
+      mkdirSync(unrelated);
+      unrelatedCreated = true;
+    }
+  } };
+  const approved = { name: e.name, password: PASSWORD, expectedSha256: insp.sha256, expectedRevision: insp.revision };
+  await fails(importCapsule(observedKit, { ...approved, expectedSha256: 'f'.repeat(64) }), 'CONTENT_CHANGED');
+  assert.equal(describeClaim(kit, e.name).claim, null);
+  await fails(importCapsule(observedKit, { ...approved, expectedRevision: 'f'.repeat(64) }), 'CONTENT_CHANGED');
+  assert.equal(describeClaim(kit, e.name).claim, null);
+  const file = join(kit.capsules, e.name);
+  const original = readFileSync(file);
+  const replacement = encodePortable(loadCapsule(kit, e.name, PASSWORD).capsule, PASSWORD);
+  assert.notEqual(sha256(replacement), insp.sha256);
+  writeFileSync(file, replacement);
+  try {
+    await fails(importCapsule(observedKit, approved), 'CONTENT_CHANGED');
+    assert.equal(describeClaim(kit, e.name).claim, null);
+  } finally {
+    writeFileSync(file, original);
+  }
+  assert.deepEqual(steps, Array(3).fill('import:start'), 'no se alcanzó el staging de ninguna solicitud rechazada');
+  assert.ok(existsSync(unrelated), 'la actividad ajena no forma parte del resultado');
+  const ok = await importCapsule(kit, approved);
+  assert.match(ok.destination.folder, /^rescue106-/);
+  trackFolder(join(TMP, ok.destination.folder));
+  assert.equal(describeClaim(kit, e.name).claim?.destination, ok.destination.roomId);
+  await fails(importCapsule(kit, approved), 'ALREADY_IMPORTED'); origin.close();
 });
 
 test('la contraseña no aparece en ningún archivo del kit, ni en los errores, ni en el destino', async () => {

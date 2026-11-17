@@ -17,7 +17,7 @@ import { loadTask, readTask, saveTask, TaskFocusError, verifyAfterUncertain, typ
 // Un cambio posterior requiere repetir la QA correspondiente, no renovar el hash para silenciarla.
 const SOURCES123: Record<string, string> = {
   'shared/local-task-focus.ts': 'e41df640594532587bc0fb90a28f1a538063c5bf2e598460ce892462777358d5',
-  'src/LocalTaskFocus.tsx': '8b66ebc8b8bba9025aab81858c160ac48954c16838a40acdf2248d2fbbcdb184',
+  'src/LocalTaskFocus.tsx': '4dfef012c8fcc0afce99d3646800c51a28eacf7250bebfeb187d213f4a1434bd',
   'src/local-task-focus-client.ts': '59dda342d954b659aebb750b63bc726d3c0b382142bea0ca9baf496e779ca501',
   'src/local-task-focus.css': 'cdbe8147c813be8bb57d2332d84ea4a0d4bd161b371aede30bd27391f84c1f26',
 };

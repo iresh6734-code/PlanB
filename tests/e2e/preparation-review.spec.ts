@@ -4,6 +4,16 @@ import { resolve } from 'node:path';
 const origin='http://127.0.0.1:4404',password='fixture-local-activation066';
 const approval='He revisado los campos, las reglas y las funciones pendientes.';
 test.beforeEach(()=>{if(test.info().project.use.baseURL!==origin)throw Error('Use only the isolated preparation fixture127.0.0.1:4404.');});
+async function openPreparation(page:Page) {
+  await page.goto('/');
+  const nav = page.getByRole('navigation', { name: 'Navegación principal', exact: true });
+  const settings = nav.getByRole('button', { name: 'Ajustes', exact: true });
+  await expect(settings).toBeVisible();
+  if (await settings.getAttribute('aria-expanded') === 'false') await settings.click();
+  await nav.getByRole('navigation', { name: 'Ajustes', exact: true }).getByRole('button', { name: 'Preparación', exact: true }).click();
+  await expect(page).toHaveURL(origin + '/ajustes/preparacion');
+}
+
 async function seed(page:Page,candidate=true) {
   if(test.info().project.use.baseURL!==origin)throw Error('Use only a fresh isolated generator on127.0.0.1:4404.');
   const gate=await page.request.get('/api/v2/auth/status').then(r=>r.json());expect((await page.request.post('/api/v2/auth/'+(gate.configured?'login':'setup'),{data:{password}})).ok()).toBeTruthy();
@@ -12,8 +22,8 @@ async function seed(page:Page,candidate=true) {
   const errors:string[]=[],outside:string[]=[],activations:{path:string;body:any}[]=[];
   page.on('pageerror',e=>errors.push(e.message));page.on('request',request=>{const url=new URL(request.url());if(['/api/v4/activate-reviewed','/api/activate'].includes(url.pathname)&&request.method()==='POST')activations.push({path:url.pathname,body:request.postDataJSON()});});
   await page.route('**/*',route=>{const url=new URL(route.request().url());if(url.origin!==origin){outside.push(url.origin);return route.abort();}return route.fallback();});
-  await page.goto('/');await page.getByRole('button',{name:'Preparación',exact:true}).click();
-  const view=page.locator('.preparation');await expect(view.getByRole('heading',{name:'Revisa tu aplicación.',exact:true})).toBeVisible();await expect(view.getByRole('button',{name:'Activar y abrir aplicación',exact:true})).toBeDisabled();return {view,errors,outside,activations};
+  await openPreparation(page);
+  const view=page.locator('.preparation');await expect(view.getByText('Local · Datos de prueba',{exact:true})).toBeVisible();await expect(view.getByRole('heading',{name:'Revisa tu aplicación.',exact:true})).toBeVisible();await expect(view.getByRole('button',{name:'Activar y abrir aplicación',exact:true})).toBeDisabled();return {view,errors,outside,activations};
 }
 async function generateCandidate(page:Page,profile:'agency'|'distribution') {
   for(const[url,data]of [['/api/import/fixture',{profile,replace:true}],['/api/generate',{mode:'demo'}]] as const)expect((await page.request.post(url,{data})).ok()).toBeTruthy();
@@ -47,7 +57,7 @@ test('activation066: old-server404 blocks the guided flow without falling back t
   // Open directly after seeding, because this case intentionally has no review heading to await.
   const gate=await page.request.get('/api/v2/auth/status').then(r=>r.json());await page.request.post('/api/v2/auth/'+(gate.configured?'login':'setup'),{data:{password}});await generateCandidate(page,'distribution');
   let commits=0;page.on('request',r=>{if(['/api/activate','/api/v4/activate-reviewed'].includes(new URL(r.url()).pathname)&&r.method()==='POST')commits++;});
-  await page.goto('/');await page.getByRole('button',{name:'Preparación',exact:true}).click();const view=page.locator('.preparation');await expect(view.getByRole('alert')).toContainText('no permite activar una revisión exacta');await expect(view.getByRole('button',{name:'Activar y abrir aplicación',exact:true})).toHaveCount(0);expect(commits).toBe(0);
+  await openPreparation(page);const view=page.locator('.preparation');await expect(view.getByRole('alert')).toContainText('no permite activar una revisión exacta');await expect(view.getByRole('button',{name:'Activar y abrir aplicación',exact:true})).toHaveCount(0);expect(commits).toBe(0);
 });
 
 test('activation066: refresh clears approval and keyboard/mobile show identity and reviewed fields without overflow',async({page})=>{

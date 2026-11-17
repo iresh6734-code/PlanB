@@ -165,7 +165,11 @@ function hubspotRow(continuity: SourceState<LocalContinuity>, catalog: SourceSta
   }
   if (declared?.mode === 'readonly') return row('hubspot', 'declared', { facts: ['El catálogo declara una conexión de lectura, pero Continuidad no aporta los datos de la cuenta.', 'Sin comprobar el acceso actual.', ...facts], next: 'Revisa la conexión desde Continuidad.', action: connect('Revisar conexión') });
   const next = c.protected ? 'Conecta tu portal de HubSpot. Se pedirá la credencial en el flujo de Continuidad; esta pantalla no la recoge.' : 'Primero protege la instalación; después podrás guardar la credencial de HubSpot desde Continuidad.';
-  return row('hubspot', 'not_connected', { facts: c.protected ? facts : ['La instalación aún no tiene protección local configurada.', ...facts], next, action: connect('Conectar HubSpot') });
+  return row('hubspot', 'not_connected', {
+    facts: c.protected ? facts : ['La instalación aún no tiene protección local configurada.', ...facts],
+    next,
+    action: connect(c.protected ? 'Conectar HubSpot' : 'Configurar protección'),
+  });
 }
 
 function teamRows(workspace: SourceState<WorkspaceInfo>, catalog: SourceState<CatalogEntry[]>, runtime: boolean | null, check: OriginCheck | null): IntegrationRow[] {

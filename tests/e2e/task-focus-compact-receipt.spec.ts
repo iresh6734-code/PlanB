@@ -138,6 +138,7 @@ test('329 · la ficha confirma un acuse compacto y vuelve a editar solo después
     const dialog = page.getByRole('dialog');
     const field = dialog.locator('#ltf-f-notes');
     await expect(field).toBeVisible();
+    await expect(dialog.getByText('Datos de prueba', { exact: true })).toBeVisible();
     const originalRevision = currentRevision;
     expect(originalRevision).toMatch(/^[a-f0-9]{64}$/);
     await field.fill('Guardado confirmado por el servidor ficticio');

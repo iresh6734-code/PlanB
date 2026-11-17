@@ -7,9 +7,19 @@ import { makePortableProducer, extractPortable, startExtractedPortable, database
 
 // The real ZIP extraction copies thousands of dependency files on Windows.
 test.setTimeout(480_000);
-const nav = (page: Page, label: string) => page.locator('.sidebar').getByRole('button', { name: label, exact: true });
+test.use({ actionTimeout: 15_000 });
 const digest = (v: unknown) => createHash('sha256').update(JSON.stringify(v)).digest('hex');
+async function openSection(page: Page, place: string, section: string) {
+  const navigation = page.getByRole('navigation', { name: 'Navegación principal', exact: true });
+  const toggle = navigation.getByRole('button', { name: place, exact: true }).and(navigation.locator('button[aria-expanded]'));
+  await expect(toggle).toBeVisible();
+  if (await toggle.getAttribute('aria-expanded') === 'false') await toggle.click();
+  await navigation.getByRole('navigation', { name: place, exact: true }).getByRole('button', { name: section, exact: true }).click();
+}
+
 async function protect(page: Page, password: string) {
+  await openSection(page, 'Continuidad', 'Estado');
+  await page.getByRole('tab', { name: 'Copias y archivo', exact: true }).click();
   await page.getByRole('button', { name: 'Proteger acceso local', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Protege tu copia', exact: true })).toBeVisible();
   await page.getByLabel('Contraseña local', { exact: true }).fill(password);
@@ -25,7 +35,8 @@ async function portableEvidence(page: Page, url: string, instanceId: string) {
   expect(state.workspaceSearchContext.instanceId).toBe(instanceId);
   const pin = state.workspaceSearchContext.contextRevision;
   expect(pin).toMatch(/^[a-f0-9]{64}$/);
-  await nav(page, 'Continuidad').click();
+  await openSection(page, 'Continuidad', 'Estado');
+  await page.getByRole('tab', { name: 'Evidencia e impacto', exact: true }).click();
   await expect(page.locator('.cph[aria-busy="false"]')).toBeVisible();
   const [evidence] = await Promise.all([
     page.waitForResponse(response => {
@@ -75,7 +86,7 @@ test('UI downloads a real encrypted package; its bundled Node restores edited re
     return route.fallback();
   });
   try {
-    await page.goto(source.url); await nav(page, 'Preparación').click();
+    await page.goto(source.url); await openSection(page, 'Ajustes', 'Preparación');
     await page.getByRole('button', { name: 'Continuar con Agencia Norte', exact: true }).click();
     await expect(page.getByText('Captura conciliada', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Crear especificación de ensayo', exact: true }).click();
@@ -86,13 +97,13 @@ test('UI downloads a real encrypted package; its bundled Node restores edited re
     const editor = page.getByRole('dialog', { name: 'Lucía Martín', exact: true });
     await editor.getByLabel('Teléfono', { exact: true }).fill('600 137 137');
     await editor.getByRole('button', { name: 'Guardar cambios', exact: true }).click(); await expect(editor).toHaveCount(0);
-    await nav(page, 'Continuidad').click(); await protect(page, sourcePassword);
+    await protect(page, sourcePassword);
     const records = await page.request.get(source.url + '/api/records').then(r => r.json());
     const sourceCookie = (await page.context().cookies(source.url)).filter(c => c.name === 'planb_session').map(c => c.name + '=' + c.value).join('; ');
     const sourceState = await page.request.get(source.url + '/api/v2/state').then(r => r.json());
     const changes = await page.request.get(source.url + '/api/v2/changes').then(r => r.json());
     expect(records.records).toHaveLength(62); expect(sourceState.changes).toBe(1); expect(changes.changes).toHaveLength(1);
-    await nav(page, 'Exportar').click();
+    await openSection(page, 'Continuidad', 'Exportar');
     const view = page.locator('.export-page');
     await expect(view.getByRole('heading', { name: 'Qué contiene esta descarga' })).toBeVisible();
     const summary = await page.request.get(source.url + '/api/v4/export-summary').then(r => r.json());
@@ -120,6 +131,7 @@ test('UI downloads a real encrypted package; its bundled Node restores edited re
     expect((await page.request.get(portable.url + '/api/v2/state').then(r => r.json())).snapshot).toBeNull();
     await page.goto(portable.url); await protect(page, destinationPassword);
     const before = databaseDigest(portable.data);
+    await page.getByRole('tab', { name: 'Copias y archivo', exact: true }).click();
     await page.locator('.history-section').getByRole('button', { name: 'Restaurar archivo', exact: true }).click();
     const restore = page.getByRole('dialog', { name: 'Restaurar una copia' });
     await restore.getByLabel('Archivo JSON de Plan B', { exact: true }).setInputFiles(encryptedFile);
@@ -147,7 +159,7 @@ test('UI downloads a real encrypted package; its bundled Node restores edited re
     const digestBeforeEvidence = databaseDigest(portable.data);
     const initialEvidence = await portableEvidence(page, portable.url, portable.instanceId);
     expect(databaseDigest(portable.data)).toBe(digestBeforeEvidence);
-    await nav(page, 'Trabajar').click(); await expect(page.getByRole('cell', { name: '600 137 137', exact: true })).toBeVisible();
+    await openSection(page, 'Clientes', 'Clientes'); await expect(page.getByRole('cell', { name: '600 137 137', exact: true })).toBeVisible();
     await page.screenshot({ path: path.join(copy.root, 'portable-restored.png'), fullPage: false });
     const oldPid = portable.pid, identity = portable.instanceId;
     await page.goto('about:blank'); await portable.stop(); portable = await startExtractedPortable(extracted, copy.root);
@@ -162,7 +174,7 @@ test('UI downloads a real encrypted package; its bundled Node restores edited re
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: path.join(copy.root, 'portable-continuity-390.png') });
     await page.setViewportSize({ width: 1440, height: 1000 });
-    await nav(page, 'Trabajar').click(); await expect(page.getByRole('cell', { name: '600 137 137', exact: true })).toBeVisible();
+    await openSection(page, 'Clientes', 'Clientes'); await expect(page.getByRole('cell', { name: '600 137 137', exact: true })).toBeVisible();
     expect(digest(await page.request.get(portable.url + '/api/records').then(r => r.json()))).toBe(digest(records));
     expect((await page.request.get(source.url + '/api/v2/auth/status').then(r => r.json())).configured).toBe(true);
     expect(digest(await page.request.get(source.url + '/api/records', { headers: { Cookie: sourceCookie } }).then(r => r.json()))).toBe(digest(records));
@@ -170,5 +182,8 @@ test('UI downloads a real encrypted package; its bundled Node restores edited re
     expect(consoleErrors.filter(m => !/422|401/.test(m))).toEqual([]);
     expect(writes.some(p => /hubspot|connection|\/return\//.test(p))).toBe(false);
     fs.writeFileSync(path.join(copy.root, 'observed-portable.json'), JSON.stringify({ sourceInstance: source.instanceId, portableInstance: identity, portablePidBefore: oldPid, portablePidAfter: portable.pid, extracted, recordDigest: digest(records), changesDigest: digest(changes.changes), reviewedRevision: summary.revision, restoreStatuses, initialEvidence, restartedEvidence, missingCapabilities, writes, errors, consoleErrors, outside, zipBytes: fs.statSync(zip).size, zipSha256: createHash('sha256').update(fs.readFileSync(zip)).digest('hex') }, null, 2));
-  } finally { await page.goto('about:blank'); if (portable) await portable.stop(); await source.stop(); }
+  } finally {
+    try { if (portable) await portable.stop(); }
+    finally { await source.stop(); }
+  }
 });

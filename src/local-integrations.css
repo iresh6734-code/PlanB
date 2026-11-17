@@ -1,7 +1,7 @@
 .lint{max-width:1140px;margin:0 auto;color:var(--text-1,#0f1a2b)}
 .lint *{min-width:0}
 .lint .page-header{gap:16px;flex-wrap:wrap}
-.lint .page-header>.button{flex:none;min-width:max-content;white-space:nowrap}
+.lint .page-header>.button{flex:none;min-width:max-content;min-height:32px;white-space:nowrap}
 body .lint .button{display:inline-flex;align-items:center;justify-content:center;gap:8px;text-align:center;max-width:100%}
 .lint-scope{max-width:72ch;margin:0 0 20px;color:var(--text-2,#394659);line-height:1.55}
 .lint-h2{font-size:var(--fs-h2,17px);margin:24px 0 12px}
@@ -53,6 +53,6 @@ body .lint .lint-next .button{min-height:var(--control-h,32px);height:auto;paddi
   .lint-row{grid-template-columns:minmax(0,1fr);gap:12px;padding:14px 12px}
   body .lint .button,body .lint .text-button,body .lint .lint-next .button{min-height:44px}
   body .lint .button{width:100%}
-  body .lint .page-header .button{width:auto;font-size:13px;padding:0 14px}
+  body .lint .page-header .button{width:auto;min-height:44px;font-size:13px;padding:0 14px}
 }
 @media (prefers-reduced-motion:reduce){.lint *{transition:none!important;animation:none!important}}

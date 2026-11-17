@@ -13,7 +13,7 @@
     "start": "node --env-file-if-exists=.env.local build/server.mjs",
     "start:team": "node build/team.mjs",
     "start:google-pilot": "node scripts/start-google-pilot.cjs",
-    "test": "tsx --test tests/*.test.ts",
+    "test": "tsx --require ./tests/setup-unit-env.cjs --test tests/*.test.ts",
     "test:e2e": "playwright test",
     "package:demo": "tsx scripts/package-demo.ts"
   },

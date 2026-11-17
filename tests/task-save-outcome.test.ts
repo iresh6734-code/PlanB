@@ -231,13 +231,33 @@ test('401 / 404 / 409 / 422 / tiempo agotado: cada uno con su estado honesto; lo
     assert.equal(p401.status, 'rejected'); assert.equal(p401.detail.httpStatus, 401); assert.equal(r.store.changes().length, 0); assert.deepEqual(p401.patch, { notes: 'bloqueado' });
   });
   await withRig(async r => {
-    const loaded = await open(r, 'task-2'); const slow: Transport = { ...r.transport, writeTimeoutMs: 40, readTimeoutMs: 40, fetch: (url, init) => init?.method === 'PATCH' ? new Promise<Response>(() => undefined) : r.transport.fetch(url, init) };
-    const controller = createTaskSaveOutcomes({ strategy: legacyStrategy(slow) }); const op = await started(controller.submit(input(loaded, { notes: 'lento' }))).done;
-    assert.equal(op.status, 'uncertain'); assert.equal(r.patches.length, 0);
-    const hang: Transport = { ...slow, fetch: () => new Promise<Response>(() => undefined) };
-    const verifier = createTaskSaveOutcomes({ strategy: { save: (q, h) => legacyStrategy(slow).save(q, h), verify: q => legacyStrategy(hang).verify(q) } });
-    const op2 = await started(verifier.submit(input(await open(r, 'task-3'), { notes: 'lento 2' }))).done; await verifier.verify(op2.attemptId);
-    assert.equal(verifier.get(op2.attemptId)!.evidence?.kind, 'unknown'); assert.equal(verifier.get(op2.attemptId)!.status, 'uncertain', 'una lectura que agota su tiempo no resuelve nada');
+    const loaded = await open(r, 'task-2');
+    let attemptedWrites = 0;
+    const slow: Transport = {
+      ...r.transport,
+      writeTimeoutMs: 40,
+      fetch: (url, init) => {
+        if (init?.method !== 'PATCH') return r.transport.fetch(url, init);
+        attemptedWrites++;
+        return new Promise<Response>(() => undefined);
+      },
+    };
+    const controller = createTaskSaveOutcomes({ strategy: legacyStrategy(slow) });
+    const op = await started(controller.submit(input(loaded, { notes: 'lento' }))).done;
+    assert.equal(op.status, 'uncertain');
+    assert.equal(attemptedWrites, 1);
+    assert.equal(r.patches.length, 0);
+
+    const hang: Transport = { ...slow, readTimeoutMs: 40, fetch: () => new Promise<Response>(() => undefined) };
+    const verifier = createTaskSaveOutcomes({
+      strategy: { save: (q, h) => legacyStrategy(slow).save(q, h), verify: q => legacyStrategy(hang).verify(q) },
+    });
+    const op2 = await started(verifier.submit(input(await open(r, 'task-3'), { notes: 'lento 2' }))).done;
+    await verifier.verify(op2.attemptId);
+    assert.equal(attemptedWrites, 2);
+    assert.equal(r.patches.length, 0);
+    assert.equal(verifier.get(op2.attemptId)!.evidence?.kind, 'unknown');
+    assert.equal(verifier.get(op2.attemptId)!.status, 'uncertain', 'una lectura que agota su tiempo no resuelve nada');
   });
 });
 

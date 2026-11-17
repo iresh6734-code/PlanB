@@ -1,0 +1,11 @@
+# 385 · El ZIP integrado abre y conserva la copia restaurada
+
+17/11/2026, Europe/Madrid. Candidata `candidate-aebaacf6-df77-44a1-bb52-2b58986e4e0d`. Incluye el iniciador 382 y el exportador 384 con las huellas presentadas. Antes y después se verificaron 838 fuentes y 50 artefactos, sin incidencias de integridad. Typecheck, Vite, seis bundles y 163/163 pruebas de integración Node. Diez activos públicos comprobados.
+
+- **Navegador 1/1.** Desde un CRM ficticio se editó un contacto y se descargó el ZIP cifrado de 48.938.718 bytes tras revisar la copia. El runtime de ese paquete rechazó contraseña errónea y archivo alterado con 422 sin cambiar la base. Restauró con 200 y, tras reiniciar, mantuvo identidad, revisión de evidencia, 62 registros y un cambio local. Chromium no observó peticiones externas. Se cerraron los tres procesos de esta prueba.
+- **Comando del ZIP.** Las huellas del iniciador, runtime, portada y bloqueo externo extraídos coinciden con la candidata. Se ejecutó «ABRIR PLAN B.cmd» sobre la base ficticia ya restaurada. Dio portada 200, misma identidad y acceso protegido. La segunda apertura usó el mismo proceso. Al retirar temporalmente el índice, salud siguió en 200 y el iniciador rechazó la portada 404. Al reponerlo, el mismo proceso volvió a abrir y los digests SQLite de registros y cambios coincidieron. Se verificó el cierre de este cuarto proceso.
+- **Entorno.** Node del paquete v24.14.0. Las dependencias copiadas conservaban las huellas del banco anterior. Se usó un observador de prueba para limitar el puerto y desactivar la apertura automática del navegador desde el comando .cmd. La base usa la clave SQLite ficticia de las pruebas. No se probó DPAPI con una cuenta de usuario real ni se desplegó.
+
+SHA-256 del ZIP `4b24b4ececd25a15a45c733e534482f2e9909d351d022fc0b59f9fcf88854a78`. Banco `tests/.tmp/portable385-8ddbbdb1` con el informe de Chromium, huellas, registros de .cmd y resultados de `packaged-command/results.json`.
+
+El manifiesto declara 137 bloqueos: 117 reservas de fuentes, 19 exclusiones auxiliares y el indicador de revisión E2E/visual. La comprobación funcional queda registrada aparte del manifiesto y la candidata sigue sin aprobación. Después de la captura cambiaron siete archivos de equipo, caché e inventario. Las nuevas entregas de Claude requieren verificación sobre sus propios bytes.

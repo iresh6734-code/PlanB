@@ -1,6 +1,6 @@
 {
   "description": "Fallos conocidos de la batería unitaria con NODE_ENV=test. Cada uno con causa y responsable; se retira en cuanto pasa. Ver tools/ci/README.md.",
-  "updated": "2026-11-14",
+  "updated": "2026-11-17",
   "failures": [
     {
       "file": "tests/continuity-evidence-mount.test.ts",
@@ -8,12 +8,6 @@
       "cause": "Arranca el servidor completo como proceso propio y espera respuesta con un plazo fijo; con la batería entera en marcha a veces no responde a tiempo («El servidor propio no respondió»). Aislada pasa (14/11).",
       "owner": "Codex (prueba de CODEX-CONTINUITY-EVIDENCE-MOUNT-239)",
       "flaky": true
-    },
-    {
-      "file": "tests/continuity-evidence-mount.test.ts",
-      "name": "the portable entry point does not register the main-only evidence route",
-      "cause": "La entrada portátil responde 200 donde la prueba espera 404: server/runtime.ts registra registerContinuityEvidenceApi, que la prueba considera exclusiva de main. Hay que decidir si la prueba está desfasada o el montaje es indebido.",
-      "owner": "Codex (server/runtime.ts reservado por CODEX-A4-SERVER-MOUNT-318; prueba de CODEX-CONTINUITY-EVIDENCE-MOUNT-239)"
     },
     {
       "file": "tests/date-check-decision-independent-339.test.ts",
@@ -50,24 +44,6 @@
       "name": "099 valid opaque IDs with a large numeric suffix must still produce a different capture identity",
       "cause": "Sonda independiente de CODEX-LAB-REVIEW-099 sobre la identidad de captura del laboratorio de continuidad; documenta un defecto abierto de shared/continuity-lab.ts.",
       "owner": "Codex (CODEX-LAB-035)"
-    },
-    {
-      "file": "tests/independent-interface-contexts.test.ts",
-      "name": "G6 AUTH_PARENT072 corregido: el done que App entrega a Protection espera refresh() antes de abrir y devuelve su promesa",
-      "cause": "G6 de la auditoría QA073/079: Protection se cierra antes de que App confirme la carga. El arreglo está registrado como CODEX-AUTH-PARENT-072 (ready).",
-      "owner": "Codex (CODEX-AUTH-PARENT-072)"
-    },
-    {
-      "file": "tests/independent-task-focus-123.test.ts",
-      "name": "observation F1: after a lost acknowledgement the verification can read a different installation and call its matching value applied",
-      "cause": "Observaciones F1/F2 de la revisión CODEX-TASK-FOCUS-REVIEW-131 sobre la ficha de tarea de Hoy (CLAUDE-TASK-FOCUS-123): verificación tras acuse perdido y captura nueva con el mismo ID. Documentan defectos abiertos.",
-      "owner": "Claude (autor de CLAUDE-TASK-FOCUS-123) con revisión de Codex"
-    },
-    {
-      "file": "tests/independent-task-focus-123.test.ts",
-      "name": "observation F2: a new capture sharing its old ID but not its date is treated as the same context and can be edited",
-      "cause": "Observaciones F1/F2 de la revisión CODEX-TASK-FOCUS-REVIEW-131 sobre la ficha de tarea de Hoy (CLAUDE-TASK-FOCUS-123): verificación tras acuse perdido y captura nueva con el mismo ID. Documentan defectos abiertos.",
-      "owner": "Claude (autor de CLAUDE-TASK-FOCUS-123) con revisión de Codex"
     },
     {
       "file": "tests/operational-date-check-independent-337.test.ts",

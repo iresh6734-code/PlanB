@@ -5,7 +5,7 @@ import {loadContinuityEvidence,EvidenceReadError,type EvidenceViewData} from './
 
 const dates=new Intl.DateTimeFormat('es-ES',{timeZone:'Europe/Madrid',dateStyle:'medium',timeStyle:'short'});
 const date=(at:string|number)=>dates.format(new Date(at))+' · Madrid';
-const labels={ready:'Preparado según esta evidencia','at-risk':'Fuera de objetivo',unproven:'Preparación sin demostrar',blocked:'Requiere atención'};
+const labels={ready:'Preparado según esta evidencia','at-risk':'Fuera de objetivo',unproven:'Preparación sin comprobar',blocked:'Requiere atención'};
 export interface ContinuityEvidenceProps{active?:boolean;load?:typeof loadContinuityEvidence;onUnlock?:()=>void}
 /** Read-only extension of Plan B. No evidence editing, automatic queries, retries, polling or persistence. */
 export function ContinuityEvidence({active=true,load=loadContinuityEvidence,onUnlock}:ContinuityEvidenceProps){
@@ -40,7 +40,7 @@ export function ContinuityEvidence({active=true,load=loadContinuityEvidence,onUn
       {error?<div className="cev-error" role="alert"><strong>No hay una evaluación utilizable.</strong><p>{error.message}</p>{error.code==='locked'&&onUnlock?<button type="button" className="cev-secondary" onClick={onUnlock}>Desbloquear copia</button>:null}</div>:null}
       {!busy&&!data&&!error?<div className="cev-empty"><FileCheck2 size={28} aria-hidden="true"/><div><h3>Empieza por revisar la referencia local</h3><p>Verás la captura examinada, las tareas que se pueden situar en el tiempo y los límites de los informes guardados. Solo se consulta al pulsar el botón.</p></div></div>:null}
       {data&&e&&w?<div className="cev-result" data-testid="evidence-result">
-        <div className="cev-verdict"><div><h3>{labels[e.status]}</h3><p data-testid="evidence-scenario">{e.scenario==='crm-outage'?'Caída del CRM':'Pérdida del equipo'} · {data.parameters.outageMinutes/60} horas examinadas</p><p>La lectura se ha completado. Comprobar una copia no demuestra por sí solo que puedas recuperarte en otro equipo.</p></div><span className="cev-origin">{data.facts.snapshot.isTestData?'Datos de ensayo':'Datos locales'}</span></div>
+        <div className="cev-verdict"><div><h3>{labels[e.status]}</h3><p data-testid="evidence-scenario">{e.scenario==='crm-outage'?'Caída del CRM':'Pérdida del equipo'} · {data.parameters.outageMinutes/60} horas examinadas</p><p>La lectura se ha completado. Comprobar una copia no demuestra por sí solo que puedas recuperarte en otro equipo.</p></div><span className="cev-origin">{data.facts.snapshot.isTestData?'Datos de prueba':'Datos locales'}</span></div>
         <dl className="cev-reference"><div><dt>Captura examinada</dt><dd>{date(data.facts.snapshot.capturedAt)}</dd></div><div><dt>Comprobación local</dt><dd>{date(data.facts.snapshot.locallyCheckedAt)}</dd></div></dl>
         <div className="cev-columns"><div>
           <h3>Tareas de esta revisión</h3><dl className="cev-totals"><div><dt>Inventario local</dt><dd>{w.total}</dd></div><div><dt>Abiertas confirmadas</dt><dd>{w.knownOpen}</dd></div><div><dt>Completadas</dt><dd>{w.completed}</dd></div></dl>

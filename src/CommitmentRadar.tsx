@@ -237,14 +237,14 @@ export function CommitmentRadar({ contextRevision, commitmentId = null, onContex
     try { const report = createCommitmentReport(detail); download('pelicula-' + detail.item.id + '-' + detail.item.revision.slice(0, 8) + '.' + kind, kind === 'html' ? 'text/html;charset=utf-8' : 'application/json', report[kind]); }
     catch { setFormError('No se pudo preparar el archivo: el detalle no es válido.'); }
   }
-  if (!contextRevision) return <section className="cr" aria-labelledby="cr-title"><h1 id="cr-title" ref={heading} tabIndex={-1}>Radar de compromisos</h1><p className="cr-empty" role="status">No hay una copia de ensayo activa: el Radar no muestra compromisos.</p></section>;
+  if (!contextRevision) return <section className="cr" aria-labelledby="cr-title"><h1 id="cr-title" ref={heading} tabIndex={-1}>Radar de compromisos</h1><p className="cr-empty ui-empty" role="status">No hay una copia de ensayo activa: el Radar no muestra compromisos.</p></section>;
   const grouped = GROUPS.map(group => ({ ...group, rows: (items ?? []).filter(item => item.status === group.status) }));
   const closed = !!detail?.item.closure, locked = unknownOutcome;
   return <section className="cr" aria-labelledby="cr-title">
-    <header className="cr-head"><div><h1 id="cr-title" ref={heading} tabIndex={-1}>Radar de compromisos</h1><p className="cr-sub">Compromisos con fecha, sus fuentes de venta, entrega y soporte y lo que se decidió. Datos de ensayo: ninguna fuente real.</p></div>
+    <header className="cr-head"><div><h1 id="cr-title" ref={heading} tabIndex={-1}>Radar de compromisos</h1><p className="cr-sub">Compromisos con fecha, sus fuentes de venta, entrega y soporte y lo que se decidió. Datos de prueba: ninguna fuente real.</p></div>
       <button type="button" className="button secondary" disabled={listLoading} onClick={() => void loadList()}><RefreshCw size={16} aria-hidden="true" />Actualizar</button></header>
     {listError ? <div className="error-box" role="alert"><p>{listError}</p><button type="button" className="text-button" onClick={() => void loadList()}>Reintentar la lectura</button></div> : null}
-    {!items ? (listLoading ? <p role="status">Leyendo el Radar…</p> : null)
+    {!items ? (listLoading ? <p role="status" className="ui-loading">Leyendo el Radar…</p> : null)
       : items.length === 0 ? <p className="cr-empty" role="status">Esta copia no tiene compromisos que vigilar.</p>
       : grouped.filter(group => group.rows.length).map(group => <section key={group.status} className="cr-group" data-status={group.status} aria-labelledby={'cr-g-' + group.status}>
         <h3 id={'cr-g-' + group.status}>{group.title} ({group.rows.length})</h3><p className="cr-hint">{group.hint}</p>

@@ -1,72 +1,90 @@
-import { ArrowRight, Bot, Building2, CalendarCheck, CalendarDays, ChevronDown, Download, GitBranch, Home, ListTodo, Lock, PlugZap, Radar, Search, Settings2, ShieldCheck, Users } from 'lucide-react';
+import { useEffect, useState, type ComponentType } from 'react';
+import { ArrowRight, Building2, CalendarCheck, CalendarDays, ChevronDown, Download, FlaskConical, GitBranch, Home, Inbox, ListTodo, PlugZap, Radar, Search, Settings2, ShieldCheck, SlidersHorizontal, Users } from 'lucide-react';
 import type { AppState, EntityName } from '../../shared/model.js';
 import { APP_VERSION } from '../../shared/version.js';
 import { Brand } from '../components.js';
 import { PreparationNavigation } from '../PreparationNavigation.js';
-import { useTheme } from './theme.js';
+import { groupOfPage, itemActive, navigationGroups, type GroupId, type NavGroup, type NavItem, type NavTarget } from './navigation.js';
 import type { PageId } from './session.js';
 
-const navigation = [
-  { id: 'contacts', label: 'Clientes', icon: Users },
-  { id: 'companies', label: 'Empresas', icon: Building2 },
-  { id: 'deals', label: 'Oportunidades', icon: GitBranch },
-  { id: 'tasks', label: 'Tareas', icon: ListTodo }
-] as const;
-
 type Toggle = (update: (open: boolean) => boolean) => void;
+type Signals = { overdue: number | null; atRisk: number | null; copy?: { count: number; tone: 'danger' | 'warn'; titles: string[] } | null };
 type Props = {
   state: AppState; page: PageId; entityName: EntityName;
-  /** Hay una ficha abierta: la búsqueda global se desactiva y salir al espacio comercial pide confirmación. */ selected: boolean;
-  /** Recuentos para los avisos del menú; null = sin dato. */ signals: { overdue: number | null; atRisk: number | null };
-  teamOrigin: string | null; step: number; workOpen: boolean; preparationOpen: boolean;
-  setPage: (page: PageId) => void; setSelected: (value: null) => void; setWorkOpen: Toggle; setPreparationOpen: Toggle;
+  /** Hay una ficha abierta: la búsqueda global se desactiva. */ selected: boolean;
+  /** Recuentos para los avisos del menú; null = sin dato. */ signals: Signals;
+  step: number; preparationOpen: boolean;
+  setPage: (page: PageId) => void; setSelected: (value: null) => void; setPreparationOpen: Toggle;
   setGlobalSearch: (open: boolean) => void; setModal: (modal: 'settings') => void;
-  openEntity: (entity: EntityName) => void; openPreparation: (step?: number) => void; protect: () => void;
+  openEntity: (entity: EntityName) => void; openPreparation: (step?: number) => void;
 };
 
-/** Navegación principal de la App local. Solo cambia de apartado; no lee ni guarda datos. */
-function ThemeSwitch() {
-  const [theme, toggle] = useTheme();
-  return <button type="button" className="gx-theme-switch" role="switch" aria-checked={theme === 'dark'} onClick={toggle}><span className="gx-theme-track" aria-hidden="true"><span /></span>Modo oscuro</button>;
-}
-export function Sidebar({ state, page, entityName, selected, signals, teamOrigin, step, workOpen, preparationOpen, setPage, setSelected, setWorkOpen, setPreparationOpen, setGlobalSearch, setModal, openEntity, openPreparation, protect }: Props) {
+const GROUP_ICON: Record<GroupId, ComponentType<{ size?: number }>> = { home: Home, today: CalendarDays, clients: Users, continuity: ShieldCheck, settings: SlidersHorizontal, lab: FlaskConical };
+const ITEM_ICON: Record<string, ComponentType<{ size?: number }>> = {
+  today: CalendarDays, agents: Inbox, contacts: Users, companies: Building2, deals: GitBranch, tasks: ListTodo,
+  continuity: ShieldCheck, changes: GitBranch, export: Download, 'team-sync': Building2, integrations: PlugZap, provider: Settings2, radar: Radar, 'date-check': CalendarCheck,
+};
+
+/**
+ * Navegación principal en cinco lugares (Inicio, Hoy, Clientes, Continuidad y Ajustes) más el Laboratorio cuando la
+ * copia es de datos de prueba (CLAUDE-UI-NAV-LAB). Solo cambia de apartado; no lee ni guarda datos.
+ */
+export function Sidebar({ state, page, entityName, selected, signals, step, preparationOpen, setPage, setSelected, setPreparationOpen, setGlobalSearch, setModal, openEntity, openPreparation }: Props) {
+  const context = { runtime: !!state.runtime, testData: state.snapshot?.source.isTestData !== false, ready: !!state.ready };
+  const groups = navigationGroups(context), current = groupOfPage(page);
+  const [open, setOpen] = useState<Set<GroupId>>(() => new Set([current]));
+  // Al cambiar de lugar queda desplegado solo el suyo (el menú no crece al navegar); dentro del mismo lugar se respeta lo que la persona abra o cierre.
+  useEffect(() => { setOpen(new Set([current])); }, [current]);
+
+  const badgeOf = (badge: NavItem['badge']) => {
+    if (badge === 'overdue' && signals.overdue) return <span className="gx-badge" data-tone="danger" aria-hidden="true" title={signals.overdue + (signals.overdue === 1 ? ' tarea vencida' : ' tareas vencidas')}>{signals.overdue}</span>;
+    if (badge === 'changes' && state.changes) return <span className="gx-badge" aria-hidden="true" title={state.changes + (state.changes === 1 ? ' cambio local' : ' cambios locales')}>{state.changes}</span>;
+    if (badge === 'copy' && signals.copy) return <span className="gx-badge" data-tone={signals.copy.tone} aria-hidden="true" title={signals.copy.titles.join(' · ')}>{signals.copy.count}</span>;
+    if (badge === 'atRisk' && signals.atRisk) return <span className="gx-badge" data-tone="danger" aria-hidden="true" title={signals.atRisk + (signals.atRisk === 1 ? ' compromiso en riesgo' : ' compromisos en riesgo')}>{signals.atRisk}</span>;
+    return null;
+  };
+  const go = (target: NavTarget) => {
+    if (target.kind === 'entity') openEntity(target.entity);
+    else if (target.kind === 'settings') setModal('settings');
+    else if (target.kind === 'prepare') openPreparation();
+    else { setPage(target.page); setSelected(null); }
+  };
+  const disabled = (item: { needsReady?: boolean }) => !!item.needsReady && !state.ready;
+
+  const header = (group: NavGroup) => {
+    const Icon = GROUP_ICON[group.id], active = current === group.id;
+    if (!group.items.length) return <button type="button" className={'nav-item ' + (active ? 'active' : '')} aria-current={active ? 'page' : undefined} onClick={() => go(group.target)}><Icon size={19} />{group.label}</button>;
+    const expanded = open.has(group.id), id = 'nav-group-' + group.id;
+    // Pulsar el grupo abre su primer apartado; si ya estás dentro, solo pliega o despliega.
+    const press = () => active ? setOpen(previous => { const next = new Set(previous); if (next.has(group.id)) next.delete(group.id); else next.add(group.id); return next; }) : go(group.target);
+    return <>
+      <button type="button" className={'nav-item work-toggle ' + (active ? 'active' : '')} aria-expanded={expanded} aria-controls={id} disabled={disabled(group)} onClick={press}>
+        <Icon size={19} /><span>{group.label}</span>{!expanded ? badgeOf(group.badge) : null}<ChevronDown size={15} aria-hidden="true" className={expanded ? 'expanded' : ''} />
+      </button>
+      <div id={id} className={'work-disclosure ' + (expanded ? 'is-open' : '')} aria-hidden={!expanded} inert={!expanded}><div>
+        <nav className="work-subnav" aria-label={group.label}>
+          {group.items.map(item => {
+            if (item.target.kind === 'prepare') return <PreparationNavigation key={item.id} active={page === 'prepare'} expanded={preparationOpen} step={step} hasSnapshot={!!state.snapshot}
+              onToggle={() => page === 'prepare' ? setPreparationOpen(value => !value) : openPreparation()} onStep={next => openPreparation(next)} />;
+            const ItemIcon = ITEM_ICON[item.id] ?? ArrowRight, on = itemActive(item, page, entityName);
+            return <button key={item.id} type="button" className={'nav-item ' + (on ? 'active' : '')} aria-current={on ? 'page' : undefined} disabled={disabled(item)} onClick={() => go(item.target)}><ItemIcon size={16} />{item.label}{badgeOf(item.badge)}</button>;
+          })}
+          {group.id === 'settings' && page === 'prepare' ? <button type="button" className="nav-item" disabled={!state.ready} onClick={() => setPage('workspace')}><ArrowRight size={16} />Abrir aplicación</button> : null}
+        </nav>
+      </div></div>
+    </>;
+  };
+
+  const main = groups.filter(group => group.id !== 'lab'), lab = groups.find(group => group.id === 'lab');
   return (
     <aside className="sidebar">
       <Brand />
-      <button type="button" className="oc-search" disabled={!state.ready || !!selected} onClick={() => setGlobalSearch(true)}><Search size={16}/><span>Buscar en toda la copia</span></button>
+      <button type="button" className="oc-search" disabled={!state.ready || !!selected} onClick={() => setGlobalSearch(true)}><Search size={16} /><span>Buscar en toda la copia</span></button>
       <nav aria-label="Navegación principal">
-        <div className="oc-nav-group" role="group" aria-labelledby="oc-nav-trabajo"><p className="oc-nav-caption" id="oc-nav-trabajo">Trabajo</p>
-        <button className={'nav-item '+(page==='home'?'active':'')} aria-current={page==='home'?'page':undefined} onClick={()=>{setPage('home');setSelected(null);}}><Home size={19}/>Inicio</button>
-        {!state.runtime?<button className={'nav-item '+(page==='today'?'active':'')} aria-current={page==='today'?'page':undefined} onClick={()=>{setPage('today');setSelected(null);}}><CalendarDays size={19}/>Hoy{signals.overdue?<span className="gx-badge" data-tone="danger" aria-hidden="true" title={signals.overdue+(signals.overdue===1?' tarea vencida':' tareas vencidas')}>{signals.overdue}</span>:null}</button>:null}
-        <button className={'nav-item work-toggle '+(page==='workspace'?'active':'')} aria-expanded={workOpen} aria-controls="work-navigation" disabled={!state.ready} onClick={()=>page==='workspace'?setWorkOpen(open=>!open):openEntity(entityName)}><Users size={19}/><span>Trabajar</span><ChevronDown size={15} aria-hidden="true" className={workOpen?'expanded':''}/></button>
-        <div id="work-navigation" className={'work-disclosure '+(workOpen?'is-open':'')} aria-hidden={!workOpen} inert={!workOpen}><div><nav className="work-subnav" aria-label="Secciones de trabajo">{navigation.map(item=><button key={item.id} className={'nav-item '+(page==='workspace'&&entityName===item.id?'active':'')} aria-current={page==='workspace'&&entityName===item.id?'page':undefined} onClick={()=>openEntity(item.id)}><item.icon size={16}/>{item.label}</button>)}</nav></div></div>
-        <button className={'nav-item '+(page==='changes'?'active':'')} aria-current={page==='changes'?'page':undefined} disabled={!state.ready} onClick={()=>{setPage('changes');setSelected(null);}}><GitBranch size={19}/>Cambios{state.changes?<span className="gx-badge" aria-hidden="true" title={state.changes+(state.changes===1?' cambio local':' cambios locales')}>{state.changes}</span>:null}</button>
-        {!state.runtime?<button className={'nav-item '+(page==='agents'?'active':'')} aria-current={page==='agents'?'page':undefined} onClick={()=>{setPage('agents');setSelected(null);}}><Bot size={19}/>Agentes</button>:null}
-        </div>
-        <div className="oc-nav-group" role="group" aria-labelledby="oc-nav-operaciones"><p className="oc-nav-caption" id="oc-nav-operaciones">Operaciones</p>
-        <button className={'nav-item '+(page==='radar'?'active':'')} aria-current={page==='radar'?'page':undefined} disabled={!state.ready} onClick={()=>{setPage('radar');setSelected(null);}}><Radar size={19}/>Radar{signals.atRisk?<span className="gx-badge" data-tone="danger" aria-hidden="true" title={signals.atRisk+(signals.atRisk===1?' compromiso en riesgo':' compromisos en riesgo')}>{signals.atRisk}</span>:null}</button>
-        <button className={'nav-item '+(page==='date-check'?'active':'')} aria-current={page==='date-check'?'page':undefined} disabled={!state.ready} onClick={()=>{setPage('date-check');setSelected(null);}}><CalendarCheck size={19}/>Comprobar una fecha</button>
-        </div>
+        <div className="oc-nav-group" role="group" aria-label="Lugares">{main.map(group => <div key={group.id} className="gx-nav-place">{header(group)}</div>)}</div>
+        {lab ? <div className="oc-nav-group gx-nav-lab" role="group" aria-labelledby="oc-nav-lab"><p className="oc-nav-caption" id="oc-nav-lab">Con datos de prueba</p>{header(lab)}</div> : null}
       </nav>
-      <div className="sidebar-secondary">
-        <div className="oc-nav-group" role="group" aria-labelledby="oc-nav-copia"><p className="oc-nav-caption" id="oc-nav-copia">Tu copia</p>
-        <button className={'nav-item '+(page==='continuity'?'active':'')} aria-current={page==='continuity'?'page':undefined} onClick={()=>{setPage('continuity');setSelected(null);}}><ShieldCheck size={19}/>Continuidad</button>
-        {!state.runtime?<button className={'nav-item '+(page==='team-sync'?'active':'')} aria-current={page==='team-sync'?'page':undefined} onClick={()=>{setPage('team-sync');setSelected(null);}}><Building2 size={19}/>Copia de equipo</button>:null}
-        <button className={'nav-item ' + (page === 'export' ? 'active' : '')} aria-current={page==='export'?'page':undefined} disabled={!state.ready} onClick={() => { setPage('export'); setSelected(null); }}><Download size={19} />Exportar</button>
-        <button className="nav-item" onClick={protect}><Lock size={19}/>Proteger / bloquear</button>
-        {!state.runtime&&teamOrigin?<a className="nav-item" href={teamOrigin+'/team?view=company'} onClick={event=>{if(selected&&!confirm('Hay una ficha abierta. ¿Salir del CRM y abrir el espacio comercial?'))event.preventDefault();}}><ArrowRight size={19}/>Espacio comercial</a>:null}
-        </div>
-        <div className="oc-nav-group" role="group" aria-labelledby="oc-nav-ajustes"><p className="oc-nav-caption" id="oc-nav-ajustes">Ajustes</p>
-        {!state.runtime?<button className={'nav-item '+(page==='integrations'?'active':'')} aria-current={page==='integrations'?'page':undefined} onClick={()=>{setPage('integrations');setSelected(null);}}><PlugZap size={19}/>Integraciones</button>:null}
-        {!state.runtime&&state.snapshot?.source.isTestData!==false ? <button className="nav-item" onClick={() => setModal('settings')}><Settings2 size={19} />Proveedor de IA</button> : null}
-        {!state.runtime ? <PreparationNavigation active={page==='prepare'} expanded={preparationOpen} step={step} hasSnapshot={!!state.snapshot}
-          onToggle={()=>page==='prepare'?setPreparationOpen(open=>!open):openPreparation()}
-          onStep={next=>openPreparation(next)}/>:null}
-        {page === 'prepare' ? <button className="nav-item" disabled={!state.ready} onClick={() => setPage('workspace')}><ArrowRight size={19} />Abrir aplicación</button> : null}
-        </div>
-      </div>
-      <ThemeSwitch />
-      <div className="sidebar-bottom"><span className="dot" />{state.snapshot?.source.isTestData===false?'Producción · lectura':'Datos de ensayo'}<small>{state.snapshot?.name ?? 'Tu copia, en tu ordenador'} · v{APP_VERSION}</small></div>
+      <div className="sidebar-bottom"><span className="dot" />{state.snapshot?.source.isTestData === false ? 'Producción · lectura' : 'Datos de prueba'}<small>{state.snapshot?.name ?? 'Tu copia, en tu ordenador'} · v{APP_VERSION}</small></div>
     </aside>
   );
 }

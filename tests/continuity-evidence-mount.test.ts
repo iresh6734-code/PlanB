@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawn, type ChildProcess } from 'node:child_process';
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
@@ -44,8 +44,10 @@ async function start(kind:'main'|'runtime'){
   const data=path.join(root,'data'),dbPath=path.join(data,'planb.sqlite');mkdirSync(data);
   writeFileSync(path.join(data,'.planb-key'),JSON.stringify({kind:'test',data:randomBytes(32).toString('base64')}),{flag:'wx'});
   const store=new Store(dbPath);
+  const instanceId=randomUUID();
   const snapshot=makeFixture('agency');snapshot.records.find(record=>record.entity==='tasks'&&record.id==='task-2')!.values.subject=marker;
   try{
+    store.set('instanceId',instanceId);
     assert.equal(store.importSnapshot(snapshot).complete,true);
     store.saveGeneration(makeDemoSpec(snapshot),{provider:'demo',model:null,prompt:'',generatedAt:new Date().toISOString(),approved:false});store.activate();
     const captureId=snapshot.id+':'+snapshot.capturedAt, at=new Date().toISOString();
@@ -63,9 +65,10 @@ async function start(kind:'main'|'runtime'){
   const close=async()=>{try{await stop(child,closed);}finally{writeFileSync(path.join(root,'process.log'),log);writeFileSync(path.join(root,'process-result.json'),JSON.stringify({kind,pid:child.pid,terminal:child.exitCode!==null||child.signalCode!==null,code:child.exitCode,signal:child.signalCode}));}};
   try{
     let healthy=false;
-    for(let i=0;i<75;i++){
+    const startupDeadline=performance.now()+60_000;
+    while(performance.now()<startupDeadline){
       if(child.exitCode!==null||child.signalCode!==null)break;
-      try{const response=await fetch(base+'/api/health',{signal:AbortSignal.timeout(300)});healthy=response.ok&&!!(await response.json()).instanceId;}catch{}
+      try{const response=await fetch(base+'/api/health',{signal:AbortSignal.timeout(700)});healthy=response.ok&&(await response.json()).instanceId===instanceId;}catch{}
       if(healthy)break;await pause(100);
     }
     assert.ok(healthy,'El servidor propio no respondió. Consulta '+root);
@@ -126,12 +129,33 @@ test('the main entry point registers protected local evidence and rejects an obs
   }finally{await app.close();}
 });
 
-test('the portable entry point does not register the main-only evidence route',async()=>{
+test('the portable entry point serves protected local evidence without writing',async()=>{
   const app=await start('runtime');
   try{
     const state=await (await app.request('/api/v2/state')).json();
     assert.equal(state.ready,true);assert.equal(state.runtime,true);
-    const response=await app.request(route);assert.equal(response.status,404);
-    assert.ok(!('facts' in await response.json()));
+    const first=await available(await app.request(route));
+    const setup=await app.request('/api/v2/auth/setup',{method:'POST',headers:{'Content-Type':'application/json',Origin:app.base},body:JSON.stringify({password})});
+    assert.equal(setup.status,200);
+    const cookie=setup.headers.get('set-cookie')?.split(';')[0];assert.ok(cookie);
+    const before=hashTables(app.dbPath);
+    const blocked=await app.request(route);
+    assert.equal(blocked.status,401);
+    cacheHeaders(blocked);
+    assert.ok(!('facts' in await blocked.json()));
+
+    const headers={Cookie:cookie};
+    const evidence=await app.request(route+'?revision='+first.context.revision,{headers});
+    assert.equal(evidence.headers.get('set-cookie'),null);
+    assert.equal((await available(evidence)).context.revision,first.context.revision);
+    const staleRevision=(first.context.revision.startsWith('a')?'b':'a')+first.context.revision.slice(1);
+    const stale=await app.request(route+'?revision='+staleRevision,{headers});
+    assert.equal(stale.status,409);
+    cacheHeaders(stale);
+    const result=await stale.json();
+    assert.equal(result.issue,'SOURCE_CHANGED');
+    assert.equal(result.facts,null);
+    assert.equal((await app.request(route,{method:'POST',headers})).status,404);
+    assert.equal(hashTables(app.dbPath),before,'evidence reads must not change the portable database');
   }finally{await app.close();}
 });

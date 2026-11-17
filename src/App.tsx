@@ -3,14 +3,20 @@ import { CheckCircle2, Circle, ShieldCheck, X } from 'lucide-react';
 import { validateRecord, type AppState, type CrmRecord, type EntityName } from '../shared/model.js';
 import { api, post } from './api.js';
 import { Brand, Modal, RecordDrawer, Spinner, recordName } from './components.js';
+import { CsvImport } from './CsvImport.js';
 import { Protection } from './Protection.js';
 import { type PageId, rememberPlace, storedEntity, storedPage } from './app-shell/session.js';
 import { useShortcuts } from './app-shell/useShortcuts.js';
+import { fallbackPage, labVisible } from './app-shell/navigation.js';
+import { pathOf, placeOf } from './app-shell/routes.js';
+import { useRecordListLoader, useRecordListState } from './app-shell/useRecordList.js';
 import { ShortcutsHelp } from './app-shell/ShortcutsHelp.js';
 import { RecordsPage } from './app-shell/RecordsPage.js';
 import { Sidebar } from './app-shell/Sidebar.js';
 import { TopBar } from './app-shell/TopBar.js';
+import { describeCapture } from './app-shell/workspace-copy.js';
 import { RelatedPanel } from './app-shell/RelatedPanel.js';
+import { DealSummary } from './app-shell/DealSummary.js';
 import { RecordTimeline } from './app-shell/RecordTimeline.js';
 import { CommandPalette } from './app-shell/CommandPalette.js';
 import { FocusRun } from './app-shell/FocusRun.js';
@@ -22,6 +28,11 @@ import { OutcomesLockNotice, TaskOutcomesHost, TaskOutcomesSurface, addLockSumma
 import { WorkspaceSearch } from './WorkspaceSearch.js';
 import { RehearsalTodayEntry } from './RehearsalTodayEntry.js';
 import { HomeOverview } from './HomeOverview.js';
+import { GuidedDrill } from './app-shell/GuidedDrill.js';
+import { advanceDrill, startDrill, type DrillState, type DrillStepId } from './app-shell/guided-drill.js';
+import { continuityAlerts, type AlertTarget, type ContinuityAlert } from './app-shell/continuity-alerts.js';
+import type { ContinuityTab } from './ContinuityHome.js';
+import type { ContinuityStatus } from '../shared/operations.js';
 // Apartados que se descargan al visitarlos por primera vez (misma interfaz de uso que los originales).
 import { ChangesView, ContinuityHome, DateCheck, DecisionReview, LocalIntegrations, OperationalRehearsal, PortableExport, Preparation, RadarHost, Settings, TeamSync } from './app-shell/lazy-pages.js';
 import type { WorkspaceSearchContext } from '../shared/workspace-search.js';
@@ -34,20 +45,29 @@ class SupersededStateRead extends Error {
 
 export default function App() {
   const [state, setState] = useState<LocalAppState | null>(null);
-  const [records, setRecords] = useState<CrmRecord[]>([]);
-  const [page, setPage] = useState<PageId>(storedPage);
+  // Lista de registros (búsqueda, página, embudo, filas y relacionados): ver app-shell/useRecordList.ts.
+  const list = useRecordListState();
+  const { records, setRecords, query, setQuery, offset, setOffset, pipeline, setPipeline, rows, total, loading: recordsLoading, error: recordsError } = list;
+  // Dirección inicial (B1): /clientes/<id>, /continuidad/cambios… abre ese lugar; la raíz abre el apartado recordado.
+  const [initialPlace] = useState(() => typeof location === 'undefined' ? null : placeOf(location.pathname));
+  const [page, setPage] = useState<PageId>(() => initialPlace?.page ?? storedPage());
   const [rehearseFromToday, setRehearseFromToday] = useState<string | null>(null);
   const [integrationsFrom, setIntegrationsFrom] = useState<'continuity' | null>(null), [returnedFrom, setReturnedFrom] = useState<'integrations' | null>(null);
   useEffect(() => { if (page !== 'integrations') setIntegrationsFrom(null); }, [page]);
-  const [entityName, setEntity] = useState<EntityName>(storedEntity);
+  const [entityName, setEntity] = useState<EntityName>(() => initialPlace?.entity ?? storedEntity());
+  // Ficha pedida por la dirección (al cargar o con Atrás/Adelante): se abre cuando la copia está lista.
+  const [pendingRecord, setPendingRecord] = useState<{ entity: EntityName; id: string } | null>(() => initialPlace?.recordId && initialPlace.entity ? { entity: initialPlace.entity, id: initialPlace.recordId } : null);
+  const urlSynced = useRef(false), fromHistory = useRef(false);
   useEffect(() => { rememberPlace(page, entityName); }, [page, entityName]);
   const [signals, setSignals] = useState<{ overdue: number | null; atRisk: number | null }>({ overdue: null, atRisk: null });
+  // Avisos de la copia para el menú: se calculan con el estado que Inicio o Continuidad ya han leído (sin otra lectura).
+  const [copyAlerts, setCopyAlerts] = useState<ContinuityAlert[] | null>(null), [continuityTab, setContinuityTab] = useState<ContinuityTab | null>(null);
+  const receiveContinuity = useCallback((status: ContinuityStatus) => { const next = continuityAlerts(status, new Date()); setCopyAlerts(current => current && JSON.stringify(current) === JSON.stringify(next) ? current : next); }, []);
   const [help, setHelp] = useState(false);
+  useEffect(() => { if (page !== 'continuity') setContinuityTab(null); }, [page]);
   const [commandsOpen, setCommandsOpen] = useState(false);
   const [focusOpen, setFocusOpen] = useState(false);
-  const [workOpen,setWorkOpen]=useState(true);
   const [preparationOpen,setPreparationOpen]=useState(false);
-  useEffect(()=>{if(page==='workspace')setWorkOpen(true);},[page]);
   // En la tira de navegación móvil, el apartado activo queda siempre a la vista.
   useEffect(()=>{if(typeof window==='undefined'||!window.matchMedia?.('(max-width: 760px)').matches)return;const frame=requestAnimationFrame(()=>document.querySelector('.sidebar [aria-current="page"]')?.scrollIntoView({inline:'center',block:'nearest'}));return()=>cancelAnimationFrame(frame);},[page,entityName]);
   const [teamOrigin,setTeamOrigin]=useState<string|null>(null);
@@ -55,11 +75,11 @@ export default function App() {
   const [step, setStep] = useState(0);
   const [connectRequest,setConnectRequest]=useState(0);
   const [selected, setSelected] = useState<CrmRecord | 'new' | null>(null);
-  const [query, setQuery] = useState('');
+  const selectedId = selected && selected !== 'new' ? selected.id : undefined;
   const [globalSearch, setGlobalSearch] = useState(false);
-  const [offset,setOffset]=useState(0),[total,setTotal]=useState(0),[pipeline,setPipeline]=useState('');
-  const [rows,setRows]=useState<CrmRecord[]>([]);
-  const [recordsLoading,setRecordsLoading]=useState(true),[recordsError,setRecordsError]=useState('');
+  // Ensayo guiado «Un día sin CRM»: solo observa lo que la persona hace (apartado, búsqueda, ficha); no guarda nada y se pierde al cerrar.
+  const [drill, setDrill] = useState<DrillState | null>(null);
+  useEffect(() => { setDrill(current => current ? advanceDrill(current, { page, entity: entityName, query, searchOpen: globalSearch, recordOpen: selected && selected !== 'new' ? selected.entity : null }, Date.now()) : current); }, [page, entityName, query, globalSearch, selected]);
   const [auth,setAuth]=useState<'loading'|'open'|'locked'|'setup'>('loading');
   const [dataRevision,setDataRevision]=useState(0);
   const [lockEpoch,setLockEpoch]=useState(0);
@@ -77,13 +97,46 @@ export default function App() {
     document.addEventListener('keydown', key); return () => document.removeEventListener('keydown', key);
   }, [auth, state?.ready, selected]);
   useEffect(() => { if (auth !== 'open' || !state?.ready) setGlobalSearch(false); }, [auth, state?.ready]);
-  const [modal, setModal] = useState<'settings' | 'coverage' | null>(null);
-  useShortcuts({ active: auth === 'open' && !!state, ready: !!state?.ready, runtime: !!state?.runtime, blocked: !!selected, onRecords: page === 'workspace',
+  const [modal, setModal] = useState<'settings' | 'coverage' | 'csv' | null>(null);
+  // Laboratorio (Radar y «Comprobar una fecha»): solo sin copia o con una copia de datos de prueba (decisión del usuario, 17/11/2026).
+  const lab = labVisible({ testData: state?.snapshot?.source.isTestData !== false });
+  useShortcuts({ active: auth === 'open' && !!state, ready: !!state?.ready, runtime: !!state?.runtime, lab, blocked: !!selected, onRecords: page === 'workspace',
     openEntity: entity => openEntity(entity), go: next => { setPage(next); setSelected(null); }, openHelp: () => setHelp(true), openSearch: () => setGlobalSearch(true), newRecord: () => setSelected('new'), openCommands: () => setCommandsOpen(true) });
-  // Una copia restaurada no tiene Hoy, Agentes, Integraciones ni copia de equipo: si la sesión recordaba uno, se vuelve a Inicio.
-  useEffect(() => { if (state?.runtime && (page === 'today' || page === 'agents' || page === 'integrations' || page === 'team-sync')) setPage('home'); }, [state?.runtime, page]);
+  // Un apartado recordado que no existe en esta copia (el Laboratorio sin datos de prueba; Hoy, Propuestas, Integraciones o copia de equipo
+  // en una copia restaurada) vuelve a Inicio.
+  // La dirección sigue al lugar: la primera vez se sustituye (no añade historial); después, cada cambio es una entrada nueva,
+  // salvo cuando el cambio viene de Atrás/Adelante. Mientras se abre una ficha pedida por la dirección no se toca.
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.history || auth !== 'open' || pendingRecord) return;
+    const path = pathOf({ page, entity: entityName, recordId: page === 'workspace' ? selectedId : undefined });
+    if (path === window.location.pathname) { urlSynced.current = true; fromHistory.current = false; return; }
+    if (!urlSynced.current || fromHistory.current) window.history.replaceState(null, '', path); else window.history.pushState(null, '', path);
+    urlSynced.current = true; fromHistory.current = false;
+  }, [page, entityName, selectedId, auth, pendingRecord]);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onPop = () => {
+      const place = placeOf(window.location.pathname); if (!place) return;
+      fromHistory.current = true;
+      if (place.page === 'workspace' && place.entity) { openEntity(place.entity); if (place.recordId) setPendingRecord({ entity: place.entity, id: place.recordId }); }
+      else { setPage(place.page); setSelected(null); }
+    };
+    window.addEventListener('popstate', onPop); return () => window.removeEventListener('popstate', onPop);
+  }, []);
+  useEffect(() => {
+    if (!pendingRecord || auth !== 'open' || !state?.ready) return;
+    let active = true; const wanted = pendingRecord;
+    api<{ record: CrmRecord }>('/v2/records/' + wanted.entity + '/' + encodeURIComponent(wanted.id))
+      .then(result => { if (!active) return; setPage('workspace'); setEntity(wanted.entity); setRecords([result.record]); setSelected(result.record); })
+      .catch(() => { if (active) setError('No se encontró esa ficha en tu copia. Puede que se haya restaurado otra captura.'); })
+      .finally(() => { if (active) setPendingRecord(null); });
+    return () => { active = false; };
+  }, [pendingRecord, auth, state?.ready]);
+  useEffect(() => { if (!state) return; const next = fallbackPage(page, { runtime: !!state.runtime, testData: state.snapshot?.source.isTestData !== false, ready: !!state.ready }); if (next) setPage(next); }, [state?.runtime, state?.snapshot?.source.isTestData, state?.ready, page]);
 
   const [notice, setNotice] = useState('');
+  // Último guardado que se puede deshacer desde el aviso (solo ediciones; el servidor comprueba que sigue siendo el último cambio).
+  const [undoable, setUndoable] = useState<{ changeId: number; at: string } | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -110,17 +163,11 @@ export default function App() {
     void check();const lock=()=>{setLockEpoch(epoch=>epoch+1);void check();};window.addEventListener('planb:locked',lock);
     return()=>{accessSequence.current++;refreshSequence.current++;window.removeEventListener('planb:locked',lock);};
   }, [refresh]);
-  useEffect(()=>{
-    if(auth!=='open'||page!=='workspace'||!state?.ready)return;
-    const controller=new AbortController();setRecordsLoading(true);setRecordsError('');
-    const timer=setTimeout(()=>void api<{records:CrmRecord[];related:CrmRecord[];total:number}>('/v2/records/'+entityName+'?q='+encodeURIComponent(query)+'&offset='+offset+'&limit=50&pipeline='+encodeURIComponent(pipeline),{signal:controller.signal})
-      .then(data=>{setRows(data.records);setRecords([...data.records,...data.related]);setTotal(data.total);}).catch(f=>{if(f.name!=='AbortError'){setError(f.message);setRecordsError(f.message);}}).finally(()=>{if(!controller.signal.aborted)setRecordsLoading(false);}),query?180:0);
-    return()=>{controller.abort();clearTimeout(timer);};
-  },[auth,page,entityName,query,offset,pipeline,dataRevision,state?.ready]);
+  useRecordListLoader(list, { active: auth === 'open' && page === 'workspace' && !!state?.ready, entity: entityName, revision: dataRevision, onError: setError });
   useEffect(() => {
     if (!notice) return;
-    const timer = setTimeout(() => setNotice(''), 5000); return () => clearTimeout(timer);
-  }, [notice]);
+    const timer = setTimeout(() => { setNotice(''); setUndoable(null); }, undoable ? 8000 : 5000); return () => clearTimeout(timer);
+  }, [notice, undoable]);
   useEffect(() => {
     if (!selected) return;
     const key = (event: KeyboardEvent) => { if (event.key === 'Escape') setSelected(null); };
@@ -132,7 +179,7 @@ export default function App() {
     catch (failure) { setError(failure instanceof Error ? failure.message : 'No se pudo completar la operación.'); }
     finally { setBusy(false); }
   };
-  const openEntity = (id: EntityName) => { setWorkOpen(true);setEntity(id); setSelected(null); setQuery('');setOffset(0);setPipeline('');setRows([]);setRecords([]);setRecordsLoading(true);setTotal(0);setDataRevision(r=>r+1); setPage('workspace'); };
+  const openEntity = (id: EntityName) => { setEntity(id); setSelected(null); list.reset();setDataRevision(r=>r+1); setPage('workspace'); };
   const openPreparation = (nextStep?: number) => { setPage('prepare'); setSelected(null); setPreparationOpen(true); if(nextStep!==undefined)setStep(nextStep); };
   const viewCoverage = async () => {
     setModal('coverage'); setProbe(null);
@@ -157,7 +204,12 @@ export default function App() {
   const openTaskFromOutcomes=(taskId:string,attemptId?:string)=>{setPage('today');setSelected(null);setTaskRequest(previous=>({taskId,attemptId:attemptId??null,nonce:(previous?.nonce??0)+1}));};
   const spec = state.spec;
   const entity = spec?.entities.find(e => e.id === entityName);
-  const pageLabel = page==='workspace'?(entity?.label??'Trabajar'):({home:'Inicio',today:'Hoy',changes:'Cambios',agents:'Agentes',radar:'Radar','date-check':'Comprobar una fecha',continuity:'Continuidad','team-sync':'Copia de equipo',export:'Exportar',integrations:'Integraciones',prepare:'Preparación'} as Record<string,string>)[page]??'';
+  // Un aviso de la copia lleva a donde se arregla: Exportar o la pestaña de Continuidad que toca. La pestaña pedida solo vale para esa visita.
+  // El foco sigue a la persona: a la pestaña pedida o, en Exportar, al contenido principal. La página se carga aparte, así que se espera a que exista.
+  const focusWhenReady = (id: string, tries = 20) => { const node = document.getElementById(id); if (node) node.focus(); else if (tries > 0) setTimeout(() => focusWhenReady(id, tries - 1), 50); };
+  const openAlert = (target: AlertTarget) => { setSelected(null); if (target === 'export') { setPage('export'); focusWhenReady('main-content'); return; } setContinuityTab(target); setPage('continuity'); focusWhenReady('ct-tab-' + target); };
+  const copySignal = copyAlerts && copyAlerts.length ? { count: copyAlerts.length, tone: copyAlerts.some(alert => alert.tone === 'danger') ? 'danger' as const : 'warn' as const, titles: copyAlerts.map(alert => alert.title) } : null;
+  const pageLabel = page==='workspace'?(entity?.label??'Trabajar'):({home:'Inicio',today:'Hoy',changes:'Cambios',agents:'Propuestas',radar:'Laboratorio · Radar','date-check':'Laboratorio · Comprobar una fecha',continuity:'Continuidad','team-sync':'Copia de equipo',export:'Exportar',integrations:'Integraciones',prepare:'Preparación'} as Record<string,string>)[page]??'';
   // Mover una oportunidad de etapa desde el tablero: misma validación y mismo guardado que la ficha. Devuelve el motivo si no se puede.
   // Cambiar un campo desde la tabla o el tablero: misma validación y mismo guardado que la ficha. Devuelve el motivo si no se puede.
   const saveField = async (record: CrmRecord, key: string, value: string | null): Promise<string | null> => {
@@ -165,28 +217,39 @@ export default function App() {
     const next: CrmRecord = { ...record, values: { ...record.values, [key]: value } };
     const issues = validateRecord(spec, next, record);
     if (Object.keys(issues).length) return Object.values(issues)[0];
-    try { await api('/records/' + record.entity + '/' + encodeURIComponent(record.id), { method: 'PATCH', body: JSON.stringify({ values: next.values }) }); await refresh(); return null; }
+    try { const result = await api<{ change?: { id: number; at: string } | null }>('/records/' + record.entity + '/' + encodeURIComponent(record.id), { method: 'PATCH', body: JSON.stringify({ values: next.values }) }); await refresh(); setUndoable(result.change ? { changeId: result.change.id, at: result.change.at } : null); setNotice('Guardado en tu copia local.'); return null; }
     catch (failure) { return failure instanceof Error ? failure.message : 'No se pudo guardar el cambio.'; }
   };
   const moveDeal = (record: CrmRecord, stageId: string) => saveField(record, spec?.roles?.stage ?? 'dealstage', stageId);
+  const undoLast = async () => {
+    const target = undoable; if (!target) return;
+    setUndoable(null); setNotice('');
+    try { await post('/v2/changes/undo-last', target); await refresh(); setNotice('Cambio deshecho. Queda anotado en Cambios.'); }
+    catch (failure) { setError(failure instanceof Error ? failure.message : 'No se pudo deshacer el cambio.'); }
+  };
   // Órdenes de la paleta (Ctrl J): las mismas acciones que ya ofrecen el menú y los botones, con las mismas condiciones.
   const goTo = (next: PageId) => () => { setPage(next); setSelected(null); };
+  const startGuidedDrill = () => setDrill(advanceDrill(startDrill(Date.now()), { page, entity: entityName, query, searchOpen: globalSearch, recordOpen: null }, Date.now()));
+  const goDrillStep = (step: DrillStepId) => { if (step === 'today') { setPage(state?.runtime ? 'home' : 'today'); setSelected(null); } else if (step === 'export') { setPage('export'); setSelected(null); } else { setPage('workspace'); openEntity('contacts'); } };
   const commandList: Command[] = [
     { id: 'home', label: 'Ir a Inicio', group: 'Ir a', hint: 'G I', run: goTo('home') },
     ...(!state.runtime ? [{ id: 'today', label: 'Ir a Hoy', group: 'Ir a', hint: 'G H', run: goTo('today') }] : []),
     ...(state.ready && spec ? spec.entities.map(item => ({ id: 'open-' + item.id, label: 'Ir a ' + item.label, group: 'Ir a', run: () => openEntity(item.id) })) : []),
     ...(state.ready ? [{ id: 'changes', label: 'Ir a Cambios', group: 'Ir a', hint: 'G M', run: goTo('changes') }] : []),
-    ...(!state.runtime ? [{ id: 'agents', label: 'Ir a Agentes', group: 'Ir a', run: goTo('agents') }] : []),
-    ...(state.ready ? [{ id: 'radar', label: 'Ir al Radar', group: 'Ir a', hint: 'G R', run: () => { setRehearseFromToday(null); goTo('radar')(); } }, { id: 'date-check', label: 'Comprobar una fecha', group: 'Ir a', hint: 'G F', run: goTo('date-check') }] : []),
+    ...(!state.runtime ? [{ id: 'agents', label: 'Ir a Propuestas', group: 'Ir a', run: goTo('agents') }] : []),
+    ...(state.ready && lab ? [{ id: 'radar', label: 'Laboratorio: Radar de compromisos', group: 'Ir a', hint: 'G R', run: () => { setRehearseFromToday(null); goTo('radar')(); } }, { id: 'date-check', label: 'Laboratorio: Comprobar una fecha', group: 'Ir a', hint: 'G F', run: goTo('date-check') }] : []),
     { id: 'continuity', label: 'Ir a Continuidad', group: 'Ir a', hint: 'G N', run: goTo('continuity') },
     ...(!state.runtime ? [{ id: 'team-sync', label: 'Ir a Copia de equipo', group: 'Ir a', run: goTo('team-sync') }, { id: 'integrations', label: 'Ir a Integraciones', group: 'Ir a', run: goTo('integrations') }] : []),
     ...(state.ready ? [{ id: 'export', label: 'Ir a Exportar', group: 'Ir a', hint: 'G X', run: goTo('export') }] : []),
     ...(state.ready && spec ? spec.entities.map(item => ({ id: 'new-' + item.id, label: 'Crear: ' + item.singular, group: 'Crear', run: () => { openEntity(item.id); setSelected('new'); } })) : []),
+    ...(state.ready && spec && !state.runtime ? [{ id: 'csv-import', label: 'Importar desde CSV…', group: 'Crear', run: () => setModal('csv') }] : []),
+    ...(state.ready && !state.runtime ? [{ id: 'drill', label: 'Práctica guiada: un día sin CRM', group: 'Acción', hint: '5 min', run: startGuidedDrill }] : []),
     ...(state.ready && spec ? [{ id: 'focus', label: 'Despachar vencidas', group: 'Acción', hint: signals.overdue ? signals.overdue + ' vencidas' : undefined, run: () => setFocusOpen(true) }] : []),
     ...(state.ready ? [{ id: 'search', label: 'Buscar en toda la copia', group: 'Acción', hint: 'Ctrl K', run: () => setGlobalSearch(true) }, { id: 'coverage', label: 'Ver la cobertura de la copia', group: 'Acción', run: () => void viewCoverage() }] : []),
     ...(!state.runtime ? [{ id: 'prepare', label: 'Ir a Preparación', group: 'Ir a', run: () => openPreparation() }] : []),
     ...(!state.runtime && state.snapshot?.source.isTestData !== false ? [{ id: 'provider', label: 'Proveedor de IA', group: 'Ajustes', run: () => setModal('settings') }] : []),
     ...(!state.runtime && teamOrigin ? [{ id: 'commercial', label: 'Ir al espacio comercial', group: 'Ir a', run: () => { location.href = teamOrigin + '/team?view=company'; } }] : []),
+    ...(undoable ? [{ id: 'undo', label: 'Deshacer el último guardado', group: 'Acción', run: () => void undoLast() }] : []),
     { id: 'lock', label: 'Proteger o bloquear Plan B', group: 'Acción', run: () => void protect() },
     { id: 'theme', label: typeof document !== 'undefined' && document.documentElement?.dataset?.theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro', group: 'Acción', run: toggleTheme },
     { id: 'help', label: 'Ver los atajos de teclado', group: 'Acción', hint: '?', run: () => setHelp(true) }
@@ -197,43 +260,46 @@ export default function App() {
     const lists = await Promise.all(spec.entities.map(item => api<{ records: CrmRecord[] }>('/v2/records/' + item.id + '?q=' + encodeURIComponent(text) + '&offset=0&limit=4&pipeline=').then(data => data.records.map(record => ({ record, item }))).catch(() => [])));
     return lists.flat().map(({ record, item }) => ({ id: 'rec-' + record.entity + '-' + record.id, label: recordName(record, spec), hint: item.singular[0].toUpperCase() + item.singular.slice(1), group: 'Registros', run: () => { openEntity(record.entity); setRecords([record]); setSelected(record); } }));
   };
-  const date = state.snapshot ? new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(state.snapshot.capturedAt)) : '';
+  const date = describeCapture(state.snapshot?.capturedAt).date ?? '';
   return <TaskOutcomesHost refreshState={refresh} onOpenTask={openTaskFromOutcomes} onClosed={(summary,reason)=>{setLockedOutcomes(previous=>addLockSummary(previous,summary));if(summary.dispatched+summary.notDispatched>0)setLockFailed(reason==='lock-not-completed');}} controlRef={outcomesControl}><div className={'app-shell ' + (selected ? 'has-drawer' : '')}>
     <a className="skip-link" href="#main-content">Saltar al contenido</a>
-    <Sidebar state={state} page={page} entityName={entityName} selected={!!selected} signals={signals} teamOrigin={teamOrigin} step={step} workOpen={workOpen} preparationOpen={preparationOpen}
-      setPage={setPage} setSelected={setSelected} setWorkOpen={setWorkOpen} setPreparationOpen={setPreparationOpen} setGlobalSearch={setGlobalSearch} setModal={setModal}
-      openEntity={openEntity} openPreparation={openPreparation} protect={() => void protect()} />
-    <div className="mobile-brand"><Brand /><span className="badge">{state.snapshot?.source.isTestData===false?'Producción · lectura':'Local · Ensayo'}</span></div>
-    <main id="main-content" className="main-content" tabIndex={-1}><TopBar state={state} pageLabel={pageLabel} date={date} teamOrigin={teamOrigin} openContinuity={() => { setPage('continuity'); setSelected(null); }} openHelp={() => setHelp(true)} openCommands={() => setCommandsOpen(true)} />
+    <Sidebar state={state} page={page} entityName={entityName} selected={!!selected} signals={{ ...signals, copy: copySignal }} step={step} preparationOpen={preparationOpen}
+      setPage={setPage} setSelected={setSelected} setPreparationOpen={setPreparationOpen} setGlobalSearch={setGlobalSearch} setModal={setModal}
+      openEntity={openEntity} openPreparation={openPreparation} />
+    <div className="mobile-brand"><Brand /><span className="badge">{state.snapshot?.source.isTestData===false?'Producción · lectura':'Datos de prueba'}</span></div>
+    <main id="main-content" className="main-content" tabIndex={-1}><TopBar state={state} pageLabel={pageLabel} teamOrigin={teamOrigin} openContinuity={() => { setPage('continuity'); setSelected(null); }} openHelp={() => setHelp(true)} openCommands={() => setCommandsOpen(true)} onProtect={() => void protect()} />
       {error ? <div role="alert" className="global-error"><span>{error}</span><button className="icon-button" aria-label="Cerrar aviso" onClick={() => setError('')}><X size={18} /></button></div> : null}
       <OutcomesLockNotice summary={lockedOutcomes} failed={lockFailed} onRetry={()=>void protect()} onDismiss={()=>{setLockedOutcomes(null);setLockFailed(false);}}/>
       {!state.runtime?<TaskOutcomesSurface/>:null}
-      {page==='home'?<HomeOverview state={state} onSignals={setSignals} onDispatch={state.ready ? () => setFocusOpen(true) : undefined} onOpenRecord={record => { openEntity(record.entity); setRecords([record]); setSelected(record); }}contextRevision={state.workspaceSearchContext?.contextRevision??null} onOpenToday={()=>{setPage('today');setSelected(null);}} onOpenTask={id=>openTaskFromOutcomes(id)} onOpenRadar={()=>{setRehearseFromToday(null);setPage('radar');setSelected(null);}} onRehearse={id=>{setRehearseFromToday(id);setPage('radar');setSelected(null);}} onOpenDateCheck={()=>{setPage('date-check');setSelected(null);}} onOpenContinuity={()=>{setPage('continuity');setSelected(null);}} onOpenChanges={()=>{setPage('changes');setSelected(null);}}/>
-      :page==='continuity'?<ContinuityHome state={state} workspaceContextRevision={state.workspaceSearchContext?.contextRevision??null} refresh={refresh} work={()=>openEntity('contacts')} prepare={()=>openPreparation(0)} protect={()=>void protect()} exportCopy={()=>setPage('export')} connectRequest={connectRequest} onOpenToday={()=>{setPage('today');setSelected(null);}} onOpenIntegrations={()=>{setIntegrationsFrom('continuity');setPage('integrations');setSelected(null);}} returnedFrom={returnedFrom} onReturnHandled={()=>setReturnedFrom(null)}/>
-      :page==='today'||page==='agents'?<>{page==='today'?<RehearsalTodayEntry contextRevision={state.workspaceSearchContext?.contextRevision??null} onOpen={id=>{setRehearseFromToday(id);setPage('radar');setSelected(null);}} onOpenRadar={()=>{setRehearseFromToday(null);setPage('radar');setSelected(null);}}/>:null}<LocalOperations key={page} view={page} onOpenTasks={()=>openEntity('tasks')} onOpenDeals={()=>openEntity('deals')} onOpenProposals={()=>setPage('changes')} onPrepare={()=>openPreparation(0)} onRecordSaved={refresh} openTaskRequest={taskRequest} onOpenTaskHandled={()=>setTaskRequest(null)}/></>
+      {page==='home'?<HomeOverview state={state} onSignals={setSignals} onOpenRecord={record => { openEntity(record.entity); setRecords([record]); setSelected(record); }}contextRevision={state.workspaceSearchContext?.contextRevision??null} onOpenToday={()=>{setPage('today');setSelected(null);}} onOpenTask={id=>openTaskFromOutcomes(id)} onOpenRadar={()=>{setRehearseFromToday(null);setPage('radar');setSelected(null);}} onRehearse={id=>{setRehearseFromToday(id);setPage('radar');setSelected(null);}} onOpenDateCheck={()=>{setPage('date-check');setSelected(null);}} onOpenContinuity={()=>{setPage('continuity');setSelected(null);}} onOpenChanges={()=>{setPage('changes');setSelected(null);}} onContinuityStatus={receiveContinuity} onOpenAlert={openAlert} onProtect={() => void protect()} onPrepare={() => openPreparation(0)} lab={lab}/>
+      :page==='continuity'?<ContinuityHome initialTab={continuityTab??'estado'} onStatus={receiveContinuity} onGuidedDrill={state.ready && !state.runtime ? startGuidedDrill : undefined} state={state} workspaceContextRevision={state.workspaceSearchContext?.contextRevision??null} refresh={refresh} work={()=>openEntity('contacts')} prepare={()=>openPreparation(0)} protect={()=>void protect()} exportCopy={()=>setPage('export')} connectRequest={connectRequest} onOpenToday={()=>{setPage('today');setSelected(null);}} onOpenIntegrations={()=>{setIntegrationsFrom('continuity');setPage('integrations');setSelected(null);}} returnedFrom={returnedFrom} onReturnHandled={()=>setReturnedFrom(null)}/>
+      :page==='today'||page==='agents'?<>{page==='today'&&lab?<RehearsalTodayEntry contextRevision={state.workspaceSearchContext?.contextRevision??null} onOpen={id=>{setRehearseFromToday(id);setPage('radar');setSelected(null);}} onOpenRadar={()=>{setRehearseFromToday(null);setPage('radar');setSelected(null);}}/>:null}<LocalOperations key={page} view={page} onDispatch={state.ready && spec ? () => setFocusOpen(true) : undefined} onOpenTasks={()=>openEntity('tasks')} onOpenDeals={()=>openEntity('deals')} onOpenProposals={()=>setPage('changes')} onPrepare={()=>openPreparation(0)} onRecordSaved={refresh} openTaskRequest={taskRequest} onOpenTaskHandled={()=>setTaskRequest(null)}/></>
         :page==='integrations'?<>{integrationsFrom?<p className="back-link"><button type="button" className="text-button" onClick={()=>{setIntegrationsFrom(null);setPage('continuity');setSelected(null);setReturnedFrom('integrations');}}>← Volver a Continuidad</button></p>:null}<LocalIntegrations onConnectHubspot={()=>{setPage('continuity');setSelected(null);setConnectRequest(n=>n+1);}}/></>
       :page==='team-sync'?<TeamSync/>
       :page==='date-check'?<div className="gx-datecheck"><h1 className="sr-only">Comprobar una fecha</h1><DateCheck contextRevision={state.workspaceSearchContext?.contextRevision??null} onContextStale={()=>void refresh()}/><div className="gx-datecheck-side"><DecisionReview contextRevision={state.workspaceSearchContext?.contextRevision??null} onContextStale={()=>void refresh()}/></div></div>
       :page==='radar'?(rehearseFromToday?<OperationalRehearsal contextRevision={state.workspaceSearchContext?.contextRevision??null} commitmentId={rehearseFromToday} onContextStale={()=>void refresh()} onClose={()=>setRehearseFromToday(null)}/>:<RadarHost contextRevision={state.workspaceSearchContext?.contextRevision??null} refresh={()=>void refresh()}/>)
-      :page==='changes'?<ChangesView runtime={state.runtime} production={state.snapshot?.source.isTestData===false}/>
+      :page==='changes'?<ChangesView runtime={state.runtime} production={state.snapshot?.source.isTestData===false} spec={state.spec}/>
       :page==='export'?<PortableExport/>
       :page === 'prepare' ? <Preparation state={state.candidate?{...state,...state.candidate,lastError:state.candidate.error}:state} step={step} setStep={setStep} refresh={refresh}
         openWorkspace={() => setPage('workspace')} configure={() => setModal('settings')} onConnect={()=>{setPage('continuity');setConnectRequest(n=>n+1);}} onError={setError} />
       : !state.ready || !spec || !entity ? <section className="empty-state"><ShieldCheck size={36} /><h1>Revisa la preparación</h1><p>La captura y las reglas deben estar verificadas antes de editar.</p>
           <button className="button primary" onClick={() => openPreparation(2)}>Revisar aplicación</button></section>
       : <RecordsPage state={state} spec={spec} entity={entity} entityName={entityName} rows={rows} records={records} total={total} offset={offset} setOffset={setOffset}
-          query={query} setQuery={setQuery} pipeline={pipeline} setPipeline={setPipeline} selected={selected} setSelected={setSelected} recordsLoading={recordsLoading} recordsError={recordsError} busy={busy} date={date} moveDeal={moveDeal} saveField={saveField}
+          query={query} setQuery={setQuery} pipeline={pipeline} setPipeline={setPipeline} selected={selected} setSelected={setSelected} recordsLoading={recordsLoading} recordsError={recordsError} onRetry={() => setDataRevision(r => r + 1)} busy={busy} date={date} moveDeal={moveDeal} saveField={saveField}
           viewCoverage={() => void viewCoverage()} toggleServices={() => act(() => post('/disconnect', { disconnected: !state.disconnected }), state.disconnected ? 'Servicios habilitados para importar o generar.' : 'HubSpot e IA desconectados. Sigue trabajando con tus datos locales.')} />}
     </main>
     {globalSearch && state.ready && state.snapshot ? <WorkspaceSearch captureId={state.snapshot.id+':'+state.snapshot.capturedAt} expectedContext={state.workspaceSearchContext??null} localRevision={dataRevision} close={() => setGlobalSearch(false)} openRecord={(record, related) => { setGlobalSearch(false); openEntity(record.entity); setRecords([record,...related]); setSelected(record); }}/>:null}
     {selected && spec && state.ready ? <><div className="drawer-shade" onClick={() => setSelected(null)} /><RecordDrawer key={selected === 'new' ? entityName + '-new' : selected.id} entityName={entityName} selected={selected} spec={spec} records={records}
+      summary={entityName === 'deals' ? (values, set, saving) => <DealSummary spec={spec} values={values} set={set} records={records} disabled={saving} /> : undefined}
       extra={selected === 'new' ? undefined : dirty => <><RelatedPanel spec={spec} record={selected} dirty={dirty} onOpen={record => { openEntity(record.entity); setRecords([record]); setSelected(record); }} /><RecordTimeline spec={spec} record={selected} records={records} /></>}
-      close={() => setSelected(null)} saved={async () => { await refresh(); setSelected(null); setNotice('Guardado en tu copia local.'); }} /></> : null}
-    {notice ? <div className="toast" role="status"><CheckCircle2 size={19} />{notice}</div> : null}
+      close={() => setSelected(null)} saved={async (_record, change) => { const target = selected !== 'new' && change ? { changeId: change.id, at: change.at } : null; await refresh(); setSelected(null); setUndoable(target); setNotice('Guardado en tu copia local.'); }} /></> : null}
+    {notice ? <div className="toast" role="status"><CheckCircle2 size={19} />{notice}{undoable ? <button type="button" className="toast-action" onClick={() => void undoLast()}>Deshacer</button> : null}</div> : null}
     {modal === 'settings' ? <Settings state={state} close={() => setModal(null)} done={async () => { await refresh(); setNotice('Proveedor guardado.'); }} /> : null}
+    {modal === 'csv' && spec && state.ready ? <CsvImport spec={spec} initialEntity={page === 'workspace' ? entityName : 'contacts'} close={() => setModal(null)} done={async (target, created) => { openEntity(target); setDataRevision(r => r + 1); await refresh(); setNotice(created + (created === 1 ? ' registro importado' : ' registros importados') + ' en tu copia local. Quedan en Cambios.'); }} /> : null}
     {help ? <ShortcutsHelp close={() => setHelp(false)} /> : null}
     <MobileNav page={page} entityName={entityName} runtime={!!state.runtime} ready={!!state.ready} overdue={signals.overdue} go={next => { setPage(next); setSelected(null); }} openEntity={openEntity} openMore={() => setCommandsOpen(true)} />
     {focusOpen && spec && state.ready ? <FocusRun spec={spec} saveField={saveField} onOpen={record => { openEntity(record.entity); setRecords([record]); setSelected(record); }} close={() => setFocusOpen(false)} /> : null}
+    {drill ? <GuidedDrill state={drill} onGo={goDrillStep} onClose={() => setDrill(null)} onRestart={startGuidedDrill} /> : null}
     {commandsOpen ? <CommandPalette commands={commandList} close={() => setCommandsOpen(false)} findRecords={state.ready && spec ? findRecords : undefined} /> : null}
     {modal === 'coverage' ? <Modal title="Cobertura de tu copia" close={() => setModal(null)} wide><div className="modal-body">
       <p className="muted">Comprobaciones sobre la captura y la aplicación que estás utilizando.</p>

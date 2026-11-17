@@ -1,10 +1,24 @@
 import archiver from 'archiver';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import type { ContinuityBundle } from '../shared/model.js';
 import { AppError } from './store.js';
 import { encodePortable } from './crypto.js';
 import { RELEASE_TAG } from '../shared/version.js';
+
+function portableLauncher(root: string): Buffer {
+  for (const file of [join(root, 'launch.cjs'), join(root, 'scripts', 'launch.cjs')]) {
+    try {
+      if (!statSync(file, { throwIfNoEntry: false })?.isFile()) continue;
+      const bytes = readFileSync(file);
+      if (bytes.length > 0) return bytes;
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code !== 'ENOENT' && code !== 'ENOTDIR' && code !== 'EISDIR') throw error;
+    }
+  }
+  throw new AppError(503, 'Falta el iniciador launch.cjs del paquete. Usa una compilación completa de Plan B.');
+}
 
 export async function runtimeZip(bundle: ContinuityBundle, root: string, password?:string, windowsNodePath?:string): Promise<Buffer> {
   if(!bundle.snapshot.source.isTestData&&!password)throw new AppError(403,'Los paquetes con datos reales requieren cifrado y contraseña de recuperación.');
@@ -18,6 +32,7 @@ export async function runtimeZip(bundle: ContinuityBundle, root: string, passwor
       throw new AppError(422, 'El runtime de Windows debe ser un ejecutable PE válido; no renombres el Node de Linux como node.exe.');
     }
   }
+  const launcher = portableLauncher(root);
   const archive = archiver('zip', { zlib: { level: 3 } });
   const chunks: Buffer[] = [];
   const finished = new Promise<Buffer>((resolve, reject) => {
@@ -31,8 +46,7 @@ export async function runtimeZip(bundle: ContinuityBundle, root: string, passwor
   if(existsSync(worker))archive.file(worker,{name:'drill.mjs'});
   const guard=existsSync(join(root,'block-external.cjs'))?join(root,'block-external.cjs'):join(root,'scripts','block-external.cjs');
   if(existsSync(guard))archive.file(guard,{name:'block-external.cjs'});
-  const launcher=existsSync(join(root,'launch.cjs'))?join(root,'launch.cjs'):join(root,'scripts','launch.cjs');
-  if(existsSync(launcher))archive.file(launcher,{name:'launch.cjs'});
+  archive.append(launcher, { name: 'launch.cjs' });
   archive.directory(frontend, 'dist');
   const moduleRoot = join(root, 'runtime-assets', 'node_modules');
   const runtimeModules = existsSync(moduleRoot) ? moduleRoot : join(root, 'node_modules');

@@ -84,9 +84,10 @@ async function open(page: Page, api: Partial<Pick<Api, 'continuity' | 'catalog' 
 }
 const gate = () => { let release!: () => void; const promise = new Promise<void>(resolve => { release = resolve; }); return { promise, release }; };
 const rowFor = (page: Page, label: string) => page.getByRole('listitem').filter({ has: page.getByRole('heading', { name: label, level: 4, exact: true }) });
+const teamTools = (page: Page) => page.getByText('Ver herramientas de Google Workspace', { exact: true });
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-test('sin cuenta: Conexiones primero, HubSpot conecta por el callback, sin botones inertes y ensayo plegado', async ({ page }) => {
+test('sin cuenta: Conexiones primero, HubSpot guía a protección, sin botones inertes y ensayo plegado', async ({ page }) => {
   const api = await open(page, { continuity: { body: status({ latestCapture: capture, latestCaptureAt: capture.capturedAt }) } });
   await expect(page.getByRole('heading', { level: 1, name: 'Integraciones' })).toBeVisible();
   const headings = await page.getByRole('heading').allTextContents();
@@ -96,14 +97,14 @@ test('sin cuenta: Conexiones primero, HubSpot conecta por el callback, sin boton
   await expect(hubspot).toContainText('Sin conectar');
   await expect(hubspot).toContainText('copia histórica');
   await expect(hubspot).toContainText('no indica que HubSpot esté conectado ahora');
-  await hubspot.getByRole('button', { name: 'Conectar HubSpot' }).click();
+  await hubspot.getByRole('button', { name: 'Configurar protección' }).click();
   expect(await page.evaluate(() => (window as any).__connects)).toBe(1);
   for (const name of ['Gmail', 'Google Calendar', 'Google Drive', 'Google Docs', 'Google Sheets']) {
     const row = rowFor(page, name);
     await expect(row).toContainText('Espacio de equipo sin configurar');
-    await expect(row).toContainText('PLANB_TEAM_ORIGIN');
     expect(await row.getByRole('link').count() + await row.getByRole('button').count()).toBe(0);
   }
+  await expect(page.getByText('PLANB_TEAM_ORIGIN', { exact: false })).toHaveCount(1);
   expect(await page.locator('.lint a[href]').count()).toBe(0);
   // Ensayo plegado de inicio: el contenido no está visible.
   const details = page.locator('details.lint-rehearsal');
@@ -139,6 +140,10 @@ test('conexión local declarada y origen válido: enlaces exactos, nada se prese
     await expect(hubspot).toContainText('El acceso actual no se comprueba al abrir esta lista');
   await hubspot.getByRole('button', { name: 'Revisar conexión' }).click();
   expect(await page.evaluate(() => (window as any).__connects)).toBe(1);
+  await expect(page.getByRole('link', { name: /Abrir Integraciones del equipo/ })).toHaveAttribute('href', 'http://127.0.0.1:4341/team?view=connections');
+  await expect(page.locator('.lint a[href]:visible')).toHaveCount(1);
+  await teamTools(page).press('Enter');
+  await expect(rowFor(page, 'Gmail')).toBeVisible();
   const expected: Record<string, string> = {
     Gmail: 'http://127.0.0.1:4341/team?view=commercial', 'Google Calendar': 'http://127.0.0.1:4341/team?view=commercial',
     'Google Drive': 'http://127.0.0.1:4341/team?view=commercial&tool=drive', 'Google Docs': 'http://127.0.0.1:4341/team?view=commercial&tool=docs', 'Google Sheets': 'http://127.0.0.1:4341/team?view=commercial&tool=sheets',
@@ -178,6 +183,7 @@ test('un endpoint fallido no afecta a los demás; el reintento es local', async 
   expect(api.counts).toEqual({ continuity: 1, catalog: 1, workspace: 1 });
   healthy = true;
   await rowFor(page, 'Gmail').getByRole('button', { name: 'Reintentar' }).click();
+  await teamTools(page).click();
   await expect(rowFor(page, 'Gmail')).toContainText('Sin comprobar aquí');
   expect(api.counts).toEqual({ continuity: 1, catalog: 1, workspace: 2 });
   // Tras un reintento fallido se conservan los datos anteriores y se avisa.
@@ -190,6 +196,7 @@ test('un endpoint fallido no afecta a los demás; el reintento es local', async 
 
 test('catálogo caído: el resto se ve y el detalle de ensayo muestra error local', async ({ page }) => {
   await open(page, { catalog: { status: 503, body: { error: 'no disponible' } }, workspace: { body: { origin: 'https://team.example.com' } } });
+  await teamTools(page).click();
   await expect(rowFor(page, 'Gmail')).toContainText('Sin comprobar aquí');
   await page.getByText('Ver capacidades de ensayo').click();
   await expect(page.getByRole('alert').filter({ hasText: 'No se pudo leer el catálogo' })).toBeVisible();
@@ -259,9 +266,10 @@ for (const size of [{ width: 1440, height: 900 }, { width: 390, height: 844 }, {
     for (const [name, api] of scenes) {
       await open(page, api, size);
       await expect(rowFor(page, 'HubSpot')).not.toContainText('Comprobando…');
+      if (name === 'declarada-con-equipo') await teamTools(page).click();
       await expect(rowFor(page, 'Gmail')).not.toContainText('Comprobando…');
       await page.getByText('Ver capacidades de ensayo').click();
-      await expect(page.locator('details.lint-rehearsal')).toHaveJSProperty('open', true);
+      await expect(page.locator('details.lint-rehearsal').filter({ has: page.getByText('Ver capacidades de ensayo', { exact: true }) })).toHaveJSProperty('open', true);
       const layout = await page.evaluate(() => {
         const width = document.documentElement.clientWidth;
         const outside = [...document.querySelectorAll('.lint *')].filter(node => { const rect = node.getBoundingClientRect(); return rect.width > 0 && getComputedStyle(node).position !== 'absolute' && (rect.right > width + 0.5 || rect.left < -0.5); }).map(node => node.tagName + '.' + String((node as HTMLElement).className));

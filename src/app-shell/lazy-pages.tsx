@@ -1,11 +1,12 @@
 import { Suspense, lazy, type ComponentProps, type ComponentType } from 'react';
-import { Skeleton } from '../ui/index.js';
+import { PageErrorBoundary, Skeleton } from '../ui/index.js';
 
 /** Apartados que no hacen falta para abrir la app: se descargan la primera vez que se visitan.
  *  Cada uno lleva su propio Suspense con la carga en forma de filas, así App no cambia de forma de uso. */
-function deferred<T extends ComponentType<any>>(load: () => Promise<T>, label: string) {
+function deferred<T extends ComponentType<any>>(load: () => Promise<T>, label: string, name = label.replace(/^Abriendo\s+/, '').replace(/…$/, '')) {
   const Lazy = lazy(() => load().then(component => ({ default: component })));
-  const Page = (props: ComponentProps<T>) => <Suspense fallback={<Skeleton rows={6} label={label} />}><Lazy {...props} /></Suspense>;
+  // Si el archivo del apartado no llega (servidor cerrado, despliegue nuevo), el error se queda en su sitio y no tumba la App.
+  const Page = (props: ComponentProps<T>) => <PageErrorBoundary label={name}><Suspense fallback={<Skeleton rows={6} label={label} />}><Lazy {...props} /></Suspense></PageErrorBoundary>;
   return Page as unknown as T;
 }
 

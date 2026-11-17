@@ -10,7 +10,7 @@ Generado por `node tools/api/inventory.mjs` a partir de los servidores reales: c
 
 | Grupo | Rutas | main | runtime | equipo |
 | --- | --- | --- | --- | --- |
-| v2 | 38 | 38 | 25 | 0 |
+| v2 | 39 | 39 | 26 | 0 |
 | v3 | 3 | 3 | 2 | 0 |
 | v4 | 10 | 10 | 10 | 0 |
 | v5 | 5 | 5 | 0 | 0 |
@@ -19,7 +19,7 @@ Generado por `node tools/api/inventory.mjs` a partir de los servidores reales: c
 | sin versión | 19 | 19 | 13 | 0 |
 | team | 54 | 0 | 0 | 54 |
 | fuera de /api | 1 | 0 | 0 | 1 |
-| **Total** | **170** | **115** | **86** | **55** |
+| **Total** | **171** | **116** | **87** | **55** |
 
 ## v2
 
@@ -34,6 +34,7 @@ Generado por `node tools/api/inventory.mjs` a partir de los servidores reales: c
 | POST | `/api/v2/captures` | ● |  |  | `server/v2.ts` |
 | GET | `/api/v2/captures/compare` | ● | ● |  | `server/capture-comparison.ts` |
 | GET | `/api/v2/changes` | ● | ● |  | `server/v2.ts` |
+| POST | `/api/v2/changes/undo-last` | ● | ● |  | `server/undo.ts` |
 | POST | `/api/v2/connection` | ● |  |  | `server/v2.ts` |
 | POST | `/api/v2/connection/inspect` | ● |  |  | `server/v2.ts` |
 | DELETE | `/api/v2/connection/read-check` | ● |  |  | `server/hubspot-read-check-api.ts` |

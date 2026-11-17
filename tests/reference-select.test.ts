@@ -70,7 +70,7 @@ test('late list error cannot remove newer usable choices or add an obsolete aler
 
 test('selected record stays pinned outside fifty search rows and total coverage is visible',async()=>{
   const c=mount({value:'chosen-90'});c.flush();lookup(c,'chosen-90').resolve({record:record('chosen-90','Chosen062')});list(c).resolve({records:Array.from({length:50},(_,i)=>record('row-'+i,'Name '+i)),total:90});await settle();c.render();
-  assert.equal(c.ids().length,51);assert.ok(c.ids().includes('chosen-90'));assert.match(c.text(),/50 de 90/);assert.match(c.text(),/ID chosen-90/);assert.deepEqual(c.calls,[]);
+  assert.equal(c.ids().length,51);assert.ok(c.ids().includes('chosen-90'));assert.match(c.text(),/50 de 90/);assert.match(c.text(),/Chosen062/);assert.doesNotMatch(c.text(),/ID chosen-90/);assert.equal(c.select().props.value,'chosen-90');assert.deepEqual(c.calls,[]);
 });
 
 test('identity-mismatched selected reply is rejected rather than presented as the chosen record',async()=>{

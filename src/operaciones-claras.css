@@ -62,6 +62,29 @@ button.oc-kpi:focus-visible { outline: 2px solid var(--oc-action); }
 .oc-kpi-note { color: var(--oc-muted); }
 .oc-home-grid { flex-wrap: wrap; }
 .oc-home-main { flex: 2 1 520px; min-width: 0; }
+.oc-home-main-stack { display: grid; gap: 14px; min-width: 0; }
+.oc-home .fx-week { min-width: 0; margin-top: 14px; }
+.oc-home .fx-week > summary,
+.ct-operations-details > summary {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--bg-surface);
+  color: var(--text-1);
+  font-weight: 600;
+  line-height: 20px;
+  cursor: pointer;
+}
+.oc-home .fx-week[open] > summary,
+.ct-operations-details[open] > summary { margin-bottom: 8px; }
+.oc-home .fx-week > summary:focus-visible,
+.ct-operations-details > summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.ct-operations-route { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 12px; }
+.ct-operations-route p { flex: 1 1 230px; }
+html body .lop-confirmation[data-stale="true"] { background: var(--warning-bg); color: var(--warning); }
+@media (max-width: 760px) {
+  html body .lop .lop-queue-actions { flex-wrap: wrap; }
+}
 .oc-home-side { flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; }
 .oc-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .oc-card-head h2 { margin: 0; }

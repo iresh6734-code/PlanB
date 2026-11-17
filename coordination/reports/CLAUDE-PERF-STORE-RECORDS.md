@@ -95,3 +95,32 @@ Señaló tres observaciones menores y huecos de prueba. Lo que se hizo con cada 
 - No es una prueba con datos reales ni en el piloto: almacén temporal con datos ficticios.
 - No se ha medido en 4331 o 4334, ni desplegado.
 - La mejora es por proceso: la caché empieza vacía en cada arranque, así que la primera página tras arrancar cuesta lo mismo que antes.
+
+## R2 · Corrección pedida en CODEX-STORE-REVIEW-357 (17/11/2026)
+
+**Hallazgo de Codex (confirmado):** la caché estaba en `decode()`, que usan también las lecturas genéricas de `meta`. Al desvincular la réplica de equipo, el metadato se leía como nulo, pero el texto anterior (con su token de ensayo) seguía retenido en memoria.
+
+**Cambio:**
+- `decode()` vuelve a ser exactamente la de antes: descifra en cada lectura y no guarda nada.
+- La caché la usa solo `decodeRecord()`, y solo desde `records()` y `record()`.
+- Metadatos (réplica, credenciales, diarios), archivos, capturas y cambios nunca entran en ella.
+- La captura que lee `ready` ya no se cachea: era la ganancia más pequeña (~15 %) y no compensa.
+
+**Pruebas (15/15):**
+- **Nueva:** «los metadatos nunca quedan en la caché». Escribe y lee una réplica con un token ficticio, la desvincula y comprueba tres cosas: que no hay ningún texto con el token retenido, que ninguna fila de `meta` está en la caché y que leer metadatos no añade entradas.
+- La prueba del tope por entrada se rehízo con un registro grande, en lugar de la captura.
+- `direct()` usa ahora `decode()`, que ya no comparte la caché. Pasa a ser el oráculo independiente que Codex echaba en falta.
+
+**Mutantes 3/3 detectados:**
+- `decode()` vuelve a usar la caché (el defecto 357);
+- `record()` sin caché;
+- `records()` sin caché.
+
+**Medición R2:** el equipo estaba cargado por otros procesos, así que alterné en la misma ventana la versión original (`914f22a`) y la nueva. Media de 5 repeticiones, 10.000 registros:
+
+| Pasada | `records()` antes | después | página antes | después |
+| --- | --- | --- | --- | --- |
+| 1 | 319,0 ms | 89,9 ms | 401,9 ms | 112,0 ms |
+| 2 | 239,0 ms | 98,6 ms | 275,2 ms | 115,1 ms |
+
+Unas 3 veces más rápido. Coincide con la medición independiente de Codex (284,0 ms frente a 100,6 ms por página).

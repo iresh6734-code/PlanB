@@ -19,7 +19,10 @@ async function open(page:Page,readOnly=false) {
   page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{const u=new URL(r.url());if(r.method()!=='GET')writes.push(r.method()+' '+u.pathname);if(u.pathname==='/api/v2/records/contacts')listReads.push(u.search);});
   await page.route('**/*',route=>{const url=new URL(route.request().url());if(url.origin!==origin){outside.push(url.origin);return route.abort();}return route.fallback();});
   const before=await page.request.get('/api/v4/export-summary').then(r=>r.json());
-  await page.goto('/');await page.getByRole('button',{name:'Trabajar',exact:true}).click();await page.getByRole('button',{name:'Tareas',exact:true}).click();await page.getByRole('button',{name:'Tarea principal062',exact:true}).click();
+  await page.goto('/');
+  const navigation=page.getByRole('navigation',{name:'Navegación principal',exact:true});
+  await navigation.getByRole('button',{name:'Clientes',exact:true,expanded:false}).click();
+  await navigation.getByRole('navigation',{name:'Clientes',exact:true}).getByRole('button',{name:'Tareas',exact:true}).click();await page.getByRole('button',{name:'Tarea principal062',exact:true}).click();
   const editor=page.getByRole('dialog',{name:'Tarea principal062',exact:true}),picker=editor.locator('.reference-picker').filter({has:page.locator('#record-contact_id')}),select=picker.getByRole('combobox',{name:'Cliente',exact:true}),search=picker.getByRole('searchbox',{name:'Buscar relación cliente',exact:true});
   await expect(select).toHaveValue(chosen);return {editor,picker,select,search,errors,outside,writes,listReads,before};
 }
@@ -28,7 +31,7 @@ async function unchanged(page:Page,state:Awaited<ReturnType<typeof open>>) {
 }
 
 test('relation062: selected ID outside the first fifty stays pinned; homonyms are selected and saved by exact ID',async({page})=>{
-  const state=await open(page);await expect(state.select.locator('option:checked')).toHaveText('Selección062 Última · ID '+chosen);await expect(state.picker.getByText('Se muestran 50 de 164 resultados. Escribe para afinar la búsqueda.',{exact:true})).toBeVisible();await expect(state.select.locator('option')).toHaveCount(52);
+  const state=await open(page);await expect(state.select.locator('option:checked')).toHaveText('Selección062 Última');await expect(state.picker.getByText('Se muestran 50 de 164 resultados. Escribe para afinar la búsqueda.',{exact:true})).toBeVisible();await expect(state.select.locator('option')).toHaveCount(52);
   await state.search.fill('Gemelos062');await expect(state.select.locator('option')).toHaveCount(4);await expect(state.select.locator('option[value="extra062-000"]')).toHaveText('Gemelos062 Iguales · ID extra062-000');await expect(state.select.locator('option[value="extra062-001"]')).toHaveText('Gemelos062 Iguales · ID extra062-001');await expect(state.select).toHaveValue(chosen);
   await state.select.selectOption('extra062-001');await expect(state.select).toHaveValue('extra062-001');await expect(state.select).toHaveAttribute('aria-busy','false');await state.editor.getByRole('button',{name:'Guardar cambios',exact:true}).click();await expect(state.editor).toBeHidden();
   const saved=await page.request.get('/api/v2/records/tasks/task-1').then(r=>r.json());expect(saved.record.values.contact_id).toBe('extra062-001');expect(state.writes.filter(p=>p.startsWith('PATCH'))).toEqual(['PATCH /api/records/tasks/task-1']);expect(state.errors).toEqual([]);expect(state.outside).toEqual([]);
@@ -38,12 +41,12 @@ test('relation062: list success does not hide selected lookup failure, and retry
   await page.route('**/api/v2/records/contacts/'+chosen,route=>route.fulfill({status:404,json:{error:'Fixture missing lookup'}}));
   const state=await open(page);await expect(state.picker.getByRole('alert')).toContainText('No se pudo verificar la relación elegida');await expect(state.select).toHaveValue(chosen);await expect(state.select.locator('option:checked')).toHaveText('Relación sin verificar · ID '+chosen);await expect(state.select).toHaveAttribute('aria-invalid','true');
   await expect(state.picker.getByText('Se muestran 50 de 164 resultados. Escribe para afinar la búsqueda.',{exact:true})).toBeVisible();await expect(state.picker.getByRole('alert')).toBeVisible();await expect(state.select).toHaveAccessibleName('Cliente');
-  await page.unroute('**/api/v2/records/contacts/'+chosen);await state.picker.getByRole('button',{name:'Reintentar relación',exact:true}).click();await expect(state.picker.getByRole('alert')).toHaveCount(0);await expect(state.select.locator('option:checked')).toHaveText('Selección062 Última · ID '+chosen);await expect(state.select).toHaveAccessibleName('Cliente');await unchanged(page,state);
+  await page.unroute('**/api/v2/records/contacts/'+chosen);await state.picker.getByRole('button',{name:'Reintentar relación',exact:true}).click();await expect(state.picker.getByRole('alert')).toHaveCount(0);await expect(state.select.locator('option:checked')).toHaveText('Selección062 Última');await expect(state.select).toHaveAccessibleName('Cliente');await unchanged(page,state);
 });
 
 test('relation062: failed option search leaves the verified selection usable and can retry independently',async({page})=>{
   await page.route('**/api/v2/records/contacts?*',route=>new URL(route.request().url()).searchParams.has('offset')?route.fallback():route.fulfill({status:503,json:{error:'Fixture list failure'}}));
-  const state=await open(page);await expect(state.picker.getByRole('alert')).toContainText('No se pudieron buscar registros');await expect(state.select.locator('option:checked')).toHaveText('Selección062 Última · ID '+chosen);await expect(state.select).toHaveValue(chosen);
+  const state=await open(page);await expect(state.picker.getByRole('alert')).toContainText('No se pudieron buscar registros');await expect(state.select.locator('option:checked')).toHaveText('Selección062 Última');await expect(state.select).toHaveValue(chosen);
   await page.unroute('**/api/v2/records/contacts?*');await state.picker.getByRole('button',{name:'Reintentar búsqueda',exact:true}).click();await expect(state.picker.getByRole('alert')).toHaveCount(0);await expect(state.select.locator('option')).toHaveCount(52);await unchanged(page,state);
 });
 
@@ -70,7 +73,7 @@ test('relation062: a selected reply from the wrong entity is never rendered as t
 });
 
 test('relation062: a read-only relationship loads its label without searching alternatives',async({page})=>{
-  const state=await open(page,true);await expect(state.select.locator('option:checked')).toHaveText('Selección062 Última · ID '+chosen);await expect(state.select).toBeDisabled();await expect(state.search).toBeDisabled();expect(state.listReads.filter(query=>!new URLSearchParams(query).has('offset'))).toEqual([]);await unchanged(page,state);
+  const state=await open(page,true);await expect(state.select.locator('option:checked')).toHaveText('Selección062 Última');await expect(state.select).toBeDisabled();await expect(state.search).toBeDisabled();expect(state.listReads.filter(query=>!new URLSearchParams(query).has('offset'))).toEqual([]);await unchanged(page,state);
 });
 
 test('relation062: keyboard, mobile sizing and a real revoked session keep the editor usable and protected',async({page})=>{

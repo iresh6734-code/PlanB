@@ -32,7 +32,7 @@ async function ignoreAbort(page:Page){await page.addInitScript(()=>{const origin
 async function delivered(page:Page,index:number){await expect.poll(()=>page.evaluate(i=>window.__evidence104Completed!.includes(i),index)).toBe(true);await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));}
 test('explicit read uses actual API, keeps the inventory truthful and sends nothing to another origin',async({page})=>{
   const requests:{method:string;url:string}[]=[],errors:string[]=[];page.on('request',r=>requests.push({method:r.method(),url:r.url()}));page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(['error','warning'].includes(m.type()))errors.push(m.text());});
-  await open(page);expect(requests.filter(r=>r.url.includes('/api/v7/continuity/evidence'))).toHaveLength(0);await query(page).click();await expect(result(page)).toBeVisible();await expect(result(page)).toContainText('Preparación sin demostrar');await expect(result(page)).toContainText('14 tareas tienen un día de vencimiento, sin hora');await expect(result(page)).toContainText('No medido.');await expect(result(page)).toContainText('No demostrada. Un simulacro local no sustituye esa prueba.');
+  await open(page);expect(requests.filter(r=>r.url.includes('/api/v7/continuity/evidence'))).toHaveLength(0);await query(page).click();await expect(result(page)).toBeVisible();await expect(result(page)).toContainText('Preparación sin comprobar');await expect(result(page)).toContainText('14 tareas tienen un día de vencimiento, sin hora');await expect(result(page)).toContainText('No medido.');await expect(result(page)).toContainText('No demostrada. Un simulacro local no sustituye esa prueba.');
   for(const r of requests){expect(r.url.startsWith(origin+'/'),r.url).toBeTruthy();expect(r.method).toBe('GET');}expect(requests.filter(r=>r.url.includes('/api/v7/continuity/evidence'))).toHaveLength(1);expect(errors).toEqual([]);
   expect(await page.evaluate(()=>({local:localStorage.length,session:sessionStorage.length,cookie:document.cookie}))).toEqual({local:0,session:0,cookie:''});
 });
@@ -73,7 +73,7 @@ test('a fabricated ready verdict retires the previous result and the next genuin
   });
   await open(page);
   await query(page).click();
-  await expect(result(page)).toContainText('Preparación sin demostrar');
+  await expect(result(page)).toContainText('Preparación sin comprobar');
   await page.getByRole('button',{name:'Consultar de nuevo',exact:true}).click();
   await expect(page.getByRole('alert')).toContainText('La respuesta no permite comprobar');
   await expect(result(page)).toHaveCount(0);
@@ -84,7 +84,7 @@ test('a fabricated ready verdict retires the previous result and the next genuin
     await page.screenshot({path:path.join(screenshots,'invalid-ready.png')});
   }
   await query(page).click();
-  await expect(result(page)).toContainText('Preparación sin demostrar');
+  await expect(result(page)).toContainText('Preparación sin comprobar');
   await expect(page.getByRole('alert')).toHaveCount(0);
   expect(reads).toBe(3);
   expect(errors).toEqual([]);

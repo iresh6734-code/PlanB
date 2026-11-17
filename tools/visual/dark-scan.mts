@@ -1,3 +1,4 @@
+import { navigate } from './nav.mts';
 // Con el modo oscuro activo, lista las superficies que siguen claras (fondo con luminancia > 0,45) en las 18 vistas,
 // agrupadas por clase y con un texto de muestra. Solo lee.   npx tsx tools/visual/dark-scan.mts
 import { chromium } from '@playwright/test';
@@ -12,7 +13,7 @@ await page.evaluate('globalThis.__name = v => v');
 const found = new Map<string, Set<string>>();
 for (const [label, tab] of views) {
   try {
-    await page.locator('.sidebar').getByRole('button', { name: label, exact: true }).first().click({ timeout: 6000 });
+    await navigate(page, label);
     if (tab) { await page.waitForTimeout(500); await page.getByRole('tab', { name: tab }).click({ timeout: 6000 }); }
     await page.waitForTimeout(1500);
     const hits = await page.evaluate(() => {

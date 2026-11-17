@@ -1,12 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
 import { Store } from '../server/store.js';
 import { makeFixture, makeDemoSpec } from '../shared/fixtures.js';
 import { bundleRevision, confirmRecoveryCopy, exportSummary, recoveryCopyStatus, rememberExport } from '../server/recovery-copy.js';
 import { Continuity } from '../server/continuity.js';
 import { createBaseApp } from '../server/app.js';
-import { decodePortable } from '../server/crypto.js';
+import { decodePortable, encodePortable } from '../server/crypto.js';
 function prepare(store:Store){const snapshot=makeFixture();store.importSnapshot(snapshot);store.saveGeneration(makeDemoSpec(snapshot),{provider:'demo',model:null,prompt:'',generatedAt:new Date().toISOString(),approved:false});store.activate();return snapshot;}
 
 test('custodia: exporta A activa aunque exista B reciente y lo identifica',()=>{
@@ -34,6 +36,54 @@ test('custodia: API vincula archivo, contenido, hash y rechazo de una revisión 
     assert.equal((await app.inject({method:'POST',url:'/api/v2/export/encrypted',payload:{password,revision:summary.revision}})).statusCode,409);
     assert.equal((await app.inject({url:'/api/v2/continuity'})).json().recoveryCopy.confirmedAt,undefined);
   }finally{await app.close();}
+});
+test('custodia: un ZIP en preparación no puede sustituir la copia de una revisión posterior', async t => {
+  const parent = path.resolve('tests/.tmp');
+  mkdirSync(parent, { recursive: true });
+  const root = mkdtempSync(path.join(parent, 'export-package-373-'));
+  mkdirSync(path.join(root, 'dist'));
+  mkdirSync(path.join(root, 'runtime-assets', 'node_modules'), { recursive: true });
+  writeFileSync(path.join(root, 'runtime.mjs'), '// Archivo ficticio del ensayo');
+  writeFileSync(path.join(root, 'launch.cjs'), '// Iniciador ficticio del ensayo');
+  writeFileSync(path.join(root, 'dist', 'index.html'), '<title>Exportación de ensayo</title>');
+  const { app, store } = await createBaseApp({ dbPath: ':memory:', root, staticDir: path.join(root, 'dist') });
+  t.after(() => app.close());
+  prepare(store);
+  const original = store.bundle.bind(store);
+  const initial = bundleRevision(original());
+  const password = 'contrasena-ficticia-373';
+  const zip = (revision: string) => app.inject({
+    method: 'POST', url: '/api/v2/export/package', payload: { password, revision },
+  });
+  const changed = t.mock.method(store, 'bundle', () => {
+    const before = original();
+    // The first route read selects the bundle. This edit runs once compression yields.
+    queueMicrotask(() => {
+      store.saveRecord('contacts', { phone: '910000373' }, 'contact-1');
+      const updated = original();
+      rememberExport(store, updated, encodePortable(updated, password));
+      confirmRecoveryCopy(store, bundleRevision(updated));
+    });
+    return before;
+  }, { times: 1 });
+
+  const stale = await zip(initial);
+  assert.equal(changed.mock.callCount(), 1);
+  assert.equal(stale.statusCode, 409);
+  assert.match(stale.json().error, /El espacio cambió/);
+  assert.equal(stale.headers['content-disposition'], undefined);
+  const revision = bundleRevision(original());
+  const newerCopy = recoveryCopyStatus(store);
+  assert.notEqual(revision, initial);
+  assert.equal(newerCopy?.revision, revision);
+  assert.equal(newerCopy?.current, true);
+  assert.ok(newerCopy?.confirmedAt);
+
+  const current = await zip(revision);
+  assert.equal(current.statusCode, 200);
+  assert.equal(current.headers['content-type'], 'application/zip');
+  assert.equal(current.rawPayload.subarray(0, 4).toString('hex'), '504b0304');
+  assert.equal(recoveryCopyStatus(store)?.artifactHash, createHash('sha256').update(current.rawPayload).digest('hex'));
 });
 test('operación: fallo previo a crear trabajo queda visible y un éxito posterior lo resuelve',async()=>{
   const store=new Store(':memory:');try{

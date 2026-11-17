@@ -12,6 +12,9 @@ import type { CrmRecord } from '../shared/model.js';
 import { loadLocalOperations } from './local-operations-client.js';
 import { loadCommitments, loadRadarCapability } from './commitment-radar-client.js';
 import { daysLate, dueLabel, taskChip } from './task-display.js';
+import { continuityAlerts, type AlertTarget } from './app-shell/continuity-alerts.js';
+import { FirstRun } from './app-shell/FirstRun.js';
+import { captureRecordCount, describeCapture, workspaceCopy } from './app-shell/workspace-copy.js';
 
 /** INICIO («Operaciones claras», 11/11/2026). Solo LEE: estado de la copia, tareas de Hoy y Radar. No captura, no decide ni escribe nada; cada acción abre la página que ya la hace.
  *  Lo que no se puede leer se muestra como «—» con su motivo, nunca como cero. */
@@ -23,13 +26,18 @@ type Props = {
   onSignals?: (signals: { overdue: number | null; atRisk: number | null }) => void;
   /** Abre la ficha de un registro (avisos de calidad de los datos). */
   onOpenRecord?: (record: CrmRecord) => void;
-  /** Abre «Despachar vencidas». */
-  onDispatch?: () => void;
+  /** Entrega a la App el estado de Continuidad ya leído aquí (avisos del menú), sin otra lectura. */
+  onContinuityStatus?: (status: ContinuityStatus) => void;
+  /** Abre el sitio donde se arregla un aviso de la copia (pestaña de Continuidad o Exportar). */
+  onOpenAlert?: (target: AlertTarget) => void;
+  /** Primer uso: proteger el acceso y abrir la preparación de la copia. */
+  onProtect?: () => void; onPrepare?: () => void;
+  /** El Laboratorio (Radar) solo existe con datos de prueba: sin él, Inicio no lee ni enseña el Radar. */
+  lab?: boolean;
 };
 type Radar = { state: 'loading' } | { state: 'off'; reason: string } | { state: 'ready'; items: CommitmentSummary[] };
-const age = (minutes: number) => minutes < 60 ? Math.max(0, Math.round(minutes)) + ' min' : minutes < 2880 ? Math.floor(minutes / 60) + ' h ' + Math.floor(minutes % 60) + ' min' : Math.floor(minutes / 1440) + ' días';
 
-export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, onOpenRadar, onRehearse, onOpenDateCheck, onOpenContinuity, onOpenChanges, onSignals, onOpenRecord, onDispatch }: Props) {
+export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, onOpenRadar, onRehearse, onOpenDateCheck, onOpenContinuity, onOpenChanges, onSignals, onOpenRecord, onContinuityStatus, onOpenAlert, onProtect, onPrepare, lab = true }: Props) {
   const [ops, setOps] = useState<Operations | null>(null), [opsError, setOpsError] = useState('');
   const [status, setStatus] = useState<ContinuityStatus | null>(null);
   const [radar, setRadar] = useState<Radar>({ state: 'loading' });
@@ -38,11 +46,12 @@ export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, 
     const controller = new AbortController();
     if (!state.runtime) loadLocalOperations(controller.signal).then(setOps).catch(failure => { if (!controller.signal.aborted) setOpsError(failure instanceof Error ? failure.message : 'No se pudo leer Hoy.'); });
     else setOpsError('Hoy no está disponible en una copia restaurada.');
-    api<ContinuityStatus>('/v2/continuity').then(value => { if (!controller.signal.aborted) setStatus(value); }).catch(() => undefined);
+    api<ContinuityStatus>('/v2/continuity').then(value => { if (!controller.signal.aborted) { setStatus(value); onContinuityStatus?.(value); } }).catch(() => undefined);
     return () => controller.abort();
   }, [state.runtime, state.snapshot?.capturedAt]);
   useEffect(() => {
     const controller = new AbortController();
+    if (!lab) { setRadar({ state: 'off', reason: 'El Radar forma parte del Laboratorio y solo funciona con datos de prueba.' }); return () => controller.abort(); }
     if (!contextRevision) { setRadar({ state: 'off', reason: 'La copia aún no tiene una referencia autorizada.' }); return () => controller.abort(); }
     setRadar({ state: 'loading' });
     loadRadarCapability(contextRevision, controller.signal).then(async capability => {
@@ -51,43 +60,66 @@ export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, 
       setRadar({ state: 'ready', items: list.items });
     }).catch(() => { if (!controller.signal.aborted) setRadar({ state: 'off', reason: 'No se pudo leer el Radar.' }); });
     return () => controller.abort();
-  }, [contextRevision]);
+  }, [contextRevision, lab]);
 
   const now = new Date();
   const snapshot = state.snapshot;
-  const minutes = status?.ageMinutes ?? (snapshot ? (Date.now() - Date.parse(snapshot.capturedAt)) / 60_000 : null);
-  const stale = status ? status.stale : minutes !== null && minutes > 60;
-  const readiness = status?.readiness?.status;
+  const { activeId, activeReadiness, activeCaptureRecords, latest, latestIsDifferent } = workspaceCopy(state, status);
+  const copy = describeCapture(snapshot?.capturedAt, now.getTime());
+  const stale = !!activeId && !state.runtime && copy.stale;
+  const copyLabel = activeId ? 'Copia activa' : 'Captura importada';
   const counts = ops?.counts ?? null;
-  const tasks = ops ? [...ops.tasks].filter(task => task.bucket === 'overdue' || task.bucket === 'due-in-window').slice(0, 10) : [];
+  const urgent = ops?.tasks.filter(task => task.bucket === 'overdue' || task.bucket === 'due-in-window') ?? [];
   const oldest = ops ? ops.tasks.filter(task => task.bucket === 'overdue').reduce((max, task) => Math.max(max, daysLate(task.due, now) ?? 0), 0) : 0;
   const nextUp = ops?.tasks.find(task => task.bucket === 'due-in-window');
   const open = radar.state === 'ready' ? radar.items.filter(item => item.status !== 'resolved') : [];
   const atRisk = open.filter(item => item.status === 'at-risk'), unconfirmed = open.filter(item => item.status === 'unconfirmed'), clear = open.filter(item => item.status === 'no-risk-detected');
+  const uncertaintyFirst = atRisk.length === 0 && unconfirmed.length > 0;
+  const radarCount = uncertaintyFirst ? unconfirmed.length : atRisk.length;
+  const radarLabel = uncertaintyFirst ? 'Compromisos sin confirmar' : 'Compromisos en riesgo';
   const worst = atRisk.slice().sort((a, b) => a.dueAt.localeCompare(b.dueAt))[0];
   const today = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', weekday: 'long', day: 'numeric', month: 'long' }).format(now);
   const hour = Number(new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', hour: 'numeric', hour12: false }).format(now));
   const greeting = hour < 14 ? 'Buenos días' : hour < 21 ? 'Buenas tardes' : 'Buenas noches';
   const changes = status?.pendingChanges ?? state.changes ?? 0;
-  const copyTone = !snapshot ? 'neutral' : stale ? 'warn' : 'ok';
+  // Avisos de la copia que no dice ya el título de la tarjeta (antigüedad y «sin copia» van en el título).
+  const copyAlerts = status ? continuityAlerts(status, now).filter(alert => alert.id !== 'stale' && alert.id !== 'no-copy' && (alert.id !== 'drill' || activeReadiness)) : [];
+  // Primer uso: sin copia (y fuera del paquete restaurado) Inicio enseña los tres pasos en lugar de un tablero vacío.
+  const firstRun = !snapshot && !state.runtime;
+  const copyTone = !snapshot ? 'neutral' : stale || copyAlerts.length ? 'warn' : 'ok';
   const overdueCount = counts ? counts.overdue : null, riskCount = radar.state === 'ready' ? atRisk.length : null;
   useEffect(() => { onSignals?.({ overdue: overdueCount, atRisk: riskCount }); }, [overdueCount, riskCount]);
   // «Tu siguiente paso»: una sola recomendación, ordenada por lo que antes puede costarte algo: un compromiso con fecha en riesgo, lo vencido, la antigüedad de la copia, la prueba pendiente y los cambios por revisar. Es una sugerencia calculada con lo leído, no una decisión.
-  type Advice = { tone: 'danger' | 'warn' | 'ok'; title: string; detail: string; label: string; run: () => void };
+  type Advice = { tone: 'danger' | 'warn' | 'ok'; title: string; detail: string; label: string; run: () => void; taskId?: string };
   const advice: Advice[] = [];
   const oldestTask = ops ? ops.tasks.filter(task => task.bucket === 'overdue').sort((a, b) => (daysLate(b.due, now) ?? 0) - (daysLate(a.due, now) ?? 0))[0] : undefined;
   if (!snapshot) advice.push({ tone: 'warn', title: 'Prepara tu primera copia', detail: 'Sin una copia no hay nada que consultar ni que probar.', label: 'Ir a Continuidad', run: onOpenContinuity });
   if (worst) advice.push({ tone: 'danger', title: '«' + worst.title + '» está en riesgo', detail: 'Comprometido para el ' + new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(worst.dueAt)) + '. Ensaya la semana antes de dar otra fecha.', label: 'Ensayar mi semana', run: () => onRehearse(worst.id) });
-  if (oldestTask && counts) advice.push({ tone: 'danger', title: 'Cierra «' + (oldestTask.label || 'Tarea sin título') + '»', detail: (counts.overdue === 1 ? 'Es tu única tarea vencida' : 'Es la más antigua de ' + counts.overdue + ' tareas vencidas') + (oldest > 0 ? ': lleva ' + oldest + (oldest === 1 ? ' día.' : ' días.') : '.'), label: 'Abrir la tarea', run: () => onOpenTask(oldestTask.id) });
-  if (snapshot && stale) advice.push({ tone: 'warn', title: 'Actualiza tu copia', detail: minutes !== null ? 'Tiene ' + age(minutes) + '. Lo que haya cambiado en el CRM desde entonces no está en ella.' : 'Conviene capturarla de nuevo.', label: 'Ir a Continuidad', run: onOpenContinuity });
-  if (snapshot && readiness && readiness !== 'passed') advice.push({ tone: 'warn', title: 'Comprueba que podrías seguir sin el CRM', detail: 'Esta copia todavía no se ha probado en un entorno aparte.', label: 'Ir a la prueba', run: onOpenContinuity });
+  if (oldestTask && counts) advice.push({ tone: 'danger', title: 'Revisa «' + (oldestTask.label || 'Tarea sin título') + '»', detail: (counts.overdue === 1 ? 'Es tu única tarea vencida' : 'Es la más antigua de ' + counts.overdue + ' tareas vencidas') + (oldest > 0 ? ': lleva ' + oldest + (oldest === 1 ? ' día.' : ' días.') : '.'), label: 'Abrir la tarea', run: () => onOpenTask(oldestTask.id), taskId: oldestTask.id });
+  if (stale) advice.push({
+    tone: 'warn', title: latestIsDifferent ? 'Revisa la copia activa' : 'Actualiza tu copia',
+    detail: latestIsDifferent ? 'Hay otra captura guardada. El trabajo sigue en la copia activa.'
+      : 'La copia activa se capturó ' + copy.age + '. Los cambios posteriores del CRM quedan fuera.',
+    label: 'Ir a Continuidad', run: onOpenContinuity,
+  });
+  const drillAlert = copyAlerts.find(alert => alert.id === 'drill');
+  if (snapshot && drillAlert) advice.push({ tone: drillAlert.tone, title: drillAlert.title, detail: drillAlert.detail, label: drillAlert.action.label, run: onOpenContinuity });
   if (changes > 0) advice.push({ tone: 'ok', title: 'Revisa ' + (changes === 1 ? 'tu cambio local' : 'tus ' + changes + ' cambios locales'), detail: 'Están guardados en este ordenador; revisa cuáles quieres devolver al CRM.', label: 'Revisar cambios', run: onOpenChanges });
   const first = advice[0];
+  const tasks = urgent.filter(task => task.id !== first?.taskId).slice(0, 3);
   // Resumen de la semana: solo reordena lo ya leído para imprimirlo o copiarlo. No guarda nada.
   const week = { overdue: ops ? ops.tasks.filter(task => task.bucket === 'overdue') : [], soon: ops ? ops.tasks.filter(task => task.bucket === 'due-in-window') : [],
     later: ops ? ops.tasks.filter(task => { const late = daysLate(task.due, now); return task.bucket !== 'overdue' && task.bucket !== 'due-in-window' && late !== null && late < 0 && late >= -7; }) : [] };
   const taskLine = (task: Operations['tasks'][number]) => (task.label || 'Tarea sin título') + ' — ' + dueLabel(task.due, task.dueKind, now);
-  const copyLine = !snapshot ? 'Todavía no hay una copia.' : (minutes !== null ? 'Copia de hace ' + age(minutes) : 'Copia disponible') + (stale ? ' (conviene actualizarla)' : '') + '; ' + (readiness === 'passed' ? 'probada' : 'sin probar') + '; ' + changes + (changes === 1 ? ' cambio local.' : ' cambios locales.');
+  const activeProof = activeReadiness?.status === 'passed' ? 'Prueba de esta captura vigente.'
+    : drillAlert?.title ?? (latestIsDifferent ? 'Continuidad muestra la prueba de la última captura guardada.' : '');
+  const activeCaptureDetail = (copy.date ?? 'Fecha no disponible') +
+    (activeCaptureRecords === null ? '' : ' · ' + captureRecordCount(activeCaptureRecords) + ' en la captura');
+  const copyLine = !snapshot ? 'Todavía no hay una copia.' : [
+    copyLabel + ': ' + activeCaptureDetail + '.',
+    changes + (changes === 1 ? ' cambio local.' : ' cambios locales.'),
+    activeProof,
+  ].filter(Boolean).join(' ');
   const reportText = () => ['Resumen de la semana · ' + (snapshot?.name ?? 'Plan B') + ' · ' + today, '',
     'VENCIDO (' + week.overdue.length + ')', ...week.overdue.map(task => '- ' + taskLine(task)), '',
     'PRÓXIMAS 24 H (' + week.soon.length + ')', ...week.soon.map(task => '- ' + taskLine(task)), '',
@@ -107,16 +139,70 @@ export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, 
     return { offset, weekday, clamped, weekend: /^(s[áa]b|dom)/i.test(weekday), number: new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', day: 'numeric' }).format(date),
       marks: marks.filter(mark => mark.offset === offset || index === 0 && mark.offset < lineFrom || index === lineTo - lineFrom && mark.offset > lineTo) };
   }) : [];
-  const lineSummary = !ops && !open.length ? 'Todavía no hay fechas que colocar.' : [counts ? (counts.overdue === 0 ? 'Nada vencido' : counts.overdue + (counts.overdue === 1 ? ' tarea vencida' : ' tareas vencidas')) : '', counts && counts.upcoming ? counts.upcoming + ' para las próximas 24 h' : '', atRisk.length ? atRisk.length + (atRisk.length === 1 ? ' compromiso en riesgo' : ' compromisos en riesgo') : ''].filter(Boolean).join(', ') + '. Pulsa un punto para abrirlo.';
+  const lineSummary = !ops && !open.length ? 'Todavía no hay fechas que colocar.' : [counts ? (counts.overdue === 0 ? 'Nada vencido' : counts.overdue + (counts.overdue === 1 ? ' tarea vencida' : ' tareas vencidas')) : '', counts && counts.upcoming ? counts.upcoming + ' para las próximas 24 h' : '', atRisk.length ? atRisk.length + (atRisk.length === 1 ? ' compromiso en riesgo' : ' compromisos en riesgo') : ''].filter(Boolean).join(', ').replace(/^(.+)$/, '$1. Pulsa un punto para abrirlo.') || 'Todavía no hay fechas que colocar.';
 
 
   return <section className="oc-home" aria-labelledby="oc-home-title">
     <header className="oc-home-head">
-      <div><p>{today.charAt(0).toUpperCase() + today.slice(1)}{snapshot ? ' · ' + snapshot.name : ''}</p><h1 id="oc-home-title">{greeting}. Esto es lo que importa hoy.</h1></div>
-      <div className="oc-home-actions"><span className="oc-chip" data-tone={snapshot?.source.isTestData === false ? 'warn' : undefined}>{snapshot?.source.isTestData === false ? 'Producción · lectura' : 'Datos de ensayo'}</span></div>
+      <div><p>{today.charAt(0).toUpperCase() + today.slice(1)}{snapshot ? ' · ' + snapshot.name : ''}</p><h1 id="oc-home-title">{firstRun ? 'Bienvenido a Plan B.' : greeting + '. Esto es lo que importa hoy.'}</h1></div>
+      <div className="oc-home-actions"><span className="oc-chip" data-tone={snapshot?.source.isTestData === false ? 'warn' : undefined}>{snapshot?.source.isTestData === false ? 'Producción · lectura' : 'Datos de prueba'}</span></div>
     </header>
 
-    <div className="fx-top">
+    {firstRun ? <FirstRun protectedAccess={status ? status.protected : null} onProtect={onProtect} onPrepare={onPrepare} onOpenContinuity={onOpenContinuity} /> : <>
+    <div className="oc-home-grid">
+      <div className="oc-home-main-stack">
+    <section className="fx-next" data-tone={first ? first.tone : 'ok'} aria-labelledby="fx-next-title">
+      <h2 id="fx-next-title">Tu siguiente paso</h2>
+      {first ? <>
+        <p className="fx-next-title">{first.title}</p>
+        <p className="fx-next-detail">{first.detail}</p>
+        <button type="button" className="button primary" onClick={first.run}>{first.label}</button>
+      </> : <p className="fx-next-detail" role="status">{state.runtime ? 'Consulta el estado de la copia restaurada en Continuidad.' : opsError || (ops && status ? 'No hay acciones urgentes en los datos consultados.' : 'Consultando el estado de la copia…')}</p>}
+    </section>
+      {!state.runtime ? <article className="oc-card oc-home-main" aria-labelledby="oc-first-title">
+        <div className="oc-card-head"><h2 id="oc-first-title">Prioridades de hoy</h2><button type="button" className="oc-link" onClick={onOpenToday}>Ver cola de Hoy →</button></div>
+        {!ops ? (opsError ? <p className="oc-empty-line" role="status">{opsError}</p> : <Skeleton rows={3} label="Leyendo las tareas de tu copia…" />)
+          : tasks.length === 0 ? <p className={'oc-empty-line ui-empty' + (snapshot ? ' ui-empty-ok' : '')}>{urgent.length ? 'La única prioridad se muestra arriba.' : 'No hay tareas vencidas ni para las próximas 24 h.'}</p>
+          : <ul className="oc-task-list">{tasks.map(task => { const chip = taskChip(task.bucket, task.due, now); return <li key={task.id}>
+              <span className="oc-chip" data-tone={chip.tone}>{chip.text}</span>
+              <div style={{ minWidth: 0 }}><strong title={task.label}>{task.label || 'Tarea sin título'}</strong><span className="oc-due">{task.nextAction}</span></div>
+              <span className="oc-due">{dueLabel(task.due, task.dueKind, now)}</span>
+              <button type="button" className="oc-small-button" onClick={() => onOpenTask(task.id)} aria-label={'Abrir ' + (task.label || 'tarea') + ' en Hoy'}>Abrir</button>
+            </li>; })}</ul>}
+      </article> : null}
+
+      </div>
+      <div className="oc-home-side">
+        <article className="oc-card oc-status" data-tone={copyTone} aria-labelledby="oc-copy-title">
+          <span className="oc-status-icon" aria-hidden="true">{copyTone === 'ok' ? <CheckCircle2 size={22}/> : copyTone === 'warn' ? <Clock3 size={22}/> : <ShieldCheck size={22}/>}</span>
+          <div style={{ minWidth: 0 }}>
+            <h2 id="oc-copy-title">{snapshot ? copyLabel : 'Todavía no hay una copia'}</h2>
+            <p className="oc-muted">{snapshot ? activeCaptureDetail + ' · ' + changes + (changes === 1 ? ' cambio local' : ' cambios locales') : 'Prepara la primera copia desde Continuidad.'}</p>
+            {stale ? <p className="oc-muted">Capturada {copy.age}.</p> : null}
+            {latestIsDifferent && latest ? <p className="oc-muted">Última captura guardada: {describeCapture(latest.capturedAt).date ?? 'fecha no disponible'} · {captureRecordCount(latest.records)}.</p> : null}
+            {activeReadiness?.status === 'passed' || latestIsDifferent ? <p className="oc-muted">{activeProof}</p> : null}
+            {copyAlerts.length ? <ul className="oc-copy-alerts" aria-label="Avisos de la copia">{copyAlerts.map(alert => <li key={alert.id} data-tone={alert.tone}><span><strong>{alert.title}</strong> {alert.detail}</span>{onOpenAlert ? <button type="button" className="oc-link" aria-label={alert.action.label + ': ' + alert.title} onClick={() => onOpenAlert(alert.action.target)}>{alert.action.label}</button> : null}</li>)}</ul> : null}
+            <div className="oc-row-actions"><button type="button" className="button primary" onClick={onOpenContinuity}>{stale || !snapshot ? 'Ir a Continuidad' : 'Ver estado'}</button>{changes > 0 ? <button type="button" className="button secondary" onClick={onOpenChanges}>Revisar cambios</button> : null}</div>
+          </div>
+        </article>
+        {lab ? <article className="oc-card oc-side-card" aria-labelledby="oc-radar-title">
+          <div className="oc-side-head"><h2 id="oc-radar-title">Radar de compromisos</h2><button type="button" className="oc-link" onClick={onOpenRadar}>Abrir</button></div>
+          {radar.state !== 'ready' ? <p className={'oc-muted' + (radar.state === 'off' ? '' : ' ui-loading ui-loading-sm')}>{radar.state === 'off' ? radar.reason : 'Leyendo el Radar…'}</p> : open.length === 0 ? <p className="oc-muted ui-empty">No hay compromisos abiertos.</p> : <>
+            <div className="oc-bar" role="img" aria-label={atRisk.length + ' en riesgo, ' + unconfirmed.length + ' sin confirmar, ' + clear.length + ' sin riesgo detectado'}>
+              {atRisk.length ? <span style={{ flex: atRisk.length, background: 'var(--oc-danger-bar)' }}/> : null}
+              {unconfirmed.length ? <span style={{ flex: unconfirmed.length, background: 'var(--oc-warn-bar)' }}/> : null}
+              {clear.length ? <span style={{ flex: clear.length, background: 'var(--oc-ok-bar)' }}/> : null}
+            </div>
+            <p className="oc-legend">{!uncertaintyFirst ? <span><strong>{atRisk.length}</strong> en riesgo</span> : null}<span><strong>{unconfirmed.length}</strong> sin confirmar</span><span><strong>{clear.length}</strong> sin riesgo detectado</span></p>
+            {worst ? <div className="oc-alert"><strong>{worst.title}</strong><p>Comprometido para el {new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', weekday: 'long', day: 'numeric' }).format(new Date(worst.dueAt))}: en riesgo con lo observado.</p>
+              <div className="oc-row-actions" style={{ marginTop: 2 }}><button type="button" className="oc-alert-button" onClick={() => onRehearse(worst.id)}>Ensayar mi semana</button><button type="button" className="oc-alert-button" onClick={onOpenDateCheck}>Comprobar una fecha</button></div></div> : null}
+          </>}
+        </article> : null}
+        {state.ready && state.spec && onOpenRecord ? <QualityPanel spec={state.spec} revision={state.snapshot?.capturedAt + ':' + state.changes} onOpen={onOpenRecord} /> : null}
+      </div>
+    </div>
+    {!state.runtime ? <details className="fx-week">
+      <summary>Planificación semanal</summary>
     <section className="fx-line" aria-labelledby="fx-line-title">
       <div className="fx-line-head">
         <div><h2 id="fx-line-title">La semana en una línea</h2><p>{lineSummary}</p></div>
@@ -130,10 +216,10 @@ export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, 
         <span className="oc-kpi-label">Próximas 24 h</span><span className="oc-kpi-value">{counts ? counts.upcoming : '—'}</span>
         <span className="oc-kpi-note" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nextUp ? nextUp.label : counts ? 'Sin vencimientos cercanos' : '—'}</span>
       </button>
-      <button type="button" className="oc-card oc-kpi" data-tone={atRisk.length > 0 ? 'danger' : radar.state === 'ready' ? 'ok' : undefined} onClick={onOpenRadar} aria-label={'Compromisos en riesgo: ' + (radar.state === 'ready' ? atRisk.length : 'sin dato') + '. Abrir Radar'}>
-        <span className="oc-kpi-label">Compromisos en riesgo</span><span className="oc-kpi-value">{radar.state === 'ready' ? atRisk.length : '—'}</span>
+      {lab ? <button type="button" className="oc-card oc-kpi" data-tone={atRisk.length > 0 ? 'danger' : uncertaintyFirst ? 'warn' : undefined} onClick={onOpenRadar} aria-label={radarLabel + ': ' + (radar.state === 'ready' ? radarCount : 'sin dato') + '. Abrir Radar'}>
+        <span className="oc-kpi-label">{radarLabel}</span><span className="oc-kpi-value">{radar.state === 'ready' ? radarCount : '—'}</span>
         <span className="oc-kpi-note">{radar.state === 'ready' ? 'De ' + open.length + ' abiertos en el Radar' : radar.state === 'off' ? radar.reason : 'Leyendo…'}</span>
-      </button>
+      </button> : null}
         </div>
       </div>
       {lineDays.length ? <ol className="fx-days" style={{ gridTemplateColumns: 'repeat(' + lineDays.length + ', minmax(0, 1fr))' }}>
@@ -145,65 +231,11 @@ export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, 
           </div>
           <span className="fx-day"><b>{day.offset === 0 ? 'Hoy' : day.number}</b><i>{day.clamped ? 'y antes' : day.weekday}</i></span>
         </li>)}
-      </ol> : <p className="oc-empty-line" role="status">{opsError || 'Leyendo las fechas de tu copia…'}</p>}
-      <p className="fx-key"><span data-tone="danger">Vencido</span><span data-tone="warn">Próximas 24 h</span><span data-tone="later">Más adelante</span><span data-kind="commitment">Compromiso del Radar</span></p>
+      </ol> : <p className={'oc-empty-line' + (opsError ? '' : ' ui-loading ui-loading-sm')} role="status">{opsError || 'Leyendo las fechas de tu copia…'}</p>}
+      <p className="fx-key"><span data-tone="danger">Vencido</span><span data-tone="warn">Próximas 24 h</span><span data-tone="later">Más adelante</span>{lab ? <span data-kind="commitment">Compromiso del Radar</span> : null}</p>
     </section>
-    <section className="fx-next" data-tone={first ? first.tone : 'ok'} aria-labelledby="fx-next-title">
-      <h2 id="fx-next-title">Tu siguiente paso</h2>
-      {first ? <>
-        <p className="fx-next-title">{first.title}</p>
-        <p className="fx-next-detail">{first.detail}</p>
-        <button type="button" className="button primary" onClick={first.run}>{first.label}</button>
-        {advice.length > 1 ? <ol className="fx-then" aria-label="Después">{advice.slice(1, 4).map(item => <li key={item.title}><button type="button" data-tone={item.tone} onClick={item.run}>{item.title}</button></li>)}</ol> : null}
-      </> : <p className="fx-next-detail" role="status">{ops && status ? 'Nada urgente con lo que se ha podido leer: sin tareas vencidas y con la copia al día y probada.' : 'Leyendo tu copia…'}</p>}
-    </section>
-    </div>
-
-    <div className="oc-home-grid">
-      <article className="oc-card oc-home-main" aria-labelledby="oc-first-title">
-        <div className="oc-card-head"><h2 id="oc-first-title">Qué atender primero</h2>{onDispatch && counts && counts.overdue > 0 ? <button type="button" className="button primary gx-dispatch" onClick={onDispatch}>Despachar {counts.overdue} {counts.overdue === 1 ? 'vencida' : 'vencidas'}</button> : null}<button type="button" className="oc-link" onClick={onOpenToday}>{counts ? 'Ver las ' + counts.returned + ' tareas →' : 'Abrir Hoy →'}</button></div>
-        {!ops ? (opsError ? <p className="oc-empty-line" role="status">{opsError}</p> : <Skeleton rows={6} label="Leyendo las tareas de tu copia…" />)
-          : tasks.length === 0 ? <p className="oc-empty-line">No hay tareas vencidas ni para las próximas 24 h.</p>
-          : <ul className="oc-task-list">{tasks.map(task => { const chip = taskChip(task.bucket, task.due, now); return <li key={task.id}>
-              <span className="oc-chip" data-tone={chip.tone}>{chip.text}</span>
-              <div style={{ minWidth: 0 }}><strong title={task.label}>{task.label || 'Tarea sin título'}</strong><span className="oc-due">{task.nextAction}</span></div>
-              <span className="oc-due">{dueLabel(task.due, task.dueKind, now)}</span>
-              <button type="button" className="oc-small-button" onClick={() => onOpenTask(task.id)} aria-label={'Abrir ' + (task.label || 'tarea') + ' en Hoy'}>Abrir</button>
-            </li>; })}</ul>}
-        <p className="oc-card-foot">Ordenadas por urgencia: primero lo vencido, después lo de las próximas 24 h.</p>
-      </article>
-
-      <div className="oc-home-side">
-        <article className="oc-card oc-status" data-tone={copyTone} aria-labelledby="oc-copy-title">
-          <span className="oc-status-icon" aria-hidden="true">{copyTone === 'ok' ? <CheckCircle2 size={22}/> : copyTone === 'warn' ? <Clock3 size={22}/> : <ShieldCheck size={22}/>}</span>
-          <div style={{ minWidth: 0 }}>
-            <p className="oc-eyebrow">Tu copia de seguridad</p>
-            <h2 id="oc-copy-title">{!snapshot ? 'Todavía no hay una copia' : minutes === null ? 'Copia disponible' : stale ? 'Tiene ' + age(minutes) + ': conviene actualizarla' : 'Al día · hace ' + age(minutes)}</h2>
-            <p className="oc-muted">{snapshot ? 'Última captura ' + new Date(snapshot.capturedAt).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + ' · ' + (status?.latestCapture?.records ?? snapshot.records.length) + ' registros · ' + changes + (changes === 1 ? ' cambio local' : ' cambios locales') : 'Prepara la primera copia desde Continuidad.'}</p>
-            <div className="oc-row-actions"><button type="button" className="button primary" onClick={onOpenContinuity}>{stale || !snapshot ? 'Ir a Continuidad' : 'Ver estado'}</button>{changes > 0 ? <button type="button" className="button secondary" onClick={onOpenChanges}>Revisar cambios</button> : null}</div>
-          </div>
-        </article>
-        <article className="oc-card oc-side-card" aria-labelledby="oc-radar-title">
-          <div className="oc-side-head"><h2 id="oc-radar-title">Radar de compromisos</h2><button type="button" className="oc-link" onClick={onOpenRadar}>Abrir</button></div>
-          {radar.state !== 'ready' ? <p className="oc-muted">{radar.state === 'off' ? radar.reason : 'Leyendo el Radar…'}</p> : open.length === 0 ? <p className="oc-muted">No hay compromisos abiertos.</p> : <>
-            <div className="oc-bar" role="img" aria-label={atRisk.length + ' en riesgo, ' + unconfirmed.length + ' sin confirmar, ' + clear.length + ' sin riesgo detectado'}>
-              {atRisk.length ? <span style={{ flex: atRisk.length, background: 'var(--oc-danger-bar)' }}/> : null}
-              {unconfirmed.length ? <span style={{ flex: unconfirmed.length, background: 'var(--oc-warn-bar)' }}/> : null}
-              {clear.length ? <span style={{ flex: clear.length, background: 'var(--oc-ok-bar)' }}/> : null}
-            </div>
-            <p className="oc-legend"><span><strong>{atRisk.length}</strong> en riesgo</span><span><strong>{unconfirmed.length}</strong> sin confirmar</span><span><strong>{clear.length}</strong> sin riesgo detectado</span></p>
-            {worst ? <div className="oc-alert"><strong>{worst.title}</strong><p>Comprometido para el {new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', weekday: 'long', day: 'numeric' }).format(new Date(worst.dueAt))}: en riesgo con lo observado.</p>
-              <div className="oc-row-actions" style={{ marginTop: 2 }}><button type="button" className="oc-alert-button" onClick={() => onRehearse(worst.id)}>Ensayar mi semana</button><button type="button" className="oc-alert-button" onClick={onOpenDateCheck}>Comprobar una fecha</button></div></div> : null}
-          </>}
-        </article>
-        {state.ready && state.spec && onOpenRecord ? <QualityPanel spec={state.spec} revision={state.snapshot?.capturedAt + ':' + state.changes} onOpen={onOpenRecord} /> : null}
-        <article className="oc-card oc-side-card" aria-labelledby="oc-plan-title">
-          <div className="oc-side-head"><h2 id="oc-plan-title">¿Podrías seguir sin el CRM?</h2><span className="oc-chip" data-tone={readiness === 'passed' ? 'ok' : readiness === 'failed' ? 'danger' : readiness ? 'warn' : undefined}>{readiness === 'passed' ? 'Probado' : readiness === 'failed' ? 'Con fallos' : readiness === 'expired' ? 'Repetir' : readiness ? 'Sin probar' : '—'}</span></div>
-          <p className="oc-muted">{readiness === 'passed' ? 'La última prueba recuperó tu copia en un entorno aparte y se pudo trabajar.' : 'Una prueba recupera tu copia en un entorno aparte y comprueba que puedes trabajar. No cambia nada.'}</p>
-          <div className="oc-row-actions" style={{ marginTop: 0 }}><button type="button" className="button secondary" onClick={onOpenContinuity}>{readiness === 'passed' ? 'Ver la prueba' : 'Ir a la prueba'}</button></div>
-        </article>
-      </div>
-    </div>
+    </details> : null}
+    </>}
     {report ? <Modal title="Resumen de la semana" close={() => setReport(false)} wide><div className="modal-body fx-report">
       <p className="fx-report-meta">{snapshot?.name ?? 'Plan B'} · {today}. Calculado con lo leído ahora de tu copia local.</p>
       {([['Vencido', week.overdue, 'danger'], ['Próximas 24 h', week.soon, 'warn'], ['Próximos 7 días', week.later, 'later']] as const).map(([title, list, tone]) => <section key={title} data-tone={tone}><h3>{title}<span>{list.length}</span></h3>

@@ -153,11 +153,11 @@ function checkLabel(code: string, scenario: Scenario): string {
   }
 }
 const categoryText: Record<ContinuityCheck['category'], string> = { blocker: 'Bloqueo', evidence: 'Evidencia', objective: 'Objetivo' };
-const checkStatusText: Record<ContinuityCheck['status'], string> = { pass: 'Cumple', fail: 'Falla', unknown: 'Sin demostrar' };
+const checkStatusText: Record<ContinuityCheck['status'], string> = { pass: 'Cumple', fail: 'Falla', unknown: 'Sin comprobar' };
 const STATUS: Record<ContinuityLabResult['status'], { label: string; tone: 'success' | 'warning' | 'neutral' | 'danger'; line: string }> = {
   ready: { label: 'Preparado según estas entradas', tone: 'success', line: 'Las comprobaciones cumplen sus objetivos con la evidencia escrita en esta simulación. No acredita ninguna recuperación real.' },
   'at-risk': { label: 'Fuera de objetivo', tone: 'warning', line: 'Hay evidencia válida, pero al menos una medición supera su objetivo.' },
-  unproven: { label: 'Sin demostrar', tone: 'neutral', line: 'Falta evidencia válida para afirmar que esta recuperación funcionaría. Falta de evidencia no es lo mismo que fallo.' },
+  unproven: { label: 'Sin comprobar', tone: 'neutral', line: 'Falta evidencia válida para afirmar que esta recuperación funcionaría. Falta de evidencia no es lo mismo que fallo.' },
   blocked: { label: 'Bloqueado', tone: 'danger', line: 'Un requisito declarado o un ensayo aplicable ha fallado; hay que resolverlo antes de contar con esta recuperación.' },
 };
 const STATUS_ICON = { success: CheckCircle2, warning: AlertTriangle, neutral: CircleHelp, danger: OctagonX } as const;

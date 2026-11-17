@@ -104,3 +104,11 @@ QA060/QA073 permanecen informes históricos aceptados como auditoría con hallaz
 - tests/e2e/preparation-review.spec.ts: `21423515f6a34bfb8cc2f7356c87c7e2ca66cb5599476fc3c205a16c4be3042e`
 
 El hash del informe lo registra submit. No autoaceptación.
+
+## Revalidación con el menú actual · 17/11/2026, Europe/Madrid
+
+La diferencia en Preparación frente a la presentación anterior es la etiqueta local «Datos de prueba». La candidata f992ac95-6466-42a0-bb7c-1b1fa2993e35 conserva la misma revisión y contrato de activación. El E2E anterior se detuvo al buscar Preparación directamente. Se actualizaron los dos accesos de la suite para abrir Ajustes y luego Preparación con nombres accesibles y se comprueban la URL y la etiqueta visible.
+
+Con el mismo código y dos almacenes ficticios nuevos, **6/6 Chromium**: revisión de la candidata, revisión anterior rechazada con 409, edición local protegida, ausencia de candidata, servidor antiguo 404 y teclado con vistas de 1440, 390 y 320 px. **21/21 Node** con las unidades de API y pantalla. Los controles de activación originales se conservan.
+
+Bancos `tests/.tmp/prep409-239f968ac3184f94a5b886a76ac72060` y `tests/.tmp/prep409-unit-722e242436574ca68966b60b450ad80d`, con huellas, logs y capturas. El servidor de prueba se gestionó en 4404. No se editaron Preparación, estilos ni API. El tablón recoge las huellas actuales de Preparación, la suite y el informe.

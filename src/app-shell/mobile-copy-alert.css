@@ -1,0 +1,32 @@
+.gx-mobile-copy-alert {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .gx-mobile-copy-alert {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    width: 100%;
+    min-height: 44px;
+    margin-bottom: 12px;
+    padding: 6px 10px;
+    border: 1px solid var(--warning-border);
+    border-radius: 8px;
+    background: var(--warning-bg);
+    color: var(--warning);
+    font: inherit;
+    font-size: var(--fs-sm);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .gx-mobile-copy-alert strong {
+    margin-left: auto;
+    font-weight: 600;
+  }
+
+  .gx-mobile-copy-alert svg {
+    flex: none;
+  }
+}

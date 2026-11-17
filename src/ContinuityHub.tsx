@@ -20,6 +20,8 @@ import './continuity-hub.css';
 //  · Tras un bloqueo o una respuesta perdida no se afirma lo que no consta: se consulta el estado guardado (GET) y no se ofrece otra ejecución hasta saberlo.
 export interface ContinuityHubProps {
   fetcher?: typeof fetch;
+  /** The standalone runtime has neither the read check nor the relay kit. */
+  portable?: boolean;
   installId?: string | null;
   /** Identidad de la captura activa en la notación de la evidencia de copia (`context.captureId`). Si se informa, la evidencia leída solo se acredita con ESA captura; si no, se confía en la propia respuesta. */
   context?: string | null;
@@ -45,8 +47,9 @@ const EMPTY: Sources = { copy: null, hubspot: null, relay: null };
 const NOT_PROVIDED = { status: 'not-provided' as const, at: null, value: null };
 const SOURCE_NAME: Record<Key, string> = { copy: 'Copia local', hubspot: 'Lectura de HubSpot', relay: 'Último ensayo de relevo' };
 const MAX_TICK_MS = 30_000, POLL_MS = 2_000, POLL_MAX_MS = 180_000;
+const portableActionUnavailable = (action: PassportAction | null) => action === 'open-integrations' || action === 'start-rehearsal';
 
-export function ContinuityHub({ fetcher, installId = null, context = null, workspaceContextRevision, sessionKey = null, connectionKey = null, navigate, extra, now = Date.now, evidenceLink = null, onCopyContext }: ContinuityHubProps) {
+export function ContinuityHub({ fetcher, portable = false, installId = null, context = null, workspaceContextRevision, sessionKey = null, connectionKey = null, navigate, extra, now = Date.now, evidenceLink = null, onCopyContext }: ContinuityHubProps) {
   const titleId = useId(), [sources, setSources] = useState<Sources>(EMPTY), [loading, setLoading] = useState(true), [confirm, setConfirm] = useState(false), [busy, setBusy] = useState(false), [message, setMessage] = useState('');
   const [uncertain, setUncertain] = useState(false), [clock, setClock] = useState(() => now());
   const alive = useRef(true), generation = useRef(0), controller = useRef<AbortController | null>(null), panel = useRef<HTMLHeadingElement | null>(null), busyRef = useRef(false), relayTicket = useRef(0), pollStarted = useRef(0);
@@ -75,10 +78,10 @@ export function ContinuityHub({ fetcher, installId = null, context = null, works
     const copy = copyRead.then(
       value => publish('copy', { status: 'read', at: iso(), value }),
       (error: unknown) => { if (current()) publish('copy', { status: 'unavailable', at: iso(), value: null, reason: error instanceof EvidenceReadError && error.code === 'locked' ? 'locked' : 'failed' }); });
-    const hubspot = loadReadCheck({ signal: abort.signal, fetcher, now: iso }).then(value => publish('hubspot', value), () => undefined);
-    const relay = loadRelay({ signal: abort.signal, fetcher, now: iso }).then(value => publish('relay', value), () => undefined);
+    const hubspot = portable ? undefined : loadReadCheck({ signal: abort.signal, fetcher, now: iso }).then(value => publish('hubspot', value), () => undefined);
+    const relay = portable ? undefined : loadRelay({ signal: abort.signal, fetcher, now: iso }).then(value => publish('relay', value), () => undefined);
     return Promise.allSettled([copy, hubspot, relay]).then(() => { if (current()) setLoading(false); return current(); });
-  }, [fetcher, workspaceContextRevision, context]);
+  }, [fetcher, workspaceContextRevision, context, portable]);
   useEffect(() => { alive.current = true; setConfirm(false); setUncertain(false); void load(true); return () => { alive.current = false; generation.current++; controller.current?.abort(); }; }, [load, identity]);
   useEffect(() => { if (confirm) panel.current?.focus(); }, [confirm]);
 
@@ -93,22 +96,23 @@ export function ContinuityHub({ fetcher, installId = null, context = null, works
 
   /** Relee SOLO el ensayo guardado (GET). Descarta la respuesta si cambió la identidad o si se pidió una lectura más reciente. */
   const reloadRelay = useCallback(async (): Promise<Loaded<RelayRehearsalApiState> | null> => {
+    if (portable) return null;
     const mine = generation.current, ticket = ++relayTicket.current, abort = new AbortController(), iso = () => new Date(nowRef.current()).toISOString();
     const value = await loadRelay({ signal: abort.signal, fetcher, now: iso }).catch(() => null);
     if (!value || !alive.current || generation.current !== mine || relayTicket.current !== ticket) return null;
     setSources(previous => ({ ...previous, relay: value })); return value;
-  }, [fetcher]);
+  }, [fetcher, portable]);
   const relayState = sources.relay?.status === 'read' ? sources.relay.value : null;
   const relayLive = !!relayState && (!!relayState.running || !!relayState.stopping);
   useEffect(() => {
-    if (!relayLive && !busy) { pollStarted.current = 0; return; }
+    if (portable || !relayLive && !busy) { pollStarted.current = 0; return; }
     if (!pollStarted.current) pollStarted.current = Date.now();
     const timer = setInterval(() => { if (Date.now() - pollStarted.current < POLL_MAX_MS) void reloadRelay(); }, POLL_MS);
     return () => clearInterval(timer);
-  }, [relayLive, busy, reloadRelay]);
+  }, [relayLive, busy, reloadRelay, portable]);
 
   const view = useMemo(() => {
-    const pending = { copy: !sources.copy, hubspot: !sources.hubspot, relay: !sources.relay }, anyPending = pending.copy || pending.hubspot || pending.relay, settled = { copy: !pending.copy, hubspot: !pending.hubspot, relay: !pending.relay };
+    const pending = { copy: !sources.copy, hubspot: !portable && !sources.hubspot, relay: !portable && !sources.relay }, anyPending = pending.copy || pending.hubspot || pending.relay, settled = { copy: !pending.copy, hubspot: !pending.hubspot, relay: !pending.relay };
     const copyValue = sources.copy?.status === 'read' ? sources.copy.value : null, copyCtx = copyValue && copyValue.available ? copyValue.context.captureId : null;
     const expected = context ?? copyCtx, mismatch = !!copyCtx && context !== null && copyCtx !== context;
     const hsInput: SourceInput<ReadCheckApiState> = !sources.hubspot ? NOT_PROVIDED : sources.hubspot.status === 'read' ? { status: 'read', at: sources.hubspot.at, value: sources.hubspot.value } : { status: 'unavailable', at: sources.hubspot.at, value: null };
@@ -121,8 +125,22 @@ export function ContinuityHub({ fetcher, installId = null, context = null, works
       now: clock, expectedContext: expected, copy: sources.copy ? { status: sources.copy.status, at: sources.copy.at, value: sources.copy.value, context: copyCtx } : absent(),
       inventory: extra?.inventory ?? absent(), comparison: extra?.comparison ?? absent(), queue: extra?.queue ?? absent(), work: w ?? absent(), hubspot: hsInput, relay: { ...relayInput, context: null }, evidenceLink,
     };
-    const full = buildPassport({ now: clock, installId, copy: copyInput, hubspot: hsInput, work: workInput, relay: relayInput });
+    const full = buildPassport({ now: clock, installId, copy: copyInput, hubspot: portable ? NOT_PROVIDED : hsInput, work: workInput, relay: portable ? NOT_PROVIDED : relayInput });
+    if (portable && full.nextStep && portableActionUnavailable(full.nextStep.action)) full.nextStep = null;
+    if (portable) {
+      impactInputs.hubspot = NOT_PROVIDED;
+      impactInputs.relay = { ...NOT_PROVIDED, context: null };
+    }
     const impact = buildImpactMap(impactInputs);
+    if (portable) {
+      const unavailableRows = impact.rows.filter(row => row.id === 'access:hubspot' || row.id === 'recovery:rehearsal');
+      for (const row of unavailableRows) {
+        row.action = null;
+        row.missing = 'Esta función no está incluida en el paquete portable.';
+      }
+      impact.summary.handoffPlan = impact.summary.handoffPlan.filter(line => !unavailableRows.some(row => line.startsWith(row.title + ':')));
+      if (impact.summary.firstDecision && unavailableRows.some(row => row.title === impact.summary.firstDecision?.title)) impact.summary.firstDecision = null;
+    }
     if (!anyPending) return { passport: full as Passport, impact, mismatch, partial: false, pending, settled };
     // Publicación parcial: solo lo que ya se leyó. Lo pendiente no se presenta como «no solicitado» ni como cero.
     const hideSections = new Set<SectionKey>(['unproven']); if (pending.copy) { hideSections.add('copy'); hideSections.add('rehearsal'); } if (pending.hubspot) hideSections.add('read'); if (pending.relay) hideSections.add('rehearsal');
@@ -131,7 +149,7 @@ export function ContinuityHub({ fetcher, installId = null, context = null, works
     const names = (Object.keys(pending) as Key[]).filter(k => pending[k]).map(k => SOURCE_NAME[k].toLowerCase());
     const partialImpact: ImpactMapModel = { ...impact, rows: impact.rows.filter(row => !hideRows(row.id)), summary: { lead: 'Leyendo: ' + names.join(', ') + '. El resumen de turno se completa cuando respondan.', lines: [], firstDecision: null, handoffPlan: [], evidenceLink: impact.summary.evidenceLink } };
     return { passport: { ...full, sections: full.sections.filter(s => !hideSections.has(s.key)), nextStep: null, provenance: full.provenance.filter(p => !hideSources.has(p.source)) } as Passport, impact: partialImpact, mismatch, partial: true, pending, settled };
-  }, [sources, extra, installId, context, clock, evidenceLink]);
+  }, [sources, extra, installId, context, clock, evidenceLink, portable]);
 
   const supported = (action: PassportAction) => action === 'start-rehearsal' || !!navigate?.[action];
   /** ¿Se puede ofrecer ahora un ensayo? Si no, dice por qué (con hechos del estado guardado). */
@@ -142,6 +160,7 @@ export function ContinuityHub({ fetcher, installId = null, context = null, works
     return null;
   }
   const act = (action: PassportAction) => {
+    if (portable && portableActionUnavailable(action)) return;
     setMessage('');
     if (action === 'start-rehearsal') { const reason = relayBlocked(); if (reason) { setMessage(reason); return; } setConfirm(true); return; }
     const go = navigate?.[action]; if (go) { go(); return; }
@@ -152,7 +171,7 @@ export function ContinuityHub({ fetcher, installId = null, context = null, works
   const storedRelay = (state: RelayRehearsalApiState) => 'Estado guardado ahora: ' + (state.running ? 'hay un ensayo en curso; ' : state.stopping ? 'un ensayo se está deteniendo; ' : '') + (state.last ? 'último ensayo ' + when(state.last.rehearsedAt) + ' (' + (state.last.outcome === 'completed' ? 'completado' : state.last.outcome === 'failed' ? 'falló' : 'interrumpido') + ')' : 'ningún ensayo guardado') + '. No se atribuye a la acción que acabas de pedir.';
 
   async function runRelay() {
-    if (busyRef.current) return; busyRef.current = true; setBusy(true); setConfirm(false); setMessage('');
+    if (portable || busyRef.current) return; busyRef.current = true; setBusy(true); setConfirm(false); setMessage('');
     const mine = generation.current, result = await startRelay({ fetcher }).catch(() => ({ kind: 'failed' as const }));
     busyRef.current = false; if (!alive.current) return; setBusy(false); setConfirm(false);
     if (generation.current !== mine) { setMessage('La sesión, la copia o la conexión cambiaron mientras se ensayaba. Se muestra el estado guardado actual; el resultado de aquel ensayo no se atribuye a la situación nueva.'); return; }
@@ -171,6 +190,7 @@ export function ContinuityHub({ fetcher, installId = null, context = null, works
     await load(false);
   }
   async function runCancel() {
+    if (portable) return;
     const mine = generation.current, result = await cancelRelay({ fetcher }).catch(() => ({ kind: 'failed' as const }));
     if (!alive.current || generation.current !== mine) return;
     if (result.kind === 'locked') { setMessage('Plan B se bloqueó antes de poder confirmar la cancelación. Desbloquéalo y lee el estado guardado.'); await load(true); return; }
@@ -180,6 +200,7 @@ export function ContinuityHub({ fetcher, installId = null, context = null, works
   }
 
   const sourceState = (key: Key): { state: 'loading' | 'read' | 'locked' | 'unavailable'; text: string } => {
+    if (portable && key !== 'copy') return { state: 'unavailable', text: 'No incluida en el paquete portable' };
     const slot = sources[key]; if (!slot) return { state: 'loading', text: 'Leyendo…' };
     if (slot.status === 'read') return { state: 'read', text: 'Leída ' + when(slot.at) };
     const locked = ('reason' in slot) && slot.reason === 'locked'; return locked ? { state: 'locked', text: 'Bloqueada: desbloquea Plan B' } : { state: 'unavailable', text: 'No se pudo leer' };
@@ -193,9 +214,9 @@ export function ContinuityHub({ fetcher, installId = null, context = null, works
     {view.mismatch ? <p className="cph-message" role="status" data-testid="hub-context">La evidencia leída corresponde a otra captura que la copia activa de esta pantalla: no se muestra como actual. Vuelve a leerla cuando la copia activa esté confirmada.</p> : null}
     {message ? <p className="cph-message" role="status" data-testid="hub-message">{message}</p> : null}
     <div className="cph-actions"><button type="button" className="button secondary" disabled={loading} onClick={() => void reread(false)}>Leer el estado guardado</button></div>
-    {(busy || relayState?.running) && !relayState?.stopping ? <div className="cph-live" role="status" data-testid="relay-live"><p>{relayState?.running ? 'Hay un ensayo en curso desde el ' + when(relayState.running.since) + '. Se hace con datos ficticios en este equipo.' : 'Ensayo solicitado: esperando a que el servidor lo confirme. Se hace con datos ficticios en este equipo.'}</p><div className="cph-actions"><button type="button" className="button secondary" onClick={() => void runCancel()}>Cancelar el ensayo</button></div></div> : null}
-    {relayState?.stopping ? <p className="cph-live" role="status" data-testid="relay-stopping">Se pidió detener el ensayo ({{ cancelled: 'cancelación', revoked: 'sesión bloqueada', closing: 'cierre del servidor', timeout: 'tiempo agotado' }[relayState.stopping.reason]}) el {when(relayState.stopping.since)}. Su resultado se descartará; el proceso todavía se está cerrando y no se admite otro ensayo hasta que termine.</p> : null}
-    {confirm ? <div className="cph-confirm" role="group" aria-labelledby={titleId + '-relay'} data-testid="confirm-relay">
+    {!portable && (busy || relayState?.running) && !relayState?.stopping ? <div className="cph-live" role="status" data-testid="relay-live"><p>{relayState?.running ? 'Hay un ensayo en curso desde el ' + when(relayState.running.since) + '. Se hace con datos ficticios en este equipo.' : 'Ensayo solicitado: esperando a que el servidor lo confirme. Se hace con datos ficticios en este equipo.'}</p><div className="cph-actions"><button type="button" className="button secondary" onClick={() => void runCancel()}>Cancelar el ensayo</button></div></div> : null}
+    {!portable && relayState?.stopping ? <p className="cph-live" role="status" data-testid="relay-stopping">Se pidió detener el ensayo ({{ cancelled: 'cancelación', revoked: 'sesión bloqueada', closing: 'cierre del servidor', timeout: 'tiempo agotado' }[relayState.stopping.reason]}) el {when(relayState.stopping.since)}. Su resultado se descartará; el proceso todavía se está cerrando y no se admite otro ensayo hasta que termine.</p> : null}
+    {!portable && confirm ? <div className="cph-confirm" role="group" aria-labelledby={titleId + '-relay'} data-testid="confirm-relay">
       <h3 id={titleId + '-relay'} tabIndex={-1} ref={panel}>Ensayar un relevo</h3>
       <p>Se hará un ensayo <strong>con datos ficticios</strong> en este equipo: exportar, inspeccionar, aprobar el contenido inspeccionado, importar en un destino nuevo y abrirlo en un proceso nuevo. Tarda unos segundos.</p>
       <p><strong>No exporta tu copia activa</strong> ni prueba otro ordenador, HubSpot real ni tiempos de recuperación.</p>

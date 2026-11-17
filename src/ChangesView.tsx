@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, CheckCircle2, ChevronDown, Download, GitBranch } from 'lucide-react';
-import type { Change } from '../shared/model.js';
+import type { AppState, Change } from '../shared/model.js';
 import {INVALID_RECOVERY_MESSAGE,RecoveryChangesSchema,SavedChangesSchema,type RecoveryIntegrity} from '../shared/recovery-integrity.js';
 import type { RecoveryPlan } from '../shared/operations.js';
 import { api, post, download } from './api.js';
@@ -8,7 +8,7 @@ import { Spinner } from './components.js';
 import { ManualRecovery } from './ManualRecovery.js';
 import { SalesWorkspace } from './SalesWorkspace.js';
 import { ChangeHistory } from './ChangeHistory.js';
-export function ChangesView({runtime,production=false}:{runtime:boolean;production?:boolean}) {
+export function ChangesView({runtime,production=false,spec=null}:{runtime:boolean;production?:boolean;spec?:AppState['spec']|null}) {
   const [changes,setChanges]=useState<Change[]>([]),[plan,setPlan]=useState<RecoveryPlan|null>(null),[simulation,setSimulation]=useState(true);
   const [busy,setBusy]=useState(false),[error,setError]=useState(''),[reviewed,setReviewed]=useState(false),[token,setToken]=useState('');
   const [uncertainId,setUncertainId]=useState('');
@@ -60,6 +60,6 @@ export function ChangesView({runtime,production=false}:{runtime:boolean;producti
         {plan.status==='complete'?<p className="success-label"><CheckCircle2 size={18}/>{plan.source==='simulation'?'Prueba completada. Los cambios locales siguen pendientes de devolución real.':'Los valores enviados se han leído y verificado en HubSpot.'}</p>:null}
       </div>:null}
     </details>:<p className="info-box">Exporta los cambios y abre la devolución en el generador con la agencia. Este paquete no contiene conectores externos.</p>}
-    <ChangeHistory changes={changes} watermark={watermark}/>
+    <ChangeHistory changes={changes} watermark={watermark} spec={spec}/>
   </section>;
 }

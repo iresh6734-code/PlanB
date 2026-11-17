@@ -3,13 +3,8 @@ import { resolve, join } from 'node:path';
 import { createBaseApp } from './app.js';
 import { lockInstance } from './instance.js';
 import { publishEndpoint } from './endpoint.js';
-import { registerContinuityEvidenceApi } from './continuity-evidence-api.js';
-import { registerWorkSummaryApi } from './work-summary-api.js';
 import { registerTaskIntents } from './task-intents-api.js';
-import { mountCommitmentRadar } from './commitment-radar-mount.js';
-import { mountOperationalRehearsal } from './operational-rehearsal-mount.js';
-import { mountDateCheck } from './date-check-mount.js';
-import { mountDateCheckReview } from './date-check-review-mount.js';
+import { mountSharedModules } from './modules.js';
 // Deliberately does not import the generator, provider settings, or CRM connector.
 const root = process.cwd();
 const releaseLock=lockInstance(resolve(process.env.PLANB_DATA_DIR || join(root,'data')));
@@ -17,16 +12,9 @@ const { app, store } = await createBaseApp({
   dbPath: resolve(process.env.PLANB_DATA_DIR || join(root, 'data'), 'planb.sqlite'),
   root, staticDir: join(root, 'dist'), runtime: true, taskRevisions: true
 });
-registerContinuityEvidenceApi(app, store);
 registerTaskIntents(app, store);
-// Radar de compromisos y «Ensayar mi semana»: solo ficción, exigen copia de ensayo activa y no llaman a ningún proveedor.
-mountCommitmentRadar(app, store);
-mountOperationalRehearsal(app, store);
-// «Comprobar una fecha» y «Revisar una decisión»: solo ficción, exigen copia de ensayo activa y no llaman a ningún proveedor.
-mountDateCheck(app, store);
-mountDateCheckReview(app, store);
-// The work summary remains unproven until the active copy has verified A4 coverage.
-registerWorkSummaryApi(app, store, { covers: () => false });
+// Módulos compartidos con la App portátil (evidencia, Laboratorio, resumen de trabajo): ver server/modules.ts.
+mountSharedModules(app, store);
 // Preserve damaged return evidence; never replace it automatically with the package seed.
 if (!store.snapshot && store.recoveryIntegrity().state!=='invalid') {
   const encrypted=join(root,'continuity.encrypted.json');

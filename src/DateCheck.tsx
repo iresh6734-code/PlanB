@@ -160,7 +160,7 @@ export function DateCheck({ contextRevision, onContextStale, onClose }: Props) {
     finally { setBusy(null); }
   }
 
-  if (!pin) return <section className="dc" aria-labelledby="dc-title"><h2 id="dc-title">Comprobar una fecha</h2><p className="dc-empty">Activa una copia de ensayo para comprobar fechas con la cartera de ficción.</p></section>;
+  if (!pin) return <section className="dc" aria-labelledby="dc-title"><h2 id="dc-title">Comprobar una fecha</h2><p className="dc-empty">Activa una copia de datos de prueba para comprobar fechas con su cartera.</p></section>;
   const viewStale = view?.demoRevision === -1;
   const local = form ? isoToMadridLocal(form.requestedAt) : null;
   const set = (patch: Partial<DateCheckForm>) => setForm(prior => (prior ? { ...prior, ...patch } : prior));
@@ -209,7 +209,7 @@ export function DateCheck({ contextRevision, onContextStale, onClose }: Props) {
             {busy === 'analyze' ? <button type="button" className="button secondary" onClick={cancel}>Cancelar</button> : null}
           </div>
         </form>
-      ) : busy === 'catalog' ? <p className="dc-empty">Cargando la semana de ensayo…</p> : null}
+      ) : busy === 'catalog' ? <p className="dc-empty ui-loading">Cargando la semana de ensayo…</p> : null}
 
       {shown && keep ? (
         <div className="dc-results" data-stale={viewStale || historical ? '' : undefined}>
@@ -337,7 +337,7 @@ export function DateCheck({ contextRevision, onContextStale, onClose }: Props) {
         ))}</ul> : <p className="dc-note">Todavía no hay ninguna. Se guarda al confirmar un siguiente paso.</p>}
         {catalog ? (
           <details className="dc-evidence dc-demo">
-            <summary>Ficción: simular un cambio posterior en la cartera</summary>
+            <summary>Datos de prueba: simular un cambio posterior en la cartera</summary>
             <p className="dc-note">Revisión de la semana: {catalog.demo.revision}. {catalog.demo.slotWithdrawn ? 'Coordinación retiró la franja de Cruz del jueves.' : 'La franja de Cruz del jueves sigue disponible.'}</p>
             <button type="button" className="button secondary" disabled={busy !== null} onClick={() => void demo(catalog.demo.slotWithdrawn ? 'restore-slot' : 'withdraw-slot')}>{catalog.demo.slotWithdrawn ? 'Devolver la franja del jueves' : 'Retirar la franja del jueves'}</button>
           </details>

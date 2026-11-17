@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { authParentFixtureState, mountLockedAuthParent } from './helpers/auth-parent-harness.js';
 import { Runtime, View, Transport, setupGlobals } from './helpers/independent-interface-harness.js';
 
 // QA073 · Contextos de cliente (relaciones062/063, conexión065, comprobación manual067, acceso070, réplica069, activación066).
@@ -44,7 +45,7 @@ test('A1 un ID elegido fuera de los primeros 50 sigue visible; homónimos e IDs 
   assert.equal(values.length, 1 + 1 + 50, 'placeholder + elegida fija + 50 de la lista');
   assert.equal(values[1], 'co-777', 'la elegida va fija aunque no esté en los primeros 50');
   const select = v.find({ tag: 'select' }); assert.equal(select.props.value, 'co-777');
-  assert.match(v.text(), /Elegida fuera de la lista · ID co-777/);
+  assert.match(v.text(), /Elegida fuera de la lista/);
   assert.match(v.text(), /Se muestran 50 de 120 resultados\. Escribe para afinar la búsqueda\./, 'límite de 50 explícito');
   assert.match(v.text(), /La relación elegida se conserva aparte de estos resultados\./);
   // Homónimos: dos opciones con el mismo nombre, valores (IDs) distintos.
@@ -81,7 +82,7 @@ test('A2 ficha elegida y lista fallan por separado; los reintentos no limpian la
   assert.ok(orphan && orphan.props.disabled === true && /Relación sin verificar · ID co-404/.test(w.textOf(orphan)), 'ID conservado como opción no elegible');
   assert.equal(w.find({ tag: 'select' }).props.value, 'co-404'); assert.deepEqual(picked, []);
   w.click(w.find({ tag: 'button', text: 'Reintentar relación' })); await settleAll(w);
-  assert.equal(lookups, 2); assert.equal(w.maybe({ role: 'alert' }), null); assert.match(w.text(), /Ya existe · ID co-404/);
+  assert.equal(lookups, 2); assert.equal(w.maybe({ role: 'alert' }), null); assert.match(w.text(), /Ya existe/);
   assert.equal(t2.where(listPath).length, 1, 'reintentar la ficha no repite la lista');
 }));
 
@@ -120,17 +121,17 @@ test('A4 éxito y error VÁLIDOS tardíos de otro valor o consulta se descartan 
   const heldA = t.where(lookupPath('A'))[0]; assert.equal(heldA.settled, false); assert.match(v.text(), /Comprobando la relación elegida · ID A/);
   assert.equal(v.find({ tag: 'select' }).props['aria-busy'], true);
   v.update({ value: 'B' }); await settleAll(v);
-  assert.match(v.text(), /Empresa B · ID B/); assert.equal(v.find({ tag: 'select' }).props['aria-busy'], false, 'spinner del estado actual resuelto');
+  assert.match(v.text(), /Empresa B/); assert.equal(v.find({ tag: 'select' }).props['aria-busy'], false, 'spinner del estado actual resuelto');
   assert.equal(heldA.signal!.aborted, true, 'la petición anterior fue cancelada, pero este transporte la ignora');
   const rendersBefore = v.renders;
   heldA.resolve(200, { record: company('A', 'Empresa A tardía válida') }); await v.settle();
-  assert.doesNotMatch(v.text(), /tardía/); assert.match(v.text(), /Empresa B · ID B/); assert.equal(v.find({ tag: 'select' }).props.value, 'B'); assert.equal(v.maybe({ role: 'alert' }), null);
+  assert.doesNotMatch(v.text(), /tardía/); assert.match(v.text(), /Empresa B/); assert.equal(v.find({ tag: 'select' }).props.value, 'B'); assert.equal(v.maybe({ role: 'alert' }), null);
   assert.equal(v.renders, rendersBefore, 'la respuesta tardía no provoca ningún repintado'); assert.equal(v.setAfterUnmount, 0);
   // Error tardío válido (HTTP 500) del valor anterior.
   const t2 = new Transport(); (globalThis as any).fetch = t2.fetch; t2.on(listPath, () => ({ json: { records: many(2), total: 2 } })); t2.on(lookupPath('A'), () => 'hold'); t2.on(lookupPath('B'), () => ({ json: { record: company('B', 'Empresa B') } }));
   const w = mount(ReferenceSelect, refProps(spec, { value: 'A' })); await settleAll(w); const heldA2 = t2.where(lookupPath('A'))[0];
   w.update({ value: 'B' }); await settleAll(w); heldA2.resolve(500, { error: 'Fallo tardío' }); await w.settle();
-  assert.equal(w.maybe({ role: 'alert' }), null, 'un error tardío del contexto anterior no aparece'); assert.match(w.text(), /Empresa B · ID B/);
+  assert.equal(w.maybe({ role: 'alert' }), null, 'un error tardío del contexto anterior no aparece'); assert.match(w.text(), /Empresa B/);
   // Consulta: la respuesta retenida de la consulta vieja no pisa la nueva.
   const t3 = new Transport(); (globalThis as any).fetch = t3.fetch; const q1: any[] = [];
   t3.on(/q=$/, c => { q1.push(c); return 'hold'; }); t3.on(/q=zeta$/, () => ({ json: { records: [company('co-z', 'Zeta')], total: 1 } }));
@@ -147,18 +148,18 @@ test('A4 éxito y error VÁLIDOS tardíos de otro valor o consulta se descartan 
   assert.equal(y.setAfterUnmount, 0, 'ningún setState tras desmontar');
   // Reapertura: una instancia nueva solo muestra sus propios datos.
   const t5 = new Transport(); (globalThis as any).fetch = t5.fetch; t5.on(listPath, () => ({ json: { records: [company('co-n', 'Nueva')], total: 1 } })); t5.on(lookupPath('A'), () => ({ json: { record: company('A', 'A reabierta') } }));
-  const z = mount(ReferenceSelect, refProps(spec, { value: 'A' })); await settleAll(z); assert.match(z.text(), /A reabierta · ID A/); assert.deepEqual(optionValues(z), ['', 'A', 'co-n']);
+  const z = mount(ReferenceSelect, refProps(spec, { value: 'A' })); await settleAll(z); assert.match(z.text(), /A reabierta/); assert.deepEqual(optionValues(z), ['', 'A', 'co-n']);
 }));
 
 test('A5 A→B→A: la entrada de A vuelve a pedirse y un cambio remoto posterior sustituye al dato antiguo', () => session(async ({ rt, t, mount, load }) => {
   const { spec } = agency(rt); const { ReferenceSelect } = load('src/ReferenceSelect.tsx');
   let version = 0; t.on(listPath, () => ({ json: { records: many(2), total: 2 } }));
   t.on(lookupPath('A'), () => ({ json: { record: company('A', 'A versión ' + (++version)) } })); t.on(lookupPath('B'), () => 'hold');
-  const v = mount(ReferenceSelect, refProps(spec, { value: 'A' })); await settleAll(v); assert.match(v.text(), /A versión 1 · ID A/);
+  const v = mount(ReferenceSelect, refProps(spec, { value: 'A' })); await settleAll(v); assert.match(v.text(), /A versión 1/);
   v.update({ value: 'B' }); await settleAll(v);       // B queda pendiente
   v.update({ value: 'A' }); await settleAll(v);
   assert.equal(t.where(lookupPath('A')).length, 2, 'volver a A repite la comprobación de la ficha, no confía en el resultado antiguo');
-  assert.match(v.text(), /A versión 2 · ID A/); assert.doesNotMatch(v.text(), /versión 1/);
+  assert.match(v.text(), /A versión 2/); assert.doesNotMatch(v.text(), /versión 1/);
   const first = t.where(lookupPath('B'))[0]; first.resolve(200, { record: company('B', 'B tardía') }); await v.settle();
   assert.doesNotMatch(v.text(), /B tardía/); assert.equal(v.find({ tag: 'select' }).props.value, 'A');
 }));
@@ -517,18 +518,37 @@ test('G5 con done asíncrono que falla tras el acuse, la UI conserva el acuse y 
   v.click(v.find({ tag: 'button', text: 'Reintentar apertura' })); await v.settle(); assert.equal(log.done, 2); assert.equal(t.where(/auth\/login$/).length, 1, 'ninguna segunda autenticación'); assert.equal(v.maybe({ role: 'alert' }), null);
 }));
 
-// G6 · AUTH_PARENT072 corregido (01/11/2026, por orden del usuario tras el arreglo de App.tsx). Sustituye a la caracterización anterior
-// («el done de App llama a void refresh() y no devuelve su promesa»), conservada en tests/.tmp/auth072-*/QA079-submitted-*.
-// Es una comprobación estática de la línea; el COMPORTAMIENTO (no abrir con carga pendiente, rechazo propagado, 401 que conserva el bloqueo)
-// lo prueban tests/auth-parent.test.ts (App con hooks simulados) y tests/e2e/auth-parent.spec.ts (navegador real).
-test('G6 AUTH_PARENT072 corregido: el done que App entrega a Protection espera refresh() antes de abrir y devuelve su promesa', async () => {
-  const app = (await import('node:fs')).readFileSync(path.join(ROOT, 'src/App.tsx'), 'utf8');
-  const line = app.split(/\r?\n/).find(l => l.includes('<Protection '))!;
-  assert.ok(line, 'App usa Protection');
-  console.log('QA073-G6 línea de App: ' + line.trim().slice(0, 260));
-  assert.ok(!line.includes('void refresh()'), 'ya no se descarta la promesa de refresh');
-  assert.match(line, /done=\{async\(\)=>\{await refresh\(\);setAuth\('open'\);\}\}/, 'done espera la carga y solo después abre');
-  assert.match(line, /key=\{lockEpoch\}/, 'un bloqueo remonta Protection (formulario nuevo tras un 401)');
+// G6 · AUTH_PARENT072: un estado válido de un desbloqueo anterior puede llegar mientras se comprueba otro bloqueo.
+test('G6 · una lectura válida anterior al bloqueo no abre la copia mientras se confirma el acceso', async () => {
+  const restore = setupGlobals();
+  try {
+    const app = await mountLockedAuthParent(path.join(ROOT, 'src/App.tsx'));
+    const oldKey = app.protection().key;
+    const opening = app.protection().props.done();
+    assert.equal(typeof opening?.then, 'function', 'Protection recibe la promesa de apertura');
+    const stale = assert.rejects(opening);
+    await app.flush();
+    assert.ok(app.protection(), 'la copia sigue protegida con la lectura pendiente');
+
+    app.signalLock();
+    await app.flush();
+    assert.equal(app.count('/v2/auth/status'), 2);
+    assert.notEqual(app.protection().key, oldKey, 'el bloqueo crea una pantalla de acceso nueva');
+    app.respond('/v2/state', authParentFixtureState);
+    await stale;
+    await app.flush();
+    assert.equal(app.openedApp(), false, 'la respuesta antigua no abre la copia ni antes de confirmarse el bloqueo');
+
+    app.respond('/v2/auth/status', { configured: true, authenticated: false });
+    await app.flush();
+    const current = app.protection().props.done();
+    app.respond('/v2/state', authParentFixtureState);
+    await current;
+    await app.flush();
+    assert.equal(app.openedApp(), true, 'la lectura vigente permite abrir la copia');
+  } finally {
+    restore();
+  }
 });
 
 // ═══════════════ F · TeamSync (réplica069) ═══════════════

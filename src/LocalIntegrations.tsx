@@ -59,6 +59,9 @@ export function LocalIntegrations({ onConnectHubspot }: { onConnectHubspot: () =
 
   // Si todas las herramientas del equipo comparten el mismo siguiente paso (sin acción propia), se dice una vez para el grupo, no en cada fila.
   const sharedNext = view.team.length > 1 && view.team.every(item => !!item.next && item.next === view.team[0].next && !item.action && !item.retry) ? view.team[0].next : null;
+  const teamOrigin = view.teamOrigin?.ok && view.team.every(item => item.state === 'unchecked') ? view.teamOrigin.origin : null;
+  const teamRows = <ul className="lint-rows" data-shared={sharedNext ? 'true' : undefined}>{view.team.map(item =>
+    <Row key={item.id} item={sharedNext || teamOrigin ? { ...item, next: '' } : item} onConnect={onConnectHubspot} onRetry={source => reload[source]()} />)}</ul>;
   return <section className="lint" aria-labelledby="lint-title" aria-busy={busy}>
     <header className="page-header"><div><h1 id="lint-title">Integraciones</h1><p className="page-subtitle">Qué está conectado, qué falta y el siguiente paso en cada herramienta.</p></div>
       <button type="button" className="button secondary" onClick={refresh}><RefreshCw size={14} aria-hidden="true" />Actualizar estado</button></header>
@@ -68,7 +71,7 @@ export function LocalIntegrations({ onConnectHubspot }: { onConnectHubspot: () =
     <h2 className="lint-h2">Conexiones</h2>
     <div className="lint-space" role="group" aria-label="Espacio local">
       <h3>Espacio local</h3>
-      {view.space.status === 'loading' ? <p role="status" className="lint-muted">Leyendo el estado de esta instalación…</p> : null}
+      {view.space.status === 'loading' ? <p role="status" className="lint-muted ui-loading">Leyendo el estado de esta instalación…</p> : null}
       {view.space.status === 'error' ? <p className="lint-muted" role="alert">No se pudo leer el estado de esta instalación. <button type="button" className="text-button" onClick={continuity.reload}>Reintentar</button></p> : null}
       {view.space.status === 'ok' ? <dl>{view.space.items.map(item => <div key={item.label}><dt>{item.label}</dt><dd className={'lint-' + item.tone}>{item.value}</dd></div>)}</dl> : null}
       {view.space.notes.map(note => <p key={note} className="lint-note">{note}</p>)}
@@ -80,13 +83,22 @@ export function LocalIntegrations({ onConnectHubspot }: { onConnectHubspot: () =
     <section aria-labelledby="lint-team-h"><h3 id="lint-team-h" className="lint-group">Google Workspace · espacio de equipo</h3>
       <p className="lint-muted lint-explain">Gmail, Calendar, Drive, Docs y Sheets se autorizan en el espacio de equipo, que es otro servicio: guarda sus propios datos y las autorizaciones de Google no se comparten con esta copia local.</p>
       {sharedNext ? <p className="lint-shared-next"><strong>Siguiente paso para todas.</strong> {sharedNext}</p> : null}
-      <ul className="lint-rows" data-shared={sharedNext ? 'true' : undefined}>{view.team.map(item => <Row key={item.id} item={sharedNext ? { ...item, next: '' } : item} onConnect={onConnectHubspot} onRetry={source => reload[source]()} />)}</ul></section>
+      {teamOrigin ? <>
+        <div className="lint-next"><a className="button secondary" href={teamOrigin + '/team?view=connections'} target="_blank" rel="noopener noreferrer">
+          Abrir Integraciones del equipo <ArrowRight size={14} aria-hidden="true" /><span className="lint-sr"> (se abre en una pestaña nueva)</span>
+        </a></div>
+        <details className="lint-rehearsal">
+          <summary>Ver herramientas de Google Workspace</summary>
+          <div className="lint-rehearsal-body">{teamRows}</div>
+        </details>
+      </> : teamRows}
+    </section>
 
     <details className="lint-rehearsal">
       <summary>Ver capacidades de ensayo</summary>
       <div className="lint-rehearsal-body">
         <p className="lint-muted">Catálogo de lo que esta instalación puede hacer en ensayo o lectura. No prueba que haya una cuenta conectada ni que una acción tenga éxito fuera de Plan B: un mensaje o una reunión simulados no se envían.</p>
-        {view.rehearsal.status === 'loading' ? <p role="status" className="lint-muted">Leyendo el catálogo…</p> : null}
+        {view.rehearsal.status === 'loading' ? <p role="status" className="lint-muted ui-loading">Leyendo el catálogo…</p> : null}
         {view.rehearsal.status === 'error' ? <p className="lint-muted" role="alert">No se pudo leer el catálogo. <button type="button" className="text-button" onClick={catalog.reload}>Reintentar</button></p> : null}
         {view.rehearsal.status === 'empty' ? <p className="lint-muted">El catálogo no declara capacidades.</p> : null}
         {view.rehearsal.refreshFailed ? <p className="lint-muted" role="alert">No se pudo actualizar {issueLabels.catalog}; se muestran los últimos datos. <button type="button" className="text-button" onClick={catalog.reload}>Reintentar</button></p> : null}

@@ -34,10 +34,10 @@ const view = (c: unknown, k: unknown, w: unknown) => projectIntegrations({
 });
 const everyText = (v: ReturnType<typeof view>) => JSON.stringify(v);
 
-test('sin cuenta: HubSpot se puede conectar, el espacio de equipo no ofrece botones inertes', () => {
+test('sin cuenta ni protección: HubSpot guía a proteger la instalación y el equipo no ofrece botones inertes', () => {
   const v = view(status({ latestCapture: capture, latestCaptureAt: capture.capturedAt }), catalog(), { origin: null });
   assert.equal(v.hubspot.state, 'not_connected');
-  assert.deepEqual(v.hubspot.action, { kind: 'callback', label: 'Conectar HubSpot' });
+  assert.deepEqual(v.hubspot.action, { kind: 'callback', label: 'Configurar protección' });
   assert.match(v.hubspot.facts.join(' '), /sin configurar|protección local/i);
   assert.match(v.hubspot.facts.join(' '), /histórica: no indica que HubSpot esté conectado ahora/);
   assert.match(v.hubspot.facts.join(' '), /no tiene una credencial guardada/);
@@ -52,6 +52,7 @@ test('«servicios habilitados» (connected) no equivale a una conexión HubSpot'
   assert.equal(v.hubspot.state, 'not_connected');
   assert.doesNotMatch(v.hubspot.next, /sin proteger/i);
   assert.match(v.hubspot.next, /Conecta tu portal/);
+  assert.deepEqual(v.hubspot.action, { kind: 'callback', label: 'Conectar HubSpot' });
 });
 
 test('solo catálogo: lo declarado no se presenta como comprobado y Continuidad se puede reintentar', () => {

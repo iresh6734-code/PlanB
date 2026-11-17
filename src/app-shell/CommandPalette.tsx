@@ -13,8 +13,7 @@ export function CommandPalette({ commands, close, findRecords }: { commands: Com
   const finder = useRef(findRecords); finder.current = findRecords;
   const records = found && found.query === query.trim() ? found.items : [];
   const shown = [...matchCommands(commands, query), ...records];
-  // El modal enfoca su primer control (cerrar) en el siguiente ciclo; el campo se enfoca justo después.
-  useEffect(() => { const timer = setTimeout(() => input.current?.focus(), 30); return () => clearTimeout(timer); }, []);
+  // El buscador se enfoca al pintarse (autoFocus) y el modal respeta ese foco: lo escrito justo tras Ctrl J llega aquí.
   useEffect(() => { setIndex(0); }, [query]);
   useEffect(() => { list.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' }); }, [index]);
   // Búsqueda de registros con una pausa breve; una respuesta antigua nunca sustituye a la de lo último escrito.
@@ -31,13 +30,13 @@ export function CommandPalette({ commands, close, findRecords }: { commands: Com
   }, [query]);
   const run = (command: Command | undefined) => { if (!command) return; close(); command.run(); };
   const key = (event: KeyboardEvent) => {
-    if (event.key === 'ArrowDown') { event.preventDefault(); setIndex(current => Math.min(shown.length - 1, current + 1)); }
+    if (event.key === 'ArrowDown') { event.preventDefault(); setIndex(current => Math.max(0, Math.min(shown.length - 1, current + 1))); }
     else if (event.key === 'ArrowUp') { event.preventDefault(); setIndex(current => Math.max(0, current - 1)); }
     else if (event.key === 'Enter') { event.preventDefault(); run(shown[index]); }
   };
   const firstRecord = shown.findIndex(command => command.group === 'Registros');
   return <Modal title="Órdenes" close={close}><div className="modal-body gx-commands">
-    <input ref={input} type="text" role="combobox" aria-expanded="true" aria-controls="gx-commands-list" aria-activedescendant={shown[index] ? 'gx-command-' + shown[index].id : undefined} aria-label="Escribe una orden o un nombre" placeholder="Ir a…, hacer… o buscar un cliente, una tarea…" autoComplete="off" value={query} onChange={event => setQuery(event.target.value)} onKeyDown={key} />
+    <input ref={input} autoFocus type="text" role="combobox" aria-expanded="true" aria-controls="gx-commands-list" aria-activedescendant={shown[index] ? 'gx-command-' + shown[index].id : undefined} aria-label="Escribe una orden o un nombre" placeholder="Ir a…, hacer… o buscar un cliente, una tarea…" autoComplete="off" value={query} onChange={event => setQuery(event.target.value)} onKeyDown={key} />
     {shown.length ? <ul ref={list} id="gx-commands-list" role="listbox" aria-label="Órdenes y registros">{shown.map((command, position) => <li key={command.id} id={'gx-command-' + command.id} role="option" aria-selected={position === index} data-first-record={position === firstRecord ? 'true' : undefined} onMouseEnter={() => setIndex(position)} onClick={() => run(command)}>
       <span>{command.label}</span><small>{command.hint ?? command.group}</small></li>)}</ul>
       : searching ? <p className="gx-commands-none" role="status">Buscando en tu copia…</p>

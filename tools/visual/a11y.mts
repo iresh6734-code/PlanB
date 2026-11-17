@@ -1,3 +1,4 @@
+import { navigate } from './nav.mts';
 // Auditoría de accesibilidad automatizada (WCAG 2.1 AA, la parte que se puede medir sin una persona).
 //   npx tsx tools/visual/a11y.mts            (PLANB_VISUAL_URL, por defecto http://127.0.0.1:4421/; PLANB_THEME=dark para el modo oscuro)
 // Por cada vista: contraste real de cada texto visible contra su fondo efectivo, controles sin nombre accesible,
@@ -12,13 +13,7 @@ const browser = await chromium.launch({ executablePath });
 // PLANB_VIEWPORT=390x844 mide el móvil (se navega con «Más» y la paleta, como la persona).
 const [vw, vh] = (process.env.PLANB_VIEWPORT ?? '1366x768').split('x').map(Number);
 const page = await browser.newPage({ viewport: { width: vw, height: vh } });
-const navTo = async (label: string) => {
-  const nav = page.locator('.sidebar').getByRole('button', { name: label, exact: true }).first();
-  if (await nav.isVisible().catch(() => false)) { await nav.click({ timeout: 6000 }); return; }
-  await page.locator('.gx-mnav').getByRole('button', { name: 'Más' }).click({ timeout: 6000 });
-  await page.locator('.gx-commands input').fill(label);
-  await page.locator('.gx-commands li').filter({ has: page.locator('span', { hasText: new RegExp('^(Ir a |Ir al )?' + label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$') }) }).first().click({ timeout: 6000 });
-};
+const navTo = (label: string) => navigate(page, label);
 // PLANB_THEME=dark mide el modo oscuro.
 if (process.env.PLANB_THEME === 'dark') await page.addInitScript(() => { try { localStorage.setItem('planb:theme', 'dark'); } catch { /* */ } });
 await page.goto(base); await page.waitForTimeout(4000);
@@ -52,7 +47,14 @@ const audit = (scope = 'main *, .sidebar *, .gx-topbar *', page1 = true) => page
     const tag = e.tagName.toLowerCase();
     if ((tag === 'input' || tag === 'select' || tag === 'textarea')) { const id = e.id; const labelled = (id && document.querySelector('label[for="' + CSS.escape(id) + '"]')) || e.closest('label') || e.getAttribute('aria-label') || e.getAttribute('aria-labelledby') || e.getAttribute('title'); if (!labelled) out.push('campo sin etiqueta (' + tag + (e.getAttribute('type') ? '[' + e.getAttribute('type') + ']' : '') + ' ' + ((e as HTMLInputElement).placeholder || '') + ')'); }
     else if (!name(e)) out.push('control sin nombre ' + e.outerHTML.slice(0, 160));
-    const r = e.getBoundingClientRect(); if ((tag === 'button' || tag === 'a') && r.width < 20 && r.height < 20 && !e.closest('.fx-days')) out.push('objetivo muy pequeño ' + Math.round(r.width) + '×' + Math.round(r.height) + ' (' + (name(e).slice(0, 30) || tag) + ')');
+    // Objetivos (D7): 24 px en escritorio (WCAG 2.2 · 2.5.8, AA) y 44 px en móvil (2.5.5 y guías de iOS/Android), en
+    // ancho y alto. Exentos: enlaces dentro de un texto corrido, casillas y radios dentro de su etiqueta (la etiqueta es
+    // el objetivo), y la rejilla de días del calendario (.fx-days), que tiene su propia alternativa por teclado.
+    const r = e.getBoundingClientRect(), min = innerWidth < 768 ? 44 : 24;
+    const inline = (tag === 'a' && !!e.closest('p, li, small') && getComputedStyle(e).display === 'inline') || (tag === 'button' && !!e.closest('p'));
+    const labelledToggle = tag === 'input' && ['checkbox', 'radio'].includes((e as HTMLInputElement).type) && !!e.closest('label');
+    const target = ['button', 'a', 'select'].includes(tag) || e.getAttribute('role') === 'button' || e.getAttribute('role') === 'tab' || (tag === 'input' && !labelledToggle);
+    if (target && !inline && !e.closest('.fx-days') && (r.width < min || r.height < min)) out.push('objetivo < ' + min + ' px ' + Math.round(r.width) + '×' + Math.round(r.height) + ' (' + (name(e).slice(0, 30) || tag) + ')');
   }
   for (const img of document.querySelectorAll('img')) if (visible(img) && !img.hasAttribute('alt')) out.push('imagen sin alt');
   if (page1) { // Cuenta los h1 del árbol de accesibilidad (visibles o solo para lectores, p. ej. .sr-only), no los ocultos con display, visibility o aria-hidden.
@@ -90,7 +92,8 @@ await overlay('paleta de órdenes', () => page.locator('.gx-cmd:not(.gx-theme)')
 if (vw > 760) await overlay('atajos', () => page.getByRole('button', { name: 'Atajos de teclado' }).click()); // en móvil no hay atajos de teclado
 await overlay('buscador', async () => { if (vw > 760) await page.getByRole('button', { name: /Buscar en toda la copia/ }).first().click(); else { await page.locator('.gx-mnav').getByRole('button', { name: 'Más' }).click(); await page.locator('.gx-commands input').fill('Buscar en toda la copia'); await page.locator('.gx-commands li').first().click(); } await page.waitForTimeout(500); await page.keyboard.type('norte'); }, '.workspace-search *');
 await go('Inicio');
-await overlay('resumen de la semana', () => page.getByRole('button', { name: 'Resumen de la semana' }).click());
+// Inicio puede tener la semana dentro de «Planificación semanal» (plegable): se despliega antes si existe.
+await overlay('resumen de la semana', async () => { const fold = page.locator('details', { has: page.getByText('Planificación semanal', { exact: true }) }).first(); if (await fold.count() && !(await fold.evaluate(el => (el as HTMLDetailsElement).open))) await fold.locator('summary').first().click(); await page.getByRole('button', { name: 'Resumen de la semana' }).click(); });
 if (await page.locator('.gx-dispatch').count()) await overlay('despachar vencidas', async () => { await page.locator('.gx-dispatch').click(); await page.waitForTimeout(1500); });
 await go('Tareas');
 await overlay('ficha de tarea', () => page.locator('.record-link').first().click());

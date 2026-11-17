@@ -33,7 +33,7 @@ function sourcePath(value){
   if(ROOT_FILES.includes(value))return value;
   const parts=value.split('/');if(!ROOTS.includes(parts[0])||parts.length<2)fail('UNSUPPORTED_SOURCE');
   for(const part of parts.slice(1))if(EXCLUDED_NAMES.has(part.toLowerCase())&&!(parts[0]==='public'&&part.toLowerCase()==='data'))fail('PRIVATE_PATH');
-  if(parts[0]!=='public'&&!/\.(tsx?|[cm]?js|css|svg|html)$/i.test(value))fail('UNSUPPORTED_SOURCE');
+  if(parts[0]!=='public'&&!value.startsWith('src/assets/')&&!/\.(tsx?|[cm]?js|css|svg|html)$/i.test(value))fail('UNSUPPORTED_SOURCE');
   return value;
 }
 function artifactPath(value){
@@ -122,6 +122,7 @@ function inventory(root,expected){
 function publicPairs(sources,artifacts){
   const map=new Map(artifacts.map(f=>[f.path,f]));
   for(const source of sources.filter(f=>f.path.startsWith('public/'))){const target=map.get('dist/'+source.path.slice(7));if(!target||target.bytes!==source.bytes||target.sha256!==source.sha256)fail('PUBLIC_ASSET_MAPPING');}
+  for(const source of sources.filter(f=>f.path.startsWith('src/assets/')&&/\.(txt|md)$/i.test(f.path))){const target=map.get('dist/'+source.path.slice(4));if(!target||target.bytes!==source.bytes||target.sha256!==source.sha256)fail('ASSET_NOTICE_MAPPING');}
   const guard=sources.find(f=>f.path==='scripts/block-external.cjs');
   for(const p of ['block-external.cjs','scripts/block-external.cjs']){const a=map.get(p);if(a.bytes!==guard.bytes||a.sha256!==guard.sha256)fail('GUARD_MAPPING');}
 }

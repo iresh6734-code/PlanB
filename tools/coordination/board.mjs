@@ -38,6 +38,9 @@ try{
     case 'add':result=await board.add(JSON.parse(fs.readFileSync(path.resolve(root,value('--file')),'utf8')));break;
     case 'claim':result=await board.claim(args[0],args[1]);break;
     case 'check-path':result=board.checkPath(args[0],args[1],args[2]);break;
+    case 'take-over':
+      if(!args.includes('--user-authorized'))throw new Error('El traspaso requiere autorización explícita del usuario y --user-authorized.');
+      result=await board.takeOver(args[0],args[1],value('--note'));break;
     case 'submit':result=await board.submit(args[0],args[1],value('--note'));break;
     case 'accept':if(!args.includes('--reviewed'))throw new Error('Revisa la entrega y usa --reviewed.');result=await board.accept(args[0],args[1]);break;
     case 'block':result=await board.block(args[0],args[1],value('--note'));break;
@@ -50,7 +53,7 @@ try{
       if(fs.existsSync(folder)&&fs.lstatSync(folder).isSymbolicLink())throw new Error('Salida enlazada no permitida.');fs.mkdirSync(folder,{recursive:true});
       const target=path.join(folder,args[0]+'.md');fs.writeFileSync(target,brief,{flag:'wx'});result={exported:path.relative(root,target),sentToClaude:false};break;
     }
-    default:throw new Error('Comandos: list, reconcile [ID], add --file, claim ID AGENTE, check-path ID AGENTE RUTA, submit ID AGENTE --note, accept ID codex --reviewed, block ID AGENTE --note, revise ID codex --note, release ID AGENTE, brief ID, export ID.');
+    default:throw new Error('Comandos: list, reconcile [ID], add --file, claim ID AGENTE, check-path ID AGENTE RUTA, take-over ID codex --user-authorized --note, submit ID AGENTE --note, accept ID codex --reviewed, block ID AGENTE --note, revise ID codex --note, release ID AGENTE, brief ID, export ID.');
   }
   if(result!==undefined)process.stdout.write(JSON.stringify(result,null,2)+'\n');
 }catch(error){console.error(error.message);process.exitCode=1;}

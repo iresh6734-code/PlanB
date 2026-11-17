@@ -23,13 +23,18 @@ import { fileURLToPath } from 'node:url';
 //   · F2/F3 y el resto de oráculos se conservan sin cambios.
 // CAMBIOS DE EXPECTATIVA de QA086 R2 (devolución 088; justificados en coordination/reviews/CLAUDE-QA-086.md):
 //   · REVIEWED_SHA: b026f0dd… → ae74ce22… (SOURCE-CASE089/REL046 final: la clasificación de exclusiones usa entry.name.toLowerCase(); cotejado con
-//     CODEX-SOURCE-CASE-089 y leído entero antes de cambiarlo). b026f0dd… queda como B026_SHA para reconocerlo como «versión anterior» en modo alternativo.
+//     CODEX-SOURCE-CASE-089 y leído entero antes de cambiarlo). b026f0dd… sigue identificado en modo alternativo.
 //   · Ningún oráculo de este banco dependía de la capitalización de nombres excluidos: F2/F3/O1 se conservan sin cambios (O2 vive en independent-source-selection.test.mjs).
+// REL046 (raíz pública enlazada): se cotejó la versión 97197656… con el tablón y con la copia ae74ce22….
+// El único cambio del constructor es comprobar la raíz con lstat antes de decidir si está ausente.
 const REPO = fs.realpathSync(path.resolve(fileURLToPath(new URL('..', import.meta.url))));
-const REVIEWED_SHA = 'ae74ce22ea6a2ed14cc78f1b5735c763b937aa1a7199f9875764eba9a0ef2935';
-const B026_SHA = 'b026f0ddd9f0ad729ff7eba8c2d1f1bd4fbd0e467695c9c566407ed90ebb5b2b'; // SNAPSHOT084/REL046R3, congelada por 088 antes de O2 (baseline de QA086 R2)
-const QA056_SHA = '34886dad490f3fafbf0f61c9c03c049dcf0b00fcff830002aec6ea308eb05778'; // versión que revisó QA056 (baseline de QA086 para O1)
-const QA052_SHA = 'bd3d83880bb20d2356b3beab528db0f0685879266c6232673f7450f0dceb8d88';
+const REVIEWED_SHA = '9719765673729c44cad2318969995d22e5506d968ab4e2efe586d46a0b292731';
+const HISTORICAL_VERSIONS = new Map([
+  ['ae74ce22ea6a2ed14cc78f1b5735c763b937aa1a7199f9875764eba9a0ef2935', 'SOURCE-CASE089 ae74ce22…, previa a la corrección de la raíz enlazada'],
+  ['b026f0ddd9f0ad729ff7eba8c2d1f1bd4fbd0e467695c9c566407ed90ebb5b2b', 'SNAPSHOT084 b026f0dd…, previa a SOURCE-CASE089'],
+  ['34886dad490f3fafbf0f61c9c03c049dcf0b00fcff830002aec6ea308eb05778', 'QA056 34886dad…, previa a SNAPSHOT084'],
+  ['bd3d83880bb20d2356b3beab528db0f0685879266c6232673f7450f0dceb8d88', 'QA052 bd3d8388…'],
+]);
 const OVERRIDE = process.env.QA056_SCRIPT ?? process.env.QA052_SCRIPT;
 const SCRIPT = OVERRIDE ? path.resolve(OVERRIDE) : path.join(REPO, 'scripts', 'prepare-release-candidate.mjs');
 const MUTATED = !!OVERRIDE;
@@ -148,8 +153,13 @@ const SELF = Object.keys(PUBLIC_COVERED).length + Object.keys(PUBLIC_UNCOVERED).
 test('0 · la herramienta probada es exactamente la presentada y el arnés mecánico es un workspace propio', t => {
   const root = makeWorkspace('hash');
   const copied = sha(fs.readFileSync(path.join(root, 'scripts', 'prepare-release-candidate.mjs')));
-  if (!MUTATED) assert.equal(copied, REVIEWED_SHA, 'copiada byte a byte desde la fuente presentada (SOURCE-CASE089/REL046 final: ae74ce22…; baseline b026f0dd…; baseline QA056: ' + QA056_SHA.slice(0, 8) + '…; baseline QA052: ' + QA052_SHA.slice(0, 8) + '…)');
-  else t.diagnostic('MODO ALTERNATIVO: se prueba ' + (copied === B026_SHA ? 'la versión ANTERIOR (baseline b026f0dd…, previa a SOURCE-CASE089)' : copied === QA056_SHA ? 'la versión ANTERIOR (baseline QA056 34886dad…, previa a SNAPSHOT084)' : copied === QA052_SHA ? 'la versión ANTERIOR (baseline QA052 bd3d8388…)' : 'una copia distinta (' + copied.slice(0, 8) + '…)') + ', no la fuente presentada');
+  assert.equal(copied, sha(fs.readFileSync(SCRIPT)), 'el arnés copia byte a byte el constructor seleccionado');
+  if (MUTATED) {
+    const historical = HISTORICAL_VERSIONS.get(copied);
+    t.diagnostic(historical ? 'MODO ALTERNATIVO: versión histórica ' + historical : 'MODO ALTERNATIVO: SHA-256 ' + copied);
+  } else {
+    assert.equal(copied, REVIEWED_SHA, 'huella exacta de REL046 con la corrección de la raíz enlazada');
+  }
   assert.ok(fs.existsSync(path.join(root, 'node_modules')), 'node_modules local enlazado (solo lectura): sin instalaciones ni versiones nuevas');
   assert.notEqual(fs.realpathSync(root), REPO, 'el workspace no es el repositorio');
   const real = fs.readFileSync(path.join(REPO, 'scripts', 'block-external.cjs'), 'utf8'), copy = fs.readFileSync(path.join(root, 'scripts', 'block-external.cjs'), 'utf8');

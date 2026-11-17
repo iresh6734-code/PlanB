@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 
 /** Piezas base de la interfaz «Faro». Solo presentan: no leen datos ni guardan estado.
  *  Sus estilos están en faro.css, bajo el prefijo `ui-`. */
@@ -33,4 +33,25 @@ export function EmptyState({ icon, title, children, action }: { icon?: ReactNode
  *  para no competir con el aviso (toast) de la App, que es el único estado que se anuncia. Las barras son decorativas. */
 export function Skeleton({ rows = 6, label = 'Cargando…' }: { rows?: number; label?: string }) {
   return <div className="ui-skeleton" aria-busy="true"><span className="ui-sr">{label}</span>{Array.from({ length: rows }, (_, index) => <span key={index} className="ui-skeleton-row" aria-hidden="true" style={{ width: 92 - (index * 13) % 34 + '%' }} />)}</div>;
+}
+
+/** Error con qué hacer (mejora D3; CLAUDE-UI-STATES-D3): qué pasó, qué no se ha perdido y una acción para reintentar.
+ *  Se anuncia como alerta. Sin acción, solo informa. */
+export function ErrorState({ title, children, actionLabel = 'Reintentar', onAction }: { title: string; children?: ReactNode; actionLabel?: string; onAction?: () => void }) {
+  return <div className="ui-error" role="alert"><h3>{title}</h3>{children ? <p>{children}</p> : null}{onAction ? <button type="button" className="button secondary" onClick={onAction}>{actionLabel}</button> : null}</div>;
+}
+
+/** Límite de error para un apartado: si falla al cargar o al pintarse, enseña el error en su sitio y el resto de la App
+ *  sigue funcionando. La acción por defecto recarga la página (el caso típico: un despliegue nuevo cambió sus archivos). */
+export class PageErrorBoundary extends Component<{ label: string; children?: ReactNode; onRetry?: () => void }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch(error: Error, info: ErrorInfo) { console.error('Apartado «' + this.props.label + '» no se pudo abrir:', error, info.componentStack); }
+  render() {
+    if (!this.state.failed) return this.props.children;
+    const retry = this.props.onRetry ?? (() => { if (typeof location !== 'undefined') location.reload(); });
+    return <ErrorState title={'No se pudo abrir ' + this.props.label} actionLabel={this.props.onRetry ? 'Reintentar' : 'Recargar la página'} onAction={retry}>
+      Tus datos están intactos en este ordenador. Suele ocurrir tras actualizar Plan B o si el servidor local se ha cerrado: recarga la página para volver a intentarlo.
+    </ErrorState>;
+  }
 }

@@ -1,3 +1,4 @@
+import { registerUndo } from './undo.js';
 import Fastify, { type FastifyInstance } from 'fastify';
 import staticPlugin from '@fastify/static';
 import { existsSync } from 'node:fs';
@@ -85,12 +86,17 @@ export async function createBaseApp(options: AppOptions): Promise<{ app: Fastify
   app.post<{ Params: { entity: string } }>('/api/records/:entity', async request => {
     const entity = EntityNameSchema.parse(request.params.entity);
     const body = z.object({ values: z.record(z.string(),z.union([z.string(), z.number().finite(), z.boolean(), z.null()])) }).strict().parse(request.body);
-    return { record: store.saveRecord(entity, body.values) };
+    // La identidad del cambio permite deshacer exactamente este guardado (CLAUDE-UNDO-LAST R2).
+    let change: { id: number; at: string } | null = null;
+    const record = store.saveRecord(entity, body.values, undefined, { onChange: value => { change = value; } });
+    return { record, change };
   });
   app.patch<{ Params: { entity: string; id: string } }>('/api/records/:entity/:id', async request => {
     const entity = EntityNameSchema.parse(request.params.entity);
     const body = z.object({ values: z.record(z.string(),z.union([z.string(), z.number().finite(), z.boolean(), z.null()])) }).strict().parse(request.body);
-    return { record: store.saveRecord(entity, body.values, request.params.id) };
+    let change: { id: number; at: string } | null = null;
+    const record = store.saveRecord(entity, body.values, request.params.id, { onChange: value => { change = value; } });
+    return { record, change };
   });
   app.post('/api/activate', async request => {
     z.object({ reviewed: z.literal(true) }).strict().parse(request.body);
@@ -143,6 +149,7 @@ export async function createBaseApp(options: AppOptions): Promise<{ app: Fastify
   registerV2(app,store,options.root,!!options.runtime,options.external);
   registerV4(app,store,!!options.runtime);
   registerResponseQueue(app,store);
+  registerUndo(app,store);
   registerWorkspaceSearch(app,store);
   registerLocalOperations(app,store);
   if (options.taskRevisions) registerTaskRevision(app,store);

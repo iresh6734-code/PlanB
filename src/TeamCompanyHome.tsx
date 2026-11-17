@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowUpRight, Building2, ListTodo, PlugZap, Send, Users } from 'lucide-react';
+import { ArrowUpRight, Bot, Building2, ListTodo, PlugZap, Send, Users } from 'lucide-react';
 import type { TeamOverview, TeamRecord } from '../shared/team.js';
 import { TabList, tabPanelProps } from './TabList.js';
 import './team-company.css';
@@ -36,7 +36,7 @@ export function TeamCompanyHome({ overview, records, localPilot, onNavigate }: {
   const chooseEntity = (value: Entity) => { setEntity(value); setQuery(''); setLimit(50); };
   return <div className="company-home">
     <section className="company-overview" aria-labelledby="company-overview-title">
-      <div><p className="company-eyebrow">TU ESPACIO DE TRABAJO</p><h2 id="company-overview-title">Una vista de tu empresa.</h2><p>Consulta la copia guardada y continúa con tus contactos, seguimientos y herramientas.</p></div>
+      <div><p className="company-eyebrow">TU ESPACIO DE TRABAJO</p><h2 id="company-overview-title">Resumen de la copia guardada</h2><p>Consulta la copia guardada y continúa con tus contactos, seguimientos y herramientas.</p></div>
       <button type="button" className="button primary" onClick={() => onNavigate('commercial')}>Abrir Comercial <ArrowUpRight size={16} aria-hidden="true"/></button>
     </section>
     <dl className="company-metrics" aria-label="Registros de la copia local">
@@ -50,7 +50,7 @@ export function TeamCompanyHome({ overview, records, localPilot, onNavigate }: {
           {([
             { view: 'records', label: 'Contactos y fichas', detail: 'Actividad, documentos y próximas acciones.', icon: Users },
             { view: 'commercial', label: 'Seguimientos comerciales', detail: 'Borradores, revisión, archivos y hojas.', icon: Send },
-            { view: 'agent', label: 'Agente', detail: 'Revisa el contexto y las propuestas del asistente.', icon: ListTodo },
+            { view: 'agent', label: 'Agente', detail: 'Revisa el contexto y las propuestas del asistente.', icon: Bot },
             { view: 'connections', label: 'Integraciones', detail: 'Conexiones y capturas de esta empresa.', icon: PlugZap },
           ] as const).map(item => <button key={item.view} type="button" onClick={() => onNavigate(item.view)}><item.icon size={19} aria-hidden="true"/><span><strong>{item.label}</strong><small>{item.detail}</small></span><ArrowUpRight size={15} aria-hidden="true"/></button>)}
         </div>
@@ -67,7 +67,7 @@ export function TeamCompanyHome({ overview, records, localPilot, onNavigate }: {
       <TabList label="Tipo de registro guardado" prefix="company-records" tabs={entities} value={entity} onChange={chooseEntity}/>
       <div {...tabPanelProps('company-records', entity)}>
         <label className="field company-search"><span>Buscar en los registros guardados</span><input type="search" value={query} onChange={event => { setQuery(event.target.value); setLimit(50); }}/></label>
-        {!matches.length ? <p className="company-empty" role="status">{query ? 'Ningún registro coincide con la búsqueda.' : 'No hay registros de este tipo en la copia local de esta empresa.'}</p> : <><div className="company-table-scroll" tabIndex={0} role="region" aria-label="Lista de registros guardados"><table><thead><tr><th>Nombre</th><th>{entity === 'contacts' ? 'Correo' : entity === 'companies' ? 'Dominio' : entity === 'deals' ? 'Etapa guardada' : 'Estado guardado'}</th><th>Revisión</th></tr></thead><tbody>{matches.slice(0, limit).map(record => <tr key={record.id}><td>{recordName(record)}</td><td>{recordDetail(record)}</td><td>{record.version}</td></tr>)}</tbody></table></div><p className="helper">{Math.min(limit, matches.length)} de {matches.length} registros</p>{matches.length > limit ? <button type="button" className="text-button" onClick={() => setLimit(value => value + 50)}>Mostrar más registros</button> : null}</>}
+        {!matches.length ? <p className="company-empty" role="status">{query ? 'Ningún registro coincide con la búsqueda.' : 'No hay registros de este tipo en la copia local de esta empresa.'}</p> : <><div className="company-table-scroll" tabIndex={0} role="region" aria-label="Lista de registros guardados"><table><thead><tr><th>Nombre</th><th>{entity === 'contacts' ? 'Correo' : entity === 'companies' ? 'Dominio' : entity === 'deals' ? 'Etapa guardada' : 'Estado guardado'}</th><th>Revisión</th></tr></thead><tbody>{matches.slice(0, limit).map(record => <tr key={record.id}><td data-label="Nombre">{recordName(record)}</td><td data-label={entity === 'contacts' ? 'Correo' : entity === 'companies' ? 'Dominio' : entity === 'deals' ? 'Etapa guardada' : 'Estado guardado'}>{recordDetail(record)}</td><td data-label="Revisión">{record.version}</td></tr>)}</tbody></table></div><p className="helper">{Math.min(limit, matches.length)} de {matches.length} registros</p>{matches.length > limit ? <button type="button" className="text-button" onClick={() => setLimit(value => value + 50)}>Mostrar más registros</button> : null}</>}
       </div>
     </section>
     {overview.jobs.length ? <section className="company-section"><h2>Últimos trabajos</h2><ul className="company-jobs">{overview.jobs.slice(0, 3).map(job => <li key={job.id}><span>{job.kind === 'hubspot-capture' ? 'Captura HubSpot' : 'Comprobación de sincronización'}</span><strong>{jobLabels[job.status]}</strong></li>)}</ul></section> : null}

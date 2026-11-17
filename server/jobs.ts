@@ -11,11 +11,27 @@ export class Jobs {
   start(kind:Job['kind'],run:(progress:(message:string,percent:number)=>void,signal:AbortSignal)=>Promise<unknown>):Job {
     if (this.controllers.size) throw new AppError(409,'Espera a que termine el trabajo actual.');
     const now=new Date().toISOString(), job:Job={id:randomUUID(),kind,status:'queued',createdAt:now,updatedAt:now,message:'En cola',progress:0};
-    const controller=new AbortController();this.controllers.set(job.id,controller);this.write(job);
+    const controller=new AbortController();
+    this.write(job);
+    this.controllers.set(job.id,controller);
     const update=(message:string,progress:number)=>{job.message=message;job.progress=progress;job.updatedAt=new Date().toISOString();this.write(job);};
+    const progress=(message:string,percent:number)=>{
+      if(job.status==='running'&&!controller.signal.aborted)update(message,percent);
+    };
     setImmediate(async()=>{
-      try { job.status='running';update('Preparando…',1);job.result=await run(update,controller.signal);job.status=controller.signal.aborted?'cancelled':'succeeded';update(job.status==='cancelled'?'Cancelado':'Completado',100); }
-      catch(error){job.status=controller.signal.aborted?'cancelled':'failed';update(error instanceof AppError?error.message:'No se completó el trabajo. La copia activa se conserva.',job.progress);}
+      try {
+        controller.signal.throwIfAborted();
+        job.status='running';
+        update('Preparando…',1);
+        job.result=await run(progress,controller.signal);
+        job.status=controller.signal.aborted?'cancelled':'succeeded';
+        update(job.status==='cancelled'?'Cancelado':'Completado',100);
+      }
+      catch(error){
+        job.status=controller.signal.aborted?'cancelled':'failed';
+        const message=job.status==='cancelled'?'Cancelado':error instanceof AppError?error.message:'No se completó el trabajo. La copia activa se conserva.';
+        update(message,job.progress);
+      }
       finally {this.controllers.delete(job.id);}
     });
     return job;

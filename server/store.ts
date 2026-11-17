@@ -19,16 +19,16 @@ export class Store {
   private key: Buffer | null;
   private recoveryCache:{encoded:string|null;state:ReturnType<typeof inspectPersistedRecoveryPlan>}|null=null;
   /**
-   * Texto descifrado indexado por el texto cifrado exacto (LRU con tope de entradas y de caracteres).
+   * Texto descifrado de filas de `records`, indexado por el texto cifrado exacto (LRU con topes).
+   * Solo la usan records() y record(): metadatos (réplica, credenciales, diarios), archivos y capturas
+   * se descifran en cada lectura como siempre y nunca quedan retenidos aquí (CODEX-STORE-REVIEW-357).
    * Cada escritura sella con un IV nuevo, así que cualquier cambio —de esta conexión, de otra o de otro
-   * proceso— produce otra clave: nunca se sirve contenido antiguo y no hace falta invalidar. decode()
-   * sigue analizando el JSON en cada llamada, de modo que quien llama recibe siempre objetos nuevos.
-   * No amplía la exposición: la clave local ya permanece en memoria mientras el proceso vive.
+   * proceso— produce otra clave: nunca se sirve contenido antiguo y no hace falta invalidar. El JSON se
+   * analiza en cada llamada, de modo que quien llama recibe siempre objetos nuevos.
    */
   private plainCache=new Map<string,string>();
   private plainCacheChars=0;
-  // entry: una captura de 10.000 registros ocupa ~5 M (cifrado + claro) y se lee en cada «ready»; un paquete
-  // mucho mayor (archivos, copias) no se guarda, para no expulsar de golpe todo lo demás.
+  // entry: un registro anómalamente grande no se guarda, para no expulsar de golpe todo lo demás.
   private plainCacheLimit={entries:4*MAX_RECORDS,chars:48*1024*1024,entry:16*1024*1024};
   constructor(public filename: string) {
     if (filename !== ':memory:') mkdirSync(dirname(filename), { recursive: true });
@@ -51,7 +51,9 @@ export class Store {
   /** Olvida todo el texto descifrado; se llama al vaciar la tabla de registros (coherente con secure_delete). */
   private forgetPlain() { this.plainCache.clear(); this.plainCacheChars = 0; }
   encode(value: unknown) { const text = JSON.stringify(value); return this.key ? seal(text, this.key) : text; }
-  decode<T>(value: string): T { return JSON.parse(this.key ? this.plain(value) : value) as T; }
+  decode<T>(value: string): T { return JSON.parse(this.key ? open(value,this.key) : value) as T; }
+  /** Solo para filas de `records`: usa la caché de texto descifrado. Metadatos, archivos y diarios siguen por decode(). */
+  private decodeRecord(value: string): CrmRecord { return JSON.parse(this.key ? this.plain(value) : value) as CrmRecord; }
   private plain(value: string): string {
     if (!value.startsWith('enc1:')) return open(value, this.key!);
     const cached = this.plainCache.get(value);
@@ -120,6 +122,11 @@ export class Store {
   get ready() {
     return !!(this.snapshot && this.spec && this.generation?.approved &&
       this.reconciliation?.complete);
+  }
+  /** Identidad del último cambio local (sin descifrar nada), o null si no hay. */
+  latestChange(): { id: number; at: string; entity: EntityName; recordId: string } | null {
+    const row = this.db.prepare('SELECT id, at, entity, record_id FROM changes ORDER BY id DESC LIMIT 1').get() as { id: number; at: string; entity: EntityName; record_id: string } | undefined;
+    return row ? { id: Number(row.id), at: row.at, entity: row.entity, recordId: row.record_id } : null;
   }
   get changesCount() {
     return Number((this.db.prepare('SELECT COUNT(*) AS n FROM changes').get() as { n: number }).n);
@@ -232,13 +239,17 @@ export class Store {
   records(entity?: EntityName): CrmRecord[] {
     const rows = entity ? this.db.prepare('SELECT value FROM records WHERE entity=? ORDER BY rowid').all(entity)
       : this.db.prepare('SELECT value FROM records ORDER BY rowid').all();
-    return (rows as { value: string }[]).map(r => this.decode<CrmRecord>(r.value));
+    return (rows as { value: string }[]).map(r => this.decodeRecord(r.value));
   }
   record(entity: EntityName, id: string): CrmRecord | null {
     const row = this.db.prepare('SELECT value FROM records WHERE entity=? AND id=?').get(entity, id) as { value: string } | undefined;
-    return row ? this.decode<CrmRecord>(row.value) : null;
+    return row ? this.decodeRecord(row.value) : null;
   }
-  saveRecord(entity: EntityName, values: CrmRecord['values'], id?: string): CrmRecord {
+  /**
+   * Guarda un registro y anota su cambio. Opciones (CLAUDE-UNDO-LAST R2): `guard` se ejecuta DENTRO de la misma transacción
+   * (BEGIN IMMEDIATE) antes de escribir y puede lanzar para abortar sin cambios; `onChange` recibe la identidad del cambio creado.
+   */
+  saveRecord(entity: EntityName, values: CrmRecord['values'], id?: string, options?: { guard?: () => void; onChange?: (change: { id: number; at: string }) => void }): CrmRecord {
     this.assertRecoveryIntegrity();
     if(!id&&Number((this.db.prepare('SELECT COUNT(*) AS n FROM records').get() as {n:number}).n)>=MAX_RECORDS)throw new AppError(413,'El piloto admite hasta 10.000 registros totales.');
     if(this.get('returnBusy',false))throw new AppError(409,'Espera a que termine la devolución revisada.');
@@ -258,13 +269,18 @@ export class Store {
       if (!previous && field.readOnly && value !== undefined && value !== null && value !== '') errors[field.key] = 'Este campo no se puede crear manualmente.';
     }
     if (Object.keys(errors).length) throw new AppError(422, 'Revisa los campos señalados.', errors);
+    let changeIdentity: { id: number; at: string } | null = null;
     this.transaction(() => {
       this.assertRecoveryIntegrity();
+      options?.guard?.();
       this.insertRecord(record);
-      this.db.prepare('INSERT INTO changes(at,entity,record_id,operation,before_json,after_json) VALUES(?,?,?,?,?,?)')
-        .run(new Date().toISOString(), entity, record.id, previous ? 'update' : 'create', previous ? this.encode(previous) : null, this.encode(record));
+      const at = new Date().toISOString();
+      const inserted = this.db.prepare('INSERT INTO changes(at,entity,record_id,operation,before_json,after_json) VALUES(?,?,?,?,?,?)')
+        .run(at, entity, record.id, previous ? 'update' : 'create', previous ? this.encode(previous) : null, this.encode(record));
       this.set('returnComplete',false);
+      changeIdentity = { id: Number(inserted.lastInsertRowid), at };
     });
+    if (changeIdentity) options?.onChange?.(changeIdentity);
     return record;
   }
   changes(): Change[] {
@@ -290,7 +306,7 @@ export class Store {
     if (!this.ready) throw new AppError(409, 'Activa una aplicación verificada antes de exportar.');
     return this.bundleOrNull()!;
   }
-  restoreBundle(raw: unknown) {
+  restoreBundle(raw: unknown, request?: { replace: boolean }) {
     this.assertRecoveryIntegrity();
     if(this.get('returnBusy',false))throw new AppError(409,'Espera a que termine la revisión de cambios.');
     const parsed = BundleSchema.safeParse(raw);
@@ -338,6 +354,12 @@ export class Store {
     if (!report.complete || errors.length || !bundle.generation.approved) throw new AppError(422, 'El paquete no superó la comprobación de integridad.', [...report.errors, ...errors]);
     this.transaction(() => {
       this.assertRecoveryIntegrity();
+      if (this.get('returnBusy', false)) throw new AppError(409, 'Espera a que termine la revisión de cambios.');
+      if (request && !request.replace && this.changesCount) {
+        throw new AppError(409, 'Exporta tus cambios y confirma la sustitución antes de restaurar.');
+      }
+      this.assertPortal(bundle.snapshot);
+      const previous = request ? this.bundleOrNull() : null;
       this.db.exec('DELETE FROM records; DELETE FROM changes;'); this.forgetPlain();
       for (const record of bundle.records) this.insertRecord(record);
       for (const change of bundle.changes) this.db.prepare('INSERT INTO changes(id,at,entity,record_id,operation,before_json,after_json) VALUES(?,?,?,?,?,?,?)')
@@ -358,23 +380,36 @@ export class Store {
           this.set('recoveryPlan',plan);
         }
       }
+      if (request) {
+        if (previous) this.set('lastRestoreArchive', previous);
+        this.set('recoveryCopy', { exportedAt: bundle.exportedAt, restoredAt: new Date().toISOString() });
+      }
+      this.addCapture(bundle.snapshot, { checkStorageOnExisting: true });
     });
-    this.addCapture(bundle.snapshot);
   }
-  addCapture(snapshot: CrmSnapshot) {
+  addCapture(snapshot: CrmSnapshot, { checkStorageOnExisting = false }: { checkStorageOnExisting?: boolean } = {}) {
     const validated=SnapshotSchema.safeParse(snapshot);
     if(!validated.success)throw new AppError(422,'Captura incompatible con el formato o el límite de 10.000 registros.');
     this.assertPortal(snapshot);
     const report = reconcile(snapshot);
     if (!report.complete) throw new AppError(422,'La captura no está conciliada.',report.errors);
-    const id = snapshot.id + ':' + snapshot.capturedAt, payload = this.encode(snapshot);
-    if(this.db.prepare('SELECT id FROM captures WHERE id=?').get(id))return id;
+    const id = snapshot.id + ':' + snapshot.capturedAt;
+    if (this.db.prepare('SELECT id FROM captures WHERE id=?').get(id)) {
+      if (checkStorageOnExisting) this.assertStorageCapacity(0);
+      return id;
+    }
+    const payload = this.encode(snapshot);
+    const bytes = Buffer.byteLength(payload);
     this.pruneCaptures();
-    const used=this.storageBytes();
-    if (used + Buffer.byteLength(payload) > 2 * 1024 ** 3) throw new AppError(507,'Se alcanzó el límite local de 2 GB. Conserva los cambios pendientes y revisa el historial.');
-    this.db.prepare('INSERT OR IGNORE INTO captures(id,at,bytes,payload) VALUES(?,?,?,?)').run(id,snapshot.capturedAt,Buffer.byteLength(payload),payload);
+    this.assertStorageCapacity(bytes);
+    this.db.prepare('INSERT OR IGNORE INTO captures(id,at,bytes,payload) VALUES(?,?,?,?)').run(id,snapshot.capturedAt,bytes,payload);
     this.pruneCaptures();
     return id;
+  }
+  private assertStorageCapacity(additionalBytes: number) {
+    if (this.storageBytes() + additionalBytes > 2 * 1024 ** 3) {
+      throw new AppError(507, 'Se alcanzó el límite local de 2 GB. Conserva los cambios pendientes y revisa el historial.');
+    }
   }
   storageBytes(){
     let total=0;

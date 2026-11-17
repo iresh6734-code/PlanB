@@ -5,8 +5,9 @@ const normalizeFile = file => file.replace(/\\/g, '/').replace(/^\.\//, '');
 
 /**
  * Lee la salida «spec» de node:test (la que imprime `node --test` / `tsx --test`).
- * Usa la sección final «✖ failing tests:», donde cada fallo va precedido de «test at <archivo>:<línea>:<col>».
- * Devuelve el resumen numérico y la lista de fallos {file, name}, sin duplicados.
+ * - failures: de la sección final «✖ failing tests:», donde cada fallo va precedido de «test at <archivo>:<l>:<c>».
+ * Las pasadas NO se leen de aquí: «spec» no dice de qué archivo es cada una. Salen del reportero estructurado
+ * (resultsReporter / parseResults), que sí lo dice (CODEX-CI-R2-390).
  */
 export function parseTestOutput(text) {
   const lines = text.split(/\r?\n/);
@@ -54,23 +55,72 @@ export function validateKnown(known) {
  * Compara los fallos observados con los conocidos (coincidencia exacta de archivo y nombre).
  * - unexpected: fallos que no están en la lista → la CI falla.
  * - expected: fallos conocidos que siguen fallando.
- * - resolved: fallos conocidos estables que ya pasan → la CI falla hasta retirarlos de la lista; si no, una
- *   regresión posterior de esa misma prueba pasaría inadvertida.
- * - flakyPassed: fallos conocidos marcados como inestables que esta vez pasaron (informativo).
- * Un fallo sin archivo (salida inesperada) nunca coincide con un conocido.
+ * - resolved: conocidos estables que se ejecutaron y pasaron → la CI falla hasta retirarlos (si no, una
+ *   regresión posterior pasaría inadvertida).
+ * - flakyPassed: conocidos inestables que se ejecutaron y pasaron (informativo).
+ * - noResult: conocidos que ni fallaron ni pasaron (omitidos, renombrados o retirados) → la CI falla: su
+ *   ausencia en la lista de fallos no acredita nada (CODEX-CI-REVIEW-356).
+ * La evidencia de «pasó» es la clave archivo::nombre en `passed`, leída del reportero estructurado (parseResults).
+ * Un fallo sin archivo nunca coincide con un conocido.
  */
-export function compareFailures(observed, knownEntries) {
+export function compareFailures(observed, knownEntries, passed) {
+  if (!(passed instanceof Set)) throw new Error('compareFailures necesita el conjunto de pruebas que pasaron (archivo::nombre).');
   const key = f => (f.file ?? '') + '::' + f.name;
   const knownByKey = new Map(knownEntries.map(entry => [key(entry), entry]));
   const observedKeys = new Set(observed.map(key));
   const unexpected = observed.filter(f => !f.file || !knownByKey.has(key(f)));
   const expected = observed.filter(f => f.file && knownByKey.has(key(f))).map(f => ({ ...f, ...knownByKey.get(key(f)) }));
   const notFailing = knownEntries.filter(entry => !observedKeys.has(key(entry)));
+  // Una pasada solo cuenta si es la de ESE archivo: un homónimo de otro archivo no acredita nada (CODEX-CI-R2-390).
+  const ran = notFailing.filter(entry => passed.has(key(entry)));
+  const noResult = notFailing.filter(entry => !passed.has(key(entry)));
+  const resolved = ran.filter(entry => !entry.flaky);
   return {
     unexpected,
     expected,
-    resolved: notFailing.filter(entry => !entry.flaky),
-    flakyPassed: notFailing.filter(entry => entry.flaky),
-    ok: unexpected.length === 0 && notFailing.every(entry => entry.flaky),
+    resolved,
+    flakyPassed: ran.filter(entry => entry.flaky),
+    noResult,
+    ok: unexpected.length === 0 && resolved.length === 0 && noResult.length === 0,
   };
 }
+
+/**
+ * Reportero estructurado de node:test (se carga con --test-reporter=<URL de este módulo>): una línea JSON por prueba
+ * terminada, con su archivo y si se omitió o quedó pendiente. Conserva también el motivo de los eventos fallidos,
+ * incluidos padres y cancelaciones que la sección final de «spec» no siempre enumera del mismo modo.
+ */
+export default async function* resultsReporter(source) {
+  for await (const event of source) {
+    if (event.type !== 'test:pass' && event.type !== 'test:fail') continue;
+    const data = event.data ?? {};
+    const failureType = data.details?.error?.failureType;
+    yield JSON.stringify({ status: event.type === 'test:pass' ? 'pass' : 'fail', name: data.name, file: data.file ?? null, skip: !!data.skip, todo: !!data.todo, nesting: data.nesting ?? 0,
+      failureType: typeof failureType === 'string' ? failureType : null }) + '\n';
+  }
+}
+
+/** Ruta de archivo de un evento (ruta o URL file:), relativa a la raíz del repositorio y con barras normales. */
+export function eventFile(file, repoRoot) {
+  let path = file.startsWith('file:') ? decodeURIComponent(new URL(file).pathname).replace(/^\/([A-Za-z]:)/, '$1') : file;
+  path = normalizeFile(path);
+  const root = normalizeFile(repoRoot).replace(/\/$/, '') + '/';
+  return path.toLowerCase().startsWith(root.toLowerCase()) ? path.slice(root.length) : path;
+}
+
+/** Pasadas ejecutadas y eventos fallidos para diagnóstico. Estos últimos no sustituyen el resumen nativo ni la comparación con conocidos. */
+export function parseResults(text, repoRoot) {
+  const passed = new Set();
+  const failedEvents = [];
+  for (const line of text.split(/\r?\n/)) {
+    if (!line.trim()) continue;
+    let event; try { event = JSON.parse(line); } catch { continue; }
+    if (event.skip || event.todo || typeof event.name !== 'string') continue;
+    if (event.status === 'pass' && typeof event.file === 'string') passed.add(eventFile(event.file, repoRoot) + '::' + event.name);
+    else if (event.status === 'fail') failedEvents.push({ file: typeof event.file === 'string' ? eventFile(event.file, repoRoot) : null, name: event.name,
+      nesting: Number.isSafeInteger(event.nesting) && event.nesting >= 0 ? event.nesting : null,
+      failureType: typeof event.failureType === 'string' ? event.failureType : null });
+  }
+  return { passed, failedEvents };
+}
+

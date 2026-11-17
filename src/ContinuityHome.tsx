@@ -16,16 +16,21 @@ import { toWorkSource } from '../shared/work-summary.js';
 import type { WorkSummaryResult } from './work-summary-client.js';
 import { TabList, tabPanelProps } from './TabList.js';
 import { CopyTimeline } from './app-shell/CopyTimeline.js';
+import { buildContinuityReport, reportHtml } from './app-shell/continuity-report.js';
+import { captureAutomation } from './app-shell/copy-timeline.js';
+import { captureRecordCount, describeCapture, workspaceCopy } from './app-shell/workspace-copy.js';
 import './continuity-home-hub.css';
-type ContinuityTab='estado'|'evidencia'|'copias'|'operaciones';
+export type ContinuityTab='estado'|'evidencia'|'copias'|'operaciones';
 const CONTINUITY_TABS=[{id:'estado',label:'Estado'},{id:'evidencia',label:'Evidencia e impacto'},{id:'copias',label:'Copias y archivo'},{id:'operaciones',label:'Operaciones'}] as const satisfies readonly {id:ContinuityTab;label:string}[];
 /** Navegación hacia superficies que ya existen en la App. Una ausente NO se simula: el hub explica que se abre desde el menú. */
 export interface ContinuityHubLinks { onOpenToday?: () => void; onOpenIntegrations?: () => void }
-export function ContinuityHome({state,workspaceContextRevision,refresh,work,prepare,protect,exportCopy,connectRequest=0,onOpenToday,onOpenIntegrations,returnedFrom=null,onReturnHandled}:{state:AppState;workspaceContextRevision?:string|null;refresh:()=>Promise<AppState>;work:()=>void;prepare:()=>void;protect:()=>void;exportCopy:()=>void;connectRequest?:number;returnedFrom?:'integrations'|null;onReturnHandled?:()=>void}&ContinuityHubLinks) {
+export function ContinuityHome({state,workspaceContextRevision,refresh,work,prepare,protect,exportCopy,connectRequest=0,onOpenToday,onOpenIntegrations,returnedFrom=null,onReturnHandled,initialTab='estado',onStatus,onGuidedDrill}:{state:AppState;workspaceContextRevision?:string|null;refresh:()=>Promise<AppState>;work:()=>void;prepare:()=>void;protect:()=>void;exportCopy:()=>void;connectRequest?:number;returnedFrom?:'integrations'|null;onReturnHandled?:()=>void;initialTab?:ContinuityTab;onStatus?:(status:ContinuityStatus)=>void;onGuidedDrill?:()=>void}&ContinuityHubLinks) {
   const [status,setStatus]=useState<ContinuityStatus|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[connection,setConnection]=useState(false),[restore,setRestore]=useState(false);
-  const [tab,setTab]=useState<ContinuityTab>('estado');
+  const [tab,setTab]=useState<ContinuityTab>(initialTab);
   const [file,setFile]=useState(''),[password,setPassword]=useState(''),[replace,setReplace]=useState(false);
-  const load=()=>api<ContinuityStatus>('/v2/continuity').then(setStatus);
+  // Cada lectura se entrega también a la App (avisos del menú); la referencia evita usar una función antigua desde el temporizador.
+  const statusOut=useRef(onStatus);statusOut.current=onStatus;
+  const load=()=>api<ContinuityStatus>('/v2/continuity').then(value=>{setStatus(value);statusOut.current?.(value);});
   // Remount the evidence consumer when the authorized App context changes, retiring its pending reads and visible results together.
   const hubRef=useRef<HTMLDetailsElement|null>(null),[returnNote,setReturnNote]=useState(false);
   const workOwner=JSON.stringify([workspaceContextRevision??null,state.ready,state.runtime]);
@@ -43,14 +48,27 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
   useEffect(()=>{if(!returnedFrom)return;setTab('evidencia');setReturnNote(true);const frame=requestAnimationFrame(()=>{const heading=hubRef.current?.querySelector<HTMLElement>('.cph > h2');if(heading){heading.tabIndex=-1;heading.focus();heading.scrollIntoView({block:'start'});}onReturnHandled?.();});return()=>cancelAnimationFrame(frame);},[returnedFrom]);
   useEffect(()=>{void load().catch(f=>setError((f as Error).message));const timer=setInterval(()=>void load().catch(()=>{}),2500);return()=>clearInterval(timer);},[]);
   useEffect(()=>{if(connectRequest)void api<{configured:boolean}>('/v2/auth/status').then(g=>g.configured?setConnection(true):protect()).catch(f=>setError(f.message));},[connectRequest]);
+  // Parte de continuidad: se genera en el navegador con el estado ya leído y se descarga; no envía nada a ningún sitio.
+  const shareReport=()=>{if(!status)return;const html=reportHtml(buildContinuityReport(status,new Date(),APP_VERSION));const url=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));const anchor=document.createElement('a');anchor.href=url;anchor.download='plan-b-parte-continuidad-'+new Date().toISOString().slice(0,10)+'.html';anchor.click();setTimeout(()=>URL.revokeObjectURL(url),10_000);};
   const run=async(fn:()=>Promise<unknown>)=>{setBusy(true);setError('');try{await fn();await load();await refresh();}catch(f){setError((f as Error).message);}finally{setBusy(false);}};
   const active=status?.jobs.find(j=>['queued','running'].includes(j.status));
   const latest=status?.captures[0],summary=status?.latestCapture;
-  const report=status?.reports.find(r=>r.id===status.readiness?.reportId);
-  const diagnosis=status?.readiness;
+  const { activeId, latestReadiness: diagnosis } = workspaceCopy(state, status);
+  const differentArchive = !!(activeId && latest && latest.id !== activeId);
+  const continueActive = !!(status?.session || activeId && (differentArchive || (status?.pendingChanges ?? 0) > 0));
+  const canOpenToday = !state.runtime && onOpenToday;
+  const captureDateLabel = describeCapture(latest?.at).date;
+  const activeDate = describeCapture(state.snapshot?.capturedAt).date;
+  const automation = status ? captureAutomation(status) : null;
+  const operationsDiagnostic = status ? <ContinuityOperations
+    captures={status.captures}
+    activeCaptureId={activeId}
+    refreshContext={refresh}
+  /> : null;
+  const report=status?.reports.find(r=>r.id===diagnosis?.reportId && r.captureId===diagnosis?.captureId);
   const readinessLabel=diagnosis?({empty:'Necesitas una captura',blocked:'Prepara los datos del simulacro',untested:'Esta copia todavía no se ha probado',passed:'Simulacro superado',failed:'Hay procesos por revisar',expired:'Repite el simulacro de esta copia'})[diagnosis.status]:'';
   const production=status?.connection?.mode==='production_readonly'||state.snapshot?.source.isTestData===false;
-  return <section className="continuity-home"><header className="page-header"><div><h1>Tu negocio puede seguir.</h1><p className="page-subtitle">Una copia utilizable. Una prueba que lo demuestra.</p></div><span className="badge">v{APP_VERSION} · {production?'Producción · lectura':'Local · Datos de ensayo'}</span></header>
+  return <section className="continuity-home"><header className="page-header"><div><h1>Tu negocio puede seguir.</h1><p className="page-subtitle">Una copia utilizable. Una prueba que lo demuestra.</p></div><div className="ct-head-side"><span className="badge">v{APP_VERSION} · {production?'Producción · lectura':'Local · Datos de prueba'}</span><button type="button" className="button secondary" disabled={!status} title="Página para enviar o imprimir: qué está demostrado y qué no, sin nombres de clientes ni identificadores" onClick={shareReport}><Download size={15}/>Parte para compartir</button></div></header>
     {error?<p className="error-box" role="alert">{error}</p>:null}
     {status?.recoveryIntegrity?.state==='invalid'?<p className="error-box" role="alert">{INVALID_RECOVERY_MESSAGE}</p>:null}
     <TabList label="Secciones de Continuidad" prefix="ct" tabs={CONTINUITY_TABS} value={tab} onChange={setTab}/>
@@ -58,9 +76,11 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
       <div className="ct-main">
     <section className={'continuity-summary '+(status?.stale?'needs-attention':'')}>
       <ShieldCheck size={33}/><div><h2>{!latest?'Prepara tu primera copia':status?.stale?'Tu copia necesita actualizarse':'Tienes una copia disponible'}</h2>
-      <p>{latest?'Última captura: '+new Date(latest.at).toLocaleString('es-ES'):'Elige los datos ficticios incluidos o conecta una cuenta de prueba de HubSpot.'}</p>
-      {latest?<small>{Math.floor(status?.ageMinutes??0)} minutos de antigüedad · {summary?.records??'—'} registros en esta captura</small>:null}{latest?<div className="continuity-facts"><StatusTag tone={diagnosis?.status==='passed'?'success':diagnosis?.status==='untested'?'warning':'neutral'}>{diagnosis?.status==='passed'?'Prueba vigente':diagnosis?.status==='untested'?'Prueba pendiente':'Verificación por revisar'}</StatusTag><span>{status?.pendingChanges??0} cambios locales pendientes</span><span>{status?.operations?.paused?'Actualización en pausa':'Actualización habilitada'}</span></div>:null}</div>
-      <button className="button primary" disabled={busy||!!active} onClick={()=>status?.session||state.ready&&(status?.pendingChanges??0)>0?work():latest?run(async()=>{await post('/v2/session/begin',{captureId:latest.id});work();}):state.runtime?setRestore(true):prepare()}>{latest?'Continuar trabajando':state.runtime?'Restaurar archivo':'Preparar aplicación'}<ArrowRight size={17}/></button>
+      <p>{latest ? 'Última captura guardada: ' + (captureDateLabel ?? 'fecha no disponible') : state.runtime ? 'Restaura un archivo para abrir tu copia.' : 'Elige los datos ficticios incluidos o conecta una cuenta de prueba de HubSpot.'}</p>
+      {latest ? <small>{summary && summary.id === latest.id ? captureRecordCount(summary.records) + ' en esta captura' : 'Recuento de esta captura no disponible'}{activeId && !differentArchive ? ' · Es la copia activa' : ''}</small> : null}
+      {differentArchive ? <p><strong>Copia activa:</strong> {activeDate ?? 'fecha no disponible'}. Tu trabajo sigue en esta copia.</p> : null}
+      {latest?<div className="continuity-facts"><StatusTag tone={diagnosis?.status==='passed'?'success':diagnosis?.status==='untested'?'warning':'neutral'}>{diagnosis?.status==='passed'?'Prueba vigente':diagnosis?.status==='untested'?'Prueba pendiente':'Verificación por revisar'}</StatusTag>{differentArchive?<span>Prueba de la última captura guardada</span>:null}<span>{status?.pendingChanges??0} cambios locales pendientes</span>{automation?<span>{automation.active?'Capturas automáticas habilitadas':automation.reason}</span>:null}</div>:null}</div>
+      <button className="button primary" disabled={busy||!!active} onClick={()=>continueActive?work():latest?run(async()=>{await post('/v2/session/begin',{captureId:latest.id});work();}):state.runtime?setRestore(true):prepare()}>{differentArchive?'Continuar con la copia activa':latest?'Continuar trabajando':state.runtime?'Restaurar archivo':'Preparar aplicación'}<ArrowRight size={17}/></button>
     </section>
     {summary?<details className="capture-details ct-content"><summary>Ver contenido de esta copia</summary><div className="capture-details-body">
       <p><strong>{summary.name}</strong><span>{summary.source==='hubspot'?'HubSpot · Portal '+summary.accountId:'Conjunto de ensayo local'}</span></p>
@@ -71,7 +91,7 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
     {status?.session?<div className="info-box"><Unplug size={20}/><div><strong>Sesión de continuidad abierta</strong><p>Importaciones e IA pausadas. Tus cambios se conservan. La devolución a HubSpot tiene su propio proceso de revisión.</p><div className="button-row"><button className="text-button" onClick={work}>Abrir trabajo</button><button className="text-button" onClick={()=>run(()=>post('/v2/session/end',{}))}>Cerrar sesión de continuidad</button></div></div></div>:null}
     {active?<div className="job-progress" role="status"><Spinner text={active.message}/><progress max="100" value={active.progress}/><button className="text-button" onClick={()=>run(()=>post('/v2/jobs/'+active.id+'/cancel',{}))}>Cancelar trabajo</button></div>:null}
       <article className="ct-verify"><div className="section-heading"><h2>Comprueba tu Plan B</h2><Play size={21}/></div><p>Prueba buscar y editar, avanzar una oportunidad, crear y completar una tarea, y reiniciar. En una copia aislada con red bloqueada.</p>
-        <button className="button secondary" disabled={!latest||busy||!!active} onClick={()=>run(()=>post('/v2/drills',{captureId:latest!.id}))}>Probar mi Plan B</button>
+        <div className="button-row ct-verify-actions"><button className="button secondary" disabled={!latest||busy||!!active} onClick={()=>run(()=>post('/v2/drills',{captureId:latest!.id}))}>Probar mi Plan B</button>{onGuidedDrill?<button type="button" className="text-button" title="Cinco gestos con tu copia, como si el CRM se hubiera caído. No guarda nada." onClick={onGuidedDrill}>Práctica guiada: un día sin CRM (5 min)</button>:null}</div>
         {diagnosis?<div className="drill-result"><strong className={diagnosis.status==='passed'?'green':diagnosis.status==='untested'||diagnosis.status==='empty'?'':'warning-text'} role="status">{readinessLabel}</strong>
           {diagnosis.issues.length?<ul>{diagnosis.issues.map(issue=><li key={issue}>{issue}</li>)}</ul>:null}
           {diagnosis.status==='untested'&&!!status?.reports.length?<p className="helper">El informe anterior corresponde a otra captura. Ejecuta una prueba para comprobar esta copia.</p>:null}
@@ -106,17 +126,26 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
     </details>
     </div>
     <div className="ct-panel ct-copias" {...tabPanelProps('ct','copias')} hidden={tab!=='copias'}>
-      {status?<CopyTimeline status={status}/>:null}
+      {status?<CopyTimeline status={status} onOpenStatus={()=>{setTab('estado');requestAnimationFrame(()=>document.getElementById('ct-tab-estado')?.focus());}}/>:null}
       <section className="history-section"><div className="section-heading"><h2>Historial de capturas</h2><div className="button-row"><button className="text-button" onClick={()=>setRestore(true)}>Restaurar archivo</button><button className="text-button" onClick={protect}><LockKeyhole size={15}/>{status?.protected?'Protección configurada':'Proteger acceso local'}</button></div></div>
       {status?.captures.length?<div className="history-list">{status.captures.slice(0,12).map(item=><div key={item.id}><Database size={17}/><div><strong>{new Date(item.at).toLocaleString('es-ES')}</strong><small>{(item.bytes/1024).toFixed(0)} KB · Captura conciliada</small></div>
-        <button className="text-button" disabled={busy||!!active||status.pendingChanges>0||!!status.session&&status.session.captureId!==item.id} onClick={()=>status.session?.captureId===item.id?work():run(async()=>{await post('/v2/session/begin',{captureId:item.id});work();})}>{status.session?.captureId===item.id?'Abrir trabajo':'Abrir copia'}<ArrowRight size={15}/></button></div>)}</div>:<p className="muted">Todavía no hay capturas verificadas.</p>}
+        <button className="text-button" disabled={busy||!!active||status.pendingChanges>0||!!status.session&&status.session.captureId!==item.id} onClick={()=>status.session?.captureId===item.id?work():run(async()=>{await post('/v2/session/begin',{captureId:item.id});work();})}>{status.session?.captureId===item.id?'Abrir trabajo':'Abrir copia'}<ArrowRight size={15}/></button></div>)}</div>:<p className="muted ui-empty">Todavía no hay capturas verificadas.</p>}
       <p className="helper">Retención: hasta 24 capturas horarias y 30 diarias; las necesarias para una sesión pendiente se conservan. Límite local 2 GB.</p>
     </section>
     {!state.runtime?<CopyInspection contextKey={JSON.stringify([state.snapshot?.id,state.snapshot?.capturedAt,state.changes,state.generation?.approved])}/>:null}
     {status?.jobs.length?<details className="job-history"><summary>Trabajos recientes</summary>{status.jobs.slice(0,8).map(j=><div key={j.id}><strong>{({capture:'Captura',drill:'Simulacro',return:'Devolución'})[j.kind]}</strong><span>{({queued:'En cola',running:'En curso',succeeded:'Completado',failed:'Fallido',cancelled:'Cancelado',interrupted:'Interrumpido'})[j.status]}</span><small>{j.message}</small></div>)}</details>:null}
     </div>
     <div className="ct-panel ct-operaciones" {...tabPanelProps('ct','operaciones')} hidden={tab!=='operaciones'}>
-    {status?<ContinuityOperations captures={status.captures} activeCaptureId={state.ready&&state.snapshot?state.snapshot.id+':'+state.snapshot.capturedAt:null} refreshContext={refresh}/>:null}
+      {canOpenToday ? <>
+        <div className="ct-operations-route">
+          <p>Abre Hoy para priorizar y gestionar tareas de la copia activa.</p>
+          <button type="button" className="button primary" onClick={canOpenToday}>Abrir cola de Hoy <ArrowRight size={16} aria-hidden="true" /></button>
+        </div>
+        <details className="ct-operations-details">
+          <summary>Consultar diagnóstico de tareas y cambios</summary>
+          {operationsDiagnostic}
+        </details>
+      </> : operationsDiagnostic}
     </div>
     {connection?<ConnectionDialog close={()=>setConnection(false)} done={async()=>{await load();await refresh();setConnection(false);}}/>:null}
     {restore?<Modal title="Restaurar una copia" close={()=>setRestore(false)}><form className="settings-form" onSubmit={e=>{e.preventDefault();void run(async()=>{await post('/v2/restore',{file,password,replace});setRestore(false);setFile('');setPassword('');});}}>

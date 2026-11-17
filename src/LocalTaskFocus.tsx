@@ -449,7 +449,7 @@ export function LocalTaskFocus({ taskId, onClose, onSaved, onPrepare, outcomes, 
   const contextLine = (context: TaskContext) => <p className="ltf-context">
     <span>Tarea <code>{taskId}</code></span><span>Copia «{context.snapshotName}»</span>
     {context.capturedAt ? <span>Captura del {formatInstant(context.capturedAt)}</span> : null}
-    {context.isTestData === null ? null : <span>{context.isTestData ? 'Datos de ensayo' : 'Producción'}</span>}
+    {context.isTestData === null ? null : <span>{context.isTestData ? 'Datos de prueba' : 'Producción'}</span>}
   </p>;
   const closeButton = (label = 'Volver a Hoy') => <button type="button" className="button secondary" onClick={requestClose}>{label}</button>;
   const bannerBox = banner ? <div id="ltf-banner" tabIndex={-1} role="alert" className={'ltf-banner ltf-' + banner.tone}><strong>{banner.title}</strong><p>{banner.text}</p>

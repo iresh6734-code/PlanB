@@ -29,6 +29,31 @@ test('no libera trabajo pendiente ni acepta una entrega sin archivos cambiados',
   }finally{cleanup();}
 });
 
+test('un traspaso conserva cambios pendientes y la exclusividad de la reserva',async()=>{
+  const {root,board,cleanup}=setup();
+  try {
+    await board.add(spec('CLAUDE-1'));
+    await board.add(spec('CODEX-1','codex'));
+    await board.claim('CLAUDE-1','claude');
+    const before=board.load().tasks[0];
+    fs.writeFileSync(path.join(root,'report.md'),'Trabajo previo de Claude');
+    const received=board.snapshot(before.files);
+    await assert.rejects(board.takeOver(before.id,'claude','Autorizado por el usuario'),/Solo Codex/);
+    const transferred=await board.takeOver(before.id,'codex','Autorizado por el usuario');
+    assert.equal(transferred.agent,'codex');
+    assert.equal(transferred.status,'working');
+    assert.equal(transferred.reserved,true);
+    assert.deepEqual(transferred.baseline,before.baseline);
+    assert.deepEqual(transferred.handoff.received,received);
+    assert.deepEqual(board.snapshot(before.files),received);
+    assert.equal(board.load().events.at(-1).action,'take-over');
+    assert.throws(()=>board.checkPath(before.id,'claude','report.md'),/otro agente/);
+    assert.equal(board.checkPath(before.id,'codex','report.md').allowed,true);
+    await assert.rejects(board.claim('CODEX-1','codex'),/reservados/);
+    await assert.rejects(board.takeOver(before.id,'codex','Traspaso repetido'),/reserva de Claude/);
+  } finally { cleanup(); }
+});
+
 test('rechaza rutas privadas, traversal, directorios, enlaces y colisiones de mayúsculas',async()=>{
   const {root,board,cleanup}=setup();try{
     for(const name of ['../x','C:/x','/x','src/../x','data/db','planb-local-pilot/key','.env','a/.planb-key','a/token.enc','a/CON.txt','coordination/board.json','a./x','a/*'])assert.throws(()=>safePath(name));

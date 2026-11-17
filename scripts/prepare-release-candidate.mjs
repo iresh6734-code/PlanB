@@ -41,8 +41,8 @@ export function candidateSourceSelection(sourceRoot = root) {
       }
       if (entry.isSymbolicLink()) throw Error('No se capturan fuentes enlazadas.');
       if (entry.isDirectory()) walk(name);
-      // Public files are opaque runtime assets: extension/case must never silently remove them from a candidate.
-      else if (name.startsWith('public/') || extensions.has(path.extname(entry.name).toLowerCase())) files.push(name);
+      // Public and imported assets are opaque: extensions/case must not silently drop fonts, images or notices.
+      else if (name.startsWith('public/') || name.startsWith('src/assets/') || extensions.has(path.extname(entry.name).toLowerCase())) files.push(name);
       else excludedPaths.push({path:name,reason:'unlisted-extension'});
     }
   }
@@ -129,6 +129,14 @@ async function prepare() {
     for (const file of manifest.files.filter(file => file.path.startsWith('public/'))) {
       const output = path.join(runtime, 'dist', file.path.slice(7));
       if (!fs.existsSync(output) || hash(fs.readFileSync(output)) !== file.sha256) throw Error('Activo público ausente o distinto: ' + file.path);
+    }
+    // Vite emits imported binary assets, but not their accompanying notices. Retain those text files as well.
+    for (const file of manifest.files.filter(file => file.path.startsWith('src/assets/') && /\.(txt|md)$/i.test(file.path))) {
+      const output = path.join(runtime, 'dist', file.path.slice(4)), bytes = fs.readFileSync(path.join(snapshot, file.path));
+      if (hash(bytes) !== file.sha256) throw Error('Aviso de activo modificado: ' + file.path);
+      if (fs.existsSync(output)) {
+        if (hash(fs.readFileSync(output)) !== file.sha256) throw Error('Colisión de aviso de activo: ' + file.path);
+      } else { fs.mkdirSync(path.dirname(output), { recursive: true }); fs.writeFileSync(output, bytes, { flag: 'wx' }); }
     }
     manifest.checks.push({ name: 'public-assets', ok: true }); save();
     manifest.publicAssetCoverage = { captured: manifest.files.filter(file => file.path.startsWith('public/')).length, excluded: manifest.excludedPublicPaths.length, complete: manifest.excludedPublicPaths.length === 0 }; save();

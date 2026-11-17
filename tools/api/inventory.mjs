@@ -36,14 +36,15 @@ const KEEP_ENV = ['path', 'systemroot', 'windir', 'comspec', 'pathext', 'temp', 
  * Nada de PLANB_*, HUBSPOT_*, GOOGLE_*, NODE_OPTIONS, HOME o USERPROFILE del entorno de quien lo lanza.
  */
 export function childEnvironment(parent, id, work, out) {
+  if (!Object.hasOwn(ENTRIES, id)) throw new Error('Entrada desconocida: ' + id);
   const env = Object.fromEntries(Object.entries(parent).filter(([key]) => KEEP_ENV.includes(key.toLowerCase())));
   return Object.assign(env, { NODE_ENV: 'test', PLANB_DATA_DIR: join(work, 'data'), PLANB_PORT: '1', PLANB_API_CAPTURE_OUT: out }, ENTRIES[id].env(work));
 }
 
 /** Arranca una entrada con Fastify interceptado y devuelve sus rutas declaradas. */
 export function captureEntry(id, { repo = REPO, timeoutMs = 300_000 } = {}) {
+  if (!Object.hasOwn(ENTRIES, id)) throw new Error('Entrada desconocida: ' + id);
   const spec = ENTRIES[id];
-  if (!spec) throw new Error('Entrada desconocida: ' + id);
   const work = mkdtempSync(join(tmpdir(), 'planb-api-' + id + '-'));
   try {
     mkdirSync(join(work, 'data'));
@@ -103,7 +104,12 @@ export function mergeInventory(byEntry) {
  */
 export function renderMarkdown(rows, entryIds) {
   const labels = entryIds.map(id => ENTRIES[id].label);
-  const files = row => [...new Set(row.origins.map(o => o.file ?? 'desconocido'))].join(', ');
+  // Un solo archivo para todas las entradas: se muestra tal cual. Si difieren, cada archivo con su entrada (CODEX-API-REVIEW-358 F2).
+  const files = row => {
+    const byEntry = entryIds.filter(id => row.entries.includes(id)).map(id => [id, [...new Set(row.origins.filter(o => o.entry === id).map(o => o.file ?? 'desconocido'))].join(', ')]);
+    const distinct = new Set(byEntry.map(([, f]) => f));
+    return distinct.size <= 1 ? '`' + [...distinct][0] + '`' : byEntry.map(([id, f]) => ENTRIES[id].label + ': `' + f + '`').join(' · ');
+  };
   const lines = [
     '# API de Plan B · inventario generado',
     '',
@@ -127,7 +133,7 @@ export function renderMarkdown(rows, entryIds) {
   for (const group of groups) {
     lines.push('', '## ' + group, '', '| Método | Ruta | ' + labels.join(' | ') + ' | Declarada en |', '| --- | --- | ' + labels.map(() => ':---:').join(' | ') + ' | --- |');
     for (const row of rows.filter(r => r.group === group)) {
-      lines.push('| ' + row.method + ' | `' + row.url.replace(/\|/g, '\\|') + '` | ' + entryIds.map(id => row.entries.includes(id) ? '●' : '').join(' | ') + ' | `' + files(row) + '` |');
+      lines.push('| ' + row.method + ' | `' + row.url.replace(/\|/g, '\\|') + '` | ' + entryIds.map(id => row.entries.includes(id) ? '●' : '').join(' | ') + ' | ' + files(row) + ' |');
     }
   }
   return lines.join('\n') + '\n';
@@ -140,10 +146,59 @@ export function routeDiff(expected, actual) {
   return { added: [...b].filter(k => !a.has(k)), removed: [...a].filter(k => !b.has(k)) };
 }
 
+export class UsageError extends Error {}
+
+/** Misma ruta tras normalizarla (en Windows sin distinguir mayúsculas). */
+export function sameFile(a, b) {
+  const norm = p => { const full = resolve(p); return process.platform === 'win32' ? full.toLowerCase() : full; };
+  return norm(a) === norm(b);
+}
+
+/**
+ * Valida la línea de órdenes antes de capturar, leer o escribir nada (CODEX-API-REVIEW-358 F1).
+ * Rechaza opciones desconocidas o repetidas, valores ausentes, selecciones vacías o con piezas vacías, entradas
+ * desconocidas o repetidas y combinaciones contradictorias. Una selección parcial solo se acepta con un destino
+ * explícito (--out, o --check con --doc), para no sustituir nunca el inventario canónico de docs/api.md.
+ */
+export function parseArgs(argv) {
+  const known = new Set(['--json', '--check', '--entries', '--out', '--doc']), withValue = new Set(['--entries', '--out', '--doc']);
+  const options = {};
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (!known.has(arg)) throw new UsageError('Opción desconocida: ' + arg);
+    if (arg in options) throw new UsageError('Opción repetida: ' + arg);
+    if (withValue.has(arg)) {
+      const next = argv[i + 1];
+      if (next === undefined || next.startsWith('--') || !next.trim()) throw new UsageError(arg + ' necesita un valor.');
+      options[arg] = next; i++;
+    } else options[arg] = true;
+  }
+  if (options['--json'] && options['--check']) throw new UsageError('--json y --check no se pueden combinar.');
+  if (options['--json'] && (options['--out'] || options['--doc'])) throw new UsageError('--json escribe en la salida estándar: no admite --out ni --doc.');
+  if (options['--check'] && options['--out']) throw new UsageError('--check no escribe: usa --doc para elegir el documento que se comprueba.');
+  if (options['--doc'] && !options['--check']) throw new UsageError('--doc solo tiene sentido con --check.');
+  let entries = Object.keys(ENTRIES);
+  if (options['--entries'] !== undefined) {
+    const parts = options['--entries'].split(',').map(part => part.trim());
+    if (parts.some(part => !part)) throw new UsageError('--entries no admite piezas vacías: ' + JSON.stringify(options['--entries']));
+    // Solo claves propias: «in» admitiría propiedades heredadas como «constructor» (CODEX-API-R2-386).
+    const unknown = parts.filter(part => !Object.hasOwn(ENTRIES, part));
+    if (unknown.length) throw new UsageError('Entradas desconocidas: ' + unknown.join(', ') + '. Válidas: ' + Object.keys(ENTRIES).join(', '));
+    if (new Set(parts).size !== parts.length) throw new UsageError('--entries repite una entrada.');
+    entries = parts;
+  }
+  const partial = entries.length !== Object.keys(ENTRIES).length;
+  if (partial && !options['--json'] && !options['--out'] && !options['--doc']) {
+    throw new UsageError('Una selección parcial de entradas necesita un destino explícito (--out, o --check con --doc): docs/api.md siempre recoge las tres.');
+  }
+  // Tampoco vale apuntar explícitamente al documento canónico: una selección parcial nunca lo sustituye ni se compara con él.
+  const target = options['--out'] ?? options['--doc'];
+  if (partial && target && sameFile(target, DOC)) throw new UsageError('Una selección parcial no puede escribir ni comprobar docs/api.md: elige otro archivo.');
+  return { mode: options['--json'] ? 'json' : options['--check'] ? 'check' : 'write', entries, out: options['--out'], doc: options['--doc'] };
+}
+
 function main(argv) {
-  const flag = name => argv.includes(name);
-  const value = name => { const i = argv.indexOf(name); return i >= 0 ? argv[i + 1] : undefined; };
-  const entryIds = (value('--entries') ?? Object.keys(ENTRIES).join(',')).split(',').filter(Boolean);
+  const { mode, entries: entryIds, out: outArg, doc: docArg } = parseArgs(argv);
   const byEntry = {};
   for (const id of entryIds) {
     const { routes, endpointWritten } = captureEntry(id);
@@ -153,10 +208,10 @@ function main(argv) {
     byEntry[id] = routes;
   }
   const rows = mergeInventory(byEntry);
-  if (flag('--json')) { process.stdout.write(JSON.stringify({ entries: entryIds, routes: rows }, null, 2) + '\n'); return 0; }
+  if (mode === 'json') { process.stdout.write(JSON.stringify({ entries: entryIds, routes: rows }, null, 2) + '\n'); return 0; }
   const doc = renderMarkdown(rows, entryIds);
-  if (flag('--check')) {
-    const target = resolve(value('--doc') ?? DOC);
+  if (mode === 'check') {
+    const target = resolve(docArg ?? DOC);
     const current = existsSync(target) ? readFileSync(target, 'utf8').replace(/\r\n/g, '\n') : '';
     if (current === doc) { console.log('docs/api.md al día: ' + rows.length + ' rutas.'); return 0; }
     const { added, removed } = routeDiff(current, doc);
@@ -166,7 +221,7 @@ function main(argv) {
     if (!added.length && !removed.length) console.error('Cambian entradas, orígenes o el texto del documento.');
     return 1;
   }
-  const out = resolve(value('--out') ?? DOC);
+  const out = resolve(outArg ?? DOC);
   mkdirSync(dirname(out), { recursive: true });
   writeFileSync(out, doc);
   console.log('Escrito ' + out + ': ' + rows.length + ' rutas en ' + entryIds.length + ' entradas.');
@@ -175,5 +230,9 @@ function main(argv) {
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try { process.exitCode = main(process.argv.slice(2)); }
-  catch (error) { console.error(error instanceof Error ? error.message : error); process.exitCode = 2; }
+  catch (error) {
+    console.error(error instanceof Error ? error.message : error);
+    if (error instanceof UsageError) console.error('Uso: node tools/api/inventory.mjs [--check [--doc ARCHIVO] | --json | --out ARCHIVO] [--entries main,runtime,team]');
+    process.exitCode = 2;
+  }
 }

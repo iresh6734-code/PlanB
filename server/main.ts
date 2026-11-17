@@ -11,14 +11,10 @@ import { publishEndpoint } from './endpoint.js';
 import { registerTeamSync } from './team-sync.js';
 import { registerCopyInspection } from './copy-inspection.js';
 import { mountHubspotReadCheck } from './hubspot-read-check-mount.js';
-import { registerContinuityEvidenceApi } from './continuity-evidence-api.js';
 import { mountRelayRehearsal } from './relay-rehearsal-mount.js';
-import { registerWorkSummaryApi } from './work-summary-api.js';
 import { registerTaskIntents } from './task-intents-api.js';
-import { mountCommitmentRadar } from './commitment-radar-mount.js';
-import { mountOperationalRehearsal } from './operational-rehearsal-mount.js';
-import { mountDateCheck } from './date-check-mount.js';
-import { mountDateCheckReview } from './date-check-review-mount.js';
+import { mountSharedModules } from './modules.js';
+import { registerCsvImport } from './csv-import.js';
 
 const root = process.cwd();
 const releaseLock=lockInstance(resolve(process.env.PLANB_DATA_DIR || join(root,'data')));
@@ -37,16 +33,11 @@ mountHubspotReadCheck(app, store, security);
 mountRelayRehearsal(app, store, security);
 registerGenerator(app, store, providers);
 registerCopyInspection(app,store);
-registerContinuityEvidenceApi(app, store);
 registerTaskIntents(app, store);
-// Radar de compromisos y «Ensayar mi semana»: solo ficción, exigen copia de ensayo activa y no llaman a ningún proveedor.
-mountCommitmentRadar(app, store);
-mountOperationalRehearsal(app, store);
-// «Comprobar una fecha» y «Revisar una decisión»: solo ficción, exigen copia de ensayo activa y no llaman a ningún proveedor.
-mountDateCheck(app, store);
-mountDateCheckReview(app, store);
-// The work summary remains unproven until the active copy has verified A4 coverage.
-registerWorkSummaryApi(app, store, { covers: () => false });
+// Módulos compartidos con la App portátil (evidencia, Laboratorio, resumen de trabajo): ver server/modules.ts.
+mountSharedModules(app, store);
+// Importar registros desde CSV (vista previa y aplicación con marca): ver server/csv-import.ts.
+registerCsvImport(app, store);
 registerTeamSync(app,store,process.env.PLANB_TEAM_ORIGIN,process.env.PLANB_TEAM_DEMO==='1');
 const seed = join(root, 'demo.seed.json');
 if (!store.snapshot && store.recoveryIntegrity().state!=='invalid' && existsSync(seed)) store.restoreBundle(JSON.parse(readFileSync(seed, 'utf8')));

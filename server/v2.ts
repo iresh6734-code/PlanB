@@ -130,8 +130,14 @@ export function registerV2(app:FastifyInstance,store:Store,root:string,runtime=f
   });
   app.post('/api/v2/export/package',async(request,reply)=>{
     const {password,revision}=z.object({password:z.string().min(12).max(200),revision:z.string().optional()}).strict().parse(request.body);
-    const bundle=store.bundle();if(revision&&revision!==bundleRevision(bundle))throw new AppError(409,'El espacio cambió. Revisa de nuevo el contenido de la exportación.');
-    const zip=await runtimeZip(bundle,root,password);rememberExport(store,bundle,zip);
+    const bundle=store.bundle(), exportRevision=bundleRevision(bundle);
+    const changed='El espacio cambió. Revisa de nuevo el contenido de la exportación.';
+    if(revision&&revision!==exportRevision)throw new AppError(409,changed);
+    const zip=await runtimeZip(bundle,root,password);
+    store.transaction(()=>{
+      if(bundleRevision(store.bundle())!==exportRevision)throw new AppError(409,changed);
+      rememberExport(store,bundle,zip);
+    });
     return reply.type('application/zip').header('Content-Disposition','attachment; filename="'+RUNTIME_ZIP+'"').send(zip);
   });
   app.post('/api/v2/restore',async request=>{
@@ -142,9 +148,8 @@ export function registerV2(app:FastifyInstance,store:Store,root:string,runtime=f
     if((bundle as any)?.snapshot?.source?.isTestData===false&&(!password||JSON.parse(file).format!=='planb-encrypted-v2'||!store.get('password',null)))throw new AppError(403,'Los datos reales requieren una copia cifrada y una contraseña local configurada antes de restaurar.');
     // Validate in a disposable store before touching the active database.
     const probe=new Store(':memory:');try{probe.restoreBundle(bundle);}finally{probe.close();}
-    const old=store.bundleOrNull();
-    if(old)store.set('lastRestoreArchive',old);
-    store.restoreBundle(bundle);store.set('recoveryCopy',{exportedAt:(bundle as any).exportedAt,restoredAt:new Date().toISOString()});return {restored:true};
+    store.restoreBundle(bundle, { replace });
+    return { restored: true };
   });
   app.post('/api/v3/recovery-copy/confirm',async request=>{
     const {revision}=z.object({storedSeparately:z.literal(true),revision:z.string().regex(/^[a-f0-9]{64}$/).optional()}).strict().parse(request.body);

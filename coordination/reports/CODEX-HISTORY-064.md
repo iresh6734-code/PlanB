@@ -109,3 +109,20 @@ La app abierta PREVIEW083 en4420/4421 conserva sus artefactos anteriores: no inc
 - tests/e2e/change-history.spec.ts: `24992e3ebc3071cb717e5c376b3d24eee1f93cba78b3265bb917e910a31a3312`
 
 El informe lo sella submit.
+
+## Conciliación 359 · 14/11/2026, Europe/Madrid
+
+El resumen de Faro muestra nombres de campos y etiquetas de opciones usando la especificación que ChangesView recibe desde App. El detalle sigue mostrando el tipo, la clave y el valor exacto. Conservé la integración de ChangesView.
+
+**Corrección.** Los cambios históricos admiten valores de texto aunque no sean días ISO válidos. Antes, 2026-99-01 provocaba RangeError y 2026-02-30 aparecía como un día de marzo. El resumen solo formatea cuando la fecha es finita y coincide con su día ISO de ida y vuelta. Los valores inválidos conservan el texto almacenado, la búsqueda y el detalle.
+
+**Verificación.** Sonda React de renderizado: la fuente anterior falla en ambos casos, la corregida pasa y conserva etiquetas de opciones y fechas válidas. 24/24 Node, 4/4 Chromium sin omitidos, Vite aislado y tsc --noEmit limpios. El E2E nuevo prueba ambos valores admitidos en una respuesta local de lectura simulada que sustituye dos operaciones de la fixture de 122. Comprueba búsqueda, resumen y detalle, sin escrituras desde la interfaz. Los recorridos existentes verifican página antigua, marca, tipos, teclado y tamaños 1440, 390 y 320.
+
+Banco tests/.tmp/history359-2860h0. Frontend compilado desde fuentes congeladas; backend usado del banco 347 SHA-256 33d6423e917aef4471549edb0f67c3b36db537fedf2af4b0f15ada92b1a4ce2d. Chromium de Playwright, servidor propio en 4401, base de ensayo nueva y cierre al terminar. El runtime instalado queda fuera de esta prueba.
+
+- shared/change-history.ts f9d6eb3c417be175d21f837a086420003ca274f1df0882a33f3c333973c80565
+- src/ChangeHistory.tsx 8b0d9dc1c2bc10e3a04280fe03b4acac7d8a71e7a4e67b3123320e79c10c7d00
+- src/change-history.css b7f9bdc75eeea75fb351664c5c0b8fab5e845912cf48c276ec93a9f2cf8e12d6
+- src/ChangesView.tsx 1cbc19b726859dff6cff78701fdf4fc3b52e2734f328427e5ab563c0f3e226b9
+- tests/change-history.test.ts a9910f2ca9b89d2fd707ac4fe584c09c304d3b387bc072740394508c9f99dea6
+- tests/e2e/change-history.spec.ts ab2ada93d6094cf4412eb487470271ab230067116ebc3c1df8ce1af9f0d50aa9

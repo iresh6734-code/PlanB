@@ -26,7 +26,10 @@ export async function readBoundedText(response: Response, limit: number = MAX_RE
   } finally { reader.releaseLock(); }
 }
 async function read(path: string, init: RequestInit, limit: number = MAX_RESPONSE_BYTES) {
-  const response = await fetch(path, init);
+  // Sin respuesta (servidor cerrado, red cortada): el mismo mensaje que el resto de clientes, nunca el «Failed to fetch» del navegador.
+  let response: Response;
+  try { response = await fetch(path, init); }
+  catch (failure) { if (init.signal?.aborted || !(failure instanceof TypeError)) throw failure; throw new LocalOperationsError(0, 'No hubo respuesta de tu copia local. Comprueba que Plan B sigue abierto y reintenta.'); }
   if (response.status === 401) {
     if (typeof window !== 'undefined') window.dispatchEvent(new Event('planb:locked'));
     if (response.body) void response.body.cancel().catch(() => undefined);

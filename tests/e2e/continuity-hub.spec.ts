@@ -111,6 +111,25 @@ const openMore = async (page: Page, summary: string) => { const details = impact
 const rehearsalButton = async (page: Page) => { await openMore(page, 'Sin comprobar'); return impact(page).locator('[data-row="recovery:rehearsal"]').getByRole('button', { name: 'Ensayar un relevo' }); };
 const nextStepButton = (page: Page, name: string) => passport(page).locator('.cpp-next').getByRole('button', { name });
 const count = (page: Page, pattern: RegExp) => { const urls: string[] = []; page.on('request', request => { if (pattern.test(request.method() + ' ' + new URL(request.url()).pathname)) urls.push(request.method() + ' ' + new URL(request.url()).pathname); }); return urls; };
+
+test('PORTABLE: lee y refresca la copia sin consultar ni ofrecer conexiones o ensayos', async ({ page }) => {
+  const rig = await start();
+  const optional = count(page, /\/api\/v2\/(connection\/read-check|relay\/rehearsal)$/);
+  const evidence = count(page, /GET \/api\/v7\/continuity\/evidence$/);
+  await open(page, rig, { portable: true });
+  await expect(src(page, 'copy')).toHaveAttribute('data-state', 'read');
+  for (const key of ['hubspot', 'relay']) {
+    await expect(src(page, key)).toContainText('No incluida en el paquete portable');
+  }
+  await expect(hub(page).getByRole('button', { name: /Abrir Integraciones|Ensayar un relevo/i, includeHidden: true })).toHaveCount(0);
+  expect(evidence).toHaveLength(1);
+  await hub(page).getByRole('button', { name: 'Leer el estado guardado' }).click();
+  await expect(hub(page)).toHaveAttribute('aria-busy', 'false');
+  await expect(src(page, 'copy')).toHaveAttribute('data-state', 'read');
+  expect(evidence).toHaveLength(2);
+  expect(optional).toEqual([]);
+  expect(rig.relayRuns()).toBe(0);
+});
 const hold = (page: Page, pattern: string) => page.evaluate(value => { (window as unknown as { __hold: string }).__hold = value; }, pattern);
 const release = (page: Page) => page.evaluate(() => (window as unknown as { __release: () => boolean }).__release());
 const render = (page: Page, props: Record<string, unknown>) => page.evaluate(value => (window as unknown as { __render: (p: unknown) => void }).__render(value), props);

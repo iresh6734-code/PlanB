@@ -112,7 +112,7 @@ export function ContinuityDay({ candidates, notConsidered = 0, owners, hints, on
           {items.some(item => item.kind === 'no-estimate') && !chosen ? <EstimateField id={id + '-d'} label={first.label} minutes={null} onChange={value => { if (value !== null) setEstimate(id, value); }} /> : null}
           <div className="cd-actions"><button type="button" className="button secondary" aria-label={'Abrir la tarea ' + first.label + ' (ID ' + id + ')'} onClick={() => onOpenTask(id)}>Abrir la tarea<ArrowRight size={14} aria-hidden="true" /></button>
             {!chosen ? <button type="button" className="button secondary" aria-label={'Incluir igualmente ' + first.label + ' (ID ' + id + ')'} onClick={() => act(pickTask(decisions, id), id, 'pin')}>Incluir igualmente</button> : null}</div></li>; })}</ul>
-        : <p className="cd-empty">Nada pide una decisión ahora.</p>}
+        : <p className="cd-empty ui-empty ui-empty-ok">Nada pide una decisión ahora.</p>}
     </section>
 
     <details className="cd-out"><summary>Fuera de la jornada ({plan.excluded.length})</summary>

@@ -39,10 +39,10 @@ test('pérdida del equipo sin restauración no está preparada, aunque el simula
   const markup = html(input), plain = text(markup);
   assert.equal(status(markup), 'unproven');
   assert.notEqual(testid(markup, 'status-label'), 'Preparado según estas entradas');
-  assert.match(markup, /data-scenario="device-loss"[^>]*>(?:(?!<\/div>).)*Sin demostrar/);
+  assert.match(markup, /data-scenario="device-loss"[^>]*>(?:(?!<\/div>).)*Sin comprobar/);
   assert.match(plain, /Por qué Restauración en otro equipo: Falta un ensayo vigente/);
   assert.match(plain, /Siguiente paso Ensayar restauración en otro equipo/);
-  assert.equal(testid(markup, 'status-label'), 'Sin demostrar');
+  assert.equal(testid(markup, 'status-label'), 'Sin comprobar');
 });
 
 test('un dato ausente se muestra como no medido y nunca como cero', () => {

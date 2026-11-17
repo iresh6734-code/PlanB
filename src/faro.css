@@ -1280,7 +1280,7 @@ html body .company-table-scroll { border: 1px solid var(--border); border-radius
 html body .gx-quality .oc-link { justify-self: start; }
 
 /* ---- Edición en línea de campos de lista: parece una etiqueta hasta que se pasa el ratón o se enfoca ---- */
-html body .main-content .table-container td select.gx-inline.gx-inline.gx-inline { width: auto; max-width: 100%; height: 22px !important; min-height: 22px !important; padding: 0 22px 0 7px; border: 1px solid var(--border); border-radius: 5px; background-color: var(--bg-subtle); background-position: right 5px center; background-size: 10px; font-size: var(--fs-xs); font-weight: 600; color: var(--text-2); cursor: pointer; transition: border-color 110ms, background-color 110ms; }
+html body .main-content .table-container td select.gx-inline.gx-inline.gx-inline { width: auto; max-width: 100%; height: 24px !important; min-height: 24px !important; padding: 0 22px 0 7px; border: 1px solid var(--border); border-radius: 5px; background-color: var(--bg-subtle); background-position: right 5px center; background-size: 10px; font-size: var(--fs-xs); font-weight: 600; color: var(--text-2); cursor: pointer; transition: border-color 110ms, background-color 110ms; }
 html body .main-content .table-container td select.gx-inline.gx-inline.gx-inline:hover:not(:disabled) { border-color: var(--border-control); background-color: var(--bg-surface); }
 html body .main-content .table-container td select.gx-inline.gx-inline.gx-inline:focus-visible { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(13, 107, 99, .18); background-color: var(--bg-surface); }
 html body .main-content .table-container td select.gx-inline.gx-inline.gx-inline:disabled { opacity: .6; cursor: progress; }
@@ -1581,3 +1581,349 @@ html body .ct-rail .setup-checklist li { padding: 6px 2px 6px 10px; }
 /* Copias y archivo en una sola columna: cronología, historial, revisión de copia y trabajos, cada uno a todo el ancho. */
 html body .ct-copias { grid-template-columns: minmax(0, 1fr); }
 html body .ct-copias > * { grid-column: 1 / -1; }
+/* Cronología: estado de las capturas automáticas y días sin intentos (capturas detenidas), neutros y rayados, no ámbar. */
+.gx-ctl-auto { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 0 0 4px; font-size: var(--fs-sm); font-weight: 600; color: var(--text-2); }
+.gx-ctl-auto > span { width: 8px; height: 8px; border-radius: 50%; background: var(--success); }
+.gx-ctl-auto[data-active="false"] > span { background: var(--text-3); }
+.gx-ctl-auto .text-button { margin: 0; padding: 0 4px; min-height: 24px; font-size: var(--fs-sm); }
+.gx-ctl-days li[data-state="idle"] .gx-ctl-bar, .gx-ctl-legend li[data-state="idle"]::before { background: repeating-linear-gradient(135deg, var(--bg-subtle) 0 4px, transparent 4px 8px); border: 1px solid var(--border-strong); }
+.gx-ctl-figures dd[data-tone="warn"] { color: var(--warning); }
+@media (max-width: 600px) { .gx-ctl-figures { gap: 14px; flex-wrap: wrap; } .gx-ctl-figures dd { font-size: 18px; } }
+/* Avisos de la copia: insignia ámbar en Continuidad (roja si alguno es grave) y lista dentro de «Tu copia de seguridad» en Inicio. */
+html body .sidebar .gx-badge[data-tone="warn"] { background: #9a5b00; color: #fff; }
+html body .oc-copy-alerts { display: grid; gap: 0; margin: 8px 0 10px; padding: 0; list-style: none; border-top: 1px solid var(--rule); }
+html body .oc-copy-alerts li { display: flex; align-items: baseline; justify-content: space-between; gap: 4px 12px; padding: 7px 0 7px 12px; border-bottom: 1px solid var(--rule); position: relative; font-size: var(--fs-sm); color: var(--text-2); }
+html body .oc-copy-alerts li::before { content: ""; position: absolute; left: 0; top: 13px; width: 6px; height: 6px; border-radius: 50%; background: var(--warning); }
+html body .oc-copy-alerts li[data-tone="danger"]::before { background: var(--danger); }
+html body .oc-copy-alerts strong { font-weight: 600; color: var(--text-1); }
+html body .oc-copy-alerts .oc-link { flex: none; white-space: nowrap; }
+@media (max-width: 600px) { html body .oc-copy-alerts li { flex-wrap: wrap; } }
+/* ---- Vistas de las listas: inteligentes (destello), guardadas (marcador) y «Guardar vista» ---- */
+html body .gx-views { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: -4px 0 12px; }
+html body .gx-view, html body .gx-view-add { display: inline-flex; align-items: center; gap: 5px; min-height: 28px; padding: 0 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg-surface); font: inherit; font-size: var(--fs-sm); font-weight: 550; color: var(--text-2); cursor: pointer; transition: background-color 110ms, border-color 110ms, color 110ms; }
+html body .gx-view:hover, html body .gx-view-add:hover:not(:disabled) { border-color: var(--border-strong); color: var(--text-1); }
+html body .gx-view svg { color: var(--text-3); }
+html body .gx-view > span { min-width: 18px; padding: 0 5px; border-radius: 9px; background: var(--bg-subtle); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; color: var(--text-2); text-align: center; }
+html body .gx-view[aria-pressed="true"] { border-color: var(--primary); background: var(--primary-subtle); color: var(--primary-text); }
+html body .gx-view[aria-pressed="true"] svg { color: var(--primary-text); }
+html body .gx-view[aria-pressed="true"] > span { background: var(--primary); color: var(--text-inverse); }
+html body .gx-view-saved { display: inline-flex; align-items: center; }
+html body .gx-view-saved .gx-view { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+html body .gx-view-remove { display: inline-grid; place-items: center; width: 26px; min-height: 28px; margin-left: -1px; border: 1px solid var(--border); border-radius: 0 999px 999px 0; background: var(--bg-surface); color: var(--text-3); cursor: pointer; }
+html body .gx-view-remove:hover { color: var(--danger); border-color: var(--border-strong); }
+html body .gx-view-add { border-style: dashed; color: var(--primary-text); background: transparent; }
+html body .gx-view-add:disabled { color: var(--text-3); cursor: default; opacity: .75; }
+html body .gx-view-form { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+html body .main-content .gx-view-form input { width: 200px; min-height: 30px !important; height: 30px !important; }
+html body .main-content .gx-view-form .button { min-height: 30px !important; }
+html body .gx-view-form small { font-size: var(--fs-xs); }
+html body .gx-views-note { font-size: var(--fs-xs); color: var(--text-3); }
+@media (max-width: 600px) {
+  html body .gx-views { flex-wrap: nowrap; overflow-x: auto; margin-inline: calc(var(--page-gutter) * -1); padding: 2px var(--page-gutter) 4px; scrollbar-width: none; }
+  html body .gx-view, html body .gx-view-add, html body .gx-view-remove { min-height: 44px; flex: none; }
+  html body .gx-view-form { flex-wrap: nowrap; }
+  html body .main-content .gx-view-form input { width: 160px; min-height: 44px !important; height: 44px !important; }
+  html body .main-content .gx-view-form .button { min-height: 44px !important; }
+  html body .gx-views-note, html body .gx-view-form small { display: none; }
+}
+/* ---- Estado de carga común (Faro 2 · estados): el texto de siempre, un indicador que gira y la forma del contenido que llega.
+   Solo CSS sobre el mismo elemento: no cambia textos, roles ni estructura. Sin animación si se pide movimiento reducido. ---- */
+html body p.ui-loading.ui-loading { display: block; min-height: 18px; color: var(--text-3); font-size: var(--fs-sm); font-style: normal; }
+html body .ui-loading::before { content: ""; display: inline-block; width: 12px; height: 12px; margin: 0 8px 0 0; vertical-align: -2px; border-radius: 50%; border: 2px solid var(--border-strong); border-top-color: var(--primary); animation: ui-spin .9s linear infinite; }
+html body .ui-loading::after { content: ""; display: block; height: 46px; margin: 12px 0 2px; border-radius: 6px; opacity: .9;
+  background-image: linear-gradient(var(--ui-skel), var(--ui-skel)), linear-gradient(var(--ui-skel), var(--ui-skel)), linear-gradient(var(--ui-skel), var(--ui-skel));
+  background-size: 94% 10px, 78% 10px, 56% 10px; background-position: 0 0, 0 18px, 0 36px; background-repeat: no-repeat; animation: ui-breathe 1.4s ease-in-out infinite; }
+html body .ui-loading { --ui-skel: var(--border); }
+html[data-theme="dark"] body .ui-loading { --ui-skel: #24434a; }
+html body .ui-loading.ui-loading-sm::after { height: 10px; margin-top: 10px; background-size: 72% 10px; background-image: linear-gradient(var(--ui-skel), var(--ui-skel)); }
+@keyframes ui-spin { to { transform: rotate(360deg); } }
+@keyframes ui-breathe { 0%, 100% { opacity: .95; } 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { html body .ui-loading::before, html body .ui-loading::after { animation: none; } }
+/* Cabecera de Continuidad: versión y «Parte para compartir» juntos a la derecha. */
+html body .continuity-home > .page-header .ct-head-side { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 600px) { html body .continuity-home > .page-header .ct-head-side { justify-content: flex-start; } }
+/* ---- Estado vacío común (Faro 2 · estados): mismo texto, dos tonos. Neutro: «no hay datos» (marco discontinuo y círculo vacío).
+   «Todo en orden» (`ui-empty-ok`): fondo de éxito y ✓. Solo CSS sobre el mismo elemento; no cambia textos, roles ni estructura. ---- */
+html body p.ui-empty.ui-empty { display: flex; align-items: center; gap: 10px; margin: 0; padding: 12px 14px; border: 1px dashed var(--border-strong); border-radius: var(--r-lg); background: transparent; color: var(--text-2); font-size: var(--fs-sm); line-height: 1.45; }
+html body .ui-empty::before { content: ""; flex: none; width: 16px; height: 16px; border-radius: 50%; border: 1.5px dashed var(--text-3); }
+html body p.ui-empty.ui-empty-ok { border: 1px solid var(--success-border); background: var(--success-bg); color: var(--text-1); }
+html body .ui-empty.ui-empty-ok::before { content: "✓"; display: grid; place-items: center; width: 18px; height: 18px; border: 0; background: var(--success); color: #fff; font-size: 11px; font-weight: 800; line-height: 1; }
+html[data-theme="dark"] body .ui-empty.ui-empty-ok::before { color: #0b1f22; }
+/* ---- Primer uso (Inicio sin copia): tres pasos con su estado ---- */
+html body .gx-first { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: 20px 32px; padding: 24px 26px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--bg-surface); }
+.gx-first-intro h2 { margin: 0 0 8px; font: 600 22px/1.25 var(--font-display, Georgia, serif); color: var(--text-1); }
+.gx-first-intro p { margin: 0; max-width: 46ch; color: var(--text-2); line-height: 1.55; }
+.gx-first-steps { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; counter-reset: none; }
+.gx-first-steps li { position: relative; display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 14px; padding: 0 0 18px; }
+.gx-first-steps li:not(:last-child)::after { content: ""; position: absolute; left: 15px; top: 34px; bottom: 4px; width: 2px; background: var(--border); }
+.gx-first-mark { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--border-strong); background: var(--bg-surface); font-weight: 700; color: var(--text-3); }
+.gx-first-steps li[data-state="current"] .gx-first-mark { border-color: var(--primary); background: var(--primary); color: var(--text-inverse); }
+.gx-first-steps li[data-state="done"] .gx-first-mark { border-color: var(--success); background: var(--success-bg); color: var(--success); }
+.gx-first-body h3 { display: flex; align-items: center; gap: 8px; margin: 5px 0 4px; font-size: var(--fs-lg); font-weight: 650; color: var(--text-1); }
+.gx-first-icon { display: inline-grid; color: var(--text-3); }
+.gx-first-steps li[data-state="current"] .gx-first-icon { color: var(--primary-text); }
+.gx-first-body p { margin: 0 0 10px; color: var(--text-2); font-size: var(--fs-sm); line-height: 1.5; max-width: 62ch; }
+.gx-first-body .gx-first-done { margin: 0; font-weight: 600; color: var(--success); }
+.gx-first-body .gx-first-waiting { margin: 0; font-size: var(--fs-xs); color: var(--text-3); }
+.gx-first-steps li[data-state="next"] .gx-first-body > p:first-of-type { color: var(--text-3); }
+.gx-first-more { grid-column: 2; margin: -6px 0 0 46px; font-size: var(--fs-sm); color: var(--text-3); }
+.gx-first-more .text-button { margin: 0; padding: 0 4px; min-height: 24px; }
+@media (max-width: 900px) { html body .gx-first { grid-template-columns: minmax(0, 1fr); padding: 18px; } .gx-first-more { grid-column: 1; margin-left: 46px; } }
+/* Preparación · primer paso (solo sin copia): colores heredados de la paleta antigua por debajo de AA (3,25–4,45) y opciones
+   blancas en oscuro. Pasan a los tokens de Faro. */
+html body .profile-options .profile-option { background: var(--bg-surface); border-color: var(--border); color: var(--text-1); }
+html body .profile-options .profile-option.chosen { background: var(--primary-subtle); border-color: var(--primary); }
+html body .profile-options .profile-option small { color: var(--text-2); }
+html body .count-grid span { color: var(--text-2); }
+html body .preserve-panel p, html body .preserve-panel .muted, html body .preserve-panel li { color: var(--text-2); }
+html body .preserve-panel h3, html body .preserve-panel strong { color: var(--text-1); }
+html[data-theme="dark"] body .profile-options .profile-initials { background: var(--bg-subtle); border-color: var(--border); color: var(--text-1); }
+/* ---- Estado de error común (Faro 2 · estados): acento rojo a la izquierda, «!» y texto legible sobre fondo suave, con los
+   tokens del tema (antes varios errores usaban colores claros fijos y en oscuro salían como recuadros blancos).
+   Solo CSS sobre los mismos elementos: no cambia textos ni roles. Los avisos (ámbar) no se tocan. ---- */
+html body :is(.error-box, .global-error, .cr-error, .dc-error, .drv-error, .rr-alert, .rc-alert, .cev-error) {
+  position: relative; display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 6px 12px; margin-top: 0;
+  padding: 10px 12px 10px 38px; border: 1px solid var(--danger-border); border-left: 3px solid var(--danger); border-radius: var(--r-lg);
+  background: var(--danger-bg); color: var(--text-1); font-size: var(--fs-sm); line-height: 1.5; }
+html body :is(.error-box, .global-error, .cr-error, .dc-error, .drv-error, .rr-alert, .rc-alert, .cev-error)::before {
+  content: "!"; position: absolute; left: 12px; top: 11px; display: grid; place-items: center; width: 17px; height: 17px; border-radius: 50%;
+  background: var(--danger); color: #fff; font-size: 11px; font-weight: 800; line-height: 1; }
+html[data-theme="dark"] body :is(.error-box, .global-error, .cr-error, .dc-error, .drv-error, .rr-alert, .rc-alert, .cev-error)::before { color: #1a0d0d; }
+html body :is(.error-box, .global-error, .cr-error, .dc-error, .drv-error, .rr-alert, .rc-alert, .cev-error) :is(strong, b) { color: var(--danger); }
+html body :is(.error-box, .global-error, .cr-error, .dc-error, .drv-error, .rr-alert, .rc-alert, .cev-error) > p { margin: 0; }
+html body :is(.error-box, .global-error) .text-button { color: var(--danger); font-weight: 600; }
+/* Mensajes de error que se pintaban como texto gris (role="alert" en notas): mismo tono de error, en línea. */
+html body :is(.lint-muted, .oc-muted, .gx-related-note, .muted, .helper)[role="alert"] { color: var(--danger); font-weight: 550; }
+html body .clab-error { color: var(--danger); }
+/* ---- Ensayo guiado «Un día sin CRM»: panel flotante abajo a la derecha ---- */
+html body .gx-drill { position: fixed; right: 20px; bottom: 20px; z-index: 60; width: 320px; max-width: calc(100vw - 32px); border: 1px solid var(--border-strong); border-radius: 12px; background: var(--bg-surface); box-shadow: 0 12px 32px rgba(8, 25, 28, .18); overflow: hidden; }
+.gx-drill-head { display: flex; align-items: center; gap: 4px; padding: 10px 8px 8px 14px; }
+.gx-drill-head > div { flex: 1; min-width: 0; display: grid; }
+.gx-drill-head strong { font-size: var(--fs-md); color: var(--text-1); }
+.gx-drill-head span { font-size: var(--fs-xs); color: var(--text-3); font-variant-numeric: tabular-nums; }
+.gx-drill-bar { height: 3px; background: var(--bg-subtle); }
+.gx-drill-bar span { display: block; height: 100%; background: var(--primary); transition: width 240ms ease; }
+.gx-drill-steps { margin: 0; padding: 8px 14px 12px; list-style: none; display: grid; gap: 2px; }
+.gx-drill-steps li { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 10px; padding: 5px 0; }
+.gx-drill-mark { display: grid; place-items: center; width: 18px; height: 18px; margin-top: 1px; border-radius: 50%; border: 1.5px solid var(--border-strong); color: var(--success); }
+.gx-drill-steps li[data-state="done"] .gx-drill-mark { border-color: var(--success); background: var(--success-bg); }
+.gx-drill-steps li[data-state="current"] .gx-drill-mark { border-color: var(--primary); box-shadow: inset 0 0 0 4px var(--bg-surface); background: var(--primary); }
+.gx-drill-title { font-size: var(--fs-sm); color: var(--text-2); }
+.gx-drill-steps li[data-state="done"] .gx-drill-title { color: var(--text-3); text-decoration: line-through; text-decoration-color: var(--border-strong); }
+.gx-drill-steps li[data-state="current"] .gx-drill-title { font-weight: 650; color: var(--text-1); }
+.gx-drill-steps p { margin: 3px 0 4px; font-size: var(--fs-xs); color: var(--text-2); line-height: 1.45; }
+.gx-drill-steps .text-button { margin: 0; padding: 0; min-height: 24px; font-size: var(--fs-sm); font-weight: 600; color: var(--primary-text); }
+.gx-drill-done { padding: 10px 14px 14px; }
+.gx-drill-done p:first-child { display: flex; gap: 6px; align-items: flex-start; margin: 0 0 6px; font-weight: 600; color: var(--text-1); }
+.gx-drill-done p:first-child svg { color: var(--success); flex: none; margin-top: 2px; }
+.gx-drill-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+html body .ct-verify-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+@media (max-width: 760px) { html body .gx-drill { right: 12px; left: 12px; width: auto; bottom: calc(68px + env(safe-area-inset-bottom)); } }
+/* Con una ficha o ventana modal abierta, el panel del ensayo no tapa sus botones: en escritorio pasa abajo a la izquierda
+   del contenido y en móvil se aparta (sigue contando; vuelve al cerrar la ficha). */
+html body:has(.record-drawer, [role="dialog"][aria-modal="true"]) .gx-drill { right: auto; left: calc(var(--sidebar-width, 220px) + 20px); }
+@media (max-width: 760px) { html body:has(.record-drawer, [role="dialog"][aria-modal="true"]) .gx-drill { display: none; } }
+/* ---- Espacio de equipo (/team) en Faro ----
+   Móvil: el menú lateral se ocultaba sin sustituto y no había forma de cambiar de sección. Pasa a ser una rejilla con TODAS
+   las secciones a la vista (icono y nombre, objetivos ≥ 48 px): 4 columnas, 3 por debajo de 360 px. «CRM completo» (piloto)
+   se mantiene encima. No es fija, para no restar pantalla al desplazarse. */
+@media (max-width: 760px) {
+  html body .team-shell .sidebar { display: block !important; position: static !important; width: auto; height: auto; min-height: 0; padding: 8px 12px 10px !important; background: var(--bg-sidebar); border: 0; border-bottom: 1px solid var(--sb-border); }
+  html body .team-shell .sidebar > :not(nav):not(.context-back) { display: none !important; }
+  html body .team-shell .sidebar .context-back { display: inline-flex; margin: 0 0 6px; min-height: 32px; color: var(--sb-text-strong); }
+  html body .team-shell .sidebar nav.company-navigation { display: grid !important; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 0; overflow: visible; }
+  html body .team-shell .sidebar nav.company-navigation .nav-item { flex: none !important; display: flex !important; flex-direction: column !important; align-items: center; justify-content: center; gap: 3px; width: 100% !important; max-width: none !important; min-width: 0 !important; min-height: 52px !important; height: auto !important; padding: 6px 2px !important; border-radius: 10px; font-size: 11.5px; line-height: 1.15; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  html body .team-shell .sidebar nav.company-navigation .nav-item svg { flex: none; }
+  html body .team-shell .sidebar nav.company-navigation .nav-item.active { background: var(--sb-active); color: var(--sb-text-strong); }
+  html body .team-shell .sidebar nav.company-navigation .nav-item::after { display: none !important; }
+  html body .team-shell .team-topbar { position: static; }
+}
+@media (max-width: 359px) { html body .team-shell .sidebar nav.company-navigation { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+/* Tablas y textos del espacio de equipo con los tokens del tema: en oscuro la tabla de Empresa conservaba fondos claros
+   y el texto de Comercial un azul grisáceo fijo (contraste 1,55–2,29). */
+html body .team-shell .company-table-scroll :is(th, td) { background: var(--bg-surface); color: var(--text-1); border-color: var(--rule); }
+html body .team-shell .company-table-scroll th { background: var(--bg-subtle); color: var(--text-2); }
+html body .commercial-brand-row p { color: var(--text-2); }
+/* Tonos de etiqueta 1–5 en oscuro (solo existía el 0): fondos profundos y texto claro del mismo matiz, ≥ 4,5:1. */
+html[data-theme="dark"] { --tone-1-bg: #2a2147; --tone-1: #c9b8ff; --tone-2-bg: #12302f; --tone-2: #7fd9cc; --tone-3-bg: #3a2414; --tone-3: #f2b48a; --tone-4-bg: #3b1828; --tone-4: #f5a3c4; --tone-5-bg: #12293a; --tone-5: #8fcbf2; }
+/* Espacio de equipo en móvil: las tablas de Contactos y de «Registros guardados» pasan a tarjetas, como las listas de la App
+   local (nombre arriba, pares etiqueta · valor y el botón de editar a la derecha) en lugar de desplazarse en horizontal. */
+@media (max-width: 600px) {
+  html body .team-shell :is(.team-table, .company-table-scroll) { overflow: visible; }
+  html body .team-shell :is(.team-table, .company-table-scroll) table { display: block; width: 100%; min-width: 0 !important; border: 0; }
+  html body .team-shell :is(.team-table, .company-table-scroll) thead { display: none; }
+  html body .team-shell :is(.team-table, .company-table-scroll) tbody { display: grid; gap: 8px; }
+  html body .team-shell :is(.team-table, .company-table-scroll) tr { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 4px 12px; padding: 12px 44px 12px 14px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--bg-surface); }
+  html body .team-shell :is(.team-table, .company-table-scroll) td { display: block; height: auto; min-width: 0; padding: 0 !important; border: 0 !important; background: none !important; font-size: var(--fs-sm); color: var(--text-1); overflow-wrap: anywhere; }
+  html body .team-shell :is(.team-table, .company-table-scroll) td[data-label]::before { content: attr(data-label); display: block; font-size: var(--fs-xs); font-weight: 600; color: var(--text-3); }
+  html body .team-shell :is(.team-table, .company-table-scroll) td[data-label="Nombre"] { grid-column: 1 / -1; font-size: var(--fs-md); font-weight: 650; }
+  html body .team-shell :is(.team-table, .company-table-scroll) td[data-label="Nombre"]::before { display: none; }
+  html body .team-shell .team-table td.team-row-edit { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); }
+  html body .team-shell .team-table td.team-row-edit .icon-button { width: 40px; height: 44px; }
+}
+/* ---- Espacio de equipo · Dispositivos y Equipo en paneles; conflictos como comparación de campos ---- */
+html body .team-shell .team-panel { margin: 0 0 12px; padding: 14px 16px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--bg-surface); }
+html body .team-shell .team-panel > h2 { margin: 0 0 4px; font-family: var(--font-sans); font-size: 14px; font-weight: 650; color: var(--text-1); }
+html body .team-shell .team-panel > .helper { margin: 0 0 10px; max-width: 80ch; }
+html body .team-shell .team-panel .history-list { margin: 0; }
+html body .team-shell .team-panel .settings-grid { margin: 0 0 10px; }
+html body .team-shell .team-inline-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 10px; }
+html body .team-shell .team-inline-form .field { flex: 0 1 320px; margin: 0; }
+html body .team-shell .team-conflict { margin: 0 0 10px; padding: 12px 14px; border: 1px solid var(--warning-border); border-left: 3px solid var(--warning); border-radius: var(--r-lg); background: var(--bg-surface); }
+html body .team-shell .team-conflict h3 { margin: 0 0 8px; font-size: var(--fs-md); }
+html body .team-conflict-values { width: 100%; margin: 0 0 10px; border-collapse: collapse; font-size: var(--fs-sm); }
+html body .team-conflict-values :is(th, td) { padding: 6px 8px; border-bottom: 1px solid var(--rule); text-align: left; vertical-align: top; overflow-wrap: anywhere; color: var(--text-1); }
+html body .team-conflict-values thead th { font-size: var(--fs-xs); font-weight: 600; color: var(--text-3); }
+html body .team-conflict-values tbody th { width: 28%; font-weight: 600; color: var(--text-2); }
+html body .team-conflict-values tr[data-differs="true"] td { background: var(--warning-bg); }
+@media (max-width: 600px) { html body .team-shell .team-inline-form .field { flex: 1 1 100%; } }
+html body .team-shell .team-panel .history-list:empty { display: none; }
+
+/* ===== Menú de cinco lugares y Laboratorio (CLAUDE-UI-NAV-LAB, 17/11/2026) ===== */
+/* Bloquear vive en la barra superior: en pantallas estrechas solo el candado, con su nombre accesible. */
+@media (max-width: 760px) { html body .gx-topbar .gx-lock span { display: none; } }
+/* El Laboratorio queda separado de los cinco lugares y con su rótulo de «datos de prueba». */
+html body .sidebar .gx-nav-lab { margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.08); }
+
+/* ===== Deshacer desde el aviso de guardado (CLAUDE-UNDO-LAST, 17/11/2026) ===== */
+html body .toast .toast-action { margin-left: 12px; padding: 4px 10px; border: 1px solid currentColor; border-radius: 999px; background: transparent; color: inherit; font: inherit; font-weight: 600; cursor: pointer; }
+html body .toast .toast-action:hover, html body .toast .toast-action:focus-visible { background: rgba(255, 255, 255, 0.14); }
+
+/* ===== Arreglos visuales concretos (mejora D4, 17/11/2026) ===== */
+/* Comprobar una fecha: los desplegables con textos largos (Habilidad) ocupan dos columnas, como Material, y no se cortan. */
+html body .dc-grid > label.dc-field:has(> select):not(.dc-wide) { grid-column: span 2; }
+@media (max-width: 900px) { html body .dc-grid > label.dc-field:has(> select):not(.dc-wide) { grid-column: auto; } }
+/* Hoy en móvil: la banda del Laboratorio se lee entera (varias líneas) en lugar de cortarse con puntos suspensivos. */
+@media (max-width: 760px) {
+  html body .or-today { flex-wrap: wrap; align-items: flex-start; padding: 8px 10px; }
+  html body .or-today p { white-space: normal; overflow: visible; text-overflow: clip; flex-basis: 100%; }
+}
+/* La fila bajo el ratón usa el color del tema (refinements.css la dejaba en #f8faff también en oscuro). */
+html body tbody tr:hover { background: var(--bg-row-hover); }
+
+/* ===== Error con qué hacer (CLAUDE-UI-STATES-D3, 17/11/2026) ===== */
+html body .ui-error { display: grid; gap: 8px; justify-items: start; padding: 16px 18px; border: 1px solid var(--border); border-left: 3px solid var(--danger, #b3261e); border-radius: 10px; background: var(--surface, #fff); }
+html body .ui-error h3 { margin: 0; font-size: var(--fs-md, 15px); }
+html body .ui-error p { margin: 0; color: var(--text-muted, #555); max-width: 64ch; }
+/* ---- Tipografía propia empaquetada (17/11/2026, con autorización del usuario) ----
+   Inter para el texto y Source Serif 4 para los títulos, variables (400–700) y solo con el subconjunto latino; licencia SIL OFL
+   (src/assets/fonts). Nombres propios para no mezclarse con copias instaladas en el equipo. Si no cargan, siguen las del sistema. */
+@font-face { font-family: "Faro Sans"; src: url("./assets/fonts/inter-latin-var.woff2") format("woff2"); font-weight: 400 700; font-style: normal; font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Faro Serif"; src: url("./assets/fonts/source-serif-4-latin-var.woff2") format("woff2"); font-weight: 400 700; font-style: normal; font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+:root {
+  --font-sans: "Faro Sans", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Faro Serif", "Sitka Heading", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+}
+html body { font-family: var(--font-sans); }
+/* Buscador del menú lateral: «Buscar en toda la copia» se cortaba («Buscar en toda l…»). Texto un punto más pequeño y la
+   pista «Ctrl K» más compacta para que quepa entero en los 208 px de la barra. */
+html body .sidebar .oc-search span { font-size: 12.5px; letter-spacing: -0.005em; white-space: nowrap; }
+html body .sidebar .oc-search::after { padding: 0 4px; font-size: 9.5px; }
+html body .sidebar .oc-search { gap: 6px; padding: 0 7px; }
+
+/* D7 · Accesibilidad (CLAUDE-A11Y-D7, 17/11/2026): todo control de una celda de tabla mide al menos 24 px de alto
+   (WCAG 2.2 · 2.5.8). Antes, el nombre de cada registro medía 17–22 px y el selector de estado de las tareas 22 px. */
+html body td .record-link { min-height: 24px; } /* el selector de estado: 24 px en su propia regla (arriba, «gx-inline») */
+/* Barra de estado de las listas con la tipografía nueva: a 1280 px empujaba «Anterior / Siguiente» fuera de la pantalla.
+   Se recorta antes (hasta 1360 px se ocultan la nota de especificación y la fecha de copia, que ya están en la barra superior)
+   y, si aun así no cabe, pasa a una segunda línea. */
+html body .gx-statusbar { flex-wrap: wrap; row-gap: 4px; }
+@media (max-width: 1360px) { html body .gx-statusbar .demo-caption, html body .gx-statusbar .copy-date { display: none; } }
+/* Buscador del menú lateral: sin la pista «Ctrl K» (sigue en la ayuda y en la paleta) para que el texto quepa entero. */
+html body .sidebar .oc-search::after { display: none; }
+
+/* D7 · En el móvil (< 768 px), todo control mide al menos 44 px (WCAG 2.5.5 y guías de iOS/Android). La auditoría
+   tools/visual/a11y.mts lo mide. Quedan fuera los botones y enlaces dentro de una frase (WCAG 2.5.8 los exime y estirarlos
+   rompería el texto), las casillas dentro de su etiqueta y la rejilla de días del calendario. */
+@media (max-width: 767px) {
+  html body :is(button, select, [role="tab"], [role="button"], a.button, .skip-link, input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"])):not(p *):not(.fx-days *) { min-height: 44px; }
+  html body :is(button, a.button, [role="button"]):not(p *):not(.fx-days *) { min-width: 44px; }
+  html body .gx-statusbar .pagination .button { min-height: 44px; height: 44px; }
+  html body .main-content .table-container td select.gx-inline.gx-inline.gx-inline { height: 44px !important; min-height: 44px !important; }
+  /* La barra superior medía 34 px en el móvil: crece para que sus botones de 44 px no queden recortados. */
+  html body .workspace-context.gx-topbar { height: 52px; min-height: 52px; }
+}
+
+/* ── Oportunidades (17/11): tablero más claro y ficha con resumen ─────────────────────────────
+   Columnas ligeras con el acento de su etapa y su parte del total abierto; tarjetas con el cierre a la vista;
+   «Ganada» con acento de éxito y «Perdida» atenuada; columnas vacías compactas; en móvil, etapas apiladas. */
+html body .kanban-column { background: var(--bg-subtle); border: 1px solid var(--border); border-top: 3px solid var(--stage, var(--border-strong)); padding: 8px; gap: 7px; }
+html body .kanban-column[data-kind="won"] { border-top-color: var(--success); background: color-mix(in srgb, var(--success-bg) 60%, var(--bg-surface)); }
+html body .kanban-column[data-kind="lost"] { border-top-color: var(--text-3); }
+html body .kanban-column h2 { padding: 2px 4px 0; font-size: var(--fs-md); color: var(--text-1); }
+html body .kanban-column h2 .dot { display: none; }
+html body .kanban-column h2 small { background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-2); }
+html body .kanban-column .gx-sum { display: flex; align-items: center; gap: 8px; margin: -3px 0 1px; padding: 0 4px; color: var(--text-2); }
+html body .gx-share { flex: 1 1 auto; max-width: 90px; height: 4px; border-radius: 2px; background: var(--border); overflow: hidden; }
+html body .gx-share i { display: block; height: 100%; border-radius: 2px; background: var(--stage, var(--primary)); }
+html body .kanban-column[data-empty="true"] .column-empty { padding: 8px; border-color: var(--border-strong); background: transparent; }
+html body .deal-card { gap: 4px 10px; padding: 10px 11px 9px; border: 1px solid var(--border); box-shadow: 0 1px 1px rgba(21, 23, 28, .04); }
+html body .deal-card strong { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+html body .deal-card > span:not(.card-edit) { font-size: 14px; }
+html body .deal-card small { color: var(--text-2); }
+html body .deal-card .deal-close { grid-column: 1 / -1; justify-self: start; margin-top: 3px; padding: 1px 7px; border-radius: 999px; font-style: normal; font-size: 11.5px; font-weight: 550; line-height: 18px; background: var(--bg-subtle); color: var(--text-2); }
+html body .deal-card .deal-close[data-tone="late"] { background: var(--danger-bg); color: var(--danger); }
+html body .deal-card .deal-close[data-tone="soon"] { background: var(--warning-bg); color: var(--warning); }
+html body .deal-card .deal-close[data-tone="none"] { background: transparent; padding-left: 0; color: var(--text-3); }
+html body .deal-card:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+html[data-theme="dark"] body .kanban-column { background: #142326; border-color: #253a3e; }
+html[data-theme="dark"] body .kanban-column[data-kind="won"] { background: #12271f; }
+html[data-theme="dark"] body .deal-card { background: #1a2e32; border-color: #2b4448; }
+html[data-theme="dark"] body .deal-card .deal-close { background: #223a3e; }
+html[data-theme="dark"] body .deal-card .deal-close[data-tone="late"] { background: var(--danger-bg); }
+html[data-theme="dark"] body .deal-card .deal-close[data-tone="soon"] { background: var(--warning-bg); }
+html[data-theme="dark"] body .deal-card .deal-close[data-tone="none"] { background: transparent; }
+@media (max-width: 760px) {
+  html body .workspace > .kanban { flex-direction: column; overflow-x: visible; gap: 10px; }
+  html body .kanban-column { flex: none; width: 100%; }
+  html body .kanban-column[data-empty="true"] { flex-direction: row; align-items: center; justify-content: space-between; padding: 6px 10px; }
+  html body .kanban-column[data-empty="true"] h2 { padding: 0; flex: 1 1 auto; }
+  html body .kanban-column[data-empty="true"] .column-empty { border: 0; padding: 0 0 0 10px; }
+  html body .deal-card { min-height: 44px; }
+}
+
+/* Ficha de una oportunidad: resumen arriba y un panel algo más ancho para leer el avance. */
+html body .record-drawer[data-entity="deals"] { width: min(520px, 100vw); }
+html body .deal-summary { display: grid; gap: 10px; margin: 0 0 6px; padding: 14px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--bg-subtle); }
+html body .deal-summary[data-kind="won"] { border-color: var(--success-border); background: var(--success-bg); }
+html body .ds-top { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+html body .ds-amount { display: grid; margin: 0; }
+html body .ds-amount span { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--text-3); }
+html body .ds-amount strong { font-family: var(--font-display); font-size: 28px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; color: var(--text-1); }
+html body .ds-close { display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 4px 10px; border-radius: 999px; font-size: var(--fs-sm); font-weight: 550; background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-2); }
+html body .ds-close[data-tone="late"] { background: var(--danger-bg); border-color: var(--danger-border); color: var(--danger); }
+html body .ds-close[data-tone="soon"] { background: var(--warning-bg); border-color: var(--warning-border); color: var(--warning); }
+html body .ds-close[data-tone="won"] { border-color: var(--success-border); color: var(--success); }
+html body .ds-refs { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; padding: 0; list-style: none; font-size: var(--fs-sm); color: var(--text-2); }
+html body .ds-refs li { display: inline-flex; align-items: center; gap: 5px; }
+html body .ds-steps ol { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+html body .ds-steps button { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px 0 6px; border-radius: 999px; border: 1px solid var(--border-strong); background: var(--bg-surface); font: inherit; font-size: var(--fs-sm); color: var(--text-2); cursor: pointer; }
+html body .ds-steps button:hover:not(:disabled) { border-color: var(--primary); color: var(--text-1); }
+html body .ds-steps button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+html body .ds-mark { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--border-strong); }
+html body .ds-steps [data-state="done"] button { color: var(--text-1); }
+html body .ds-steps [data-state="done"] .ds-mark { border-color: var(--primary); background: var(--primary); color: #fff; }
+html body .ds-steps [data-state="current"] button { border-color: var(--primary); background: var(--primary); color: #fff; font-weight: 600; }
+html body .ds-steps [data-state="current"] .ds-mark { border-color: #fff; background: #fff; box-shadow: inset 0 0 0 4px var(--primary); }
+html body .ds-steps [data-state="won"] button { border-color: var(--success); background: var(--success); color: #fff; font-weight: 600; }
+html body .ds-steps [data-state="won"] .ds-mark { border-color: #fff; color: #fff; }
+html body .ds-steps [data-state="lost"] button { border-color: var(--danger); background: var(--danger-bg); color: var(--danger); font-weight: 600; }
+html body .ds-steps [data-state="lost"] .ds-mark { border-color: var(--danger); color: var(--danger); }
+html[data-theme="dark"] body .deal-summary { background: #182a2e; border-color: #2b4448; }
+html[data-theme="dark"] body .deal-summary[data-kind="won"] { background: var(--success-bg); border-color: var(--success-border); }
+html[data-theme="dark"] body :is(.ds-close, .ds-steps button) { background: #1a2e32; }
+html[data-theme="dark"] body .ds-close[data-tone="late"] { background: var(--danger-bg); }
+html[data-theme="dark"] body .ds-close[data-tone="soon"] { background: var(--warning-bg); }
+html[data-theme="dark"] body .ds-steps [data-state="current"] button { background: #0f766c; border-color: #6fd6c8; color: #fff; }
+html[data-theme="dark"] body .ds-steps [data-state="done"] .ds-mark { background: #0f766c; border-color: #6fd6c8; }
+html[data-theme="dark"] body .ds-steps [data-state="won"] button { background: #1b6a45; border-color: var(--success); }
+html[data-theme="dark"] body .ds-steps [data-state="lost"] button { background: var(--danger-bg); }
+@media (max-width: 600px) { html body .ds-steps button { min-height: 44px; } }
+/* Escritorio: las etapas reparten el ancho y una etapa vacía se estrecha para dar sitio a las que tienen tarjetas. */
+@media (min-width: 761px) {
+  html body .workspace > .kanban { display: flex; align-items: stretch; }
+  html body .kanban-column { flex: 1 1 0; min-width: 220px; }
+  html body .kanban-column[data-empty="true"] { flex: 0 0 170px; min-width: 0; }
+}

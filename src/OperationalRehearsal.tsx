@@ -221,16 +221,16 @@ export function OperationalRehearsal({ contextRevision: pin, commitmentId, onCon
       <header className="or-head">
         <div>
           <h2 id={ids + 't'}>Ensayar mi semana</h2>
-          <p className="or-fiction"><span className="or-chip">Ensayo · ficción</span> Nada de lo que pruebes aquí se envía a ningún proveedor ni cambia tus datos. Solo «Confirmar decisión» registra algo, y lo hace en tu copia local.</p>
+          <p className="or-fiction"><span className="or-chip">Datos de prueba</span> Nada de lo que pruebes aquí se envía a ningún proveedor ni cambia tus datos. Solo «Confirmar decisión» registra algo, y lo hace en tu copia local.</p>
         </div>
         {onClose ? <button type="button" className="button secondary" onClick={onClose}>Volver al compromiso</button> : null}
       </header>
       <p className="or-live" role="status" aria-live="polite">{announce}</p>
       {error ? <div className="error-box or-error" role="alert">{error} <button type="button" className="text-button" onClick={() => void load()}>Actualizar</button></div> : null}
       {!pin ? <p className="or-empty">Abre una copia de ensayo para poder ensayar la semana.</p>
-        : loading && !overview ? <p className="or-empty">Leyendo la semana…</p>
+        : loading && !overview ? <p className="or-empty ui-loading">Leyendo la semana…</p>
         : overview?.status === 'radar-not-ready' ? <p className="or-empty">Activa primero el escenario de ensayo del Radar: la semana se ensaya sobre sus compromisos.</p>
-        : overview?.status === 'commitment-not-linked' ? <p className="or-empty">Este compromiso no tiene semana de ensayo en los datos de ficción. Prueba con «Instalación de 12 equipos en Almacén Norte».</p>
+        : overview?.status === 'commitment-not-linked' ? <p className="or-empty">Este compromiso no tiene semana de ensayo en los datos de prueba. Prueba con «Instalación de 12 equipos en Almacén Norte».</p>
         : overview && focus && overview.diagnosis ? <>
           <section className="or-block" aria-labelledby={ids + 'c'}>
             <h3 id={ids + 'c'}>{focus.title}</h3>

@@ -52,7 +52,7 @@ export function Preparation({ state:sourceState, step, setStep, refresh, openWor
     void run(async()=>{try{const result=await post<{ready:boolean;reviewedRevision:string}>('/v4/activate-reviewed',{reviewed:true,revision});if(!result.ready||result.reviewedRevision!==revision)throw Error('El servidor no confirmó la revisión activada. Consulta el estado antes de repetir.');}catch(error){if(alive.current){setReviewed(null);setNonce(n=>n+1);}throw error;}},undefined,openWorkspace);
   };
   return <section className="preparation">
-    <header className="prepare-heading"><div><h1>Tu CRM, con un plan B.</h1><p className="page-subtitle">Prepara una aplicación independiente con tus datos y procesos.</p></div><span className="badge"><span className="dot" />{production?'Producción · lectura':'Local · Datos de ensayo'}</span></header>
+    <header className="prepare-heading"><div><h1>Tu CRM, con un plan B.</h1><p className="page-subtitle">Prepara una aplicación independiente con tus datos y procesos.</p></div><span className="badge"><span className="dot" />{production?'Producción · lectura':'Local · Datos de prueba'}</span></header>
     <div className="stepper" aria-label="Pasos de preparación">{['Origen', 'Procesos', 'Generar', 'Exportar'].map((label, index) => <div key={label} className={index === step ? 'current' : index < step ? 'done' : ''}><span>{index < step ? <Check size={14} /> : index + 1}</span>{label}{index < 3 ? <i /> : null}</div>)}</div>
     {step === 0 ? <>
       <div className="prepare-columns"><div><h2>Empieza con un CRM de ensayo</h2><p className="muted">Elige un negocio ficticio. Verás cómo se adapta la aplicación.</p>

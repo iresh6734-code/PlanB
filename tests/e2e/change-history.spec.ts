@@ -52,3 +52,29 @@ test('history064: long values wrap, keyboard opens details and controls remain u
   }
   await unchanged(page,state);
 });
+
+test('history064: saved invalid dates keep their exact values and valid dates use the field label',async({page})=>{
+  await page.route('**/api/v2/changes',async route=>{
+    const response=await route.fetch();
+    const body=await response.json();
+    if(body.changes.length<2){await route.fulfill({response,json:body});return;}
+    const dates=['2026-99-01','2026-02-30'];
+    const changes=body.changes.map((change: {id:number},index:number)=>{
+      if(index>=dates.length)return change;
+      const record=(date:string)=>({entity:'tasks',id:'task-1',values:{due_date:date}});
+      return {...change,entity:'tasks',recordId:'task-1',operation:'update',before:record(dates[index]),after:record('2026-11-14')};
+    });
+    await route.fulfill({response,json:{...body,changes}});
+  });
+  const state=await open(page);
+  for(const date of ['2026-99-01','2026-02-30']){
+    await state.history.getByRole('searchbox').fill(date);
+    const row=state.history.locator('details');
+    await expect(row).toHaveCount(1);
+    await expect(row.locator('summary')).toContainText('Fecha límite: '+date+' → 14 nov 2026');
+    await row.locator('summary').click();
+    await expect(row.getByText(JSON.stringify(date),{exact:true})).toBeVisible();
+    await expect(row.getByText('"2026-11-14"',{exact:true})).toBeVisible();
+  }
+  await unchanged(page,state);
+});

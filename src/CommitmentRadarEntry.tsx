@@ -53,9 +53,10 @@ export function CommitmentRadarEntry(props: CommitmentRadarEntryProps) {
     } finally { if (actAbort.current === controller) actAbort.current = null; if (!stale()) setActivating(false); }
   }
 
-  const title = <h2 id="cre-title" ref={heading} tabIndex={-1}>Radar de compromisos</h2>;
-  if (!contextRevision || view.kind === 'idle') return <section className="cr cre" aria-labelledby="cre-title">{title}<p className="cr-empty" role="status">No hay una copia de ensayo activa: el Radar no muestra compromisos.</p></section>;
-  if (view.kind === 'loading') return <section className="cr cre" aria-labelledby="cre-title">{title}<p role="status">Comprobando el Radar de esta copia…</p></section>;
+  // Es la página entera del Radar mientras no hay escenario activo: su título es el h1 (D7).
+  const title = <h1 id="cre-title" ref={heading} tabIndex={-1}>Radar de compromisos</h1>;
+  if (!contextRevision || view.kind === 'idle') return <section className="cr cre" aria-labelledby="cre-title">{title}<p className="cr-empty ui-empty" role="status">No hay una copia de ensayo activa: el Radar no muestra compromisos.</p></section>;
+  if (view.kind === 'loading') return <section className="cr cre" aria-labelledby="cre-title">{title}<p role="status" className="ui-loading">Comprobando el Radar de esta copia…</p></section>;
   if (view.kind === 'error') return <section className="cr cre" aria-labelledby="cre-title">{title}<div className="error-box" role="alert"><p>{view.message}</p><button type="button" className="text-button" onClick={() => void load()}>Reintentar la lectura</button></div></section>;
   const { cap } = view;
   if (cap.status === 'inactive-copy' || cap.status === 'not-fiction') return <section className="cr cre" aria-labelledby="cre-title">{title}<p className="cr-empty" role="status" data-capability={cap.status}>{STATUS_TEXT[cap.status]}</p></section>;

@@ -1,0 +1,13 @@
+# Rediseño del espacio de equipo · 14 de noviembre de 2026
+
+El usuario pidió completar el despliegue iniciado por Claude. A las 16:37, hora de Madrid, el CRM local 4331 respondió 200 en salud y sirvió los 40 activos inventariados de la compilación autorizada. La huella del índice fue `1c68e8e19040000da7b0e7f5226b49f322cc462e0658a2d788e321578b3f1b5b`. La copia de seguridad anterior de Claude está en `planb-local-crm-completo-2026-10-29/runtime/backup-dist-20261114-161033`. La ruta de salud de equipo devuelve 404 en 4331. El servicio local de equipo 4334 no estaba escuchando.
+
+El bundle servido en 4331 contiene el mensaje nuevo de `src/api.ts`. Cuatro sondas locales sobre ese módulo pasaron para fallo de red en lectura y descarga, cancelación y error HTTP 409. No se interrumpió la conexión del CRM que estaba abierto.
+
+Se probó el frontend exacto en Chromium con el binario existente de equipo, una base ficticia nueva y la red exterior bloqueada. Las ocho secciones fueron accesibles a 320 y 390 px en ambos temas. Se comprobaron sección activa, ausencia de desbordamiento horizontal y ausencia de errores HTTP y de página en el recorrido final. El fondo principal cambió de `rgb(238, 241, 238)` a `rgb(13, 23, 25)`. Se inspeccionó la captura oscura a 320 px. Las ejecuciones previas del banco habían esperado un botón transitorio de acceso a la demo. El recorrido final espera la navegación y las verifica una a una. El proceso de ensayo se cerró.
+
+Se instaló el mismo índice y sus activos en `planb-local-google-pilot-2026-10-27/runtime/dist`. Primero se respaldó la versión previa en `planb-local-google-pilot-2026-10-27/runtime/backup-dist-20261114-163759-team` y se comprobaron los hashes del respaldo. Se agregaron 31 activos y se sustituyó el índice al final. Los 40 activos del manifiesto coinciden en destino. El `team.mjs` usado para la prueba y el instalado tienen SHA-256 `80a15c4775ab36ace993b3df03d2a5fe91e9faab3170131dcb5ebffbd7cc5025`.
+
+El banco demuestra las ocho secciones del modo de ensayo. El piloto de un solo operador oculta Equipo y Dispositivos por diseño. Queda pendiente comprobar 4334 en vivo. El arranque normal del piloto puede reanudar trabajos pendientes de HubSpot, por lo que la activación de archivos se completó con el servicio apagado. Para revertir la interfaz basta restaurar el `index.html` respaldado, ya que se conservaron sus activos.
+
+Evidencia en `tests/.tmp/team-deploy-oVUTzG`, con `proof.json`, `deployment.json`, `closed.json` y cuatro capturas. El resultado de 31 a 0 corresponde a la auditoría comunicada por Claude. Este banco comprobó las secciones, dimensiones y temas indicados arriba.

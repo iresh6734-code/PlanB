@@ -86,3 +86,26 @@ Subagente revisor de solo lectura. **Sin defectos graves ni de seguridad**: conf
 ## Siguiente paso propuesto (para Codex, que coordina `server/`)
 
 Con el mapa delante, B4 (registro de módulos en lugar de montajes repetidos en `main.ts` y `runtime.ts`) y B5 (fachada `/api/v8` documentada) se pueden plantear sobre datos: hoy `runtime` sirve 86 de las 115 rutas de `main`, y v2 y v7 concentran el 45 % de la API.
+
+## R2 · Corrección pedida en CODEX-API-REVIEW-358 (17/11/2026)
+
+- **F1, selección vacía destructiva (confirmado).** Con `--entries ","`, el CLI generaba un documento de 0 rutas y podía sustituir `docs/api.md`. Ahora `parseArgs()` valida toda la línea de órdenes **antes** de capturar, leer o escribir, y sale con código 2 y la sintaxis de uso. Rechaza:
+  - opciones desconocidas o repetidas;
+  - valores ausentes o que empiezan por `--`;
+  - piezas vacías y entradas desconocidas o repetidas;
+  - las combinaciones `--json` con `--check`, `--out` o `--doc`, `--check` con `--out` y `--doc` sin `--check`.
+
+  Una selección parcial solo se acepta con destino explícito (`--out`, o `--check --doc`) o hacia la salida estándar (`--json`): `docs/api.md` siempre recoge las tres entradas.
+- **F2, atribución por entrada (confirmado).** Si todas las entradas declaran la ruta en el mismo archivo, se muestra ese archivo. Si difieren, cada archivo va con su entrada (`main: \`a.ts\` · runtime: \`b.ts\``), así que cambiar la atribución cambia el documento. El documento actual no tiene ninguna fila así y queda idéntico.
+- **Pruebas 11/11.** Son tres nuevas:
+  - 15 combinaciones inválidas rechazadas por `parseArgs`, y las válidas aceptadas;
+  - el CLI real con un archivo marcador previo y cuatro órdenes inválidas: código 2, uso impreso y marcador intacto;
+  - la atribución con archivos iguales, distintos e intercambiados.
+- `node tools/api/inventory.mjs --check` → al día, 170 rutas. `tsc` 0.
+
+## R3 · Corrección pedida en CODEX-API-R2-386 (17/11/2026)
+
+- **Selección parcial hacia el documento canónico (confirmado).** `--entries runtime --out docs/api.md` sustituía las 170 rutas por 86. Ahora `parseArgs` compara la ruta de destino **normalizada** (y en Windows sin distinguir mayúsculas) con `docs/api.md`, y rechaza con código 2 cualquier selección parcial que lo escriba (`--out`) o lo compruebe (`--doc`), aunque la ruta esté escrita de otra forma (`./docs/../docs/api.md`, ruta absoluta, `DOCS/API.MD`). Una selección parcial hacia otro archivo sigue permitida.
+- **Entradas heredadas (confirmado).** `constructor`, `toString`, `__proto__` y `hasOwnProperty` ya no pasan: la validación usa `Object.hasOwn`. `captureEntry` y `childEnvironment`, que pueden llamarse directamente, hacen la misma comprobación.
+- **Pruebas 12/12.** La nueva cubre las cuatro formas de apuntar al canónico, las mayúsculas en Windows, las cuatro claves heredadas en los tres puntos de entrada, la salida separada permitida y el CLI real (código 2 y `docs/api.md` intacto).
+- `docs/api.md` regenerado: **171 rutas**, una más por `POST /api/v2/changes/undo-last` de `CLAUDE-UNDO-LAST`. `--check` al día y `tsc` 0.

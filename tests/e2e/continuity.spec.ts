@@ -23,7 +23,14 @@ test('preparación y continuidad con todo el tráfico externo bloqueado', async 
   await page.getByRole('button', { name: 'Crear especificación de ensayo', exact: true }).click();
   await page.getByRole('checkbox', { name: 'He revisado los campos, las reglas y las funciones pendientes.' }).check();
   await page.getByRole('button', { name: 'Activar y abrir aplicación', exact: true }).click();
-  await page.getByRole('button', { name: 'Desconectar servicios', exact: true }).click();
+  const reconnect = page.getByRole('button', { name: 'Habilitar servicios', exact: true });
+  const disconnect = page.getByRole('button', { name: 'Desconectar servicios', exact: true });
+  await expect(reconnect.or(disconnect)).toBeVisible();
+  if (await reconnect.isVisible()) {
+    await reconnect.click();
+    await expect(page.getByText('Copia local activa', { exact: true })).toBeVisible();
+  }
+  await disconnect.click();
   await expect(page.getByText('Modo independiente', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Editar Lucía Martín', exact: true }).click();
   const client = page.getByRole('dialog', { name: 'Lucía Martín', exact: true });
@@ -136,7 +143,19 @@ test('simulacro en proceso aislado y sesión de continuidad desde el historial',
     await expect(reportPage).toHaveTitle('Plan B · Informe de simulacro');
     await expect(reportPage.getByRole('heading', { name: 'Informe de simulacro de continuidad' })).toBeVisible();
     await expect(reportPage.getByText('Simulacro superado', { exact: true })).toBeVisible();
-    await expect(reportPage.getByRole('cell', { name: 'Superada', exact: true })).toHaveCount(5);
+    const checks = reportPage.getByRole('listitem').filter({ hasText: 'Resultado declarado · ' });
+    await expect(checks).toHaveCount(5);
+    for (const label of [
+      'Red externa bloqueada',
+      'Buscar y editar un cliente',
+      'Avanzar una oportunidad',
+      'Crear y completar una tarea',
+      'Persistencia después de reiniciar',
+    ]) {
+      const check = checks.filter({ has: reportPage.getByText(label, { exact: true }) });
+      await expect(check).toHaveCount(1);
+      await expect(check.getByText('Resultado declarado · Superada', { exact: true })).toBeVisible();
+    }
     await expect(reportPage.locator('body')).not.toContainText('Lucía Martín');
     await expect(reportPage.locator('body')).toContainText('No acredita el estado actual de HubSpot ni una devolución de cambios.');
     await reportPage.screenshot({ path: resolve(output, 'plan-b-v0.3.0-informe-desktop.png'), fullPage: true });

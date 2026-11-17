@@ -66,3 +66,9 @@ Sin dependencia nueva, build/dist raíz, proveedor, datos originales, commit/pus
 - tests/e2e/reference-select.spec.ts: 4b336ea1118a6f1c3d63ff7d313cb1bd5f362a2c3f99cf37c780aca670e4f4d7
 
 El informe registra su hash mediante submit. Parent components pertenece a LABEL063 y su hash figura allí.
+
+## R2 · D4 y navegación · 17/11/2026, Europe/Madrid
+
+Se conserva la fuente D4 de Claude con SHA-256 6ca3c0e05cefbf027ad638c97f706b0f9cf468e94b51170a3b6342d5dc9ca8f3. Las pruebas pasan a usar Clientes → Tareas y a verificar el nombre único sin el sufijo visible. Se mantiene el ID como valor de la opción fijada y como discriminador de los homónimos. Los IDs de las relaciones sin verificar permanecen visibles y las comprobaciones de identidad, abortos tardíos, error, reintento y 401 se conservan.
+
+15/15 Node, TypeScript limpio, Vite y backend compilados y 7/7 en Chromium a través del servidor propio de loopback. El último E2E compara tamaños a 1440, 390 y 320 px. Banco tests/.tmp/review393-394-fdGyVm/reference-repeat-WBlewk. El proceso de ensayo terminó. El corte es de verificación aislada sobre 391 más las fuentes cotejadas, con la versión presentada de protección que se ha devuelto para R2. La presentación 062 no valida esa entrega ni los otros E2E de la aplicación.

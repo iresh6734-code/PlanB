@@ -83,7 +83,7 @@ export function DecisionReview({ contextRevision: pin, onContextStale }: Props) 
   return (
     <section className="drv" aria-labelledby="drv-title">
       <h2 id="drv-title">Revisar una decisión</h2>
-      <p className="drv-note">Ficción. Compara lo que se decidió con lo que pasó después. Ver una revisión no cambia nada.</p>
+      <p className="drv-note">Con datos de prueba. Compara lo que se decidió con lo que pasó después. Ver una revisión no cambia nada.</p>
       {error ? <div className="drv-error" role="alert">{error}</div> : null}
       <div className="drv-block" onPointerEnter={refreshSoon} onFocusCapture={refreshSoon}>
         <div className="drv-list-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
@@ -148,8 +148,8 @@ export function DecisionReview({ contextRevision: pin, onContextStale }: Props) 
             </>
           ) : (
             <div className="drv-record">
-              <h4>Registrar el desenlace (ficción)</h4>
-              <p className="drv-note">En un piloto vendría de las fuentes. Aquí se elige uno de dos cierres de ficción; se registra una sola vez.</p>
+              <h4>Registrar el desenlace (datos de prueba)</h4>
+              <p className="drv-note">En un piloto vendría de las fuentes. Aquí se elige uno de dos cierres de prueba; se registra una sola vez.</p>
               <div className="drv-actions">{view.endings.map(item => (
                 <button key={item.id} type="button" className="button secondary" disabled={busy || !item.available} onClick={() => void record(item.id)}>
                   {pendingKey?.ending === item.id ? 'Repetir con la misma clave' : item.label}

@@ -1,3 +1,4 @@
+import { navigate } from './nav.mts';
 // Red de seguridad visual de Plan B.
 //   npx tsx tools/visual/check.mts reference   → guarda la referencia (capturas + huellas)
 //   npx tsx tools/visual/check.mts compare     → vuelve a capturar y dice qué vistas han cambiado
@@ -28,15 +29,7 @@ const clockBound = ['.gx-copy', '.oc-status', '.oc-home-head', '.fx-next', '.con
 const still = '*, *::before, *::after { animation: none !important; transition: none !important; caret-color: transparent !important; }';
 
 async function open(page: Page, label: string, tab?: string) {
-  const nav = page.locator('.sidebar').getByRole('button', { name: label, exact: true }).first();
-  if (await nav.isVisible().catch(() => false)) await nav.click({ timeout: 6000 });
-  else {
-    // En móvil no hay barra lateral: se navega como lo haría la persona, con «Más» (la paleta de órdenes).
-    await page.locator('.gx-mnav').getByRole('button', { name: 'Más' }).click({ timeout: 6000 });
-    await page.locator('.gx-commands input').fill(label);
-    const option = page.locator('.gx-commands li').filter({ has: page.locator('span', { hasText: new RegExp('^(Ir a |Ir al )?' + label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$') }) }).first();
-    await option.click({ timeout: 6000 });
-  }
+  await navigate(page, label);
   if (tab) { await page.waitForTimeout(500); await page.getByRole('tab', { name: tab }).click({ timeout: 6000 }); }
   await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => undefined);
   await page.waitForTimeout(900);

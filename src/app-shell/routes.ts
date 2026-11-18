@@ -39,9 +39,9 @@ export function placeOf(pathname: string): Place | null {
 export const samePlace = (a: Place | null, b: Place | null) => !!a && !!b && pathOf(a) === pathOf(b);
 
 /**
- * ¿Sigue queriendo la persona la ficha pedida por la dirección? (R2, revisión 411 de Codex). Solo mientras siga en la
- * lista de ese tipo de registro: si se va a Inicio, a otro tipo o a otro apartado, la lectura pendiente se retira y ni
- * su resultado ni su error tocan la vista. Lógica pura.
+ * ¿Sigue queriendo la persona la ficha pedida por la dirección? Se liga a la intención exacta: solo mientras siga en la
+ * lista de ese tipo de registro (R2, revisión 411) y no haya abierto otra ficha ni una nueva por su cuenta (R3, revisión
+ * 427). Si no, la lectura pendiente se retira y ni su resultado ni su error tocan la vista. Lógica pura.
  */
-export const pendingStillWanted = (pending: { entity: EntityName }, current: { page: PageId; entity: EntityName }) =>
-  current.page === 'workspace' && current.entity === pending.entity;
+export const pendingStillWanted = (pending: { entity: EntityName; id: string }, current: { page: PageId; entity: EntityName; selected?: string | null }) =>
+  current.page === 'workspace' && current.entity === pending.entity && (current.selected == null || current.selected === pending.id);

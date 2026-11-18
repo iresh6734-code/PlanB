@@ -43,7 +43,7 @@ test('samePlace compara por dirección', () => {
 // R2 · Revisión 411 de Codex: la ficha pedida por enlace solo se abre si la persona sigue en esa lista.
 import { pendingStillWanted } from '../src/app-shell/routes.js';
 test('R2 · la lectura pendiente de una ficha se retira al irse a otro lugar', () => {
-  const pending = { entity: 'contacts' as const };
+  const pending = { entity: 'contacts' as const, id: 'contact-1' };
   assert.equal(pendingStillWanted(pending, { page: 'workspace', entity: 'contacts' }), true, 'sin abandonar el enlace, se abre');
   assert.equal(pendingStillWanted(pending, { page: 'home', entity: 'contacts' }), false, 'Inicio la retira');
   assert.equal(pendingStillWanted(pending, { page: 'workspace', entity: 'companies' }), false, 'otro tipo de registro la retira');
@@ -52,9 +52,17 @@ test('R2 · la lectura pendiente de una ficha se retira al irse a otro lugar', (
 
 test('R2 · App retira la lectura al navegar y Atrás/Adelante la sustituye por la del destino', async () => {
   const app = (await import('node:fs')).readFileSync('src/App.tsx', 'utf8');
-  assert.match(app, /if \(pendingRecord && !pendingStillWanted\(pendingRecord, \{ page, entity: entityName \}\)\) setPendingRecord\(null\)/);
+  assert.ok(app.includes("if (pendingRecord && !pendingStillWanted(pendingRecord, { page, entity: entityName, selected: selected === 'new' ? 'new' : selectedId ?? null })) setPendingRecord(null)"), 'la regla recibe también la ficha abierta (R3)');
   assert.match(app, /setPendingRecord\(place\.page === 'workspace' && place\.entity && place\.recordId \? \{ entity: place\.entity, id: place\.recordId \} : null\)/);
   // El resultado y el error de la lectura solo actúan si sigue activa (la limpieza del efecto la desactiva).
   assert.match(app, /\.then\(result => \{ if \(!active\) return;/);
   assert.match(app, /\.catch\(\(\) => \{ if \(active\) setError/);
+});
+
+test('R3 · abrir otra ficha o una nueva en la misma lista también retira la lectura (revisión 427)', () => {
+  const pending = { entity: 'contacts' as const, id: 'contact-1' };
+  assert.equal(pendingStillWanted(pending, { page: 'workspace', entity: 'contacts', selected: null }), true, 'lista sin ficha abierta: sigue');
+  assert.equal(pendingStillWanted(pending, { page: 'workspace', entity: 'contacts', selected: 'contact-1' }), true, 'la propia ficha pedida: sigue');
+  assert.equal(pendingStillWanted(pending, { page: 'workspace', entity: 'contacts', selected: 'contact-2' }), false, 'abrió a Pablo: se retira');
+  assert.equal(pendingStillWanted(pending, { page: 'workspace', entity: 'contacts', selected: 'new' }), false, 'abrió una ficha nueva: se retira');
 });

@@ -97,3 +97,29 @@ En ningún caso hubo errores de página. `tsc` 0.
 | `tests/url-routes.test.ts` | `9c036b8e5817` |
 
 `App.tsx` lleva también los cambios de tipos de UNDO-LAST R3.
+
+## R3 · Revisión 427 de Codex
+
+**Hallazgo (correcto).** La regla de vigencia de R2 solo distinguía apartado y tipo de registro. Si mientras se retenía la lectura de `/clientes/contact-1` la persona abría a Pablo García en la misma lista, el 200 retrasado de Lucía sustituía la ficha que había elegido.
+
+**Corrección.** La lectura se liga a la intención exacta:
+
+- **`pendingStillWanted`** (`src/app-shell/routes.ts`) recibe también la ficha abierta. La lectura sigue vigente solo si no hay ninguna abierta o si la abierta es la pedida. Abrir otra ficha o una nueva la retira.
+- **`src/App.tsx`** le pasa `selected` (`'new'`, el ID abierto o null).
+
+Se mantienen las dos reglas de R2: irse a otro lugar la retira, y Atrás/Adelante la sustituye por la del destino.
+
+**Pruebas** (`tests/url-routes.test.ts`, **7/7**). Hay una prueba nueva con los cuatro casos de la ficha abierta: sin ficha sigue, con la propia ficha pedida sigue, con otra ficha se retira y con una nueva se retira. La prueba de lectura de `App.tsx` exige que la regla reciba la ficha abierta.
+
+**Recorrido en Chromium sin interfaz** contra el ensayo aislado, con la respuesta real retenida:
+
+| Caso | R2 (`45c4dab`) | R3 |
+| --- | --- | --- |
+| Se queda en el enlace | Lucía, `/clientes/contact-1` | igual |
+| Pulsa Inicio y llega la ficha | `/inicio`, sin ficha | igual |
+| Pulsa Inicio y llega un 404 | `/inicio`, sin error | igual |
+| Abre a Pablo en la misma lista y llega Lucía | **Lucía sustituye a Pablo**, `/clientes/contact-1` | Pablo se conserva, `/clientes/contact-2` |
+
+`tsc` 0.
+
+**Huellas R3:** `src/App.tsx` `ce8ea11aecb1…` · `src/app-shell/routes.ts` `d3d1a96da44d…` · `tests/url-routes.test.ts` `040f329de86d…`.

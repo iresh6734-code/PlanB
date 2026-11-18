@@ -75,7 +75,7 @@ export function RecordDrawer({ entityName, selected, spec, records, close, saved
   entityName: EntityName; selected: CrmRecord | 'new'; spec: AppSpec; records: CrmRecord[];
   close: () => void;
   /** change: identidad del cambio guardado (para «Deshacer»); null si el servidor no la devuelve. */
-  saved: (record: CrmRecord, change: { id: number; at: string } | null) => Promise<void>;
+  saved: (record: CrmRecord, change: { id: number; at: string; copy: string } | null) => Promise<void>;
   /** Contenido adicional bajo los campos (p. ej. lo relacionado). Recibe si la ficha tiene cambios sin guardar. */
   extra?: (dirty: boolean) => ReactNode;
   /** Resumen sobre los campos (p. ej. importe y avance de una oportunidad). Recibe los valores del formulario y cómo cambiarlos. */
@@ -107,7 +107,7 @@ export function RecordDrawer({ entityName, selected, spec, records, close, saved
     setSaving(true);
     try {
       const path = '/records/' + entityName + (isNew ? '' : '/' + encodeURIComponent(selected.id));
-      const result = await api<{ record: CrmRecord; change?: { id: number; at: string } | null }>(path, { method: isNew ? 'POST' : 'PATCH', body: JSON.stringify({ values }) });
+      const result = await api<{ record: CrmRecord; change?: { id: number; at: string; copy: string } | null }>(path, { method: isNew ? 'POST' : 'PATCH', body: JSON.stringify({ values }) });
       await saved(result.record, result.change ?? null);
     } catch (error) {
       if (error instanceof ApiError && error.details && typeof error.details === 'object' && !Array.isArray(error.details)) setErrors(error.details as Record<string, string>);

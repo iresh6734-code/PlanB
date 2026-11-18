@@ -37,3 +37,11 @@ export function placeOf(pathname: string): Place | null {
 
 /** Mismo lugar (para no apilar entradas repetidas en el historial). */
 export const samePlace = (a: Place | null, b: Place | null) => !!a && !!b && pathOf(a) === pathOf(b);
+
+/**
+ * ¿Sigue queriendo la persona la ficha pedida por la dirección? (R2, revisión 411 de Codex). Solo mientras siga en la
+ * lista de ese tipo de registro: si se va a Inicio, a otro tipo o a otro apartado, la lectura pendiente se retira y ni
+ * su resultado ni su error tocan la vista. Lógica pura.
+ */
+export const pendingStillWanted = (pending: { entity: EntityName }, current: { page: PageId; entity: EntityName }) =>
+  current.page === 'workspace' && current.entity === pending.entity;

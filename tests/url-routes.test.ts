@@ -39,3 +39,22 @@ test('samePlace compara por dirección', () => {
   assert.equal(samePlace({ page: 'workspace', entity: 'deals' }, { page: 'workspace', entity: 'deals', recordId: 'x' }), false);
   assert.equal(samePlace(null, { page: 'home' }), false);
 });
+
+// R2 · Revisión 411 de Codex: la ficha pedida por enlace solo se abre si la persona sigue en esa lista.
+import { pendingStillWanted } from '../src/app-shell/routes.js';
+test('R2 · la lectura pendiente de una ficha se retira al irse a otro lugar', () => {
+  const pending = { entity: 'contacts' as const };
+  assert.equal(pendingStillWanted(pending, { page: 'workspace', entity: 'contacts' }), true, 'sin abandonar el enlace, se abre');
+  assert.equal(pendingStillWanted(pending, { page: 'home', entity: 'contacts' }), false, 'Inicio la retira');
+  assert.equal(pendingStillWanted(pending, { page: 'workspace', entity: 'companies' }), false, 'otro tipo de registro la retira');
+  assert.equal(pendingStillWanted(pending, { page: 'continuity', entity: 'contacts' }), false);
+});
+
+test('R2 · App retira la lectura al navegar y Atrás/Adelante la sustituye por la del destino', async () => {
+  const app = (await import('node:fs')).readFileSync('src/App.tsx', 'utf8');
+  assert.match(app, /if \(pendingRecord && !pendingStillWanted\(pendingRecord, \{ page, entity: entityName \}\)\) setPendingRecord\(null\)/);
+  assert.match(app, /setPendingRecord\(place\.page === 'workspace' && place\.entity && place\.recordId \? \{ entity: place\.entity, id: place\.recordId \} : null\)/);
+  // El resultado y el error de la lectura solo actúan si sigue activa (la limpieza del efecto la desactiva).
+  assert.match(app, /\.then\(result => \{ if \(!active\) return;/);
+  assert.match(app, /\.catch\(\(\) => \{ if \(active\) setError/);
+});

@@ -2,27 +2,31 @@
 // Se deshace UN guardado concreto, identificado por su cambio (id y fecha) tal como lo devolvió la ruta de guardado.
 // Solo procede si ese cambio sigue siendo el último y el registro sigue exactamente como lo dejó. Las dos comprobaciones
 // se repiten DENTRO de la transacción que escribe el inverso (saveRecord con guard), así que ni otra conexión ni otra
-// petición pueden colarse entre la comprobación y la escritura. Repetir la misma petición tras un éxito se rechaza
+// petición pueden colarse entre la comprobación y la escritura. R3 (revisión 399): la etiqueta lleva también la época de
+// la copia (`copy`), que cambia en cada restauración; una etiqueta anterior a Restaurar se rechaza aunque coincidan ID y fecha.
+// Repetir la misma petición tras un éxito se rechaza
 // (el último cambio ya es el inverso): nunca se crea un segundo inverso. No borra historial; las altas no se deshacen.
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { Change, CrmRecord } from '../shared/model.js';
 import { AppError, type Store } from './store.js';
 
-export type ChangeIdentity = { changeId: number; at: string };
-type Refusal = { ok: false; status: 404 | 409; code: 'NO_CHANGES' | 'NOT_AN_UPDATE' | 'RECORD_CHANGED' | 'NOT_LATEST' | 'RECORD_MISSING'; message: string };
+export type ChangeIdentity = { changeId: number; at: string; copy: string };
+type Refusal = { ok: false; status: 404 | 409; code: 'NO_CHANGES' | 'NOT_AN_UPDATE' | 'RECORD_CHANGED' | 'NOT_LATEST' | 'RECORD_MISSING' | 'OTHER_COPY'; message: string };
 export type UndoPlan = { ok: true; change: Change; values: CrmRecord['values'] } | Refusal;
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 const refuse = (status: Refusal['status'], code: Refusal['code'], message: string): Refusal => ({ ok: false, status, code, message });
 const NOT_LATEST = 'Ese guardado ya no es el último: hubo otro cambio después.';
+const OTHER_COPY = 'La copia se restauró después de ese guardado; ya no se puede deshacer desde aquí.';
 const RECORD_CHANGED = 'El registro cambió después de ese guardado; ábrelo y revísalo a mano.';
 
 /**
  * Decide si se puede deshacer el guardado identificado y con qué valores. Lógica pura.
  * Los campos que la edición añadió y antes no existían vuelven a quedar vacíos (null).
  */
-export function planUndo(changes: Change[], current: CrmRecord | null, expected: ChangeIdentity): UndoPlan {
+export function planUndo(changes: Change[], current: CrmRecord | null, expected: ChangeIdentity, activeCopy: string): UndoPlan {
+  if (expected.copy !== activeCopy) return refuse(409, 'OTHER_COPY', OTHER_COPY);
   const last = changes.at(-1);
   if (!last) return refuse(404, 'NO_CHANGES', 'No hay cambios locales que deshacer.');
   if (last.id !== expected.changeId || last.at !== expected.at) return refuse(409, 'NOT_LATEST', NOT_LATEST);
@@ -35,17 +39,18 @@ export function planUndo(changes: Change[], current: CrmRecord | null, expected:
 }
 
 export function registerUndo(app: FastifyInstance, store: Store) {
-  const body = z.object({ changeId: z.number().int().positive(), at: z.string().min(1).max(40) }).strict();
+  const body = z.object({ changeId: z.number().int().positive(), at: z.string().min(1).max(40), copy: z.string().min(1).max(64) }).strict();
   app.post('/api/v2/changes/undo-last', async request => {
     const expected = body.parse(request.body ?? {});
     const changes = store.changes(), last = changes.at(-1);
-    const plan = planUndo(changes, last ? store.record(last.entity, last.recordId) : null, expected);
+    const plan = planUndo(changes, last ? store.record(last.entity, last.recordId) : null, expected, store.copyEpoch());
     if (!plan.ok) throw new AppError(plan.status, plan.message, { code: plan.code });
     const { change } = plan;
-    let inverse: { id: number; at: string } | null = null;
+    let inverse: { id: number; at: string; copy: string } | null = null;
     // La guarda corre dentro de la transacción de escritura: el cambio sigue siendo el último y el registro está intacto.
     const record = store.saveRecord(change.entity, plan.values, change.recordId, {
       guard: () => {
+        if (store.copyEpoch() !== expected.copy) throw new AppError(409, OTHER_COPY, { code: 'OTHER_COPY' });
         const latest = store.latestChange();
         if (!latest || latest.id !== change.id || latest.at !== change.at) throw new AppError(409, NOT_LATEST, { code: 'NOT_LATEST' });
         if (!same(store.record(change.entity, change.recordId)?.values, change.after.values)) throw new AppError(409, RECORD_CHANGED, { code: 'RECORD_CHANGED' });

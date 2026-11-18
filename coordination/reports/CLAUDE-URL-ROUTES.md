@@ -61,3 +61,39 @@ Comportamiento:
 - Una ficha nueva no tiene dirección propia, porque todavía no existe.
 - Los filtros y la búsqueda de la lista no van en la dirección. Las vistas guardadas, de otra unidad, cubren ese caso.
 - Los E2E que comprueban la dirección `/` después de navegar tendrán que esperar la nueva. No se han ejecutado.
+
+## R2 · Revisión 411 de Codex
+
+**Hallazgo (correcto).** Si la persona abría un enlace a una ficha y, antes de que respondiera su lectura, pulsaba Inicio, la respuesta abría la ficha encima de Inicio. Además, la dirección se quedaba en la del enlace. Con un error ocurría lo mismo: el error de esa lectura abandonada aparecía en Inicio.
+
+**Corrección:**
+
+- **`src/app-shell/routes.ts`.** Nueva función pura `pendingStillWanted(pending, current)`: la ficha pedida solo sigue queriéndose mientras la persona está en la lista de ese tipo de registro.
+- **`src/App.tsx`:**
+  - un efecto retira la lectura pendiente en cuanto la persona va a otro lugar (otro apartado u otro tipo de registro). La limpieza del efecto de lectura la desactiva, así que ni su resultado ni su error tocan la vista, y la dirección vuelve a seguir al lugar;
+  - Atrás y Adelante sustituyen siempre la lectura pendiente por la del nuevo destino, o la dejan sin ninguna si el destino no es una ficha.
+
+**Pruebas** (`tests/url-routes.test.ts`, **6/6**):
+
+- la regla pura en los cuatro casos;
+- `App.tsx` retira la lectura al navegar, Atrás/Adelante la sustituye, y el resultado y el error solo actúan si la lectura sigue activa.
+
+**Recorrido real** en Chromium sin interfaz contra el ensayo aislado (API 4421, UI 5199, datos de prueba). Se retiene la respuesta real de `GET /api/v2/records/contacts/contact-1` sin reemplazar `fetch`. El guion está en el scratchpad (`routes-r2.mts`).
+
+| Caso | Versión anterior (commit `a9acb2b`) | Con R2 |
+| --- | --- | --- |
+| Se queda en el enlace y llega la ficha | `/clientes/contact-1`, ficha abierta | igual: ficha abierta |
+| Pulsa Inicio y llega la ficha | **`/clientes/contact-1`, ficha encima de Inicio** | `/inicio`, sin ficha |
+| Pulsa Inicio y llega un 404 | `/inicio`, **error visible** | `/inicio`, sin error |
+
+En ningún caso hubo errores de página. `tsc` 0.
+
+**Huellas R2:**
+
+| Archivo | Huella |
+| --- | --- |
+| `src/App.tsx` | `210b334a273a` |
+| `src/app-shell/routes.ts` | `c7cfc74e4f3a` |
+| `tests/url-routes.test.ts` | `9c036b8e5817` |
+
+`App.tsx` lleva también los cambios de tipos de UNDO-LAST R3.

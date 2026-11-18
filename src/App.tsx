@@ -8,7 +8,7 @@ import { Protection } from './Protection.js';
 import { type PageId, rememberPlace, storedEntity, storedPage } from './app-shell/session.js';
 import { useShortcuts } from './app-shell/useShortcuts.js';
 import { fallbackPage, labVisible } from './app-shell/navigation.js';
-import { pathOf, placeOf } from './app-shell/routes.js';
+import { pathOf, pendingStillWanted, placeOf } from './app-shell/routes.js';
 import { useRecordListLoader, useRecordListState } from './app-shell/useRecordList.js';
 import { ShortcutsHelp } from './app-shell/ShortcutsHelp.js';
 import { RecordsPage } from './app-shell/RecordsPage.js';
@@ -118,11 +118,15 @@ export default function App() {
     const onPop = () => {
       const place = placeOf(window.location.pathname); if (!place) return;
       fromHistory.current = true;
-      if (place.page === 'workspace' && place.entity) { openEntity(place.entity); if (place.recordId) setPendingRecord({ entity: place.entity, id: place.recordId }); }
+      // Atrás/Adelante sustituye siempre la lectura pendiente por la del nuevo destino (o por ninguna).
+      setPendingRecord(place.page === 'workspace' && place.entity && place.recordId ? { entity: place.entity, id: place.recordId } : null);
+      if (place.page === 'workspace' && place.entity) openEntity(place.entity);
       else { setPage(place.page); setSelected(null); }
     };
     window.addEventListener('popstate', onPop); return () => window.removeEventListener('popstate', onPop);
   }, []);
+  // Si la persona se va a otro lugar antes de que llegue la ficha pedida, la lectura se retira (R2, revisión 411).
+  useEffect(() => { if (pendingRecord && !pendingStillWanted(pendingRecord, { page, entity: entityName })) setPendingRecord(null); }, [page, entityName, pendingRecord]);
   useEffect(() => {
     if (!pendingRecord || auth !== 'open' || !state?.ready) return;
     let active = true; const wanted = pendingRecord;
@@ -136,7 +140,7 @@ export default function App() {
 
   const [notice, setNotice] = useState('');
   // Último guardado que se puede deshacer desde el aviso (solo ediciones; el servidor comprueba que sigue siendo el último cambio).
-  const [undoable, setUndoable] = useState<{ changeId: number; at: string } | null>(null);
+  const [undoable, setUndoable] = useState<{ changeId: number; at: string; copy: string } | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -217,7 +221,7 @@ export default function App() {
     const next: CrmRecord = { ...record, values: { ...record.values, [key]: value } };
     const issues = validateRecord(spec, next, record);
     if (Object.keys(issues).length) return Object.values(issues)[0];
-    try { const result = await api<{ change?: { id: number; at: string } | null }>('/records/' + record.entity + '/' + encodeURIComponent(record.id), { method: 'PATCH', body: JSON.stringify({ values: next.values }) }); await refresh(); setUndoable(result.change ? { changeId: result.change.id, at: result.change.at } : null); setNotice('Guardado en tu copia local.'); return null; }
+    try { const result = await api<{ change?: { id: number; at: string; copy: string } | null }>('/records/' + record.entity + '/' + encodeURIComponent(record.id), { method: 'PATCH', body: JSON.stringify({ values: next.values }) }); await refresh(); setUndoable(result.change ? { changeId: result.change.id, at: result.change.at, copy: result.change.copy } : null); setNotice('Guardado en tu copia local.'); return null; }
     catch (failure) { return failure instanceof Error ? failure.message : 'No se pudo guardar el cambio.'; }
   };
   const moveDeal = (record: CrmRecord, stageId: string) => saveField(record, spec?.roles?.stage ?? 'dealstage', stageId);
@@ -292,7 +296,7 @@ export default function App() {
     {selected && spec && state.ready ? <><div className="drawer-shade" onClick={() => setSelected(null)} /><RecordDrawer key={selected === 'new' ? entityName + '-new' : selected.id} entityName={entityName} selected={selected} spec={spec} records={records}
       summary={entityName === 'deals' ? (values, set, saving) => <DealSummary spec={spec} values={values} set={set} records={records} disabled={saving} /> : undefined}
       extra={selected === 'new' ? undefined : dirty => <><RelatedPanel spec={spec} record={selected} dirty={dirty} onOpen={record => { openEntity(record.entity); setRecords([record]); setSelected(record); }} /><RecordTimeline spec={spec} record={selected} records={records} /></>}
-      close={() => setSelected(null)} saved={async (_record, change) => { const target = selected !== 'new' && change ? { changeId: change.id, at: change.at } : null; await refresh(); setSelected(null); setUndoable(target); setNotice('Guardado en tu copia local.'); }} /></> : null}
+      close={() => setSelected(null)} saved={async (_record, change) => { const target = selected !== 'new' && change ? { changeId: change.id, at: change.at, copy: change.copy } : null; await refresh(); setSelected(null); setUndoable(target); setNotice('Guardado en tu copia local.'); }} /></> : null}
     {notice ? <div className="toast" role="status"><CheckCircle2 size={19} />{notice}{undoable ? <button type="button" className="toast-action" onClick={() => void undoLast()}>Deshacer</button> : null}</div> : null}
     {modal === 'settings' ? <Settings state={state} close={() => setModal(null)} done={async () => { await refresh(); setNotice('Proveedor guardado.'); }} /> : null}
     {modal === 'csv' && spec && state.ready ? <CsvImport spec={spec} initialEntity={page === 'workspace' ? entityName : 'contacts'} close={() => setModal(null)} done={async (target, created) => { openEntity(target); setDataRevision(r => r + 1); await refresh(); setNotice(created + (created === 1 ? ' registro importado' : ' registros importados') + ' en tu copia local. Quedan en Cambios.'); }} /> : null}

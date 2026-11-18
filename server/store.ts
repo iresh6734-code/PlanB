@@ -128,6 +128,16 @@ export class Store {
     const row = this.db.prepare('SELECT id, at, entity, record_id FROM changes ORDER BY id DESC LIMIT 1').get() as { id: number; at: string; entity: EntityName; record_id: string } | undefined;
     return row ? { id: Number(row.id), at: row.at, entity: row.entity, recordId: row.record_id } : null;
   }
+  /**
+   * Época de la copia activa (CLAUDE-UNDO-LAST R3, revisión 399): cambia en cada restauración, aunque se restaure la misma
+   * copia con su misma sesión. Va en la etiqueta de cada cambio para que una etiqueta anterior a Restaurar no valga después,
+   * aunque coincidan su ID y su fecha.
+   */
+  copyEpoch(): string {
+    const current = this.get<string>('copyEpoch', '');
+    if (current) return current;
+    const created = randomUUID(); this.set('copyEpoch', created); return created;
+  }
   get changesCount() {
     return Number((this.db.prepare('SELECT COUNT(*) AS n FROM changes').get() as { n: number }).n);
   }
@@ -249,7 +259,7 @@ export class Store {
    * Guarda un registro y anota su cambio. Opciones (CLAUDE-UNDO-LAST R2): `guard` se ejecuta DENTRO de la misma transacción
    * (BEGIN IMMEDIATE) antes de escribir y puede lanzar para abortar sin cambios; `onChange` recibe la identidad del cambio creado.
    */
-  saveRecord(entity: EntityName, values: CrmRecord['values'], id?: string, options?: { guard?: () => void; onChange?: (change: { id: number; at: string }) => void }): CrmRecord {
+  saveRecord(entity: EntityName, values: CrmRecord['values'], id?: string, options?: { guard?: () => void; onChange?: (change: { id: number; at: string; copy: string }) => void }): CrmRecord {
     this.assertRecoveryIntegrity();
     if(!id&&Number((this.db.prepare('SELECT COUNT(*) AS n FROM records').get() as {n:number}).n)>=MAX_RECORDS)throw new AppError(413,'El piloto admite hasta 10.000 registros totales.');
     if(this.get('returnBusy',false))throw new AppError(409,'Espera a que termine la devolución revisada.');
@@ -269,7 +279,7 @@ export class Store {
       if (!previous && field.readOnly && value !== undefined && value !== null && value !== '') errors[field.key] = 'Este campo no se puede crear manualmente.';
     }
     if (Object.keys(errors).length) throw new AppError(422, 'Revisa los campos señalados.', errors);
-    let changeIdentity: { id: number; at: string } | null = null;
+    let changeIdentity: { id: number; at: string; copy: string } | null = null;
     this.transaction(() => {
       this.assertRecoveryIntegrity();
       options?.guard?.();
@@ -278,7 +288,7 @@ export class Store {
       const inserted = this.db.prepare('INSERT INTO changes(at,entity,record_id,operation,before_json,after_json) VALUES(?,?,?,?,?,?)')
         .run(at, entity, record.id, previous ? 'update' : 'create', previous ? this.encode(previous) : null, this.encode(record));
       this.set('returnComplete',false);
-      changeIdentity = { id: Number(inserted.lastInsertRowid), at };
+      changeIdentity = { id: Number(inserted.lastInsertRowid), at, copy: this.copyEpoch() };
     });
     if (changeIdentity) options?.onChange?.(changeIdentity);
     return record;
@@ -366,7 +376,7 @@ export class Store {
         .run(change.id, change.at, change.entity, change.recordId, change.operation, change.before ? this.encode(change.before) : null, this.encode(change.after));
       this.set('snapshot', bundle.snapshot); this.set('spec', bundle.spec); this.set('generation', bundle.generation);
       this.set('reconciliation', report); this.set('lastError', null); this.set('disconnected', true);
-      this.set('candidate',null); this.set('sessionId',bundle.sessionId ?? randomUUID());
+      this.set('candidate',null); this.set('sessionId',bundle.sessionId ?? randomUUID()); this.set('copyEpoch', randomUUID());
       this.resetReturnState();
       if(returned){
         this.set('returnWatermark:hubspot',returned.watermark);this.set('remoteMapping:hubspot',returned.mapping);

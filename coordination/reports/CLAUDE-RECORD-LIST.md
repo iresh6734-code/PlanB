@@ -34,3 +34,29 @@
 ## Límites
 
 - **B2 no está terminado.** El informe ponía como meta un `App.tsx` de menos de 8 KB, y sigue en 34,7 KB, porque otras unidades le han añadido funciones. Los candidatos siguientes son la lista de órdenes de la paleta, la sincronización de la dirección y el bloque de Deshacer, cada uno a su propio módulo.
+
+## R2 · Revisión 407 de Codex
+
+**Hallazgo (correcto).** Con un transporte que ignora la cancelación, la respuesta de una búsqueda anterior llegaba después de la nueva y pasaba esto:
+
+- una respuesta correcta sustituía las filas (24 en lugar de «Sin resultados»);
+- un 503 mostraba «No se pudieron cargar los registros» aunque la búsqueda vigente ya había respondido bien.
+
+Con la cancelación nativa de Chromium no ocurre.
+
+**Corrección** (`src/app-shell/useRecordList.ts`). La carga se separa en `loadRecordPage(fetchPage, signal, list, onError)`, que el hook usa. Antes de escribir filas, relacionados, total o error, y antes de avisar al padre, comprueba que la consulta no se ha cancelado. Así una entrega tardía, correcta o fallida, no cambia nada visible. Se mantienen la espera de búsqueda y la consulta actual.
+
+**Pruebas** (`tests/record-list.test.ts`, **6/6**):
+
+- una respuesta correcta tras cancelar no escribe nada;
+- un 503 tras cancelar no escribe nada ni avisa;
+- la consulta vigente sigue aplicando su resultado (filas, registros, total y fin de carga) y su error (error, aviso y fin de carga).
+
+Las pruebas se ejecutan sin React, con un «transporte» que ignora la señal, que es justo el caso de la revisión.
+
+Sobre la fuerza de las pruebas:
+
+- **Mutaciones:** quitar la guarda de la respuesta o la del error hace fallar alguna prueba.
+- **Otras comprobaciones:** `auth-parent` 4/4 (carga el módulo real), `ui-journeys` 60/60, `independent-interface-contexts` 47/47 y `tsc` 0.
+
+**Huellas R2:** `src/app-shell/useRecordList.ts` `30f4005fc52b…` · `tests/record-list.test.ts` `bea6cdcad416…`.

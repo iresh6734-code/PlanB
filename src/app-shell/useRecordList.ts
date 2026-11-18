@@ -27,16 +27,35 @@ export function useRecordListState() {
   return { query, setQuery, offset, setOffset, pipeline, setPipeline, rows, setRows, records, setRecords, total, setTotal, loading, setLoading, error, setError, reset };
 }
 
+type Page = { records: CrmRecord[]; related: CrmRecord[]; total: number };
+type ListSink = Pick<RecordList, 'setRows' | 'setRecords' | 'setTotal' | 'setError' | 'setLoading'>;
+
+/**
+ * Pide una página y la aplica a la lista solo si su consulta sigue vigente (R2, revisión 407 de Codex). Una respuesta o
+ * un error que llegan después de cancelar —un transporte que ignora la señal— no tocan nada: ni filas, ni
+ * relacionados, ni total, ni el error visible, ni el aviso del padre. Separada del hook para probarla sin React.
+ */
+export async function loadRecordPage(fetchPage: (signal: AbortSignal) => Promise<Page>, signal: AbortSignal, list: ListSink, onError: (message: string) => void) {
+  try {
+    const data = await fetchPage(signal);
+    if (signal.aborted) return;
+    list.setRows(data.records); list.setRecords([...data.records, ...data.related]); list.setTotal(data.total);
+  } catch (failure) {
+    if (signal.aborted || (failure instanceof Error && failure.name === 'AbortError')) return;
+    const message = failure instanceof Error ? failure.message : String(failure);
+    onError(message); list.setError(message);
+  } finally {
+    if (!signal.aborted) list.setLoading(false);
+  }
+}
+
 /** Carga la página pedida cuando la lista está activa; cancela la petición anterior y avisa de los errores. */
 export function useRecordListLoader(list: RecordList, { active, entity, revision, onError }: { active: boolean; entity: EntityName; revision: number; onError: (message: string) => void }) {
   const { query, offset, pipeline } = list;
   useEffect(() => {
     if (!active) return;
     const controller = new AbortController(); list.setLoading(true); list.setError('');
-    const timer = setTimeout(() => void api<{ records: CrmRecord[]; related: CrmRecord[]; total: number }>(recordListPath(entity, query, offset, pipeline), { signal: controller.signal })
-      .then(data => { list.setRows(data.records); list.setRecords([...data.records, ...data.related]); list.setTotal(data.total); })
-      .catch(failure => { if (failure.name !== 'AbortError') { onError(failure.message); list.setError(failure.message); } })
-      .finally(() => { if (!controller.signal.aborted) list.setLoading(false); }), searchDelay(query));
+    const timer = setTimeout(() => void loadRecordPage(signal => api<Page>(recordListPath(entity, query, offset, pipeline), { signal }), controller.signal, list, onError), searchDelay(query));
     return () => { controller.abort(); clearTimeout(timer); };
   }, [active, entity, query, offset, pipeline, revision]);
 }

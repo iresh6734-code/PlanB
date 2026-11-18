@@ -77,3 +77,26 @@ Las rutas se registran solo en `main.ts`, no en `runtime.ts`: la orden tampoco a
   - deshacer una importación entera de una vez (cada alta se puede revisar en Cambios);
   - leer `.xlsx`, que exigiría una dependencia, y el usuario la descartó.
 - **Observado, pero no es de este encargo.** Al abrir la paleta con Ctrl J, el foco no queda en su buscador en el ensayo: hay que hacer clic antes de escribir. Conviene revisarlo en CommandPalette.
+
+## R2 · Revisiones 416 y 418 de Codex
+
+**Hallazgo (correcto).** La marca solo incluía el archivo, el mapeo, el último cambio y el número de registros. Si se restauraba otra copia con el mismo número de registros e historial vacío, la marca no cambiaba. La aplicación respondía 200 y creaba el contacto asociado a otra empresa (`company-2`) de la que la persona había visto (`company-1`).
+
+**Corrección** (`server/csv-import.ts`, `previewToken`). La marca liga ahora también:
+
+- **la identidad de la copia**: id y fecha de la captura, y sesión;
+- **el resultado revisado**: los valores y errores de cada fila, con las relaciones ya resueltas a su ID.
+
+Cualquier restauración que cambie la copia, o que haga que el mismo nombre apunte a otro registro, responde 409 `STALE_PREVIEW` antes de crear registros o historial.
+
+**Regresión** (`tests/csv-import-api.test.ts`). Una vista previa en A asocia «Estudio Arce» a `company-1`. Después se restaura con `restoreBundle` una copia B:
+
+- con el mismo número de registros, otra captura y otra sesión;
+- sin historial;
+- donde «Estudio Arce» es `company-2`.
+
+Aplicar la marca de A responde 409 y no cambian ni los contactos ni el historial. Una vista previa nueva sobre B muestra `company-2` e importa con 200. Se mantienen los controles anteriores: misma copia estable da 200 y edición local da 409.
+
+**La prueba reproduce el fallo.** Con la versión anterior de `server/csv-import.ts` (la del commit `6cdff8b`), la regresión falla: 1 fallo. Con la corrección, `csv-import-api` da 4/4, `csv-import` 5/5 y `tsc` 0.
+
+**Huellas R2:** `server/csv-import.ts` `733a4fdb600b…` · `tests/csv-import-api.test.ts` `b7e187eec33b…`. El resto, sin cambios.

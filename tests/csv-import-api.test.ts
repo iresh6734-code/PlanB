@@ -66,6 +66,32 @@ test('aplicar con una marca vieja (la copia cambió) o con otro archivo se recha
   assert.equal(store.changesCount, count);
 });
 
+test('restaurar otra copia con el mismo número de registros e historial vacío invalida la marca (revisión 416/418)', async t => {
+  const { store, app } = seeded(t);
+  const one = 'Nombre;Correo;Empresa\nNora;nora@ejemplo.es;Estudio Arce';
+  const p = JSON.parse((await post(app, '/api/v2/import/csv/preview', { entity: 'contacts', csv: one })).body);
+  assert.equal(p.preview[0].values.company_id, 'company-1');
+  // Copia B: misma forma y mismo conteo, otra captura y otra sesión, sin historial, y «Estudio Arce» es ahora company-2.
+  const bundle = structuredClone(store.bundle());
+  const swap = (records: { entity: string; id: string; values: Record<string, unknown> }[]) => records.forEach(r => {
+    if (r.entity === 'companies' && r.id === 'company-1') r.values.name = 'Norte Digital';
+    else if (r.entity === 'companies' && r.id === 'company-2') r.values.name = 'Estudio Arce';
+  });
+  swap(bundle.records); swap(bundle.snapshot.records);
+  Object.assign(bundle, { sessionId: 'otra-sesion', changes: [] });
+  Object.assign(bundle.snapshot, { id: 'captura-b' });
+  store.restoreBundle(bundle, { replace: true });
+  const records = store.records('contacts').length, changes = store.changesCount;
+  assert.equal(store.records().length, bundle.records.length, 'mismo número de registros');
+  const stale = await post(app, '/api/v2/import/csv/apply', { entity: 'contacts', csv: one, token: p.token });
+  assert.equal(stale.statusCode, 409, stale.body); assert.equal(JSON.parse(stale.body).details.code, 'STALE_PREVIEW');
+  assert.equal(store.records('contacts').length, records, 'no se dio de alta nada'); assert.equal(store.changesCount, changes, 'ni se escribió historial');
+  // Con una vista previa nueva sobre B, la persona ve la empresa que corresponde y puede importar.
+  const fresh = JSON.parse((await post(app, '/api/v2/import/csv/preview', { entity: 'contacts', csv: one })).body);
+  assert.equal(fresh.preview[0].values.company_id, 'company-2');
+  assert.equal((await post(app, '/api/v2/import/csv/apply', { entity: 'contacts', csv: one, token: fresh.token })).statusCode, 200);
+});
+
 test('límites: cabecera obligatoria, filas máximas, campos desconocidos rechazados y nada sin activar la copia', async t => {
   const { app } = seeded(t);
   const rows = 'Nombre;Correo\n' + Array.from({ length: 1001 }, (_, i) => 'N' + i + ';n' + i + '@ejemplo.es').join('\n');

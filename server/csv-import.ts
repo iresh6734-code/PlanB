@@ -12,11 +12,21 @@ import { AppError, type Store } from './store.js';
 
 const PREVIEW_ROWS = 50, ERROR_ROWS = 200;
 
-/** Marca de la vista previa: archivo, tipo, mapeo final y estado de la copia (último cambio y número de registros). */
+/**
+ * Marca de la vista previa. Liga la aprobación a cuatro cosas:
+ * - lo enviado: tipo, archivo y mapeo final;
+ * - la identidad de la copia: captura (id y fecha) y sesión. Restaurar otra copia la cambia aunque tenga el mismo
+ *   número de registros y el historial vacío (revisión 416/418 de Codex);
+ * - su vigencia: último cambio y número de registros;
+ * - el resultado que la persona revisó: los valores y errores de cada fila, con las relaciones ya resueltas a su ID.
+ *   Si el mismo nombre de empresa apunta ahora a otro registro, la marca cambia.
+ */
 export function previewToken(store: Store, entity: EntityName, csv: string, plan: ImportPlan) {
-  const latest = store.latestChange();
+  const latest = store.latestChange(), snapshot = store.snapshot;
   const count = Number((store.db.prepare('SELECT COUNT(*) AS n FROM records').get() as { n: number }).n);
-  return createHash('sha256').update(JSON.stringify([entity, csv, plan.mapping, latest?.id ?? 0, latest?.at ?? '', count])).digest('hex');
+  const copy = [snapshot?.id ?? '', snapshot?.capturedAt ?? '', store.get<string>('sessionId', '')];
+  const reviewed = plan.rows.map(row => [row.line, row.values, row.errors]);
+  return createHash('sha256').update(JSON.stringify([entity, csv, plan.mapping, copy, latest?.id ?? 0, latest?.at ?? '', count, reviewed])).digest('hex');
 }
 
 export function registerCsvImport(app: FastifyInstance, store: Store) {

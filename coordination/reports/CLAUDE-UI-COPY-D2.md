@@ -33,3 +33,28 @@ Las huellas de antes de los 16 archivos de interfaz están en el scratchpad (`ha
 
 - Tres E2E esperan los textos antiguos y hay que adaptarlos con el resto: `continuity-evidence`, `continuity-lab` y `operational-rehearsal`.
 - Los mensajes del servidor que llegan a la pantalla (por ejemplo, los 409 del Laboratorio) mantienen sus textos. Revisarlos toca las reservas de sus módulos.
+
+## R2 · Revisión 401 de Codex
+
+**Hallazgo (correcto).** El detector de la prueba solo veía dos formas de texto: el que va entre etiquetas JSX y los literales entre comillas simples. Dejaba pasar tres:
+
+- literales entre comillas dobles;
+- plantillas;
+- nombres accesibles como `aria-label="…"`.
+
+**Corrección** (`tests/ui-copy.test.ts`, solo la prueba). `visibleTexts` mira ahora:
+
+- el texto entre etiquetas;
+- los literales entre comillas simples y entre comillas dobles, que incluyen todos los atributos JSX (`aria-label`, `title`, `placeholder`…);
+- las partes fijas de las plantillas, partidas por `${…}`.
+
+Siguen sin contar las rutas (lo que empieza por `.` o `/`) ni los identificadores sueltos (nombres de clase, claves e IDs).
+
+**Pruebas** (**3/3**):
+
+- La nueva prueba R2 recoge los seis controles de la revisión. El término actual pasa. Se rechazan el texto directo, las comillas simples, las comillas dobles, la plantilla y el `aria-label`.
+- También comprueba que no cuentan una ruta entre comillas dobles, una clase ni una plantilla sin texto.
+- Con el detector ampliado, **ningún** `.tsx` de `src/` usa un término retirado: no apareció ningún texto escapado.
+- **Mutaciones:** quitar la lectura de comillas dobles o la de plantillas hace fallar la prueba R2.
+
+**Huella R2:** `tests/ui-copy.test.ts` `8fa65525da5f…`. Los componentes no cambian.

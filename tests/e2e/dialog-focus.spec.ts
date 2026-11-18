@@ -14,7 +14,7 @@ test.beforeAll(async () => {
     stdin: {
       resolveDir: repo, loader: 'tsx',
       contents: `
-        import { useEffect, useState } from 'react';
+        import { StrictMode, useEffect, useState } from 'react';
         import { createRoot } from 'react-dom/client';
         import { Modal } from ${JSON.stringify(path.join(repo, 'src/components.tsx'))};
         import { CommandPalette } from ${JSON.stringify(path.join(repo, 'src/app-shell/CommandPalette.tsx'))};
@@ -36,13 +36,15 @@ test.beforeAll(async () => {
             ]} /> : null}
           </>;
         }
-        createRoot(document.getElementById('root')).render(<Fixture />);`,
+        // Dos montajes: sencillo y con StrictMode, como src/main.tsx (revisión 420 de Codex).
+        createRoot(document.getElementById('root')).render(location.search.includes('strict') ? <StrictMode><Fixture /></StrictMode> : <Fixture />);`,
     },
     bundle: true, write: false, format: 'iife', jsx: 'automatic', logLevel: 'error', loader: { '.css': 'empty' },
   });
   bundle = result.outputFiles[0].text;
 });
 
+const goto = (page: import('@playwright/test').Page, strict: boolean) => page.goto(origin + (strict ? '/?strict' : '/'));
 test.beforeEach(async ({ page }) => {
   await page.route('**/*', route => {
     const url = new URL(route.request().url());
@@ -50,10 +52,10 @@ test.beforeEach(async ({ page }) => {
     if (url.pathname === '/fixture.js') return route.fulfill({ contentType: 'application/javascript', body: bundle });
     return route.fulfill({ contentType: 'text/html', body: '<!doctype html><html lang="es"><meta charset="utf-8"><title>Foco</title><div id="root"></div><script src="/fixture.js"></script></html>' });
   });
-  await page.goto(origin);
 });
 
-test('D7 · lo que se escribe justo después de Ctrl J llega al buscador de la paleta', async ({ page }) => {
+for (const strict of [false, true]) test('D7 · lo que se escribe justo después de Ctrl J llega al buscador de la paleta' + (strict ? ' (StrictMode)' : ''), async ({ page }) => {
+  await goto(page, strict);
   await page.getByRole('button', { name: 'Abrir ventana', exact: true }).focus();
   await page.keyboard.press('Control+j');
   // Sin esperas: el buscador ya debe tener el foco en cuanto se pinta la paleta, no tras un temporizador.
@@ -64,7 +66,8 @@ test('D7 · lo que se escribe justo después de Ctrl J llega al buscador de la p
   await expect(page.getByLabel('Ejecutada')).toHaveText('csv');
 });
 
-test('D7 · una ventana enfoca su primer control, encierra el Tab y devuelve el foco al cerrar con Escape', async ({ page }) => {
+for (const strict of [false, true]) test('D7 · una ventana enfoca su primer control, encierra el Tab y devuelve el foco al cerrar con Escape' + (strict ? ' (StrictMode)' : ''), async ({ page }) => {
+  await goto(page, strict);
   const opener = page.getByRole('button', { name: 'Abrir ventana', exact: true });
   await opener.click();
   const dialog = page.getByRole('dialog', { name: 'Ventana' });
@@ -78,7 +81,8 @@ test('D7 · una ventana enfoca su primer control, encierra el Tab y devuelve el 
   await expect(opener).toBeFocused();
 });
 
-test('D7 · una ventana no le quita el foco a un campo con autoFocus', async ({ page }) => {
+for (const strict of [false, true]) test('D7 · una ventana no le quita el foco a un campo con autoFocus' + (strict ? ' (StrictMode)' : ''), async ({ page }) => {
+  await goto(page, strict);
   await page.getByRole('button', { name: 'Abrir ventana con campo' }).click();
   const field = page.getByRole('dialog', { name: 'Con campo' }).getByLabel('Nombre');
   await expect(field).toBeFocused();

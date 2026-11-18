@@ -36,7 +36,7 @@ Sin escenario activo, la vista Radar no tenía `h1`: `CommitmentRadarEntry` usab
 | | Antes | Después |
 | --- | --- | --- |
 | Escritorio 1366 | 235 avisos | **0** |
-| Móvil 390 | 608 avisos | 26 → **0** |
+| Móvil 390 | 608 avisos | **26** en la auditoría completa final; 0 al medir solo las páginas afectadas tras corregirlo (no es una auditoría completa) |
 
 - Los 26 avisos de móvil tras la auditoría final venían de dos causas: la paginación, que una regla de Faro fijaba a 24 px, y tres botones de texto de menos de 44 px de ancho. Se corrigieron y se comprobaron midiendo en la página Clientes e Inicio, donde aparecían: 0 controles por debajo de 44 y sin desbordamiento horizontal.
 - No se repitió la auditoría completa de 25 minutos. Queda como comprobación pendiente.
@@ -73,3 +73,24 @@ La prueba 3 fallaba antes del cambio. La 1 pasaba también antes: Playwright tar
 - **Llevar la auditoría a la CI local** («llevarlo a la batería», en el informe). Necesita un servidor en marcha y `tools/ci/run.mjs` no lo arranca. Encaja como paso opcional `--a11y` cuando se toque la CI.
 - **Para D5 (móvil):** la barra superior tiene más contenido del que cabe en 390 px (632 px) y recorta la etiqueta «Datos de prueba». Ya pasaba antes de este cambio.
 - **Repetir la auditoría completa** en móvil para confirmar el 0 en todas las vistas.
+
+## R2 · Revisión 420 de Codex
+
+**Hallazgo (correcto).** La raíz real de la App (`src/main.tsx`) usa `React.StrictMode`. En desarrollo, StrictMode monta, limpia y vuelve a montar cada efecto. La limpieza de `useDialogFocus` devolvía el foco al disparador en ese ensayo, y el segundo montaje, al ver el foco fuera, elegía el primer botón. Con StrictMode fallaban dos casos: la escritura inmediata en la paleta y el campo con `autoFocus`. En un paquete de producción no hay ese ciclo. Aun así, se corrige porque es el montaje con el que se desarrolla y se prueba.
+
+**Corrección** (`src/components.tsx`, `useDialogFocus`). El retorno del foco a quien abrió se aplaza un ciclo y se cancela si la misma ventana vuelve a montar su efecto en ese ciclo. Al cerrar de verdad, el foco vuelve al disparador como antes. No se desactivan StrictMode, `autoFocus` ni el retorno de foco.
+
+**Pruebas** (`tests/e2e/dialog-focus.spec.ts`). El fixture monta la misma App de prueba de dos formas, sencilla y con `StrictMode`, y los tres casos se ejecutan en ambas:
+
+| | Montaje sencillo | StrictMode |
+| --- | --- | --- |
+| Lo escrito tras Ctrl J llega al buscador | ok | ok |
+| Trampa de Tab y retorno con Escape | ok | ok |
+| Campo `autoFocus` conservado y retorno al cerrar | ok | ok |
+
+- **6/6**, y las dos regresiones de la paleta (`command-palette.spec.ts`, 419) dan **2/2**.
+- **Reproducción:** con el retorno inmediato anterior fallan exactamente los dos casos de StrictMode que señaló la revisión.
+
+**Auditoría.** La tabla se corrige como pide la revisión. La auditoría móvil completa final dio **26** avisos. Tras corregir sus dos causas, el 0 se midió solo en las páginas afectadas (Clientes e Inicio) y **no es una auditoría completa nueva**. Escritorio: 0 en la auditoría completa final.
+
+**Huellas R2:** `src/components.tsx` `d3e35da87a37…`, que incluye también un cambio ajeno en `displayValue`, sin tocar · `tests/e2e/dialog-focus.spec.ts` `0d53acdfb480…`.

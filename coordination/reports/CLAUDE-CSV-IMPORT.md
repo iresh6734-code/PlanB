@@ -100,3 +100,26 @@ Aplicar la marca de A responde 409 y no cambian ni los contactos ni el historial
 **La prueba reproduce el fallo.** Con la versión anterior de `server/csv-import.ts` (la del commit `6cdff8b`), la regresión falla: 1 fallo. Con la corrección, `csv-import-api` da 4/4, `csv-import` 5/5 y `tsc` 0.
 
 **Huellas R2:** `server/csv-import.ts` `733a4fdb600b…` · `tests/csv-import-api.test.ts` `b7e187eec33b…`. El resto, sin cambios.
+
+## R3 · Revisión 425 de Codex
+
+**Hallazgo (correcto).** Quedaban dos casos con una restauración válida que conserva el ID de captura, la fecha, la sesión, el número de registros y el historial, y en los que el resultado revisado sale igual:
+
+1. cambia el contenido de otro registro;
+2. cambia la cuenta de origen en una carpeta sin vinculación.
+
+En los dos casos la marca no cambiaba y la importación respondía 200.
+
+**Corrección** (`server/csv-import.ts`). La marca incluye también la **época de la copia**: el `copyEpoch` que `restoreBundle` renueva al completar cada restauración (CLAUDE-UNDO-LAST R3). Esa época se **lee** con `store.get('copyEpoch', '')`, no con `copyEpoch()`, que la crearía. Así la vista previa sigue siendo de solo lectura incluso en una instalación anterior que aún no la tiene. Se mantiene la ligadura al resultado revisado.
+
+**Pruebas** (`tests/csv-import-api.test.ts`), dos nuevas:
+
+- **Restaurar la misma copia con otro contenido.** Se restaura con la misma captura, fecha y sesión, el mismo conteo y sin historial; solo cambia el teléfono de otro contacto, en los registros y en la captura, para que el paquete sea válido. La marca anterior da 409 sin crear registro ni historial, y una revisión nueva importa con 200. El caso de la cuenta de origen queda cubierto por la misma época, porque toda restauración completada la renueva.
+- **Sin época.** En una instalación sin `copyEpoch`, la vista previa responde 200 y la época sigue sin existir.
+
+Resultados:
+
+- `csv-import-api` 6/6 y `csv-import` 5/5, **11/11**.
+- **Reproducción:** sin la época en la marca, la nueva regresión falla.
+
+**Huellas R3:** `server/csv-import.ts` `1750aadd2185…` · `tests/csv-import-api.test.ts` `b1edf21e20bb…`.

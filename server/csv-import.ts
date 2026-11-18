@@ -24,7 +24,10 @@ const PREVIEW_ROWS = 50, ERROR_ROWS = 200;
 export function previewToken(store: Store, entity: EntityName, csv: string, plan: ImportPlan) {
   const latest = store.latestChange(), snapshot = store.snapshot;
   const count = Number((store.db.prepare('SELECT COUNT(*) AS n FROM records').get() as { n: number }).n);
-  const copy = [snapshot?.id ?? '', snapshot?.capturedAt ?? '', store.get<string>('sessionId', '')];
+  // R3 (revisión 425): también la época de la copia, que cambia al completar cada restauración aunque se conserven captura,
+  // fecha y sesión. Se LEE sin crearla (store.copyEpoch() la escribiría): la vista previa sigue siendo de solo lectura
+  // incluso en una instalación anterior que aún no la tiene.
+  const copy = [snapshot?.id ?? '', snapshot?.capturedAt ?? '', store.get<string>('sessionId', ''), store.get<string>('copyEpoch', '')];
   const reviewed = plan.rows.map(row => [row.line, row.values, row.errors]);
   return createHash('sha256').update(JSON.stringify([entity, csv, plan.mapping, copy, latest?.id ?? 0, latest?.at ?? '', count, reviewed])).digest('hex');
 }

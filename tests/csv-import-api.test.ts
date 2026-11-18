@@ -92,6 +92,31 @@ test('restaurar otra copia con el mismo número de registros e historial vacío 
   assert.equal((await post(app, '/api/v2/import/csv/apply', { entity: 'contacts', csv: one, token: fresh.token })).statusCode, 200);
 });
 
+test('R3 · restaurar una copia con la MISMA captura, fecha y sesión pero otro contenido invalida la marca (revisión 425)', async t => {
+  const { store, app } = seeded(t);
+  const one = 'Nombre;Correo;Empresa\nNora;nora@ejemplo.es;Estudio Arce';
+  const p = JSON.parse((await post(app, '/api/v2/import/csv/preview', { entity: 'contacts', csv: one })).body);
+  // Misma identidad visible (captura, fecha, sesión), mismo conteo, sin historial y la empresa sigue resolviendo igual:
+  // solo cambia el contenido de OTRO registro. La marca debe caducar igualmente, porque se restauró la copia.
+  const bundle = structuredClone(store.bundle());
+  for (const list of [bundle.records, bundle.snapshot.records]) { const other = list.find(r => r.entity === 'contacts')!; other.values.phone = '611 000 000'; }
+  store.restoreBundle(bundle, { replace: true });
+  const records = store.records('contacts').length, changes = store.changesCount;
+  const stale = await post(app, '/api/v2/import/csv/apply', { entity: 'contacts', csv: one, token: p.token });
+  assert.equal(stale.statusCode, 409, stale.body); assert.equal(JSON.parse(stale.body).details.code, 'STALE_PREVIEW');
+  assert.equal(store.records('contacts').length, records); assert.equal(store.changesCount, changes);
+  const fresh = JSON.parse((await post(app, '/api/v2/import/csv/preview', { entity: 'contacts', csv: one })).body);
+  assert.equal((await post(app, '/api/v2/import/csv/apply', { entity: 'contacts', csv: one, token: fresh.token })).statusCode, 200, 'una revisión nueva sí importa');
+});
+
+test('R3 · la vista previa no escribe la época en una instalación que aún no la tiene', async t => {
+  const { store, app } = seeded(t);
+  store.db.prepare("DELETE FROM meta WHERE key = 'copyEpoch'").run();
+  assert.equal(store.get('copyEpoch', ''), '');
+  assert.equal((await post(app, '/api/v2/import/csv/preview', { entity: 'contacts', csv: 'Nombre;Correo\nZoe;zoe@ejemplo.es' })).statusCode, 200);
+  assert.equal(store.get('copyEpoch', ''), '', 'sigue sin época: la vista previa solo lee');
+});
+
 test('límites: cabecera obligatoria, filas máximas, campos desconocidos rechazados y nada sin activar la copia', async t => {
   const { app } = seeded(t);
   const rows = 'Nombre;Correo\n' + Array.from({ length: 1001 }, (_, i) => 'N' + i + ';n' + i + '@ejemplo.es').join('\n');

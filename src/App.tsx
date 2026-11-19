@@ -38,10 +38,9 @@ import { WorkspaceSearch } from './WorkspaceSearch.js';
 import { RehearsalTodayEntry } from './RehearsalTodayEntry.js';
 import { HomeOverview } from './HomeOverview.js';
 import { advanceDrill, drillHandoffNote, startDrill, type DrillState, type DrillStepId } from './app-shell/guided-drill.js';
-import { continuityAlerts, type AlertTarget, type ContinuityAlert } from './app-shell/continuity-alerts.js';
+import { type AlertTarget } from './app-shell/continuity-alerts.js';
+import { useContinuityState } from './app-shell/useContinuityState.js';
 import { readinessFor } from './app-shell/continuity-insights.js';
-import type { ContinuityTab } from './ContinuityHome.js';
-import type { ContinuityStatus } from '../shared/operations.js';
 // Apartados que se descargan al visitarlos por primera vez (misma interfaz de uso que los originales).
 import { Agenda, ChangesView, CommandPalette, ContingencyBand, ContinuityHome, CsvImport, DateCheck, DecisionReview, FocusRun, GuidedDrill, LicensePanel, LocalIntegrations, OperationalRehearsal, OutageLab, PortableExport, Preparation, QuickActivity, RadarHost, RecordTimeline, SequencePicker, Settings, ShortcutsHelp, TeamSync, WeeklyReview, WhatsNew } from './app-shell/lazy-pages.js';
 import type { WorkspaceSearchContext } from '../shared/workspace-search.js';
@@ -69,12 +68,9 @@ export default function App() {
   const urlSynced = useRef(false), fromHistory = useRef(false);
   useEffect(() => { rememberPlace(page, entityName); }, [page, entityName]);
   const [signals, setSignals] = useState<{ overdue: number | null; atRisk: number | null }>({ overdue: null, atRisk: null });
-  // Avisos de la copia para el menú: se calculan con el estado que Inicio o Continuidad ya han leído (sin otra lectura).
-  const [copyAlerts, setCopyAlerts] = useState<ContinuityAlert[] | null>(null), [continuityTab, setContinuityTab] = useState<ContinuityTab | null>(null);
-  const [continuityStatus, setContinuityStatus] = useState<ContinuityStatus | null>(null);
-  const receiveContinuity = useCallback((status: ContinuityStatus) => { setContinuityStatus(status); const next = continuityAlerts(status, new Date()); setCopyAlerts(current => current && JSON.stringify(current) === JSON.stringify(next) ? current : next); }, []);
+  // Avisos de la copia para el menú: se calculan con el estado que Inicio o Continuidad ya han leído (sin otra lectura). Ver app-shell/useContinuityState.ts (T2).
+  const { continuityStatus, receiveContinuity, continuityTab, setContinuityTab, copySignal } = useContinuityState(page);
   const [help, setHelp] = useState(false);
-  useEffect(() => { if (page !== 'continuity') setContinuityTab(null); }, [page]);
   const [commandsOpen, setCommandsOpen] = useState(false), [paletteText, setPaletteText] = useState('');
   const [focusOpen, setFocusOpen] = useState<false | FocusScope>(false);
   const [preparationOpen,setPreparationOpen]=useState(false);
@@ -231,7 +227,6 @@ export default function App() {
   // El foco sigue a la persona: a la pestaña pedida o, en Exportar, al contenido principal. La página se carga aparte, así que se espera a que exista.
   const focusWhenReady = (id: string, tries = 20) => { const node = document.getElementById(id); if (node) node.focus(); else if (tries > 0) setTimeout(() => focusWhenReady(id, tries - 1), 50); };
   const openAlert = (target: AlertTarget) => { setSelected(null); if (target === 'export') { setPage('export'); focusWhenReady('main-content'); return; } setContinuityTab(target); setPage('continuity'); focusWhenReady('ct-tab-' + target); };
-  const copySignal = copyAlerts && copyAlerts.length ? { count: copyAlerts.length, tone: copyAlerts.some(alert => alert.tone === 'danger') ? 'danger' as const : 'warn' as const, titles: copyAlerts.map(alert => alert.title) } : null;
   const readinessDot = readinessFor(state, continuityStatus, new Date());
   const pageLabel = page==='workspace'?(entity?.label??'Trabajar'):({home:'Inicio',today:'Hoy',week:'Revisión semanal',agenda:'Agenda',changes:'Cambios',agents:'Propuestas',radar:'Laboratorio · Radar','date-check':'Laboratorio · Comprobar una fecha','outage-lab':'Laboratorio · ¿Y si cae…?',continuity:'Continuidad','team-sync':'Copia de equipo',export:'Exportar',integrations:'Integraciones',prepare:'Preparación',plan:'Plan y licencia'} as Record<string,string>)[page]??'';
   // Mover una oportunidad de etapa desde el tablero: misma validación y mismo guardado que la ficha. Devuelve el motivo si no se puede.

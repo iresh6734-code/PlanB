@@ -72,8 +72,7 @@
 @media (max-width: 600px) { :root { --page-gutter: 14px; --control-h: 40px; --control-h-sm: 36px; --row-h: 52px; } }
 
 /* ---------- Base ---------- */
-body { background: var(--bg-canvas); color: var(--text-1); font-size: var(--fs-md); line-height: var(--lh-body); -webkit-font-smoothing: antialiased; font-feature-settings: "tnum" 1, "cv11" 1; }
-::selection { color: var(--text-1); }
+body { -webkit-font-smoothing: antialiased; font-feature-settings: "tnum" 1, "cv11" 1; }
 h1, h2, h3 { color: var(--text-1); text-wrap: pretty; font-family: var(--font-display); }
 body h1, body .page-header h1, body .team-shell .page-header h1, body .prepare-heading h1, body .sales-page h1, body .continuity-home h1, body .changes-page h1 { font-size: var(--fs-h1); line-height: var(--lh-tight); font-weight: var(--fw-bold); letter-spacing: -.005em; margin: 0; }
 body h2 { letter-spacing: -.01em; }
@@ -83,7 +82,7 @@ body .helper, body .muted, body .workspace-footnote { color: var(--text-3); font
 body small { font-size: var(--fs-sm); }
 a { color: var(--primary-text); }
 hr { border: 0; border-top: 1px solid var(--border); }
-body .eyebrow, body .company-eyebrow { font-size: var(--fs-sm); font-weight: var(--fw-semibold); letter-spacing: var(--tracking-label); color: var(--text-3); }
+body .company-eyebrow { font-size: var(--fs-sm); font-weight: var(--fw-semibold); letter-spacing: var(--tracking-label); color: var(--text-3); }
 
 /* Foco visible coherente */
 body :is(button, a, input, select, textarea, summary, [tabindex]):focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; box-shadow: none; }
@@ -94,7 +93,7 @@ body .button { display: inline-flex; align-items: center; justify-content: cente
 body .button svg { flex-shrink: 0; }
 body .button.primary:active:not(:disabled) { border-color: var(--primary-active); }
 body .button.secondary:active:not(:disabled) { background: var(--bg-hover); transform: none; box-shadow: none; }
-body .button.danger, body .button.danger-button { background: var(--danger); border-color: var(--danger); color: var(--text-inverse); }
+body .button.danger { background: var(--danger); border-color: var(--danger); color: var(--text-inverse); }
 body .button:disabled, body button:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
 body .text-button { display: inline-flex; align-items: center; gap: 6px; min-height: var(--control-h-sm); padding: 0 8px; margin: 0 -8px; text-decoration: none; background: none; border: 0; }
 body .text-button:hover:not(:disabled) { background: var(--primary-subtle); }
@@ -225,7 +224,7 @@ body .customer-name-button { display: block; min-width: 0; max-width: 100%; min-
 body .customer-name-button:hover { color: var(--primary-text); text-decoration: underline; text-underline-offset: 3px; }
 body .table-container > .helper, body .team-table > .helper { padding: 14px; margin: 0; }
 body .table-container > .text-button { margin: 4px 14px 8px; }
-body .empty-table, body .sales-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 16px; border: 1px dashed var(--border-strong); border-radius: var(--r-lg); background: var(--bg-surface); min-height: 0; }
+body .sales-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 16px; border: 1px dashed var(--border-strong); border-radius: var(--r-lg); background: var(--bg-surface); min-height: 0; }
 body .pagination { padding: 8px 0 0; gap: var(--sp-2); font-size: var(--fs-sm); color: var(--text-3); }
 
 /* ---------- Paneles ---------- */
@@ -285,7 +284,7 @@ body .team-shell .company-jobs li { padding: 8px 0; }
 body .modal { background: var(--bg-surface); }
 body .modal-header { border-bottom: 1px solid var(--border); }
 body .modal-header h2 { letter-spacing: -.015em; }
-body .settings-form, body .drawer form, body .record-drawer form { padding: 16px 20px 18px; }
+body .settings-form,body .record-drawer form { padding: 16px 20px 18px; }
 body .modal-footer { gap: var(--sp-2); margin-top: var(--sp-3); padding-top: var(--sp-3); }
 body .modal.modal-side { width: min(620px, 100%); border-radius: 0; border-width: 0 0 0 1px; box-shadow: -10px 0 30px rgba(13, 26, 47, .14); }
 body .modal-side .modal-header { background: var(--bg-surface); padding: 14px 20px; }

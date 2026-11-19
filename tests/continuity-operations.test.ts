@@ -36,18 +36,19 @@ function mount(exportName: string, props: Record<string, any>, ignoreAbort = fal
     api: { api: t.api }, components: { Spinner: ({ text }: any) => ({ type: 'span', props: { children: text } }) },
     TabList: { TabList: () => null, tabPanelProps: () => ({}) }, WorkspaceUI: { StatusTag: ({ children }: any) => ({ type: 'span', props: { className: 'status-tag', children } }) },
   };
-  const requireFrom = (spec: string): any => {
+  const requireFrom = (spec: string, fromDir = SRC): any => {
     if (spec === 'react') return new Proxy({}, { get: (_t, name) => (hooks as any)[name] });
     if (spec === 'react/jsx-runtime') return { jsx, jsxs: jsx, Fragment: Symbol.for('fragment') };
     if (spec.endsWith('.css')) return {};
     const key = path.basename(spec).replace(/\.js$/, '');
     if (key in mocks) return mocks[key];
-    const base = path.resolve(SRC, spec.replace(/\.js$/, '').replace(/^\.\//, '')), file = ['.tsx', '.ts'].map(ext => base + ext).find(f => fs.existsSync(f));
+    const base = path.resolve(fromDir, spec.replace(/\.js$/, '')), file = ['.tsx', '.ts'].map(ext => base + ext).find(f => fs.existsSync(f));
     if (!file) throw new Error('Dependencia no resuelta: ' + spec);
     if (cache.has(file)) return cache.get(file);
     const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText;
     const mod: { exports: any } = { exports: {} }; cache.set(file, mod.exports);
-    new Function('require', 'exports', 'module', 'window', code)(requireFrom, mod.exports, mod, { addEventListener() {}, removeEventListener() {} }); cache.set(file, mod.exports); return mod.exports;
+    const localRequire = (next: string) => requireFrom(next, path.dirname(file));
+    new Function('require', 'exports', 'module', 'window', code)(localRequire, mod.exports, mod, { addEventListener() {}, removeEventListener() {} }); cache.set(file, mod.exports); return mod.exports;
   };
   const Component = requireFrom('./ContinuityOperations')[exportName];
   const render = (next: Record<string, any> = {}) => { current = { ...current, ...next }; cursor = 0; tree = Component(current); const pending = effects; effects = []; pending.forEach(effect => effect()); return tree; };

@@ -30,23 +30,17 @@ body .sidebar .oc-search:disabled { opacity: .5; cursor: not-allowed; }
 .oc-chip[data-tone="danger"] { background: var(--oc-danger-bg); color: var(--oc-danger-fg); }
 .oc-chip[data-tone="warn"] { background: var(--oc-warn-bg); color: var(--oc-warn-fg); }
 .oc-chip[data-tone="ok"] { background: var(--oc-ok-bg); color: var(--oc-ok); }
-.oc-eyebrow { margin: 0; font-weight: 600; text-transform: uppercase; color: var(--oc-muted); }
 .oc-muted { color: var(--oc-muted); }
 .oc-link { background: none; border: 0; font: inherit; font-weight: 600; cursor: pointer; text-decoration: none; }
 .oc-link:hover { text-decoration: underline; }
 .oc-link:focus-visible { outline: 2px solid var(--oc-action); outline-offset: 2px; border-radius: 4px; }
 
 /* ── Inicio ── */
-.oc-home { display: flex; flex-direction: column; }
-.oc-home-head { display: flex; flex-wrap: wrap; justify-content: space-between; }
-.oc-home-head h1 { margin: 0; }
-.oc-home-actions { align-items: center; gap: 12px; flex-wrap: wrap; }
-.oc-home-summary { flex-wrap: wrap; }
+.oc-home-head { justify-content: space-between; }
 .oc-status { flex: 1.6 1 340px; min-width: 0; display: flex; }
-.oc-status-icon { flex: none; display: flex; align-items: center; justify-content: center; background: var(--oc-neutral-bg); color: var(--oc-neutral-fg); }
-.oc-status[data-tone="warn"] .oc-status-icon { background: var(--oc-warn-bg); color: var(--oc-warn); }
-.oc-status[data-tone="ok"] .oc-status-icon { background: var(--oc-ok-bg); color: var(--oc-ok); }
-.oc-status[data-tone="warn"] .oc-eyebrow { color: var(--oc-warn); }
+.oc-status-icon { flex: none; display: flex; align-items: center; justify-content: center; }
+.oc-status[data-tone="warn"] .oc-status-icon { background: var(--oc-warn-bg); }
+.oc-status[data-tone="ok"] .oc-status-icon { background: var(--oc-ok-bg); }
 .oc-status h2 { line-height: 1.3; }
 .oc-status p { margin: 0; }
 .oc-row-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
@@ -63,8 +57,6 @@ button.oc-kpi:focus-visible { outline: 2px solid var(--oc-action); }
 .oc-home-grid { flex-wrap: wrap; }
 .oc-home-main { flex: 2 1 520px; min-width: 0; }
 .oc-home-main-stack { display: grid; gap: 14px; min-width: 0; }
-.oc-home .fx-week { min-width: 0; margin-top: 14px; }
-.oc-home .fx-week > summary,
 .ct-operations-details > summary {
   padding: 12px 14px;
   border: 1px solid var(--border);
@@ -75,9 +67,7 @@ button.oc-kpi:focus-visible { outline: 2px solid var(--oc-action); }
   line-height: 20px;
   cursor: pointer;
 }
-.oc-home .fx-week[open] > summary,
 .ct-operations-details[open] > summary { margin-bottom: 8px; }
-.oc-home .fx-week > summary:focus-visible,
 .ct-operations-details > summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .ct-operations-route { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 12px; }
 .ct-operations-route p { flex: 1 1 230px; }
@@ -88,7 +78,6 @@ html body .lop-confirmation[data-stale="true"] { background: var(--warning-bg); 
 .oc-home-side { flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; }
 .oc-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .oc-card-head h2 { margin: 0; }
-.oc-card-foot { margin: 0; color: var(--oc-muted); }
 .oc-task-list { list-style: none; margin: 0; padding: 0; }
 .oc-task-list li { display: grid; align-items: center; }
 .oc-task-list strong { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -99,11 +88,10 @@ html body .lop-confirmation[data-stale="true"] { background: var(--warning-bg); 
 .oc-side-card h2 { margin: 0; }
 .oc-side-card p { margin: 0; }
 .oc-side-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.oc-bar { display: flex; border-radius: 999px; overflow: hidden; gap: 2px; background: var(--oc-neutral-bg); }
+.oc-bar { display: flex; overflow: hidden; background: var(--oc-neutral-bg); }
 .oc-bar span { display: block; }
 .oc-legend { display: flex; flex-wrap: wrap; color: var(--oc-ink); }
 .oc-alert { display: flex; flex-direction: column; }
-.oc-alert strong { color: var(--oc-ink); }
 .oc-alert p { margin: 0; color: #8f1d14; }
 .oc-alert-button { border: 1px solid #e8b4ad; background: #ffffff; color: #8f1d14; font: inherit; font-weight: 600; cursor: pointer; }
 .oc-empty-line { margin: 0; color: var(--oc-muted); }
@@ -122,9 +110,7 @@ html body .lop-confirmation[data-stale="true"] { background: var(--warning-bg); 
 .oc-table-head { border-bottom: 1px solid var(--oc-line); font-weight: 600; text-transform: uppercase; }
 .oc-group { margin: 0; display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--oc-neutral-fg); }
 .oc-group::before { content: ""; border-radius: 50%; background: #9aa8bc; }
-.oc-group[data-tone="danger"] { color: var(--oc-danger-fg); }
 .oc-group[data-tone="danger"]::before { background: var(--oc-danger-bar); }
-.oc-group[data-tone="warn"] { color: var(--oc-warn-fg); }
 .oc-group[data-tone="warn"]::before { background: var(--oc-warn-bar); }
 .lop .lop-tasks { list-style: none; margin: 0; padding: 0; border: 0; gap: 0; display: block; }
 .lop .lop-tasks li { border: 0; border-radius: 0; background: #ffffff; margin: 0; box-shadow: none; }
@@ -140,9 +126,6 @@ html body .lop-confirmation[data-stale="true"] { background: var(--warning-bg); 
 }
 @media (max-width: 600px) {
   body .sidebar .oc-nav-group { display: contents; }
-  body .sidebar .oc-nav-caption { display: none; }
   body .sidebar nav[aria-label="Navegación principal"] .oc-nav-group > .nav-item { flex: initial; flex-direction: column; justify-content: center; gap: 2px; min-height: 46px; padding: 4px 2px; font-size: 10.5px; width: 100%; min-width: 0; white-space: normal; text-align: center; line-height: 1.15; }
-  body .sidebar-secondary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  body .sidebar-secondary .nav-item { white-space: normal; line-height: 1.2; min-width: 0; }
 }
 .oc-copy-total { margin-left: auto; align-self: center; font-size: 13px; color: var(--oc-muted); }

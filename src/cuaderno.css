@@ -107,7 +107,7 @@ html body .sidebar .oc-search { min-height: 28px; margin: 0 0 8px; padding: 0 8p
 html[data-theme="dark"] body .sidebar .oc-search { background: var(--bg-surface); }
 html body .sidebar .oc-search::after { border-color: var(--sb-border); color: var(--sb-muted); border-radius: 2px; }
 html body .sidebar .oc-search:hover:not(:disabled) { background: var(--bg-surface); border-color: var(--border-strong); color: var(--sb-text-strong); }
-html body .sidebar .nav-item, html body .sidebar-secondary .nav-item { min-height: 28px; padding: 0 8px; gap: 8px; border-radius: var(--r-md); font-size: var(--fs-md); font-weight: 500; color: var(--sb-text); }
+html body .sidebar .nav-item { min-height: 28px; padding: 0 8px; gap: 8px; border-radius: var(--r-md); font-size: var(--fs-md); font-weight: 500; color: var(--sb-text); }
 html body .sidebar .nav-item svg { width: 15px; height: 15px; color: var(--sb-muted); stroke-width: 1.75; }
 html body .sidebar .nav-item:hover:not(:disabled) { background: var(--sb-hover); color: var(--sb-text-strong); }
 html body .sidebar .nav-item.active, html body .sidebar .nav-item[aria-current="page"] { background: var(--sb-active); color: var(--primary-text); font-weight: 600; box-shadow: none; }
@@ -235,7 +235,7 @@ html body .gx-statusbar .status-label, html body .gx-statusbar .copy-date, html 
 html body .kanban { gap: 8px; }
 html body .kanban-column, html[data-theme="dark"] body .kanban-column { padding: 4px; gap: 4px; border: 0; border-radius: 0; background: transparent; border-right: 1px solid var(--border); }
 html body .kanban-column:last-child { border-right: 0; }
-html body .kanban-column h2 { padding: 4px 4px 4px; border-bottom: 1px solid var(--border-strong); font-size: var(--fs-sm); color: var(--text-1); }
+html body .kanban-column h2 { padding: 4px 4px 4px; font-size: var(--fs-sm); color: var(--text-1); }
 html body .kanban-column h2 .dot { border-radius: 1px; }
 html body .kanban-column h2 small, html[data-theme="dark"] body .kanban-column h2 small { background: transparent; color: var(--text-3); font-size: var(--fs-xs); }
 html[data-theme="dark"] body .kanban-column[data-kind="won"], html body .kanban-column[data-kind="won"] { background: transparent; }
@@ -246,8 +246,7 @@ html body .gx-sum { color: var(--text-3); font-size: var(--fs-xs); }
 
 /* ---------- Modales, fichas laterales y paleta ---------- */
 html body .modal-backdrop { background: var(--bg-overlay); }
-html body .modal, html body .drawer, html body .gx-commands { border-radius: var(--r-xl); border: 1px solid var(--border); background: var(--bg-surface); box-shadow: var(--shadow-pop); }
-html body .drawer { border-radius: 0; }
+html body .modal,html body .gx-commands { border-radius: var(--r-xl); border: 1px solid var(--border); background: var(--bg-surface); box-shadow: var(--shadow-pop); }
 html body .modal-header { padding: 12px 16px; border-bottom: 1px solid var(--border); }
 html body .modal-header h2 { font-size: var(--fs-lg); font-weight: 650; }
 html body .modal-body { padding: 16px; }
@@ -322,7 +321,7 @@ html body .oc-home-side .oc-status[data-tone="warn"] h2 { background: none; }
 html body .oc-status-icon { border-radius: 2px; background: transparent; color: var(--text-3); }
 html body .oc-status[data-tone="ok"] .oc-status-icon { color: var(--success); }
 html body .oc-status[data-tone="warn"] .oc-status-icon { color: var(--warning); }
-html body .oc-copy-alerts li { border-radius: 0; border: 0; border-top: 1px solid var(--rule); background: transparent; padding: 8px 0 0; }
+html body .oc-copy-alerts li { border-radius: 0; border: 0; border-top: 1px solid var(--rule); background: transparent; }
 html body .oc-bar { height: 8px; border-radius: 0; gap: 2px; }
 html body .oc-bar span { border-radius: 0; }
 html body .oc-alert, html[data-theme="dark"] body .oc-alert { border: 0; border-top: 1px solid var(--rule); border-radius: 0; background: transparent; padding: 8px 0 0; color: var(--text-2); }

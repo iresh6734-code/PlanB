@@ -25,7 +25,7 @@ body .ltso .text-button{min-height:32px}
 .ltso-limit{margin:12px 0 0;color:var(--text-2,#394659);line-height:1.5}
 .ltso-filter{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
 .ltso-chip{display:inline-flex;align-items:center;min-height:32px;padding:4px 12px;border:1px solid var(--border,#e0e5ee);border-radius:999px;background:var(--bg-surface,#fff);color:var(--text-1,#0f1a2b);font:inherit;font-weight:600;cursor:pointer}
-.ltso-chip[aria-pressed="true"]{background:var(--primary,#2c58dc);border-color:var(--primary,#2c58dc);color:#fff}
+.ltso-chip[aria-pressed="true"]{background:var(--primary,#2c58dc);border-color:var(--primary,#2c58dc);color:var(--text-inverse,#fff)}
 .ltso-chip:focus-visible{outline:2px solid var(--primary,#2c58dc);outline-offset:2px}
 .ltso-group{margin:0 0 16px}
 .ltso-group h3{font-size:14px;margin:0 0 4px}

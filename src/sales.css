@@ -19,8 +19,6 @@
 .sales-empty > svg { color:#7083b2; }
 .sales-empty.compact { background:#fafbfc; }
 .agent-feature > div { min-width:0; }
-.agent-icon { flex-shrink:0; width:53px; height:53px; display:grid; place-items:center; background:#edf1fb; color:var(--blue); border-radius:10px; }
-.agent-feature .eyebrow { display:block; margin-bottom:11px; font-size:9px; }
 .agent-feature p { color:var(--muted); }
 .agent-constraints { display:flex; flex-wrap:wrap; }
 .agent-runs strong { margin-right:20px; }
@@ -39,16 +37,16 @@
 .proposal-card { border:1px solid var(--line); min-width:0; }
 .proposal-card > summary { cursor:pointer; list-style:none; }
 .proposal-card > summary::-webkit-details-marker { display:none; }
-.proposal-detail-label { display:block; color:var(--blue); }
+.proposal-detail-label { display:block; }
 .proposal-card header { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; }
 .proposal-card header p { color:var(--muted); }
 .proposal-card .badge { white-space:normal; flex-shrink:0; max-width:230px; }
 .proposal-evidence { display:flex; flex-wrap:wrap; border-radius:6px; overflow-wrap:anywhere; }
 .proposal-evidence > span { width:100%; font-size:11px; font-weight:600; color:#54617a; }
 .proposal-actions { padding-left:21px; }
-.proposal-actions li { padding:0 0 18px 5px; color:#73829b; font-size:12px; }
+.proposal-actions li { padding:0 0 18px 5px; font-size:12px; }
 .proposal-actions strong { display:block; color:#35445d; }
-.proposal-actions span { display:block; color:#53637d; margin-top:5px; }
+.proposal-actions span { display:block; margin-top:5px; }
 .proposal-actions p { color:var(--muted); margin:6px 0; white-space:pre-wrap; overflow-wrap:anywhere; }
 .proposal-actions small { overflow-wrap:anywhere; }
 .proposal-card > .button-row { margin-top:18px; }

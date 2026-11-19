@@ -94,3 +94,20 @@ Un guion recorrió los **4 perfiles** (Administración, Responsable, Comercial y
 | `src/CommercialWorkspace.tsx` | `0230198c9ac6` | `1f6da03df74a` |
 | `src/team.css` | `005e7fde2aef` | `e30719081a62` |
 | `tests/team-voice-d8.test.ts` | — | `aee9308c256b` (nuevo) |
+
+## R2 · Revisión 438 de Codex
+
+1. **«Empresa ficticia Arce» en Empresa → Registros guardados.** El nombre venía de los datos de demostración del servidor de equipo. Como pide la revisión, se abrió un encargo propio con sus archivos exactos (**CLAUDE-TEAM-DEMO-NAMES**: `server/team/demo.ts` y `tests/e2e/customers.spec.ts`). Las empresas pasan a «Empresa de prueba Arce» y «Empresa de prueba Faro», y la E2E espera el nombre nuevo.
+2. **Conexión caducada (`needs_reconnect`).** Junto al aviso de renovar la autorización aparecía también «Conecta primero el portal». Ahora la nota «Conecta primero» solo sale cuando no hay conexión; con la autorización caducada queda solo el aviso de renovarla. El motivo de permisos y el de portal ausente se mantienen.
+
+**Pruebas** (`tests/team-voice-d8.test.ts`, **4/4**):
+
+- nueva: sin «ficticia» en los datos de la demo, y la condición de la nota excluye `needs_reconnect`;
+- las tres anteriores.
+
+**Otras comprobaciones:**
+
+- `team` 7/7, `commercial` 18/18, `team-sync-ui` 12/12 y `tsc` 0.
+- E2E `customers` con el arnés aislado, recompilado: 1/2. El caso que falla se para **antes** del nombre, en el primer clic: no encuentra el botón «Lucía Martín» en la página de inicio del equipo, rediseñada por otra unidad. No depende de este cambio.
+
+**Huellas R2:** `src/TeamApp.tsx` `fc32405588d7…` · `tests/team-voice-d8.test.ts` `e0a4bf2dc135…`.

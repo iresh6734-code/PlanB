@@ -10,7 +10,7 @@ test('ficha comercial: acción interna persistente, cierre y borrador sin accion
   await page.route('**/*',route=>{if(new URL(route.request().url()).hostname!=='127.0.0.1'){external.push(route.request().url());return route.abort();}return route.continue();});
   await page.goto(team+'/team');await page.getByRole('button',{name:'Lucía Martín',exact:true}).click();
   const drawer=page.getByRole('dialog',{name:'Ficha de Lucía Martín',exact:true});await expect(drawer).toBeVisible();
-  await expect(drawer.getByText('Empresa ficticia Arce',{exact:true})).toBeVisible();await expect(drawer.getByText('No conservado en los datos disponibles',{exact:true})).toBeVisible();
+  await expect(drawer.getByText('Empresa de prueba Arce',{exact:true})).toBeVisible();await expect(drawer.getByText('No conservado en los datos disponibles',{exact:true})).toBeVisible();
   await expect(drawer.getByText('Rediseño web · Estudio Arce',{exact:true})).toBeVisible();
   await drawer.getByLabel('Qué hay que hacer',{exact:true}).fill('Revisar alcance · prueba local');await drawer.getByLabel('Fecha y hora local',{exact:true}).fill('2099-10-30T11:00');await drawer.getByRole('button',{name:'Guardar próxima acción',exact:true}).click();
   await expect(drawer.getByRole('status')).toContainText('Próxima acción guardada solo en Plan B.');

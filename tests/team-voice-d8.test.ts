@@ -33,3 +33,9 @@ test('voz de la App (docs/voz.md): lo inventado se llama «datos de prueba»', (
   }
   assert.ok(team.includes("config.demo?'Datos de prueba'"), 'el pie del menú lo dice igual que la App');
 });
+
+test('R2 · los datos de la demo hablan como la App y una conexión caducada no dice «conecta primero» (revisión 438)', () => {
+  assert.doesNotMatch(fs.readFileSync('server/team/demo.ts', 'utf8'), /\bfictici[oa]s?\b/i, 'las empresas de la demo son «de prueba»');
+  // Sin conexión: «Conecta primero…». Con la autorización caducada (needs_reconnect) ya se pide renovarla: no se suma el otro aviso.
+  assert.ok(team.includes("!hubspotConnectionReady&&!hubspotNeedsReconnect?<p className=\"helper\">Conecta primero el portal de HubSpot para poder capturar.</p>"));
+});

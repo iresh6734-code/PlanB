@@ -25,10 +25,11 @@ const PreviewSchema = z.object({
     line: z.number().int().min(2), values: z.record(z.string(), Value), errors: z.record(z.string(), z.string()), cells: z.record(z.string(), z.string())
   }).strict()).max(50),
   errors: z.array(z.object({ line: z.number().int().min(2), errors: z.record(z.string(), z.string().min(1)) }).strict()),
+  duplicates: z.number().int().nonnegative(), warnings: z.array(z.object({ line: z.number().int().min(2), text: z.string().min(1) }).strict()).max(200),
   token: Sha256
 }).strict();
 const ApplySchema = z.object({
-  created: z.number().int().nonnegative(), skipped: z.number().int().nonnegative(),
+  created: z.number().int().nonnegative(), skipped: z.number().int().nonnegative(), duplicatesSkipped: z.number().int().nonnegative(),
   failed: z.array(z.object({ line: z.number().int(), error: z.string() }).strict()), ids: z.array(z.string().min(1))
 }).strict();
 const ChangeIdentity = z.object({ id: z.number().int().positive(), at: z.iso.datetime(), copy: z.string().min(1).max(64) }).strict();

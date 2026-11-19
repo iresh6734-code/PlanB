@@ -1,7 +1,7 @@
 // CLAUDE-CSV-IMPORT · Lectura, propuesta de columnas, conversión y validación de un CSV antes de importarlo.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { convertValue, parseCsv, planImport, suggestMapping } from '../shared/csv-import.js';
+import { convertValue, normalizeDomain, parseCsv, planImport, suggestMapping } from '../shared/csv-import.js';
 import { makeDemoSpec, makeFixture } from '../shared/fixtures.js';
 import type { Field } from '../shared/model.js';
 
@@ -68,6 +68,24 @@ test('plan completo: valida como la ficha, resuelve empresas por nombre y rechaz
   assert.ok(sinNombre.errors.firstname, 'campo obligatorio vacío');
   assert.match(olga.errors.company_id, /No existe/);
   assert.match(otra.errors.email, /Ya existe/, 'repetido dentro del archivo, sin distinguir mayúsculas');
+});
+
+test('posibles duplicados: empresa con el mismo nombre o dominio, en la copia o en el archivo; avisan sin bloquear', () => {
+  const csv = ['Nombre;Sitio web', 'estudio arce;', 'Nueva;www.EMPRESA-2.example.com/contacto', 'Única;unica.es', 'ÚNICA SL;', 'Única;'].join('\n');
+  const plan = planImport(spec, 'companies', csv, snapshot.records);
+  assert.equal(plan.valid, 5, 'un aviso no es un error');
+  assert.deepEqual(plan.warnings.map(w => w.line), [2, 3, 6]);
+  assert.match(plan.warnings[0].text, /«Estudio Arce», ya en la copia/);
+  assert.match(plan.warnings[1].text, /Norte Digital.*mismo dominio/);
+  assert.match(plan.warnings[2].text, /de la línea 4/);
+  assert.equal(normalizeDomain('https://www.Acme.es/contacto?x=1'), 'acme.es');
+});
+
+test('posibles duplicados de contactos por nombre y apellidos; nunca en oportunidades ni tareas', () => {
+  const contactsPlan = planImport(spec, 'contacts', 'Nombre;Apellidos;Correo\nlucia;MARTÍN;otra@ejemplo.es\nLucía;Pérez;lp@ejemplo.es', snapshot.records);
+  assert.deepEqual(contactsPlan.warnings.map(w => w.line), [2]);
+  const deals = planImport(spec, 'deals', 'Nombre;Importe\nMisma;10\nMisma;20', snapshot.records, { Nombre: 'dealname', Importe: 'amount' });
+  assert.deepEqual(deals.warnings, []);
 });
 
 test('un mapeo elegido a mano manda sobre el propuesto y no puede escribir campos de solo lectura', () => {

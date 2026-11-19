@@ -21,7 +21,7 @@ import { RecordSummary } from './app-shell/RecordSummary.js';
 import { linkedPreset, taskPreset } from './app-shell/task-preset.js';
 import { RecordTimeline } from './app-shell/RecordTimeline.js';
 import { CommandPalette } from './app-shell/CommandPalette.js';
-import { FocusRun } from './app-shell/FocusRun.js';
+import { FocusRun, type FocusScope } from './app-shell/FocusRun.js';
 import { MobileNav } from './app-shell/MobileNav.js';
 import type { Command } from './app-shell/commands.js';
 import { toggleTheme } from './app-shell/theme.js';
@@ -68,7 +68,7 @@ export default function App() {
   const [help, setHelp] = useState(false);
   useEffect(() => { if (page !== 'continuity') setContinuityTab(null); }, [page]);
   const [commandsOpen, setCommandsOpen] = useState(false);
-  const [focusOpen, setFocusOpen] = useState(false);
+  const [focusOpen, setFocusOpen] = useState<false | FocusScope>(false);
   const [preparationOpen,setPreparationOpen]=useState(false);
   // En la tira de navegación móvil, el apartado activo queda siempre a la vista.
   useEffect(()=>{if(typeof window==='undefined'||!window.matchMedia?.('(max-width: 760px)').matches)return;const frame=requestAnimationFrame(()=>document.querySelector('.sidebar [aria-current="page"]')?.scrollIntoView({inline:'center',block:'nearest'}));return()=>cancelAnimationFrame(frame);},[page,entityName]);
@@ -105,7 +105,7 @@ export default function App() {
   // Laboratorio (Radar y «Comprobar una fecha»): solo sin copia o con una copia de datos de prueba (decisión del usuario, 17/11/2026).
   const lab = labVisible({ testData: state?.snapshot?.source.isTestData !== false });
   useShortcuts({ active: auth === 'open' && !!state, ready: !!state?.ready, runtime: !!state?.runtime, lab, blocked: !!selected, onRecords: page === 'workspace',
-    openEntity: entity => openEntity(entity), go: next => { setPage(next); setSelected(null); }, openHelp: () => setHelp(true), openSearch: () => setGlobalSearch(true), newRecord: () => setSelected('new'), openCommands: () => setCommandsOpen(true) });
+    openEntity: entity => openEntity(entity), go: next => { setPage(next); setSelected(null); }, openHelp: () => setHelp(true), openSearch: () => setGlobalSearch(true), newRecord: () => setSelected('new'), openCommands: () => setCommandsOpen(true), openFocus: scope => setFocusOpen(scope) });
   // Un apartado recordado que no existe en esta copia (el Laboratorio sin datos de prueba; Hoy, Propuestas, Integraciones o copia de equipo
   // en una copia restaurada) vuelve a Inicio.
   // La dirección sigue al lugar: la primera vez se sustituye (no añade historial); después, cada cambio es una entrada nueva,
@@ -254,7 +254,8 @@ export default function App() {
     ...(state.ready && spec ? spec.entities.map(item => ({ id: 'new-' + item.id, label: 'Crear: ' + item.singular, group: 'Crear', run: () => { openEntity(item.id); setSelected('new'); } })) : []),
     ...(state.ready && spec && !state.runtime ? [{ id: 'csv-import', label: 'Importar desde CSV…', group: 'Crear', run: () => setModal('csv') }] : []),
     ...(state.ready && !state.runtime ? [{ id: 'drill', label: 'Práctica guiada: un día sin CRM', group: 'Acción', hint: '5 min', run: startGuidedDrill }] : []),
-    ...(state.ready && spec ? [{ id: 'focus', label: 'Despachar vencidas', group: 'Acción', hint: signals.overdue ? signals.overdue + ' vencidas' : undefined, run: () => setFocusOpen(true) }] : []),
+    ...(state.ready && spec ? [{ id: 'focus', label: 'Despachar vencidas', group: 'Acción', hint: signals.overdue ? signals.overdue + ' vencidas' : undefined, run: () => setFocusOpen('overdue') },
+      { id: 'focus-sweep', label: 'Barrido de la mañana: vencidas y de hoy', group: 'Acción', run: () => setFocusOpen('sweep') }] : []),
     ...(state.ready ? [{ id: 'search', label: 'Buscar en toda la copia', group: 'Acción', hint: 'Ctrl K', run: () => setGlobalSearch(true) }, { id: 'coverage', label: 'Ver la cobertura de la copia', group: 'Acción', run: () => void viewCoverage() }] : []),
     ...(!state.runtime ? [{ id: 'prepare', label: 'Ir a Preparación', group: 'Ir a', run: () => openPreparation() }] : []),
     ...(!state.runtime && state.snapshot?.source.isTestData !== false ? [{ id: 'provider', label: 'Proveedor de IA', group: 'Ajustes', run: () => setModal('settings') }] : []),
@@ -283,7 +284,7 @@ export default function App() {
       {!state.runtime?<TaskOutcomesSurface/>:null}
       {page==='home'?<HomeOverview state={state} onSignals={setSignals} onOpenDeals={() => openEntity('deals')} onOpenRecord={record => { openEntity(record.entity); setRecords([record]); setSelected(record); }}contextRevision={state.workspaceSearchContext?.contextRevision??null} onOpenToday={()=>{setPage('today');setSelected(null);}} onOpenTask={id=>openTaskFromOutcomes(id)} onOpenRadar={()=>{setRehearseFromToday(null);setPage('radar');setSelected(null);}} onRehearse={id=>{setRehearseFromToday(id);setPage('radar');setSelected(null);}} onOpenDateCheck={()=>{setPage('date-check');setSelected(null);}} onOpenContinuity={()=>{setPage('continuity');setSelected(null);}} onOpenChanges={()=>{setPage('changes');setSelected(null);}} onContinuityStatus={receiveContinuity} onOpenAlert={openAlert} onProtect={() => void protect()} onPrepare={() => openPreparation(0)} lab={lab}/>
       :page==='continuity'?<ContinuityHome initialTab={continuityTab??'estado'} onStatus={receiveContinuity} onGuidedDrill={state.ready && !state.runtime ? startGuidedDrill : undefined} state={state} workspaceContextRevision={state.workspaceSearchContext?.contextRevision??null} refresh={refresh} work={()=>openEntity('contacts')} prepare={()=>openPreparation(0)} protect={()=>void protect()} exportCopy={()=>setPage('export')} connectRequest={connectRequest} onOpenToday={()=>{setPage('today');setSelected(null);}} onOpenIntegrations={()=>{setIntegrationsFrom('continuity');setPage('integrations');setSelected(null);}} returnedFrom={returnedFrom} onReturnHandled={()=>setReturnedFrom(null)}/>
-      :page==='today'||page==='agents'?<>{page==='today'&&lab?<RehearsalTodayEntry contextRevision={state.workspaceSearchContext?.contextRevision??null} onOpen={id=>{setRehearseFromToday(id);setPage('radar');setSelected(null);}} onOpenRadar={()=>{setRehearseFromToday(null);setPage('radar');setSelected(null);}}/>:null}<LocalOperations key={page} view={page} onDispatch={state.ready && spec ? () => setFocusOpen(true) : undefined} onOpenTasks={()=>openEntity('tasks')} onOpenDeals={()=>openEntity('deals')} onOpenProposals={()=>setPage('changes')} onPrepare={()=>openPreparation(0)} onRecordSaved={refresh} openTaskRequest={taskRequest} onOpenTaskHandled={()=>setTaskRequest(null)}/></>
+      :page==='today'||page==='agents'?<>{page==='today'&&lab?<RehearsalTodayEntry contextRevision={state.workspaceSearchContext?.contextRevision??null} onOpen={id=>{setRehearseFromToday(id);setPage('radar');setSelected(null);}} onOpenRadar={()=>{setRehearseFromToday(null);setPage('radar');setSelected(null);}}/>:null}<LocalOperations key={page} view={page} onDispatch={state.ready && spec ? () => setFocusOpen('overdue') : undefined} onOpenTasks={()=>openEntity('tasks')} onOpenDeals={()=>openEntity('deals')} onOpenProposals={()=>setPage('changes')} onPrepare={()=>openPreparation(0)} onRecordSaved={refresh} openTaskRequest={taskRequest} onOpenTaskHandled={()=>setTaskRequest(null)}/></>
         :page==='integrations'?<>{integrationsFrom?<p className="back-link"><button type="button" className="text-button" onClick={()=>{setIntegrationsFrom(null);setPage('continuity');setSelected(null);setReturnedFrom('integrations');}}>← Volver a Continuidad</button></p>:null}<LocalIntegrations onConnectHubspot={()=>{setPage('continuity');setSelected(null);setConnectRequest(n=>n+1);}}/></>
       :page==='team-sync'?<TeamSync/>
       :page==='date-check'?<div className="gx-datecheck"><h1 className="sr-only">Comprobar una fecha</h1><DateCheck contextRevision={state.workspaceSearchContext?.contextRevision??null} onContextStale={()=>void refresh()}/><div className="gx-datecheck-side"><DecisionReview contextRevision={state.workspaceSearchContext?.contextRevision??null} onContextStale={()=>void refresh()}/></div></div>
@@ -313,7 +314,7 @@ export default function App() {
     {modal === 'csv' && spec && state.ready ? <CsvImport spec={spec} initialEntity={page === 'workspace' ? entityName : 'contacts'} close={() => setModal(null)} done={async (target, created) => { openEntity(target); setDataRevision(r => r + 1); await refresh(); setNotice(created + (created === 1 ? ' registro importado' : ' registros importados') + ' en tu copia local. Quedan en Cambios.'); }} /> : null}
     {help ? <ShortcutsHelp close={() => setHelp(false)} /> : null}
     <MobileNav page={page} entityName={entityName} runtime={!!state.runtime} ready={!!state.ready} overdue={signals.overdue} changes={state.changes ?? 0} go={next => { setPage(next); setSelected(null); }} openEntity={openEntity} openMore={() => setCommandsOpen(true)} />
-    {focusOpen && spec && state.ready ? <FocusRun spec={spec} saveField={saveField} onOpen={record => { openEntity(record.entity); setRecords([record]); setSelected(record); }} close={() => setFocusOpen(false)} /> : null}
+    {focusOpen && spec && state.ready ? <FocusRun spec={spec} saveField={saveField} initialScope={focusOpen} onOpen={record => { openEntity(record.entity); setRecords([record]); setSelected(record); }} close={() => setFocusOpen(false)} /> : null}
     {drill ? <GuidedDrill state={drill} onGo={goDrillStep} onClose={() => setDrill(null)} onRestart={startGuidedDrill} /> : null}
     {commandsOpen ? <CommandPalette commands={commandList} close={() => setCommandsOpen(false)} findRecords={state.ready && spec ? findRecords : undefined} /> : null}
     {modal === 'coverage' ? <Modal title="Cobertura de tu copia" close={() => setModal(null)} wide><div className="modal-body">

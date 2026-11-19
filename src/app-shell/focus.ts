@@ -9,6 +9,7 @@ export async function loadFocusReview(
   today: string,
   readPage: (offset: number, limit: number, signal: AbortSignal) => Promise<FocusPage>,
   signal: AbortSignal,
+  includeToday = false,
 ) {
   const records = new Map<string, CrmRecord>();
   const related: CrmRecord[] = [];
@@ -32,7 +33,7 @@ export async function loadFocusReview(
   }
 
   return {
-    tasks: overdueTasks(spec, [...records.values()], today),
+    tasks: pendingTasks(spec, [...records.values()], today, includeToday),
     related, scanned: records.size, total, complete: consistent && records.size === total,
   };
 }
@@ -49,9 +50,14 @@ export function doneOption(spec: AppSpec): { key: string; id: string; label: str
 
 /** Tareas abiertas cuya fecha límite (día de Madrid) es anterior a `today` (AAAA-MM-DD), de la más antigua a la más reciente. */
 export function overdueTasks(spec: AppSpec, records: CrmRecord[], today: string): CrmRecord[] {
+  return pendingTasks(spec, records, today, false);
+}
+
+/** Igual que `overdueTasks`, y con `includeToday` también las que vencen hoy (el barrido de la mañana), detrás de las vencidas. */
+export function pendingTasks(spec: AppSpec, records: CrmRecord[], today: string, includeToday: boolean): CrmRecord[] {
   const dueKey = spec.roles?.dueDate ?? 'due_date', done = doneOption(spec);
   return records.filter(record => record.entity === 'tasks')
-    .filter(record => { const day = dueDay(record.values[dueKey]); return day !== null && day < today; })
+    .filter(record => { const day = dueDay(record.values[dueKey]); return day !== null && (day < today || includeToday && day === today); })
     .filter(record => !done || String(record.values[done.key] ?? '') !== done.id)
     .sort((a, b) => String(a.values[dueKey]).localeCompare(String(b.values[dueKey])) || a.id.localeCompare(b.id));
 }

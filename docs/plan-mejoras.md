@@ -25,6 +25,15 @@ Análisis del 19/11/2026 sobre la rama `planb-v0.3-local`. Se ha hecho leyendo e
 | (5) El desplegable de la tabla guarda al elegir con el ratón, pero con el teclado las flechas y las letras solo recorren: Intro o salir del campo guarda, Escape lo revierte. Se marca con borde discontinuo mientras está pendiente. | `app-shell/InlineSelect.tsx` |
 | (17) «N cambios» es un botón propio en la barra superior que abre Cambios (sin la palabra en móvil), y el menú móvil muestra el número en «Continuidad». | `TopBar.tsx`, `MobileNav.tsx`, `cuaderno.css` |
 | (20) Si falla una lectura periódica de Continuidad, aparece «No se pudo actualizar. Lo que ves es la lectura de hace X», que desaparece al recuperarse. Cambios ya mostraba su error. `/v6/workspace` sigue en silencio a propósito: solo activa un acceso opcional y un 404 es normal sin espacio de equipo. | `app-shell/poll.ts` (`useReadHealth`, `staleReadNote`), `ContinuityHome.tsx` |
+| (7) Vistas inteligentes de oportunidades: «Cierre pasado», «Cierran esta semana» y «Sin fecha de cierre», solo con etapas abiertas y si hay un campo de fecha de cierre. Las vistas «Vencidas» y «Para hoy» de tareas usan ahora el día de Madrid (`dueDay`). | `app-shell/saved-views.ts` |
+| (10) Barrido de la mañana: «Despachar» puede incluir las tareas que vencen hoy (selector antes de empezar, orden «Barrido de la mañana» en Ctrl J). La tarjeta marca «Vence hoy». | `focus.ts` (`pendingTasks`), `FocusRun.tsx`, `App.tsx` |
+| (8) Importar CSV avisa de posibles duplicados (mismo nombre, o mismo sitio web en empresas) frente a la copia y a filas anteriores del archivo. No bloquea: la casilla «Omitir los posibles duplicados» los descarta al importar, con la misma marca de la vista previa. | `shared/csv-import.ts` (`duplicateWarnings`), `server/csv-import.ts`, `CsvImport.tsx` |
+| (6) Confirmación dentro de la propia ventana (`InlineConfirm`) en lugar del `confirm()` del navegador al cerrar la importación con vista previa y al abrir un registro relacionado con cambios sin guardar. En `CustomerDossier`, `CommercialWorkspace` y `TeamApp` se mantiene el `confirm()`: sus pruebas (unitarias y e2e) dependen del diálogo nativo. | `ui/index.tsx`, `CsvImport.tsx`, `app-shell/RelatedPanel.tsx` |
+| (14) Nombres, grupos y tonos de las tareas de Hoy en una sola tabla (`TASK_BUCKETS`), usada por la lista de Hoy y las etiquetas. Los textos no cambian. | `task-display.ts`, `LocalOperations.tsx` |
+| (12) Atajos `G D` (despachar vencidas) y `G B` (barrido de la mañana), también en la ayuda «?». | `app-shell/useShortcuts.ts`, `App.tsx` |
+| (22) «Parte para compartir» explica debajo, a la vista, qué contiene (antes solo en el `title`). | `ContinuityHome.tsx`, `faro.css` |
+
+(11) No se hace: la jornada es en memoria por decisión revisada (recargar o salir de Hoy la descarta, con barreras de identidad de la copia). Guardarla exigiría rediseñar esas barreras.
 
 ## Mejoras de lo que ya existe
 

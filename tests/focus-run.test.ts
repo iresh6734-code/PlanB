@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { makeDemoSpec, makeFixture } from '../shared/fixtures.js';
 import type { CrmRecord } from '../shared/model.js';
-import { daysBetween, doneOption, loadFocusReview, nextMonday, overdueTasks } from '../src/app-shell/focus.js';
+import { daysBetween, doneOption, loadFocusReview, nextMonday, overdueTasks, pendingTasks } from '../src/app-shell/focus.js';
 
 // «Despachar vencidas» (fase 2 del plan Faro 2): lógica pura.
 const snapshot = makeFixture('agency'), spec = makeDemoSpec(snapshot);
@@ -42,6 +42,17 @@ test('overdueTasks y daysBetween usan el día de Madrid de un instante, como Hoy
   assert.deepEqual(overdueTasks(spec, late, '2026-11-10'), []);
   assert.equal(overdueTasks(spec, late, '2026-11-11').length, 1);
   assert.equal(daysBetween('2026-11-09T23:30:00Z', '2026-11-12'), 2);
+});
+
+test('pendingTasks con includeToday añade las de hoy detrás de las vencidas, nunca las de mañana ni las hechas', () => {
+  const list = [
+    { entity: 'tasks', id: 'hoy', values: { due_date: '2026-11-10', status: 'pending' } },
+    { entity: 'tasks', id: 'ayer', values: { due_date: '2026-11-09', status: 'pending' } },
+    { entity: 'tasks', id: 'manana', values: { due_date: '2026-11-11', status: 'pending' } },
+    { entity: 'tasks', id: 'hecha', values: { due_date: '2026-11-10', status: 'completed' } },
+  ] as CrmRecord[];
+  assert.deepEqual(pendingTasks(spec, list, '2026-11-10', true).map(task => task.id), ['ayer', 'hoy']);
+  assert.deepEqual(pendingTasks(spec, list, '2026-11-10', false).map(task => task.id), ['ayer']);
 });
 
 test('nextMonday: siempre un lunes posterior, también si hoy es lunes', () => {

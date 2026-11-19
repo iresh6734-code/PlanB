@@ -41,6 +41,15 @@ export function ErrorState({ title, children, actionLabel = 'Reintentar', onActi
   return <div className="ui-error" role="alert"><h3>{title}</h3>{children ? <p>{children}</p> : null}{onAction ? <button type="button" className="button secondary" onClick={onAction}>{actionLabel}</button> : null}</div>;
 }
 
+/** Confirmación en su sitio (mejora #6), en lugar del `confirm()` del navegador: la pregunta junto a lo que la provocó,
+ *  con la salida segura primero y con el foco. Escape la descarta. El grupo se etiqueta con la propia pregunta. */
+export function InlineConfirm({ id, question, confirmLabel, cancelLabel = 'Seguir aquí', onConfirm, onCancel }: { id: string; question: ReactNode; confirmLabel: string; cancelLabel?: string; onConfirm: () => void; onCancel: () => void }) {
+  return <div className="ui-confirm" role="group" aria-labelledby={id + '-q'} onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); event.nativeEvent.stopImmediatePropagation(); onCancel(); } }}>
+    <p id={id + '-q'}>{question}</p>
+    <div className="ui-confirm-actions"><button type="button" className="button" autoFocus onClick={onCancel}>{cancelLabel}</button><button type="button" className="button danger" onClick={onConfirm}>{confirmLabel}</button></div>
+  </div>;
+}
+
 /** Límite de error para un apartado: si falla al cargar o al pintarse, enseña el error en su sitio y el resto de la App
  *  sigue funcionando. La acción por defecto recarga la página (el caso típico: un despliegue nuevo cambió sus archivos). */
 export class PageErrorBoundary extends Component<{ label: string; children?: ReactNode; onRetry?: () => void }, { failed: boolean }> {

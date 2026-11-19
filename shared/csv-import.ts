@@ -111,7 +111,42 @@ export function convertValue(field: Field, raw: string, references: (entity: Ent
 
 /** `cells` conserva el texto original de cada columna, para enseñar a la persona lo que escribió y no IDs internos. */
 export type ImportRow = { line: number; values: CrmRecord['values']; errors: Record<string, string>; cells: Record<string, string> };
-export type ImportPlan = { entity: EntityName; headers: string[]; mapping: Record<string, string | null>; rows: ImportRow[]; valid: number; invalid: number; ignoredColumns: string[] };
+/** Aviso que no bloquea la fila: parece el mismo cliente o empresa que otro ya presente. La persona decide si lo omite. */
+export type ImportWarning = { line: number; text: string };
+export type ImportPlan = { entity: EntityName; headers: string[]; mapping: Record<string, string | null>; rows: ImportRow[]; valid: number; invalid: number; ignoredColumns: string[]; warnings: ImportWarning[] };
+
+/** Dominio comparable: sin protocolo, «www.», ruta ni mayúsculas («https://www.Acme.es/contacto» → «acme.es»). */
+export const normalizeDomain = (text: string) => text.trim().toLowerCase().replace(/^[a-z]+:\/\//, '').replace(/^www\./, '').replace(/[/?#].*$/, '').replace(/\.$/, '');
+
+/**
+ * Posibles duplicados por NOMBRE (empresa, o nombre y apellidos de un contacto) y por dominio web de una empresa, contra la
+ * copia y contra las filas anteriores del archivo. Solo en filas válidas y solo en clientes y empresas: dos tareas u
+ * oportunidades pueden llamarse igual con todo derecho. El correo repetido ya es un error que bloquea la fila.
+ */
+export function duplicateWarnings(spec: AppSpec, entity: EntityName, rows: ImportRow[], existing: CrmRecord[]): ImportWarning[] {
+  if (entity !== 'contacts' && entity !== 'companies') return [];
+  const definition = spec.entities.find(e => e.id === entity); if (!definition) return [];
+  const domainField = entity === 'companies' ? definition.fields.find(f => f.type === 'text' && /domain|dominio|web|sitio/i.test(f.key + ' ' + f.label)) : undefined;
+  const nameOf = (values: CrmRecord['values']) => normalize(String(values[definition.displayField] ?? '')) + (entity === 'contacts' ? ' ' + normalize(String(values.lastname ?? '')) : '');
+  const labelOf = (values: CrmRecord['values']) => (String(values[definition.displayField] ?? '') + (entity === 'contacts' && values.lastname ? ' ' + values.lastname : '')).trim();
+  const keys = (values: CrmRecord['values']) => {
+    const out: string[] = [], name = nameOf(values).trim();
+    if (name) out.push('n:' + name);
+    const domain = domainField ? normalizeDomain(String(values[domainField.key] ?? '')) : '';
+    if (domain) out.push('d:' + domain);
+    return out;
+  };
+  const seen = new Map<string, string>();
+  for (const record of existing) if (record.entity === entity) for (const key of keys(record.values)) if (!seen.has(key)) seen.set(key, '«' + labelOf(record.values) + '», ya en la copia');
+  const warnings: ImportWarning[] = [];
+  for (const row of rows) {
+    if (Object.keys(row.errors).length) continue;
+    const rowKeys = keys(row.values), match = rowKeys.map(key => [key, seen.get(key)] as const).find(([, found]) => found);
+    if (match) warnings.push({ line: row.line, text: 'Posible duplicado de ' + match[1] + (match[0].startsWith('d:') ? ' (mismo dominio)' : '') });
+    for (const key of rowKeys) if (!seen.has(key)) seen.set(key, '«' + labelOf(row.values) + '» de la línea ' + row.line);
+  }
+  return warnings;
+}
 
 /**
  * Plan completo: cada fila convertida y validada como lo haría la ficha, más dos comprobaciones de importación:
@@ -144,5 +179,5 @@ export function planImport(spec: AppSpec, entity: EntityName, csv: string, exist
     return { line: i + 2, values, errors, cells: Object.fromEntries(headers.map((header, column) => [header, (cells[column] ?? '').trim()])) };
   });
   const valid = planned.filter(r => !Object.keys(r.errors).length).length;
-  return { entity, headers, mapping: map, rows: planned, valid, invalid: planned.length - valid, ignoredColumns: headers.filter(h => !fieldOf(map[h])) };
+  return { entity, headers, mapping: map, rows: planned, valid, invalid: planned.length - valid, ignoredColumns: headers.filter(h => !fieldOf(map[h])), warnings: duplicateWarnings(spec, entity, planned, existing) };
 }

@@ -54,15 +54,18 @@ export function registerCsvImport(app: FastifyInstance, store: Store) {
       total: result.rows.length, valid: result.valid, invalid: result.invalid,
       preview: result.rows.slice(0, PREVIEW_ROWS),
       errors: result.rows.filter(row => Object.keys(row.errors).length).slice(0, ERROR_ROWS).map(row => ({ line: row.line, errors: row.errors })),
+      duplicates: result.warnings.length, warnings: result.warnings.slice(0, ERROR_ROWS),
       token: previewToken(store, body.entity, body.csv, result),
     };
   });
 
   app.post('/api/v2/import/csv/apply', async request => {
-    const body = base.extend({ token: z.string().regex(/^[a-f0-9]{64}$/) }).strict().parse(request.body);
+    // skipDuplicates no entra en la marca: solo resta filas a lo revisado, nunca añade ni cambia ninguna.
+    const body = base.extend({ token: z.string().regex(/^[a-f0-9]{64}$/), skipDuplicates: z.boolean().optional() }).strict().parse(request.body);
     const result = plan(body.entity, body.csv, body.mapping);
     if (previewToken(store, body.entity, body.csv, result) !== body.token) throw new AppError(409, 'La copia o el archivo cambiaron desde la vista previa. Vuelve a revisarla.', { code: 'STALE_PREVIEW' });
-    const valid = result.rows.filter(row => !Object.keys(row.errors).length);
+    const flagged = new Set(body.skipDuplicates ? result.warnings.map(warning => warning.line) : []);
+    const valid = result.rows.filter(row => !Object.keys(row.errors).length && !flagged.has(row.line));
     const count = Number((store.db.prepare('SELECT COUNT(*) AS n FROM records').get() as { n: number }).n);
     if (count + valid.length > MAX_RECORDS) throw new AppError(413, 'La importación superaría el máximo de ' + MAX_RECORDS.toLocaleString('es-ES') + ' registros de la copia.');
     // R5 (revisión 452): la marca se comprobó arriba, pero otra conexión puede restaurar o escribir entre esa comprobación y
@@ -90,6 +93,6 @@ export function registerCsvImport(app: FastifyInstance, store: Store) {
         failed.push({ line: row.line, error: error instanceof Error ? error.message : 'No se pudo guardar.' });
       }
     }
-    return { created: created.length, skipped: result.invalid, failed, ids: created };
+    return { created: created.length, skipped: result.invalid, duplicatesSkipped: flagged.size, failed, ids: created };
   });
 }

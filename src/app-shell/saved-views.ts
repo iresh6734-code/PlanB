@@ -1,4 +1,6 @@
 import type { AppState, CrmRecord, EntityName } from '../../shared/model.js';
+import { dueDay } from '../task-display.js';
+import { stageKind } from './deal-insights.js';
 
 /** Vistas de las listas de registros.
  *  · Inteligentes: preguntas frecuentes ya resueltas («Vencidas», «Más de 3.000 €», «Sin correo»…), según los campos que la
@@ -13,6 +15,7 @@ export interface SavedView { id: string; name: string; query: string; pick: stri
 
 const empty = (value: unknown) => value === null || value === undefined || (typeof value === 'string' && value.trim() === '') || (Array.isArray(value) && value.length === 0);
 const isDate = (value: unknown): value is string => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value);
+const addDays = (day: string, days: number) => new Date(Date.parse(day + 'T12:00:00Z') + days * 86_400_000).toISOString().slice(0, 10);
 
 export function smartViews(entityName: EntityName, entity: Entity, spec: Spec): SmartView[] {
   const has = (key: string | undefined) => !!key && entity.fields.some(field => field.key === key);
@@ -20,8 +23,9 @@ export function smartViews(entityName: EntityName, entity: Entity, spec: Spec): 
   if (entityName === 'tasks') {
     const due = spec.roles?.dueDate ?? 'due_date';
     if (has(due)) {
-      views.push({ id: 'overdue', label: 'Vencidas', hint: 'Fecha límite anterior a hoy y sin cerrar', test: (record, context) => isDate(record.values[due]) && String(record.values[due]).slice(0, 10) < context.today && !context.looksDone(record) });
-      views.push({ id: 'today', label: 'Para hoy', hint: 'Fecha límite hoy y sin cerrar', test: (record, context) => isDate(record.values[due]) && String(record.values[due]).slice(0, 10) === context.today && !context.looksDone(record) });
+      // Mismo día de Madrid que Hoy y «Despachar vencidas» (dueDay), también cuando la fecha trae hora.
+      views.push({ id: 'overdue', label: 'Vencidas', hint: 'Fecha límite anterior a hoy y sin cerrar', test: (record, context) => { const day = dueDay(record.values[due]); return day !== null && day < context.today && !context.looksDone(record); } });
+      views.push({ id: 'today', label: 'Para hoy', hint: 'Fecha límite hoy y sin cerrar', test: (record, context) => dueDay(record.values[due]) === context.today && !context.looksDone(record) });
       views.push({ id: 'no-date', label: 'Sin fecha', hint: 'Tareas abiertas sin fecha límite', test: (record, context) => empty(record.values[due]) && !context.looksDone(record) });
     }
   }
@@ -30,6 +34,15 @@ export function smartViews(entityName: EntityName, entity: Entity, spec: Spec): 
     if (has(amount)) {
       views.push({ id: 'big', label: 'Más de 3.000 €', hint: 'Importe superior a 3.000 €', test: record => Number(record.values[amount]) > 3000 });
       views.push({ id: 'no-amount', label: 'Sin importe', hint: 'Oportunidades sin importe', test: record => empty(record.values[amount]) || Number(record.values[amount]) === 0 });
+    }
+    const close = entity.fields.find(field => field.type === 'date' && /cierre|close/i.test(field.key + ' ' + field.label));
+    if (close) {
+      const stageKey = spec.roles?.stage ?? 'dealstage';
+      const open = (record: CrmRecord) => stageKind(spec.stages.find(stage => stage.id === String(record.values[stageKey] ?? ''))) === 'open';
+      const closeDay = (record: CrmRecord) => isDate(record.values[close.key]) ? String(record.values[close.key]).slice(0, 10) : null;
+      views.push({ id: 'close-late', label: 'Cierre pasado', hint: 'Abiertas con la fecha de cierre ya pasada: o se cierran o se reprograman', test: (record, context) => { const day = closeDay(record); return open(record) && day !== null && day < context.today; } });
+      views.push({ id: 'close-week', label: 'Cierran esta semana', hint: 'Abiertas que cierran en los próximos 7 días', test: (record, context) => { const day = closeDay(record); return open(record) && day !== null && day >= context.today && day <= addDays(context.today, 7); } });
+      views.push({ id: 'no-close', label: 'Sin fecha de cierre', hint: 'Abiertas sin ' + close.label.toLowerCase(), test: record => open(record) && empty(record.values[close.key]) });
     }
   }
   if (entityName === 'contacts' || entityName === 'companies') {

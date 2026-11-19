@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { EmptyState, PageHeader, Sheet, Skeleton, Tag } from '../src/ui/index.js';
+import { EmptyState, InlineConfirm, PageHeader, Sheet, Skeleton, Tag } from '../src/ui/index.js';
 
 // Piezas base de «Faro» (fase 0 del plan Faro 2): se comprueba la estructura accesible, no el aspecto.
 test('Sheet: con título e id queda etiquetada por su encabezado', () => {
@@ -38,4 +38,15 @@ test('Skeleton: marca la carga con aria-busy sin competir con el aviso de la App
   const html = renderToStaticMarkup(createElement(Skeleton, { rows: 3, label: 'Cargando registros…' }));
   assert.match(html, /^<div class="ui-skeleton" aria-busy="true"><span class="ui-sr">Cargando registros…<\/span>/);
   assert.equal((html.match(/class="ui-skeleton-row" aria-hidden="true"/g) ?? []).length, 3);
+});
+
+test('InlineConfirm: grupo etiquetado por la pregunta, la salida segura primero y con el foco; Escape la descarta', () => {
+  const html = renderToStaticMarkup(createElement(InlineConfirm, { id: 'x', question: '¿Cerrar?', confirmLabel: 'Cerrar sin guardar', onConfirm: () => {}, onCancel: () => {} }));
+  assert.match(html, /^<div class="ui-confirm" role="group" aria-labelledby="x-q"><p id="x-q">¿Cerrar\?<\/p>/);
+  assert.match(html, /<button type="button" class="button" autofocus="">Seguir aquí<\/button><button type="button" class="button danger">Cerrar sin guardar<\/button>/);
+  let cancelled = 0, stopped = 0;
+  const element = InlineConfirm({ id: 'x', question: 'q', confirmLabel: 'c', onConfirm: () => {}, onCancel: () => { cancelled++; } });
+  const press = (key: string) => element.props.onKeyDown({ key, stopPropagation: () => { stopped++; }, nativeEvent: { stopImmediatePropagation: () => {} } });
+  press('Enter'); assert.equal(cancelled, 0);
+  press('Escape'); assert.deepEqual([cancelled, stopped], [1, 1], 'no llega a la ventana que la contiene');
 });

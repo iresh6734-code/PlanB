@@ -50,6 +50,19 @@ test('vista previa no escribe; aplicar con su marca da de alta solo las filas vÃ
   assert.equal(nora?.values.company_id, 'company-1');
 });
 
+test('posibles duplicados: la vista previa los cuenta y aplicar puede omitirlos con la misma marca', async t => {
+  const { store, app } = seeded(t);
+  const csv = 'Nombre;Sitio web\nEstudio Arce;\nNueva Casa;nuevacasa.es\nOtra;www.nuevacasa.es';
+  const p = JSON.parse((await post(app, '/api/v2/import/csv/preview', { entity: 'companies', csv })).body);
+  assert.equal(p.valid, 3); assert.equal(p.duplicates, 2);
+  assert.deepEqual(p.warnings.map((w: { line: number }) => w.line), [2, 4]);
+  const before = store.records('companies').length;
+  const a = JSON.parse((await post(app, '/api/v2/import/csv/apply', { entity: 'companies', csv, token: p.token, skipDuplicates: true })).body);
+  assert.deepEqual([a.created, a.duplicatesSkipped], [1, 2]);
+  assert.equal(store.records('companies').length, before + 1);
+  assert.ok(store.records('companies').some(r => r.values.name === 'Nueva Casa'));
+});
+
 test('aplicar con una marca vieja (la copia cambiÃ³) o con otro archivo se rechaza sin escribir', async t => {
   const { store, app } = seeded(t);
   const p = JSON.parse((await post(app, '/api/v2/import/csv/preview', { entity: 'contacts', csv: CSV })).body);

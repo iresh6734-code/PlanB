@@ -26,11 +26,20 @@ export function dueLabel(due: string | null, kind: string, now = new Date()): st
   if (late === -1) return 'Mañana' + time;
   return day + time;
 }
+/** Grupos de tareas de Hoy, en su orden: nombre de cada tarea (etiqueta), del grupo (título y filtro) y tono. Una sola fuente
+ *  para Hoy, Inicio y las etiquetas, para que el mismo grupo no se llame distinto en dos sitios. */
+export const TASK_BUCKETS = {
+  overdue: { one: 'Vencida', group: 'Vencidas', tone: 'danger' },
+  'due-in-window': { one: 'Próximas 24 h', group: 'Próximas 24 h', tone: 'warn' },
+  'needs-review': { one: 'Revisar datos', group: 'Por revisar', tone: 'neutral' },
+  later: { one: 'Más adelante', group: 'Más adelante', tone: 'neutral' },
+} as const satisfies Record<string, { one: string; group: string; tone: 'danger' | 'warn' | 'neutral' }>;
+export type TaskBucket = keyof typeof TASK_BUCKETS;
+export const TASK_BUCKET_ORDER = Object.keys(TASK_BUCKETS) as TaskBucket[];
 export function taskChip(bucket: string, due: string | null, now = new Date()): { tone: 'danger' | 'warn' | 'neutral'; text: string } {
   if (bucket === 'overdue') { const late = daysLate(due, now); return { tone: 'danger', text: late && late > 0 ? 'Vencida · ' + late + ' d' : 'Vencida' }; }
-  if (bucket === 'due-in-window') return { tone: 'warn', text: 'Próximas 24 h' };
-  if (bucket === 'needs-review') return { tone: 'neutral', text: 'Revisar datos' };
-  return { tone: 'neutral', text: 'Más adelante' };
+  const known = TASK_BUCKETS[bucket as TaskBucket] ?? TASK_BUCKETS.later;
+  return { tone: known.tone, text: known.one };
 }
 /** Separa «Acción · Cliente» en dos trozos para atenuar el segundo; sin separador, todo es la acción. El texto completo no cambia. */
 export function splitTaskLabel(label: string): [string, string] {

@@ -1,8 +1,25 @@
 # Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026, 12:01, Europe/Madrid**. Mejoras 1, 5, 17 y 20 del plan, y cierre de las tareas 464, 466 y 468 del tablón.
+Última revisión: **19/11/2026, 12:16, Europe/Madrid**. Mejoras 6, 7, 8, 10, 12, 14 y 22 del plan (la 11 se descarta con motivo).
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
+
+## Más funciones: vistas, barrido, duplicados al importar · 19/11/2026, 12:16, Europe/Madrid
+
+Mismas normas anti-alertas: sin DPAPI/PowerShell, sin Playwright, sin servidores y sin datos reales. Solo pruebas unitarias en modo test y `npm run build`.
+
+- **Hecho** (detalle en [docs/plan-mejoras.md](docs/plan-mejoras.md), «Hecho en esta sesión»):
+  - (7) vistas de oportunidades por fecha de cierre; las vistas de tareas usan el día de Madrid.
+  - (10) barrido de la mañana en «Despachar» (vencidas y de hoy).
+  - (8) posibles duplicados en la importación CSV, con «Omitir los posibles duplicados».
+  - (6) `InlineConfirm` en la importación y en «Relacionado».
+  - (14) `TASK_BUCKETS` en `task-display.ts`.
+  - (12) atajos `G D` y `G B`.
+  - (22) texto visible en «Parte para compartir».
+- **Contrato CSV:** la vista previa añade `duplicates` y `warnings` (`{line, text}`, máx. 200); aplicar acepta `skipDuplicates` y devuelve `duplicatesSkipped`. La marca (`token`) no cambia: los avisos se derivan de las mismas filas.
+- **Sin cambiar a propósito:** `confirm()` en CustomerDossier, CommercialWorkspace y TeamApp (pruebas unitarias y e2e esperan el diálogo nativo); la jornada sigue en memoria (11).
+- **Verificación:** 261 pruebas unitarias afectadas en verde (modo test, sin servidores) y `npm run build` correcto. Sin e2e ni comprobación visual por las normas.
+- **Siguiente en el plan:** (9) Hecha/Posponer en las filas de Hoy, (2) tablero con todas las oportunidades, (3) orden y filtro en el servidor, N1 y N2.
 
 ## Propuestas 1, 5, 17 y 20 y tablón · 19/11/2026, 12:01, Europe/Madrid
 

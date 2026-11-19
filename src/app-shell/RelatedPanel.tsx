@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { AppSpec, CrmRecord } from '../../shared/model.js';
 import { api } from '../api.js';
 import { displayValue, recordName } from '../components.js';
-import { ErrorState, Skeleton } from '../ui/index.js';
+import { ErrorState, InlineConfirm, Skeleton } from '../ui/index.js';
 import { loadRelated, type RelatedGroup } from './related.js';
 import { recordListPath } from './useRecordList.js';
 
@@ -18,6 +18,7 @@ type RelatedRead = {
 export function RelatedPanel({ spec, record, dirty, onOpen }: { spec: AppSpec; record: CrmRecord; dirty: boolean; onOpen: (record: CrmRecord) => void }) {
   const [read, setRead] = useState<RelatedRead | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [pending, setPending] = useState<CrmRecord | null>(null);
   const { entity, id } = record;
   const current = read?.spec === spec && read.entity === entity && read.id === id && read.attempt === attempt ? read : null;
   const groups = current?.groups;
@@ -26,7 +27,7 @@ export function RelatedPanel({ spec, record, dirty, onOpen }: { spec: AppSpec; r
     const controller = new AbortController();
     const { signal } = controller;
     const target = { spec, entity, id, attempt };
-    setRead(null);
+    setRead(null); setPending(null);
     loadRelated(spec, { entity, id }, (source, offset, limit) => api(recordListPath(source, '', offset, '', limit), { signal }), signal)
       .then(groups => { if (!signal.aborted) setRead({ ...target, groups }); })
       .catch(failure => {
@@ -34,7 +35,7 @@ export function RelatedPanel({ spec, record, dirty, onOpen }: { spec: AppSpec; r
       });
     return () => controller.abort();
   }, [spec, entity, id, attempt]);
-  const open = (target: CrmRecord) => { if (!dirty || confirm('Esta ficha tiene cambios sin guardar que se perderán. ¿Abrir «' + recordName(target, spec) + '»?')) onOpen(target); };
+  const open = (target: CrmRecord) => { if (dirty) setPending(target); else onOpen(target); };
   const detail = (target: CrmRecord) => {
     const entity = spec.entities.find(item => item.id === target.entity); if (!entity) return '';
     return entity.columns.map(key => entity.fields.find(field => field.key === key)).filter(field => field && field.key !== entity.displayField && field.type !== 'reference' && field.type !== 'text' && field.type !== 'email')
@@ -43,6 +44,7 @@ export function RelatedPanel({ spec, record, dirty, onOpen }: { spec: AppSpec; r
   if (groups && !groups.length) return null;
   return <section className="gx-related" aria-labelledby="gx-related-title">
     <h3 id="gx-related-title">Relacionado</h3>
+    {pending && dirty ? <InlineConfirm id="gx-related-leave" question={<>Esta ficha tiene cambios sin guardar que se perderán. ¿Abrir «{recordName(pending, spec)}» de todos modos?</>} confirmLabel="Abrir sin guardar" onConfirm={() => { const target = pending; setPending(null); onOpen(target); }} onCancel={() => setPending(null)} /> : null}
     {error ? <ErrorState title="No se pudieron leer las relaciones" onAction={() => setAttempt(value => value + 1)}>{error}</ErrorState> : !groups ? <Skeleton rows={3} label="Leyendo lo relacionado…" /> : groups.map(group => <div key={group.entity + ':' + group.fieldKey} className="gx-related-group">
       <h4>{group.label}<span>{group.records.length}</span>{groups.filter(other => other.entity === group.entity).length > 1 ? <small>como {group.fieldLabel.toLowerCase()}</small> : null}</h4>
       {group.records.length ? <ul>{group.records.slice(0, 8).map(item => <li key={item.id}><button type="button" onClick={() => open(item)}><strong>{recordName(item, spec)}</strong><span>{detail(item)}</span></button></li>)}</ul>

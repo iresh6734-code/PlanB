@@ -11,18 +11,19 @@ import { loadLocalOperations, loadLocalWorkQueue, LocalOperationsError, runLocal
 import { LocalTaskFocus } from './LocalTaskFocus.js';
 import { useTaskOutcomes } from './TaskOutcomesHost.js';
 import './local-operations.css';
-import { dueLabel, splitTaskLabel, taskChip } from './task-display.js';
+import { dueLabel, splitTaskLabel, taskChip, TASK_BUCKET_ORDER, TASK_BUCKETS, type TaskBucket } from './task-display.js';
 
 /** Petición de abrir una tarea por ID desde fuera de Hoy (la superficie de resultados). El `nonce` distingue peticiones repetidas del mismo ID. */
 export type OpenTaskRequest = { taskId: string; attemptId?: string | null; nonce: number };
 type Props = { view: 'today' | 'agents'; onOpenTasks: () => void; onOpenDeals: () => void; onOpenProposals: () => void; onPrepare: () => void; onRecordSaved?: () => Promise<unknown>; openTaskRequest?: OpenTaskRequest | null; onOpenTaskHandled?: () => void; onDispatch?: () => void };
 const NO_OPS: readonly TaskSaveOperation[] = [], subscribeNone = () => () => undefined, snapshotNone = () => NO_OPS;
-const bucketNames = { overdue: 'Vencida', 'due-in-window': 'Próximas 24 h', 'needs-review': 'Revisar datos', later: 'Más adelante' };
 // «Operaciones claras»: filtros con recuento y grupos en el orden de urgencia. El filtro es solo de vista: no cambia la cola ni los recuentos de la copia.
-type Bucket = keyof typeof bucketNames;
-const bucketOrder: Bucket[] = ['overdue', 'due-in-window', 'needs-review', 'later'];
-const groupNames: Record<Bucket, string> = { overdue: 'Vencidas', 'due-in-window': 'Próximas 24 h', 'needs-review': 'Por revisar', later: 'Más adelante' };
-const bucketTone: Record<Bucket, 'danger' | 'warn' | undefined> = { overdue: 'danger', 'due-in-window': 'warn', 'needs-review': undefined, later: undefined };
+// Nombres y tonos vienen de task-display (TASK_BUCKETS), los mismos que usan las etiquetas de cada tarea.
+type Bucket = TaskBucket;
+const bucketOrder: Bucket[] = TASK_BUCKET_ORDER;
+const bucketNames = Object.fromEntries(bucketOrder.map(bucket => [bucket, TASK_BUCKETS[bucket].one])) as Record<Bucket, string>;
+const groupNames = Object.fromEntries(bucketOrder.map(bucket => [bucket, TASK_BUCKETS[bucket].group])) as Record<Bucket, string>;
+const bucketTone = Object.fromEntries(bucketOrder.map(bucket => { const tone = TASK_BUCKETS[bucket].tone; return [bucket, tone === 'neutral' ? undefined : tone]; })) as Record<Bucket, 'danger' | 'warn' | undefined>;
 export function LocalOperations({ view, onOpenTasks, onOpenDeals, onPrepare, onRecordSaved, openTaskRequest, onOpenTaskHandled, onDispatch }: Props) {
   // Con propietario (App real) la ficha delega el guardado en el gestor compartido y Hoy solo se ofrece como consumidor de la recarga; sin él, comportamiento anterior.
   const outcomes = useTaskOutcomes();

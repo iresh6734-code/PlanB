@@ -31,6 +31,26 @@ test('las vistas inteligentes solo existen si la especificación tiene el campo'
   assert.equal(pick(deals, 'no-amount').test(record({ amount: 0 }), context), true);
 });
 
+test('oportunidades: cierre pasado, cierran esta semana y sin fecha, solo si siguen abiertas', () => {
+  const dealSpec = { roles: { stage: 'dealstage', amount: 'amount', pipeline: null, dueDate: 'due_date', taskStatus: 'status' }, stages: [{ id: 'qualified', label: 'Cualificada', color: '#000000' }, { id: 'closedwon', label: 'Ganada', color: '#000000' }] } as never;
+  const views = smartViews('deals', entity([field('closedate', 'date', 'Fecha de cierre'), field('dealstage', 'enum')]), dealSpec);
+  assert.deepEqual(views.map(view => view.id), ['close-late', 'close-week', 'no-close']);
+  assert.equal(pick(views, 'close-late').test(record({ dealstage: 'qualified', closedate: '2026-11-12' }), context), true);
+  assert.equal(pick(views, 'close-late').test(record({ dealstage: 'closedwon', closedate: '2026-11-12' }), context), false, 'una ganada no está atrasada');
+  assert.equal(pick(views, 'close-week').test(record({ dealstage: 'qualified', closedate: '2026-11-13' }), context), true);
+  assert.equal(pick(views, 'close-week').test(record({ dealstage: 'qualified', closedate: '2026-11-20' }), context), true);
+  assert.equal(pick(views, 'close-week').test(record({ dealstage: 'qualified', closedate: '2026-11-21' }), context), false);
+  assert.equal(pick(views, 'no-close').test(record({ dealstage: 'qualified', closedate: '' }), context), true);
+  assert.equal(pick(views, 'no-close').test(record({ dealstage: 'closedwon' }), context), false);
+});
+
+test('tareas: «Vencidas» usa el día de Madrid de un instante', () => {
+  const views = smartViews('tasks', entity([field('due_date', 'date')]), spec);
+  // 23:30 UTC del 12 ya es el 13 en Madrid: es «para hoy», no vencida.
+  assert.equal(pick(views, 'overdue').test(record({ due_date: '2026-11-12T23:30:00Z' }), context), false);
+  assert.equal(pick(views, 'today').test(record({ due_date: '2026-11-12T23:30:00Z' }), context), true);
+});
+
 test('guardar: el nombre se limpia, el mismo nombre sustituye a la anterior y se guardan como mucho ocho', () => {
   const state = { query: '  norte ', pick: null, sort: { key: 'amount', dir: -1 as const }, smart: 'big' };
   let views: SavedView[] = addSavedView([], '  Grandes del norte ', state, 'a');

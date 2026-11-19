@@ -8,13 +8,15 @@ import { daysBetween, doneOption, loadFocusReview, nextMonday } from './focus.js
 import { recordListPath } from './useRecordList.js';
 
 type Outcome = 'done' | 'tomorrow' | 'monday' | 'skipped';
+export type FocusScope = 'overdue' | 'sweep';
 const LABEL: Record<Outcome, string> = { done: 'hecha', tomorrow: 'a mañana', monday: 'al lunes', skipped: 'saltada' };
 
 /** «Despachar vencidas»: recorre las tareas vencidas una a una. Cada acción guarda con la validación de la ficha (saveField);
- *  «Saltar» no cambia nada. La lista se fija al abrir: lo que se resuelve no vuelve a aparecer. */
-export function FocusRun({ spec, saveField, onOpen, close }: { spec: AppSpec; saveField: (record: CrmRecord, key: string, value: string | null) => Promise<string | null>; onOpen: (record: CrmRecord) => void; close: () => void }) {
+ *  «Saltar» no cambia nada. La lista se fija al abrir: lo que se resuelve no vuelve a aparecer.
+ *  El modo «sweep» (barrido de la mañana) añade al final las que vencen hoy; se puede cambiar antes de empezar. */
+export function FocusRun({ spec, saveField, onOpen, close, initialScope = 'overdue' }: { spec: AppSpec; saveField: (record: CrmRecord, key: string, value: string | null) => Promise<string | null>; onOpen: (record: CrmRecord) => void; close: () => void; initialScope?: FocusScope }) {
   const [review, setReview] = useState<Awaited<ReturnType<typeof loadFocusReview>> | null>(null);
-  const [error, setError] = useState(''), [attempt, setAttempt] = useState(0);
+  const [error, setError] = useState(''), [attempt, setAttempt] = useState(0), [scope, setScope] = useState<FocusScope>(initialScope);
   const [index, setIndex] = useState(0), [results, setResults] = useState<Record<string, Outcome>>({}), [busy, setBusy] = useState(false), [problem, setProblem] = useState('');
   const panel = useRef<HTMLDivElement>(null);
   const today = madridDay(new Date()), tomorrow = madridDay(new Date(Date.now() + 86_400_000));
@@ -22,15 +24,16 @@ export function FocusRun({ spec, saveField, onOpen, close }: { spec: AppSpec; sa
   const tasks = spec.entities.find(entity => entity.id === 'tasks');
   useEffect(() => {
     const controller = new AbortController();
-    loadFocusReview(spec, today, (offset, limit, signal) => api(recordListPath('tasks', '', offset, '', limit), { signal }), controller.signal)
+    setReview(null); setIndex(0); setResults({}); setError('');
+    loadFocusReview(spec, today, (offset, limit, signal) => api(recordListPath('tasks', '', offset, '', limit), { signal }), controller.signal, scope === 'sweep')
       .then(result => { if (!controller.signal.aborted) setReview(result); })
       .catch(failure => {
         if (!controller.signal.aborted) setError(failure instanceof Error ? failure.message : 'No se pudieron leer las tareas.');
       });
     return () => controller.abort();
-    // Guardar refresca el esquema, pero la lista queda fija desde la lectura inicial o el reintento.
+    // Guardar refresca el esquema, pero la lista queda fija desde la lectura inicial, el reintento o el cambio de alcance.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [attempt]);
+  }, [attempt, scope]);
   const list = review?.tasks;
   useEffect(() => { const timer = setTimeout(() => panel.current?.focus(), 40); return () => clearTimeout(timer); }, [index, list]);
   const current = list?.[index];
@@ -58,16 +61,21 @@ export function FocusRun({ spec, saveField, onOpen, close }: { spec: AppSpec; sa
   const counts = Object.values(results).reduce((sum, outcome) => ({ ...sum, [outcome]: (sum[outcome] ?? 0) + 1 }), {} as Partial<Record<Outcome, number>>);
   const details = review && current && tasks ? tasks.columns.map(column => tasks.fields.find(field => field.key === column)!).filter(field => field && field.key !== tasks.displayField && field.key !== dueKey && (!done || field.key !== done.key))
     .map(field => [field.label, displayValue(current.values[field.key], field, [...review.related, current], spec)] as const).filter(([, value]) => value) : [];
-  return <Modal title="Despachar vencidas" close={close}><div className="modal-body gx-focus" ref={panel} tabIndex={-1} onKeyDown={key}>
+  const started = Object.keys(results).length > 0;
+  const late = current ? daysBetween(String(current.values[dueKey]), today) : 0;
+  return <Modal title={scope === 'sweep' ? 'Despachar vencidas y de hoy' : 'Despachar vencidas'} close={close}><div className="modal-body gx-focus" ref={panel} tabIndex={-1} onKeyDown={key}>
+    {!started ? <div className="gx-focus-scope" role="radiogroup" aria-label="Qué tareas despachar">
+      {([['overdue', 'Solo vencidas'], ['sweep', 'Vencidas y de hoy']] as const).map(([value, label]) => <button key={value} type="button" role="radio" aria-checked={scope === value} className={scope === value ? 'active' : ''} disabled={busy} onClick={() => { if (scope !== value) setScope(value); }}>{label}</button>)}
+    </div> : null}
     {review && !review.complete ? <p role="status">
-      {review.scanned < review.total ? `Se revisaron ${review.scanned} de ${review.total} tareas.` : 'El listado cambió durante la lectura.'} Puede haber más tareas vencidas.
+      {review.scanned < review.total ? `Se revisaron ${review.scanned} de ${review.total} tareas.` : 'El listado cambió durante la lectura.'} Puede haber más tareas {scope === 'sweep' ? 'pendientes' : 'vencidas'}.
     </p> : null}
     {error ? <><p className="error-box" role="alert">{error}</p>
         <button type="button" className="button secondary" onClick={() => { setError(''); setAttempt(value => value + 1); }}>Reintentar</button></>
-      : !list ? <Skeleton rows={4} label="Buscando tareas vencidas…" />
+      : !list ? <Skeleton rows={4} label={scope === 'sweep' ? 'Buscando tareas vencidas y de hoy…' : 'Buscando tareas vencidas…'} />
       : !list.length ? <div className="gx-focus-end">
-          <p className="gx-focus-big">{review?.complete ? 'Nada vencido.' : 'No hay tareas vencidas entre las revisadas.'}</p>
-          {review?.complete ? <p>No hay tareas abiertas con fecha anterior a hoy.</p> : null}
+          <p className="gx-focus-big">{review?.complete ? (scope === 'sweep' ? 'Nada pendiente para hoy.' : 'Nada vencido.') : 'No hay tareas ' + (scope === 'sweep' ? 'pendientes' : 'vencidas') + ' entre las revisadas.'}</p>
+          {review?.complete ? <p>{scope === 'sweep' ? 'No hay tareas abiertas con fecha de hoy o anterior.' : 'No hay tareas abiertas con fecha anterior a hoy.'}</p> : null}
           <button type="button" className="button primary" onClick={close}>Cerrar</button>
         </div>
       : finished ? <div className="gx-focus-end" role="status"><p className="gx-focus-big">Listo: {list.length} {list.length === 1 ? 'tarea revisada' : 'tareas revisadas'}.</p>
@@ -77,7 +85,7 @@ export function FocusRun({ spec, saveField, onOpen, close }: { spec: AppSpec; sa
           <div className="gx-focus-progress" aria-hidden="true"><span style={{ width: (index / list.length * 100) + '%' }} /></div>
           <p className="gx-focus-count" aria-live="polite">Tarea {index + 1} de {list.length}</p>
           <div className="gx-focus-card">
-            <p className="gx-focus-late">Vencida hace {daysBetween(String(current.values[dueKey]), today)} {daysBetween(String(current.values[dueKey]), today) === 1 ? 'día' : 'días'}</p>
+            <p className="gx-focus-late" data-today={late <= 0 ? 'true' : undefined}>{late <= 0 ? 'Vence hoy' : 'Vencida hace ' + late + (late === 1 ? ' día' : ' días')}</p>
             <h3>{recordName(current, spec)}</h3>
             {details.length ? <dl>{details.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl> : null}
           </div>

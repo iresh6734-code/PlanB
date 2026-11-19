@@ -1431,6 +1431,11 @@ html body .oc-card-head .gx-dispatch { margin-left: auto; margin-right: 10px; mi
 .gx-focus-count { margin: -4px 0 0; font-size: var(--fs-xs); color: var(--text-3); font-variant-numeric: tabular-nums; }
 .gx-focus-card { padding: 14px 16px; border: 1px solid var(--border); border-left: 4px solid #d7372c; border-radius: var(--r-lg); background: var(--bg-surface); }
 .gx-focus-late { margin: 0 0 2px; font-size: var(--fs-xs); font-weight: 600; color: var(--danger); }
+.gx-focus-late[data-today="true"] { color: var(--warning-text, var(--text-2)); }
+.gx-focus-scope { display: inline-flex; align-self: flex-start; gap: 2px; padding: 2px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg-subtle); }
+.gx-focus-scope button { min-height: 28px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; color: var(--text-2); font: inherit; font-size: var(--fs-sm); cursor: pointer; }
+.gx-focus-scope button.active { background: var(--bg-surface); color: var(--text-1); font-weight: 600; box-shadow: 0 0 0 1px var(--border); }
+.gx-focus-scope button:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
 .gx-focus-card h3 { margin: 0 0 8px; font-family: var(--font-display); font-size: 20px; font-weight: 600; line-height: 1.2; color: var(--text-1); }
 .gx-focus-card dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 6px 16px; margin: 0; }
 .gx-focus-card dt { font-size: var(--fs-xs); color: var(--text-3); }
@@ -1643,8 +1648,9 @@ html body .ui-loading.ui-loading-sm::after { height: 10px; margin-top: 10px; bac
 @keyframes ui-breathe { 0%, 100% { opacity: .95; } 50% { opacity: .45; } }
 @media (prefers-reduced-motion: reduce) { html body .ui-loading::before, html body .ui-loading::after { animation: none; } }
 /* Cabecera de Continuidad: versión y «Parte para compartir» juntos a la derecha. */
-html body .continuity-home > .page-header .ct-head-side { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-@media (max-width: 600px) { html body .continuity-home > .page-header .ct-head-side { justify-content: flex-start; } }
+html body .continuity-home > .page-header .ct-head-side { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+html body .continuity-home > .page-header .ct-share-help { margin: 0; max-width: 34ch; color: var(--text-3); font-size: var(--fs-xs, 12px); line-height: 1.4; text-align: right; }
+@media (max-width: 600px) { html body .continuity-home > .page-header .ct-head-side { align-items: flex-start; } html body .continuity-home > .page-header .ct-share-help { text-align: left; } }
 /* ---- Estado vacío común (Faro 2 · estados): mismo texto, dos tonos. Neutro: «no hay datos» (marco discontinuo y círculo vacío).
    «Todo en orden» (`ui-empty-ok`): fondo de éxito y ✓. Solo CSS sobre el mismo elemento; no cambia textos, roles ni estructura. ---- */
 html body p.ui-empty.ui-empty { display: flex; align-items: center; gap: 10px; margin: 0; padding: 12px 14px; border: 1px dashed var(--border-strong); border-radius: var(--r-lg); background: transparent; color: var(--text-2); font-size: var(--fs-sm); line-height: 1.45; }
@@ -1808,6 +1814,15 @@ html body tbody tr:hover { background: var(--bg-row-hover); }
 html body .ui-error { display: grid; gap: 8px; justify-items: start; padding: 16px 18px; border: 1px solid var(--border); border-left: 3px solid var(--danger, #b3261e); border-radius: 10px; background: var(--surface, #fff); }
 html body .ui-error h3 { margin: 0; font-size: var(--fs-md, 15px); }
 html body .ui-error p { margin: 0; color: var(--text-muted, #555); max-width: 64ch; }
+/* ---- Confirmación en su sitio y avisos de posible duplicado (mejoras #6 y #8, 19/11/2026) ---- */
+html body .ui-confirm { display: grid; gap: 8px; margin: 8px 0; padding: 10px 12px; border: 1px solid var(--warning-border); border-left-width: 3px; border-radius: 8px; background: var(--warning-bg); color: var(--text-1); font-size: var(--fs-sm, 13px); line-height: 1.5; }
+html body .ui-confirm p { margin: 0; max-width: 64ch; }
+html body .ui-confirm-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+html body .modal-footer:has(> .ui-confirm) { flex-wrap: wrap; }
+html body .modal-footer .ui-confirm { flex: 1 1 100%; margin: 0 0 4px; }
+html body .csv-dup { color: var(--warning-text, var(--warning)); }
+html body .csv-dup-skip { display: flex; align-items: flex-start; gap: 8px; margin: 8px 0; font-size: var(--fs-sm, 13px); }
+html body .csv-dup-skip input { margin-top: 3px; }
 /* ---- Tipografía propia empaquetada (17/11/2026, con autorización del usuario) ----
    Inter para el texto y Source Serif 4 para los títulos, variables (400–700) y solo con el subconjunto latino; licencia SIL OFL
    (src/assets/fonts). Nombres propios para no mezclarse con copias instaladas en el equipo. Si no cargan, siguen las del sistema. */

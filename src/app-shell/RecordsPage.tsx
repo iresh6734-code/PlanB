@@ -5,7 +5,7 @@ import { displayValue, recordName } from '../components.js';
 import { EmptyState, ErrorState, Skeleton } from '../ui/index.js';
 import { downloadCsv, toCsv } from './csv.js';
 import { madridDay } from '../task-display.js';
-import { closeStatus, dueStatus, euros, stageKind } from './deal-insights.js';
+import { closeStatus, dealSignal, dueStatus, euros, stageKind, type DealPulse } from './deal-insights.js';
 import { addSavedView, describeView, readSavedViews, sameView, smartViews, writeSavedViews, type SavedView } from './saved-views.js';
 import { RECORD_PAGE_SIZE, type BoardRead, type RecordListView } from './useRecordList.js';
 import { pagedLabel } from './pager.js';
@@ -36,6 +36,8 @@ type Props = {
   facets?: Record<string, number> | null;
   /** Oportunidades de todo el proceso (hasta 1.000) para el tablero; sin ello, el tablero usa la página. */
   board?: BoardRead | null;
+  /** Tareas por oportunidad (V5); sin ello no se ofrecen «Sin próximo paso» ni «Paradas». */
+  pulse?: Map<string, DealPulse> | null;
 };
 const CARD_CAP = 40;
 const DEAL_NOUN = { one: 'oportunidad', many: 'oportunidades' };
@@ -46,7 +48,7 @@ const writeView = (entity: EntityName, view: View) => { try { localStorage.setIt
 
 /** Clientes, Empresas, Oportunidades y Tareas: cabecera-barra, tabla ordenable o tablero por etapas, y barra de estado.
  *  Con `setServerView`, el orden y el filtro rápido llegan a todos los registros; las vistas inteligentes miran la página. */
-export function RecordsPage({ state, spec, entity, entityName, rows, records, total, offset, setOffset, query, setQuery, pipeline, setPipeline, selected, setSelected, recordsLoading, recordsError, onRetry, busy, date, viewCoverage, toggleServices, moveDeal, saveField, newWith, canUndo = false, onUndo, setServerView, facets, board }: Props) {
+export function RecordsPage({ state, spec, entity, entityName, rows, records, total, offset, setOffset, query, setQuery, pipeline, setPipeline, selected, setSelected, recordsLoading, recordsError, onRetry, busy, date, viewCoverage, toggleServices, moveDeal, saveField, newWith, canUndo = false, onUndo, setServerView, facets, board, pulse = null }: Props) {
   const server = !!setServerView;
   // Tablero con todo el proceso (V2): en cuanto llega la primera página sustituye a la página de la lista; si falla, se vuelve a ella.
   const live = entityName === 'deals' && board && !board.error && (board.scanned > 0 || !board.loading) ? board : null, boardOn = !!live;
@@ -109,8 +111,8 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
   // Tareas abiertas: a la fecha límite se le añade cuándo vence en palabras («hace 3 días», «hoy», «mañana», «en 5 días»).
   const dueHint = (record: CrmRecord, value: unknown) => { if (looksDone(record)) return null; const status = dueStatus(value, today, false); if (status.tone !== 'late' && status.tone !== 'soon') return null; return { tone: status.tone, text: status.label.replace(/ · .*$/, '').replace(/^Venció /, '').replace(/^Vence /, '') }; };
   const isPast = (record: CrmRecord, value: unknown) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value) && value.slice(0, 10) < today && !looksDone(record);
-  const smarts = smartViews(entityName, entity, spec), activeSmart = smarts.find(view => view.id === smart);
-  const smartContext = { today, looksDone };
+  const smarts = smartViews(entityName, entity, spec).filter(view => view.needs !== 'pulse' || pulse), activeSmart = smarts.find(view => view.id === smart);
+  const smartContext = { today, looksDone, pulse };
   const filtered = activeSmart ? loaded.filter(record => activeSmart.test(record, smartContext)) : loaded;
   const sortField = sort && !server ? entity.fields.find(field => field.key === sort.key) : undefined;
   const shown = sort && sortField ? [...filtered].sort((a, b) => {
@@ -197,7 +199,8 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
               onClick={() => setSelected(record)}><strong>{recordName(record, spec)}</strong>
           <span>{euros(record.values[amountKey])}</span>
           <small>{refFields.map(f => displayValue(record.values[f.key], f, lookup, spec)).filter(text => text && text !== '—').join(' · ') || 'Sin empresa ni cliente'}</small>
-          {closeField && kind === 'open' ? (() => { const status = closeStatus(record.values[closeField.key], today, kind); return <em className="deal-close" data-tone={status.tone}>{status.label}</em>; })() : null}<span className="card-edit">Abrir oportunidad <ArrowRight size={14} /></span></button>)}
+          {closeField && kind === 'open' ? (() => { const status = closeStatus(record.values[closeField.key], today, kind); return <em className="deal-close" data-tone={status.tone}>{status.label}</em>; })() : null}
+          {pulse && kind === 'open' ? (() => { const signal = dealSignal(pulse.get(record.id), today); return signal ? <em className="deal-pulse" data-tone={signal.noNext ? 'warn' : 'late'} title={signal.noNext ? 'Ninguna tarea pendiente enlazada a esta oportunidad' : 'Su tarea más reciente es de hace ' + signal.idleDays + ' días'}>{signal.label}</em> : null; })() : null}<span className="card-edit">Abrir oportunidad <ArrowRight size={14} /></span></button>)}
         {deals.length > CARD_CAP ? <button type="button" className="gx-col-more" aria-expanded={open} onClick={() => setExpanded(current => { const next = new Set(current); if (open) next.delete(stage.id); else next.add(stage.id); return next; })}>{open ? 'Ver menos' : 'Ver ' + (deals.length - CARD_CAP).toLocaleString('es-ES') + ' más'}</button> : null}
         {!deals.length ? <p className="column-empty">Sin oportunidades</p> : null}</section>;
     })}</div>

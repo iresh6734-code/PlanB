@@ -44,6 +44,23 @@ test('oportunidades: cierre pasado, cierran esta semana y sin fecha, solo si sig
   assert.equal(pick(views, 'no-close').test(record({ dealstage: 'closedwon' }), context), false);
 });
 
+test('V5 · «Sin próximo paso» y «Paradas»: solo con tareas enlazables, solo abiertas y solo con el pulso leído', () => {
+  const linked = { roles: { stage: 'dealstage' }, stages: [{ id: 'qualified', label: 'Cualificada', color: '#000000' }, { id: 'closedwon', label: 'Ganada', color: '#000000' }],
+    entities: [{ id: 'tasks', fields: [{ key: 'planb_deal_id', type: 'reference', referenceEntity: 'deals' }] }] } as never;
+  assert.deepEqual(smartViews('deals', entity([field('dealstage', 'enum')]), linked).map(view => [view.id, view.needs]), [['no-next', 'pulse'], ['stalled', 'pulse']]);
+  assert.deepEqual(smartViews('deals', entity([field('dealstage', 'enum')]), { ...(linked as object), entities: [] } as never), []);
+  const views = smartViews('deals', entity([field('dealstage', 'enum')]), linked);
+  const deal = (id: string, stage: string) => ({ id, entity: 'deals', values: { dealstage: stage } }) as never;
+  const pulse = new Map([['old', { open: 1, undated: 0, next: '2026-10-01', last: '2026-10-01' }], ['busy', { open: 1, undated: 0, next: '2026-11-20', last: '2026-11-20' }]]);
+  const withPulse = { today: '2026-11-13', looksDone: () => false, pulse } as never;
+  assert.equal(pick(views, 'no-next').test(deal('none', 'qualified'), withPulse), true);
+  assert.equal(pick(views, 'no-next').test(deal('none', 'closedwon'), withPulse), false, 'una ganada no necesita próximo paso');
+  assert.equal(pick(views, 'no-next').test(deal('busy', 'qualified'), withPulse), false);
+  assert.equal(pick(views, 'stalled').test(deal('old', 'qualified'), withPulse), true);
+  assert.equal(pick(views, 'stalled').test(deal('busy', 'qualified'), withPulse), false);
+  assert.equal(pick(views, 'no-next').test(deal('none', 'qualified'), context), false, 'sin pulso no se afirma nada');
+});
+
 test('tareas: «Vencidas» usa el día de Madrid de un instante', () => {
   const views = smartViews('tasks', entity([field('due_date', 'date')]), spec);
   // 23:30 UTC del 12 ya es el 13 en Madrid: es «para hoy», no vencida.

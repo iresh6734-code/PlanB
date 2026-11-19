@@ -1,6 +1,6 @@
 import type { AppState, CrmRecord, EntityName } from '../../shared/model.js';
 import { dueDay } from '../task-display.js';
-import { stageKind } from './deal-insights.js';
+import { dealSignal, IDLE_DAYS, stageKind, type DealPulse } from './deal-insights.js';
 
 /** Vistas de las listas de registros.
  *  · Inteligentes: preguntas frecuentes ya resueltas («Vencidas», «Más de 3.000 €», «Sin correo»…), según los campos que la
@@ -9,13 +9,19 @@ import { stageKind } from './deal-insights.js';
  *  Las dos filtran los registros ya cargados; la búsqueda guardada sí vuelve a pedir al servidor. */
 type Spec = NonNullable<AppState['spec']>;
 type Entity = Spec['entities'][number];
-export interface SmartContext { today: string; looksDone: (record: CrmRecord) => boolean }
-export interface SmartView { id: string; label: string; hint: string; test: (record: CrmRecord, context: SmartContext) => boolean }
+export interface SmartContext { today: string; looksDone: (record: CrmRecord) => boolean; /** Tareas por oportunidad, si ya se leyeron todas. */ pulse?: Map<string, DealPulse> | null }
+/** `needs: 'pulse'`: la vista solo se ofrece cuando están leídas las tareas de las oportunidades. */
+export interface SmartView { id: string; label: string; hint: string; needs?: 'pulse'; test: (record: CrmRecord, context: SmartContext) => boolean }
 export interface SavedView { id: string; name: string; query: string; pick: string | null; sort: { key: string; dir: 1 | -1 } | null; smart: string | null }
 
 const empty = (value: unknown) => value === null || value === undefined || (typeof value === 'string' && value.trim() === '') || (Array.isArray(value) && value.length === 0);
 const isDate = (value: unknown): value is string => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value);
 const addDays = (day: string, days: number) => new Date(Date.parse(day + 'T12:00:00Z') + days * 86_400_000).toISOString().slice(0, 10);
+
+/** Campo de las tareas que apunta a una oportunidad (p. ej. `planb_deal_id`), si el modelo lo tiene. */
+export function dealTaskField(spec: Spec) {
+  return (spec.entities ?? []).find(entity => entity.id === 'tasks')?.fields.find(field => field.type === 'reference' && field.referenceEntity === 'deals') ?? null;
+}
 
 export function smartViews(entityName: EntityName, entity: Entity, spec: Spec): SmartView[] {
   const has = (key: string | undefined) => !!key && entity.fields.some(field => field.key === key);
@@ -35,14 +41,20 @@ export function smartViews(entityName: EntityName, entity: Entity, spec: Spec): 
       views.push({ id: 'big', label: 'Más de 3.000 €', hint: 'Importe superior a 3.000 €', test: record => Number(record.values[amount]) > 3000 });
       views.push({ id: 'no-amount', label: 'Sin importe', hint: 'Oportunidades sin importe', test: record => empty(record.values[amount]) || Number(record.values[amount]) === 0 });
     }
+    const stageKey = spec.roles?.stage ?? 'dealstage';
+    const open = (record: CrmRecord) => stageKind(spec.stages.find(stage => stage.id === String(record.values[stageKey] ?? ''))) === 'open';
     const close = entity.fields.find(field => field.type === 'date' && /cierre|close/i.test(field.key + ' ' + field.label));
     if (close) {
-      const stageKey = spec.roles?.stage ?? 'dealstage';
-      const open = (record: CrmRecord) => stageKind(spec.stages.find(stage => stage.id === String(record.values[stageKey] ?? ''))) === 'open';
       const closeDay = (record: CrmRecord) => isDate(record.values[close.key]) ? String(record.values[close.key]).slice(0, 10) : null;
       views.push({ id: 'close-late', label: 'Cierre pasado', hint: 'Abiertas con la fecha de cierre ya pasada: o se cierran o se reprograman', test: (record, context) => { const day = closeDay(record); return open(record) && day !== null && day < context.today; } });
       views.push({ id: 'close-week', label: 'Cierran esta semana', hint: 'Abiertas que cierran en los próximos 7 días', test: (record, context) => { const day = closeDay(record); return open(record) && day !== null && day >= context.today && day <= addDays(context.today, 7); } });
       views.push({ id: 'no-close', label: 'Sin fecha de cierre', hint: 'Abiertas sin ' + close.label.toLowerCase(), test: record => open(record) && empty(record.values[close.key]) });
+    }
+    // Oportunidades paradas (V5): solo si las tareas pueden enlazarse a una oportunidad.
+    if (dealTaskField(spec)) {
+      const signal = (record: CrmRecord, context: SmartContext) => context.pulse && open(record) ? dealSignal(context.pulse.get(record.id), context.today) : null;
+      views.push({ id: 'no-next', label: 'Sin próximo paso', hint: 'Abiertas sin ninguna tarea pendiente enlazada', needs: 'pulse', test: (record, context) => !!signal(record, context)?.noNext });
+      views.push({ id: 'stalled', label: 'Paradas ' + IDLE_DAYS + ' días', hint: 'Abiertas cuya tarea más reciente es de hace más de ' + IDLE_DAYS + ' días; los cambios de etapa o importe no cuentan', needs: 'pulse', test: (record, context) => signal(record, context)?.idleDays != null });
     }
   }
   if (entityName === 'contacts' || entityName === 'companies') {

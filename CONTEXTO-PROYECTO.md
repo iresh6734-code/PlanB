@@ -1,8 +1,15 @@
 # Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026, 13:13, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 y V2 hechas.
+Última revisión: **19/11/2026, 13:13, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1, V2 y V5 hechas.
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
+
+## Super plan V5 · Oportunidades paradas · 19/11/2026, Europe/Madrid
+
+- `deal-insights.ts`: `dealPulse` (por oportunidad: tareas pendientes, sin fecha, próxima y más reciente) y `dealSignal` (motivo visible: «Sin próximo paso», «Parada · último paso hace N días»; umbral `IDLE_DAYS = 14`).
+- `saved-views.ts`: `dealTaskField` y vistas `no-next` y `stalled` con `needs: 'pulse'`; `RecordsPage` solo las ofrece cuando `useDealPulse` leyó todas las tareas (hasta 1000; si no, null). El chip `.deal-pulse` va en las tarjetas abiertas.
+- Límite honesto: los registros no guardan fecha de modificación, así que «parada» se mide por las tareas enlazadas, no por cambios de etapa o importe.
+- Pruebas: `deal-insights` y `saved-views` ampliadas; build correcto. Sin revisión visual.
 
 ## Super plan V2 · Tablero con todo el proceso · 19/11/2026, 13:13, Europe/Madrid
 

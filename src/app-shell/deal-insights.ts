@@ -1,4 +1,5 @@
-import { madridDay } from '../task-display.js';
+import type { CrmRecord } from '../../shared/model.js';
+import { dueDay, madridDay } from '../task-display.js';
 
 /** Lectura rápida de una oportunidad para el tablero y el panel: de qué tipo es su etapa y en qué punto está su cierre.
  *  Solo interpreta valores que ya tiene la oportunidad; no inventa fechas ni probabilidades. */
@@ -70,3 +71,34 @@ export function dueStatus(value: unknown, today: string, done: boolean): CloseSt
 
 /** Iniciales para el avatar (dos letras como mucho). */
 export const initials = (name: string) => name.trim().split(/\s+/).filter(word => /\p{L}/u.test(word[0] ?? '')).slice(0, 2).map(word => word[0]!.toUpperCase()).join('') || '·';
+
+/** Pulso de una oportunidad según las tareas enlazadas a ella (V5): pendientes, cuántas sin fecha y el día más reciente
+ *  de cualquiera (hecha o no). Solo cuenta tareas; los cambios de etapa o de importe no dejan fecha en el registro. */
+export interface DealPulse { open: number; undated: number; next: string | null; last: string | null }
+export interface DealSignal { noNext: boolean; idleDays: number | null; label: string }
+export const IDLE_DAYS = 14;
+
+export function dealPulse(tasks: CrmRecord[], { dealKey, dueKey, isDone }: { dealKey: string; dueKey: string; isDone: (task: CrmRecord) => boolean }): Map<string, DealPulse> {
+  const pulse = new Map<string, DealPulse>();
+  for (const task of tasks) {
+    const dealId = task.values[dealKey];
+    if (task.entity !== 'tasks' || dealId == null || dealId === '') continue;
+    const item = pulse.get(String(dealId)) ?? { open: 0, undated: 0, next: null, last: null };
+    const day = dueDay(task.values[dueKey]);
+    if (!isDone(task)) { item.open++; if (day === null) item.undated++; else if (item.next === null || day < item.next) item.next = day; }
+    if (day !== null && (item.last === null || day > item.last)) item.last = day;
+    pulse.set(String(dealId), item);
+  }
+  return pulse;
+}
+
+/** Motivo visible de una oportunidad ABIERTA que pide un empujón: sin ninguna tarea pendiente, o sin actividad en sus
+ *  tareas desde hace más de `days` días. Sin motivo, null. Una tarea pendiente sin fecha cuenta como paso previsto. */
+export function dealSignal(pulse: DealPulse | undefined, today: string, days = IDLE_DAYS): DealSignal | null {
+  const noNext = !pulse || pulse.open === 0;
+  const idle = pulse?.last && !pulse.undated ? Math.round((dateStart(today) - dateStart(pulse.last)) / DAY) : NaN;
+  const idleDays = Number.isFinite(idle) && idle > days ? idle : null;
+  if (!noNext && idleDays === null) return null;
+  const ago = idleDays === null ? '' : 'último paso hace ' + idleDays + ' días';
+  return { noNext, idleDays, label: noNext ? 'Sin próximo paso' + (ago ? ' · ' + ago : '') : 'Parada · ' + ago };
+}

@@ -1912,6 +1912,10 @@ html body .deal-card .deal-close { grid-column: 1 / -1; justify-self: start; mar
 html body .deal-card .deal-close[data-tone="late"] { background: var(--danger-bg); color: var(--danger); }
 html body .deal-card .deal-close[data-tone="soon"] { background: var(--warning-bg); color: var(--warning); }
 html body .deal-card .deal-close[data-tone="none"] { background: transparent; padding-left: 0; color: var(--text-3); }
+/* V5: motivo de una oportunidad parada, debajo del cierre y con su mismo tono de chip. */
+html body .deal-card .deal-pulse { grid-column: 1 / -1; justify-self: start; margin-top: 3px; padding: 1px 7px; border-radius: 999px; font-style: normal; font-size: 11.5px; font-weight: 550; line-height: 18px; }
+html body .deal-card .deal-pulse[data-tone="warn"] { background: var(--warning-bg); color: var(--warning); }
+html body .deal-card .deal-pulse[data-tone="late"] { background: var(--danger-bg); color: var(--danger); }
 html body .deal-card:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 html[data-theme="dark"] body .kanban-column { background: #142326; border-color: #253a3e; }
 html[data-theme="dark"] body .kanban-column[data-kind="won"] { background: #12271f; }

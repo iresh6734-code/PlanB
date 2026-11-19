@@ -9,7 +9,7 @@ import { type PageId, rememberPlace, storedEntity, storedPage } from './app-shel
 import { useShortcuts } from './app-shell/useShortcuts.js';
 import { fallbackPage, labVisible } from './app-shell/navigation.js';
 import { pathOf, pendingStillWanted, placeOf } from './app-shell/routes.js';
-import { useRecordListLoader, useRecordListState } from './app-shell/useRecordList.js';
+import { useBoardLoader, useRecordListLoader, useRecordListState } from './app-shell/useRecordList.js';
 import { ShortcutsHelp } from './app-shell/ShortcutsHelp.js';
 import { RecordsPage } from './app-shell/RecordsPage.js';
 import { Sidebar } from './app-shell/Sidebar.js';
@@ -176,6 +176,7 @@ export default function App() {
     return()=>{accessSequence.current++;refreshSequence.current++;window.removeEventListener('planb:locked',lock);};
   }, [refresh]);
   useRecordListLoader(list, { active: auth === 'open' && page === 'workspace' && !!state?.ready, entity: entityName, revision: dataRevision, onError: setError });
+  const board = useBoardLoader({ active: auth === 'open' && page === 'workspace' && !!state?.ready && entityName === 'deals', query, pipeline, revision: dataRevision });
   useEffect(() => {
     if (!notice) return;
     const timer = setTimeout(() => { setNotice(''); setUndoable(null); }, undoable ? 8000 : 5000); return () => clearTimeout(timer);
@@ -299,7 +300,7 @@ export default function App() {
       : !state.ready || !spec || !entity ? <section className="empty-state"><ShieldCheck size={36} /><h1>Revisa la preparación</h1><p>La captura y las reglas deben estar verificadas antes de editar.</p>
           <button className="button primary" onClick={() => openPreparation(2)}>Revisar aplicación</button></section>
       : <RecordsPage state={state} spec={spec} entity={entity} entityName={entityName} rows={rows} records={records} total={total} offset={offset} setOffset={setOffset}
-          query={query} setQuery={setQuery} pipeline={pipeline} setPipeline={setPipeline} selected={selected} setSelected={setSelected} recordsLoading={recordsLoading} recordsError={recordsError} onRetry={() => setDataRevision(r => r + 1)} busy={busy} date={date} moveDeal={moveDeal} newWith={values => { setPreset(values); setSelected('new'); }} saveField={saveField} canUndo={!!undoable} onUndo={() => void undoLast()} setServerView={setServerView} facets={facets}
+          query={query} setQuery={setQuery} pipeline={pipeline} setPipeline={setPipeline} selected={selected} setSelected={setSelected} recordsLoading={recordsLoading} recordsError={recordsError} onRetry={() => setDataRevision(r => r + 1)} busy={busy} date={date} moveDeal={moveDeal} newWith={values => { setPreset(values); setSelected('new'); }} saveField={saveField} canUndo={!!undoable} onUndo={() => void undoLast()} setServerView={setServerView} facets={facets} board={board}
           viewCoverage={() => void viewCoverage()} toggleServices={() => act(() => post('/disconnect', { disconnected: !state.disconnected }), state.disconnected ? 'Servicios habilitados para importar o generar.' : 'HubSpot e IA desconectados. Sigue trabajando con tus datos locales.')} />}
     </main>
     {globalSearch && state.ready && state.snapshot ? <WorkspaceSearch captureId={state.snapshot.id+':'+state.snapshot.capturedAt} expectedContext={state.workspaceSearchContext??null} localRevision={dataRevision} refreshWorkspace={refresh} close={() => setGlobalSearch(false)} openRecord={(record, related) => { setGlobalSearch(false); openEntity(record.entity); setRecords([record,...related]); setSelected(record); }}/>:null}

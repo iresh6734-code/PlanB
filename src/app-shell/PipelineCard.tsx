@@ -6,6 +6,7 @@ import { madridDay } from '../task-display.js';
 import { ErrorState, Skeleton } from '../ui/index.js';
 import { closeStatus, euros, stageKind } from './deal-insights.js';
 import { recordListPath } from './useRecordList.js';
+import { BOARD_MAX_PAGES, readPages, type ListPage } from './pager.js';
 
 type Spec = NonNullable<AppState['spec']>;
 type Page = { records: CrmRecord[]; total: number };
@@ -27,7 +28,7 @@ function amountSummary(rows: { amount: number | null }[]) {
 }
 
 /** Inicio · «Oportunidades abiertas»: cuánto hay en juego por etapa y las que antes piden atención (cierre vencido o próximo).
- *  Solo lee la copia local (como la lista de Oportunidades); si hay más de 100, lo dice en lugar de dar un total falso. */
+ *  Solo lee la copia local, por páginas y hasta 1.000; si hay más, lo dice en lugar de dar un total falso. */
 export function PipelineCard({ spec, revision, onOpenRecord, onOpenDeals }: {
   spec: Spec; revision: string; onOpenRecord?: (record: CrmRecord) => void; onOpenDeals?: () => void;
 }) {
@@ -41,8 +42,8 @@ export function PipelineCard({ spec, revision, onOpenRecord, onOpenDeals }: {
     const controller = new AbortController();
     const context = { spec, revision, attempt };
     setRead(null);
-    api<Page>(recordListPath('deals', '', 0, '', LIMIT), { signal: controller.signal })
-      .then(page => { if (!controller.signal.aborted) setRead({ ...context, page }); })
+    readPages((offset, limit, signal) => api<ListPage>(recordListPath('deals', '', offset, '', limit), { signal }), controller.signal, { pageSize: LIMIT, maxPages: BOARD_MAX_PAGES, accept: record => record.entity === 'deals' })
+      .then(read => { if (!controller.signal.aborted) setRead({ ...context, page: { records: read.records, total: read.total } }); })
       .catch(failure => {
         if (!controller.signal.aborted) setRead({ ...context, error: failure instanceof Error ? failure.message : 'La consulta se interrumpió.' });
       });

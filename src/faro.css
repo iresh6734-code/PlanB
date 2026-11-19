@@ -1626,6 +1626,12 @@ html body .main-content .gx-view-form input { width: 200px; min-height: 30px !im
 html body .main-content .gx-view-form .button { min-height: 30px !important; }
 html body .gx-view-form small { font-size: var(--fs-xs); }
 html body .gx-views-note { font-size: var(--fs-xs); color: var(--text-3); }
+/* Tablero con todo el proceso (V2): aviso de lectura y «Ver N más» al pie de una columna larga. */
+html body .gx-board-note { margin: 0 0 8px; font-size: var(--fs-xs); color: var(--text-3); font-variant-numeric: tabular-nums; }
+html body .gx-board-note[data-tone="error"] { color: var(--danger); }
+html body .gx-col-more { width: 100%; min-height: 32px; margin-top: 2px; border: 1px dashed var(--border-strong); border-radius: var(--r-md); background: transparent; color: var(--primary-text); font: inherit; font-size: var(--fs-sm); cursor: pointer; }
+html body .gx-col-more:hover { background: var(--bg-surface); border-style: solid; }
+html body .gx-col-more:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 @media (max-width: 600px) {
   html body .gx-views { flex-wrap: nowrap; overflow-x: auto; margin-inline: calc(var(--page-gutter) * -1); padding: 2px var(--page-gutter) 4px; scrollbar-width: none; }
   html body .gx-view, html body .gx-view-add, html body .gx-view-remove { min-height: 44px; flex: none; }

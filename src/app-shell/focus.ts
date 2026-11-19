@@ -1,40 +1,18 @@
 import type { AppSpec, CrmRecord } from '../../shared/model.js';
 import { dueDay } from '../task-display.js';
-import { MAX_PAGES, PAGE_SIZE } from './related.js';
-
-type FocusPage = { records: CrmRecord[]; related: CrmRecord[]; total: number };
+import { readPages, type ListPage } from './pager.js';
 
 export async function loadFocusReview(
   spec: AppSpec,
   today: string,
-  readPage: (offset: number, limit: number, signal: AbortSignal) => Promise<FocusPage>,
+  readPage: (offset: number, limit: number, signal: AbortSignal) => Promise<ListPage>,
   signal: AbortSignal,
   includeToday = false,
 ) {
-  const records = new Map<string, CrmRecord>();
-  const related: CrmRecord[] = [];
-  let total = 0, consistent = true;
-
-  for (let page = 0; page < MAX_PAGES; page++) {
-    signal.throwIfAborted();
-    const data = await readPage(page * PAGE_SIZE, PAGE_SIZE, signal);
-    signal.throwIfAborted();
-    if (page > 0 && data.total !== total) consistent = false;
-    total = Math.max(total, data.total);
-    for (const record of data.records) {
-      if (record.entity !== 'tasks' || records.has(record.id)) {
-        consistent = false;
-        continue;
-      }
-      records.set(record.id, record);
-    }
-    related.push(...data.related);
-    if (records.size >= total || data.records.length === 0) break;
-  }
-
+  const read = await readPages(readPage, signal, { accept: record => record.entity === 'tasks' });
   return {
-    tasks: pendingTasks(spec, [...records.values()], today, includeToday),
-    related, scanned: records.size, total, complete: consistent && records.size === total,
+    tasks: pendingTasks(spec, read.records, today, includeToday),
+    related: read.related, scanned: read.scanned, total: read.total, complete: read.complete,
   };
 }
 

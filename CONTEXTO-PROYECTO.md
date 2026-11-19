@@ -1,8 +1,15 @@
 # Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026, 13:05, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 hecha.
+Última revisión: **19/11/2026, 13:13, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 y V2 hechas.
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
+
+## Super plan V2 · Tablero con todo el proceso · 19/11/2026, 13:13, Europe/Madrid
+
+- `src/app-shell/pager.ts` (`readPages`, `pagedLabel`, `BOARD_MAX_PAGES = 10`): lector puro por páginas con deduplicado; para al tener el total, al recibir una página vacía o sin registros nuevos, y marca la lectura como incompleta ante repetidos, registros ajenos o totales cambiantes. `focus.ts` (Despachar) ya lo usa.
+- `useBoardLoader` en `useRecordList.ts`: solo con Oportunidades abierta; la primera lectura de una búsqueda crece a la vista y las recargas tras guardar sustituyen el tablero al terminar. `RecordsPage` usa ese conjunto para columnas, sumas, vistas inteligentes y CSV; 40 tarjetas por columna con «Ver N más»; si falla, vuelve a la página con un aviso. Sin la prop (arnés e2e) se comporta como antes.
+- `PipelineCard` (Inicio) lee hasta 1000 con el mismo lector; los textos que comprueban los e2e no cambian y con total 1 sigue haciendo una sola petición.
+- Pruebas: `tests/pager.test.ts` nueva; `focus-run`, `record-list`, `ui-states` y `design-tokens` en verde; build correcto. Sin revisión visual ni e2e (reglas de la empresa): ver en casa.
 
 ## Super plan V1 · Orden y filtro en el servidor · 19/11/2026, 13:05, Europe/Madrid
 

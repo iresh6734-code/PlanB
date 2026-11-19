@@ -1,9 +1,10 @@
 // Estado y carga de la lista de registros de la App local (mejora B2 del informe; CLAUDE-RECORD-LIST, 17/11/2026).
 // Antes vivía repartido por App.tsx (ocho estados, un efecto y el reinicio de openEntity). Dos piezas, porque App
 // declara el estado arriba y solo puede cargar cuando ya conoce la sesión y la revisión de datos.
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CrmRecord, EntityName } from '../../shared/model.js';
 import { api } from '../api.js';
+import { BOARD_MAX_PAGES, readPages, type ListPage, type PagedRead } from './pager.js';
 
 export const RECORD_PAGE_SIZE = 50;
 
@@ -70,4 +71,35 @@ export function useRecordListLoader(list: RecordList, { active, entity, revision
     const timer = setTimeout(() => void loadRecordPage(signal => api<Page>(recordListPath(entity, query, offset, pipeline, RECORD_PAGE_SIZE, view), { signal }), controller.signal, list, onError), searchDelay(query));
     return () => { controller.abort(); clearTimeout(timer); };
   }, [active, entity, query, offset, pipeline, key, revision]);
+}
+
+export type BoardRead = PagedRead & { loading: boolean; error: string };
+
+/**
+ * Tablero de oportunidades con todo el proceso (V2): lee por páginas hasta 1.000, con la búsqueda y el embudo de la lista.
+ * La primera lectura de una búsqueda se ve crecer («cargando 120 de 340»); al recargar tras un guardado, el tablero
+ * anterior sigue a la vista y se sustituye entero al terminar, sin columnas que bajan y suben.
+ */
+export function useBoardLoader({ active, query, pipeline, revision }: { active: boolean; query: string; pipeline: string; revision: number }): BoardRead | null {
+  const [board, setBoard] = useState<(BoardRead & { key: string }) | null>(null);
+  const shown = useRef<string | null>(null);
+  useEffect(() => {
+    if (!active) { shown.current = null; setBoard(null); return; }
+    const key = query + '\u0000' + pipeline, progressive = shown.current !== key;
+    const controller = new AbortController(), { signal } = controller;
+    if (progressive) setBoard({ records: [], related: [], scanned: 0, total: 0, complete: false, loading: true, error: '', key });
+    else setBoard(current => current && { ...current, loading: true });
+    const timer = setTimeout(() => {
+      readPages((offset, limit, pageSignal) => api<ListPage>(recordListPath('deals', query, offset, pipeline, limit), { signal: pageSignal }), signal, {
+        maxPages: BOARD_MAX_PAGES, accept: record => record.entity === 'deals',
+        onPage: read => { if (progressive && !signal.aborted) setBoard({ ...read, loading: true, error: '', key }); },
+      }).then(read => { if (signal.aborted) return; shown.current = key; setBoard({ ...read, loading: false, error: '', key }); })
+        .catch(failure => {
+          if (signal.aborted || (failure instanceof Error && failure.name === 'AbortError')) return;
+          setBoard(current => ({ ...(current ?? { records: [], related: [], scanned: 0, total: 0, complete: false, key }), loading: false, error: failure instanceof Error ? failure.message : String(failure) }));
+        });
+    }, searchDelay(query));
+    return () => { controller.abort(); clearTimeout(timer); };
+  }, [active, query, pipeline, revision]);
+  return board;
 }

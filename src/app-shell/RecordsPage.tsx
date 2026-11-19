@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, Bookmark, ChevronRight, Database, Download, PlugZap, Plus, Search, Sparkles, Unplug, X } from 'lucide-react';
 import type { AppState, CrmRecord, EntityName } from '../../shared/model.js';
 import { displayValue, recordName } from '../components.js';
@@ -7,7 +7,8 @@ import { downloadCsv, toCsv } from './csv.js';
 import { madridDay } from '../task-display.js';
 import { closeStatus, dueStatus, euros, stageKind } from './deal-insights.js';
 import { addSavedView, describeView, readSavedViews, sameView, smartViews, writeSavedViews, type SavedView } from './saved-views.js';
-import { RECORD_PAGE_SIZE, type RecordListView } from './useRecordList.js';
+import { RECORD_PAGE_SIZE, type BoardRead, type RecordListView } from './useRecordList.js';
+import { pagedLabel } from './pager.js';
 import { formatRecordSort } from '../../shared/record-order.js';
 import { InlineSelect } from './InlineSelect.js';
 
@@ -33,7 +34,11 @@ type Props = {
   setServerView?: (view: RecordListView) => void;
   /** Recuento por opción del filtro rápido sobre toda la búsqueda, cuando lo da el servidor. */
   facets?: Record<string, number> | null;
+  /** Oportunidades de todo el proceso (hasta 1.000) para el tablero; sin ello, el tablero usa la página. */
+  board?: BoardRead | null;
 };
+const CARD_CAP = 40;
+const DEAL_NOUN = { one: 'oportunidad', many: 'oportunidades' };
 type View = { sort: { key: string; dir: 1 | -1 } | null; pick: string | null; smart: string | null };
 // Vista recordada por tipo de registro en este navegador: solo el orden y el filtro rápido, nunca datos.
 const readView = (entity: EntityName): View => { try { const value = JSON.parse(localStorage.getItem('planb:view:' + entity) ?? 'null'); return value && typeof value === 'object' ? { sort: value.sort && typeof value.sort.key === 'string' && (value.sort.dir === 1 || value.sort.dir === -1) ? value.sort : null, pick: typeof value.pick === 'string' ? value.pick : null, smart: typeof value.smart === 'string' ? value.smart : null } : { sort: null, pick: null, smart: null }; } catch { return { sort: null, pick: null, smart: null }; } };
@@ -41,11 +46,17 @@ const writeView = (entity: EntityName, view: View) => { try { localStorage.setIt
 
 /** Clientes, Empresas, Oportunidades y Tareas: cabecera-barra, tabla ordenable o tablero por etapas, y barra de estado.
  *  Con `setServerView`, el orden y el filtro rápido llegan a todos los registros; las vistas inteligentes miran la página. */
-export function RecordsPage({ state, spec, entity, entityName, rows, records, total, offset, setOffset, query, setQuery, pipeline, setPipeline, selected, setSelected, recordsLoading, recordsError, onRetry, busy, date, viewCoverage, toggleServices, moveDeal, saveField, newWith, canUndo = false, onUndo, setServerView, facets }: Props) {
+export function RecordsPage({ state, spec, entity, entityName, rows, records, total, offset, setOffset, query, setQuery, pipeline, setPipeline, selected, setSelected, recordsLoading, recordsError, onRetry, busy, date, viewCoverage, toggleServices, moveDeal, saveField, newWith, canUndo = false, onUndo, setServerView, facets, board }: Props) {
   const server = !!setServerView;
+  // Tablero con todo el proceso (V2): en cuanto llega la primera página sustituye a la página de la lista; si falla, se vuelve a ella.
+  const live = entityName === 'deals' && board && !board.error && (board.scanned > 0 || !board.loading) ? board : null, boardOn = !!live;
+  const loaded = live ? live.records : rows;
+  const partial = live ? !live.complete && live.scanned < live.total : total > rows.length;
+  const lookup = useMemo(() => live ? [...records, ...live.related, ...live.records] : records, [live, records]);
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   const [sort, setSort] = useState<{ key: string; dir: 1 | -1 } | null>(() => readView(entityName).sort);
   // Al cambiar de tipo de registro se recupera la vista recordada de ese tipo (la página no se desmonta).
-  useEffect(() => { const view = readView(entityName); setSort(view.sort); setPick(view.pick); setSmart(view.smart); setSaved(readSavedViews(entityName)); setNaming(null); setMoveNote(null); }, [entityName]);
+  useEffect(() => { const view = readView(entityName); setSort(view.sort); setPick(view.pick); setSmart(view.smart); setSaved(readSavedViews(entityName)); setNaming(null); setMoveNote(null); setExpanded(new Set()); }, [entityName]);
   // Filtro rápido por la primera columna de tipo lista (p. ej. el estado de las tareas). Filtra los registros ya cargados en la página.
   const [pick, setPick] = useState<string | null>(() => readView(entityName).pick);
   // Vista inteligente activa y vistas guardadas por la persona (en este navegador).
@@ -100,7 +111,7 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
   const isPast = (record: CrmRecord, value: unknown) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value) && value.slice(0, 10) < today && !looksDone(record);
   const smarts = smartViews(entityName, entity, spec), activeSmart = smarts.find(view => view.id === smart);
   const smartContext = { today, looksDone };
-  const filtered = activeSmart ? rows.filter(record => activeSmart.test(record, smartContext)) : rows;
+  const filtered = activeSmart ? loaded.filter(record => activeSmart.test(record, smartContext)) : loaded;
   const sortField = sort && !server ? entity.fields.find(field => field.key === sort.key) : undefined;
   const shown = sort && sortField ? [...filtered].sort((a, b) => {
     const x = a.values[sortField.key], y = b.values[sortField.key], nx = Number(x), ny = Number(y);
@@ -112,9 +123,9 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
   const exportView = () => {
     const columns = entity.columns.map(key => entity.fields.find(field => field.key === key)!).filter(Boolean);
     const list = entityName === 'deals' ? filtered : visible;
-    const text = toCsv(columns.map(field => field.label), list.map(record => columns.map(field => field.key === entity.displayField ? recordName(record, spec) : displayValue(record.values[field.key], field, records, spec))));
+    const text = toCsv(columns.map(field => field.label), list.map(record => columns.map(field => field.key === entity.displayField ? recordName(record, spec) : displayValue(record.values[field.key], field, lookup, spec))));
     downloadCsv(entity.label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') + '-' + new Date().toISOString().slice(0, 10) + '.csv', text);
-    if (total > rows.length) setMoveNote({ tone: 'ok', text: 'CSV con ' + list.length + ' ' + (list.length === 1 ? 'registro' : 'registros') + ' de esta página (' + total + ' en total). Para la copia completa, usa Exportar.' });
+    if (partial) setMoveNote({ tone: 'ok', text: 'CSV con ' + list.length + ' ' + (list.length === 1 ? 'registro' : 'registros') + (boardOn ? ' de las ' + loaded.length + ' cargadas' : ' de esta página') + ' (' + total + ' en total). Para la copia completa, usa Exportar.' });
   };
   const current = { query, pick, sort, smart };
   const isDefault = !query.trim() && !pick && !sort && !smart;
@@ -141,7 +152,7 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
     setMoveNote({ tone: 'ok', text: 'Vista «' + view.name + '» borrada.' });
   };
   // Lo que filtra en el navegador (vista inteligente, o el filtro rápido sin servidor) solo ve la página cargada: se dice cuando hay más.
-  const pageOnly = (!!activeSmart || (!!pick && !!pickField && !server)) && total > rows.length;
+  const pageOnly = (!!activeSmart || (!!pick && !!pickField && !server)) && partial;
   const pickActive = !!pick && !!pickField, filterActive = pickActive || !!activeSmart;
   const pickCount = (id: string) => server ? facets?.[id] : rows.filter(record => String(record.values[pickField?.key ?? ''] ?? '') === id).length;
   const dealsSum = filtered.reduce((sum, record) => sum + (Number(record.values[amountKey]) || 0), 0);
@@ -153,37 +164,41 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
   <div className="table-toolbar"><label className="search-field"><Search size={15} /><input aria-label={'Buscar ' + entity.label.toLowerCase()} placeholder={'Buscar ' + entity.label.toLowerCase() + '…'} value={query} onChange={event => {setQuery(event.target.value);setOffset(0);}} /></label>
       {entityName==='deals'&&state.snapshot?.pipelines?.length?<select aria-label="Proceso comercial" value={pipeline} onChange={e=>{setPipeline(e.target.value);setOffset(0);}}><option value="">Todos los procesos</option>{state.snapshot.pipelines.map(p=><option key={p.id} value={p.id}>{p.label}</option>)}</select>:null}
   {pickField && (rows.length || (server && pick)) ? <div className="gx-picks" role="group" aria-label={'Filtrar por ' + pickField.label.toLowerCase()}><button type="button" aria-pressed={pick === null} onClick={() => choosePick(null)}>Todo</button>{pickField.options.map(option => { const count = pickCount(option.id); return <button key={option.id} type="button" aria-pressed={pick === option.id} onClick={() => choosePick(pick === option.id ? null : option.id)}>{option.label}{count === undefined ? null : <span>{count}</span>}</button>; })}</div> : null}
-          <span className="muted">{pageOnly ? (entityName === 'deals' ? filtered : visible).length + ' de ' + rows.length + ' cargados (' + total + ' en total)' : server && pickActive && !activeSmart ? total + ' ' + entity.label.toLowerCase() + ' con este filtro' : <>{filterActive ? (entityName === 'deals' ? filtered : visible).length + ' de ' : ''}{total} {entity.label.toLowerCase()}</>}</span>{entityName==='deals'&&rows.length?<span className="muted gx-total"><strong>{euros(dealsSum)}</strong> en esta vista</span>:null}</div>
-  <div className="gx-head-actions"><button type="button" className="button secondary" disabled={recordsLoading || !rows.length} title={total > rows.length ? 'Exporta los ' + rows.length + ' registros de esta página, con la búsqueda y el filtro aplicados' : 'Exporta lo que ves, con la búsqueda y el filtro aplicados'} onClick={exportView}><Download size={15} />CSV</button>
+          <span className="muted">{pageOnly ? (entityName === 'deals' ? filtered : visible).length + ' de ' + loaded.length + ' cargados (' + total + ' en total)' : server && pickActive && !activeSmart ? total + ' ' + entity.label.toLowerCase() + ' con este filtro' : <>{filterActive ? (entityName === 'deals' ? filtered : visible).length + ' de ' : ''}{total} {entity.label.toLowerCase()}</>}</span>{entityName==='deals'&&loaded.length?<span className="muted gx-total" title={partial ? 'Suma de las ' + loaded.length + ' oportunidades cargadas' : 'Suma de todo el proceso con la búsqueda y la vista aplicadas'}><strong>{euros(dealsSum)}</strong> {partial ? 'en lo cargado' : 'en esta vista'}</span>:null}</div>
+  <div className="gx-head-actions"><button type="button" className="button secondary" disabled={recordsLoading || !loaded.length} title={partial ? 'Exporta los ' + loaded.length + ' registros cargados, con la búsqueda y el filtro aplicados' : 'Exporta lo que ves, con la búsqueda y el filtro aplicados'} onClick={exportView}><Download size={15} />CSV</button>
     <button className="button primary" onClick={() => setSelected('new')}><Plus size={16} />{singular[entityName]}</button></div></header>
     {smarts.length || saved.length || !isDefault ? <div className="gx-views" role="group" aria-label="Vistas">
-      {smarts.map(view => { const count = rows.filter(record => view.test(record, smartContext)).length; return <button key={view.id} type="button" className="gx-view" data-kind="smart" aria-pressed={smart === view.id} title={view.hint + (total > rows.length ? ' · en los registros cargados' : '')} onClick={() => setSmart(smart === view.id ? null : view.id)}><Sparkles size={13} aria-hidden="true" />{view.label}<span>{count}</span></button>; })}
+      {smarts.map(view => { const count = loaded.filter(record => view.test(record, smartContext)).length; return <button key={view.id} type="button" className="gx-view" data-kind="smart" aria-pressed={smart === view.id} title={view.hint + (partial ? ' · en los registros cargados' : '')} onClick={() => setSmart(smart === view.id ? null : view.id)}><Sparkles size={13} aria-hidden="true" />{view.label}<span>{count}</span></button>; })}
       {saved.map(view => <span key={view.id} className="gx-view-saved"><button type="button" className="gx-view" data-kind="saved" aria-pressed={sameView(view, current)} title={describeView(view, labels)} onClick={() => applyView(view)}><Bookmark size={13} aria-hidden="true" />{view.name}</button><button type="button" className="gx-view-remove" aria-label={'Borrar la vista «' + view.name + '»'} title="Borrar esta vista" onClick={() => removeView(view)}><X size={12} aria-hidden="true" /></button></span>)}
       {naming !== null ? <form className="gx-view-form" onSubmit={event => { event.preventDefault(); saveView(naming); }}>
         <input autoFocus aria-label="Nombre de la vista" placeholder="Nombre de la vista" maxLength={40} value={naming} onChange={event => setNaming(event.target.value)} onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); setNaming(null); } }} />
         <button type="submit" className="button primary" disabled={!naming.trim()}>Guardar</button><button type="button" className="button secondary" onClick={() => setNaming(null)}>Cancelar</button>
         <small className="muted">{describeView(current, labels)}</small></form>
       : <button type="button" className="gx-view-add" disabled={isDefault} title={isDefault ? 'Busca, filtra u ordena y guárdalo con un nombre' : 'Guardar ' + describeView(current, labels)} onClick={() => setNaming('')}><Plus size={13} aria-hidden="true" />Guardar vista</button>}
-      {pageOnly ? <span className="gx-views-note">Filtra los {rows.length} registros cargados; la búsqueda llega a todos.</span> : null}
+      {pageOnly ? <span className="gx-views-note">Filtra los {loaded.length} registros cargados; la búsqueda llega a todos.</span> : null}
     </div> : null}
     {moveNote ? <p className="gx-move-note" data-tone={moveNote.tone} role={moveNote.tone === 'error' ? 'alert' : 'status'}>{moveNote.text}{moveNote.undo && canUndo && onUndo ? <button type="button" className="gx-move-undo" onClick={() => { setMoveNote(null); onUndo(); }}>Deshacer</button> : null}<button type="button" className="icon-button" aria-label="Cerrar aviso" onClick={() => setMoveNote(null)}>×</button></p> : null}
-    {entityName === 'deals' ? <div className="kanban" aria-label="Tablero de oportunidades">{stages.map((stage, stageIndex) => {
+    {entityName === 'deals' && board?.error ? <p className="gx-board-note" data-tone="error" role="status">No se pudo leer todo el proceso; el tablero muestra las {rows.length} oportunidades de esta página.</p>
+      : live && (live.loading || partial) ? <p className="gx-board-note" role="status">{pagedLabel(live, live.loading, DEAL_NOUN)}{!live.loading && partial ? '. Busca o elige un proceso para ver el resto.' : ''}</p> : null}
+    {entityName === 'deals' ? <div className="kanban" aria-label="Tablero de oportunidades" aria-busy={live?.loading ? 'true' : undefined}>{stages.map((stage, stageIndex) => {
       const deals = filtered.filter(r => r.values[stageKey] === stage.id);
+      const open = expanded.has(stage.id), cards = open ? deals : deals.slice(0, CARD_CAP);
       const kind = stageKind(stage), stageSum = deals.reduce((sum, record) => sum + (Number(record.values[amountKey]) || 0), 0);
       return <section className="kanban-column" key={stage.id} data-kind={kind} data-empty={deals.length ? undefined : 'true'} style={{ '--stage': stage.color } as Record<string, string>} data-over={overStage === stage.id ? 'true' : undefined}
               onDragOver={event => { if (dragId) { event.preventDefault(); event.dataTransfer.dropEffect = 'move'; if (overStage !== stage.id) setOverStage(stage.id); } }}
               onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOverStage(current => current === stage.id ? null : current); }}
               onDrop={event => { event.preventDefault(); const record = filtered.find(item => item.id === dragId); setDragId(null); setOverStage(null); if (record) void move(record, stage.id); }}><h2><span className="dot" style={{ background: stage.color }} />{stage.label}<small>{deals.length}</small>{newWith && kind === 'open' ? <button type="button" className="gx-col-add" aria-label={'Nueva oportunidad en ' + stage.label} title={'Nueva oportunidad en ' + stage.label} onClick={() => newWith({ [stageKey]: stage.id, ...(stage.pipelineId ? { pipeline: stage.pipelineId } : {}) })}><Plus size={14} aria-hidden="true" /></button> : null}</h2>
         {deals.length ? <p className="gx-sum" title="Suma de los importes de esta etapa en la vista actual">{euros(stageSum)}{dealsSum > 0 && kind === 'open' ? <span className="gx-share" aria-hidden="true"><i style={{ width: Math.max(4, Math.round(stageSum / dealsSum * 100)) + '%' }} /></span> : null}</p> : null}
-        {deals.map(record => <button key={record.id} className="deal-card" draggable={!moving} data-dragging={dragId === record.id ? 'true' : undefined} data-moving={moving === record.id ? 'true' : undefined} aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight"
+        {cards.map(record => <button key={record.id} className="deal-card" draggable={!moving} data-dragging={dragId === record.id ? 'true' : undefined} data-moving={moving === record.id ? 'true' : undefined} aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight"
               title="Arrastra a otra etapa, o Alt + flechas para moverla"
               onDragStart={event => { event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', record.id); setDragId(record.id); }}
               onDragEnd={() => { setDragId(null); setOverStage(null); }}
               onKeyDown={event => { if (event.altKey && (event.key === 'ArrowRight' || event.key === 'ArrowLeft')) { const target = stages[stageIndex + (event.key === 'ArrowRight' ? 1 : -1)]; if (target) { event.preventDefault(); void move(record, target.id); } } }}
               onClick={() => setSelected(record)}><strong>{recordName(record, spec)}</strong>
           <span>{euros(record.values[amountKey])}</span>
-          <small>{refFields.map(f => displayValue(record.values[f.key], f, records, spec)).filter(text => text && text !== '—').join(' · ') || 'Sin empresa ni cliente'}</small>
+          <small>{refFields.map(f => displayValue(record.values[f.key], f, lookup, spec)).filter(text => text && text !== '—').join(' · ') || 'Sin empresa ni cliente'}</small>
           {closeField && kind === 'open' ? (() => { const status = closeStatus(record.values[closeField.key], today, kind); return <em className="deal-close" data-tone={status.tone}>{status.label}</em>; })() : null}<span className="card-edit">Abrir oportunidad <ArrowRight size={14} /></span></button>)}
+        {deals.length > CARD_CAP ? <button type="button" className="gx-col-more" aria-expanded={open} onClick={() => setExpanded(current => { const next = new Set(current); if (open) next.delete(stage.id); else next.add(stage.id); return next; })}>{open ? 'Ver menos' : 'Ver ' + (deals.length - CARD_CAP).toLocaleString('es-ES') + ' más'}</button> : null}
         {!deals.length ? <p className="column-empty">Sin oportunidades</p> : null}</section>;
     })}</div>
     : <div className="table-container"><table><thead><tr>{entity.columns.map(key => <th key={key} aria-sort={sort?.key===key?(sort.dir===1?'ascending':'descending'):'none'}><button type="button" className="gx-sort" title={server?'Ordenar todos los registros por esta columna':total>rows.length?'Ordena los '+rows.length+' registros de esta página':'Ordenar por esta columna'} onClick={()=>{setSort(current=>current?.key===key?(current.dir===1?{key,dir:-1}:null):{key,dir:1});if(server)setOffset(0);}}>{entity.fields.find(f => f.key === key)!.label}</button></th>)}<th><span className="sr-only">Editar</span></th></tr></thead>
@@ -204,6 +219,6 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
         {state.disconnected ? <PlugZap size={14} /> : <Unplug size={14} />}{state.disconnected ? 'Habilitar servicios' : 'Desconectar servicios'}</button> : null}</div>
       {state.generation?.provider === 'demo' ? <p className="demo-caption" title="Especificación de ensayo · campos y reglas de la captura · sin generación por IA">Especificación de ensayo · campos y reglas de la captura · sin generación por IA</p> : null}
   <div className="workspace-footer"><Database size={13} />Guardado en este ordenador<span>{state.changes} {state.changes===1?'cambio local':'cambios locales'}</span></div>
-  <div className="pagination"><span>{recordsLoading?'Cargando…':<>{total?offset+1:0}–{Math.min(offset+RECORD_PAGE_SIZE,total)} de {total}</>}</span><button className="button secondary" disabled={recordsLoading||offset===0} onClick={()=>setOffset(Math.max(0,offset-RECORD_PAGE_SIZE))}>Anterior</button><button className="button secondary" disabled={recordsLoading||offset+RECORD_PAGE_SIZE>=total} onClick={()=>setOffset(offset+RECORD_PAGE_SIZE)}>Siguiente</button></div></footer>
+  {live ? <div className="pagination"><span>{pagedLabel(live, live.loading, DEAL_NOUN)}</span></div> : <div className="pagination"><span>{recordsLoading?'Cargando…':<>{total?offset+1:0}–{Math.min(offset+RECORD_PAGE_SIZE,total)} de {total}</>}</span><button className="button secondary" disabled={recordsLoading||offset===0} onClick={()=>setOffset(Math.max(0,offset-RECORD_PAGE_SIZE))}>Anterior</button><button className="button secondary" disabled={recordsLoading||offset+RECORD_PAGE_SIZE>=total} onClick={()=>setOffset(offset+RECORD_PAGE_SIZE)}>Siguiente</button></div>}</footer>
   </section>;
 }

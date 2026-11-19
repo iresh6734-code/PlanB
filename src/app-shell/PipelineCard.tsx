@@ -5,6 +5,7 @@ import { recordName } from '../components.js';
 import { madridDay } from '../task-display.js';
 import { ErrorState, Skeleton } from '../ui/index.js';
 import { closeStatus, euros, stageKind } from './deal-insights.js';
+import { COMMITTED_FROM, stageProbabilities, weightedForecast } from './forecast.js';
 import { recordListPath } from './useRecordList.js';
 import { BOARD_MAX_PAGES, readPages, type ListPage } from './pager.js';
 
@@ -74,6 +75,14 @@ export function PipelineCard({ spec, revision, onOpenRecord, onOpenDeals }: {
   const attention = withStatus.filter(item => item.status.tone === 'late' || item.status.tone === 'soon')
     .sort((a, b) => String(a.record.values[closeField!.key]).localeCompare(String(b.record.values[closeField!.key]))).slice(0, 3);
   const partial = !!page && page.total > deals.length;
+  const probabilities = stageProbabilities(spec.stages.filter(stage => stageKind(stage) === 'open'));
+  const forecast = closeField && open.length ? weightedForecast(open.map(item => ({ stageId: item.stage.id, amount: item.amount, close: item.record.values[closeField.key] })), probabilities, today) : null;
+  const byPosition = probabilities.some(item => item.source === 'position');
+  const outside = forecast ? [
+    forecast.late.deals ? forecast.late.deals + ' con el cierre vencido (' + euros(forecast.late.probable) + ' ponderado)' : '',
+    forecast.later.deals ? forecast.later.deals + ' más adelante (' + euros(forecast.later.probable) + ')' : '',
+    forecast.undated.deals ? forecast.undated.deals + ' sin fecha de cierre' : '',
+  ].filter(Boolean) : [];
   return <article className="oc-card gx-pipe" aria-labelledby="gx-pipe-title">
     <div className="oc-card-head"><h2 id="gx-pipe-title">Oportunidades abiertas</h2>{onOpenDeals ? <button type="button" className="oc-link" onClick={onOpenDeals}>Ver tablero →</button> : null}</div>
     {!page ? (error ? <ErrorState title="No se pudieron leer las oportunidades" onAction={() => setAttempt(value => value + 1)}>{error}</ErrorState>
@@ -89,6 +98,17 @@ export function PipelineCard({ spec, revision, onOpenRecord, onOpenDeals }: {
           {chartStages.map(item => <i key={item.stage.id} style={{ flexGrow: Math.max(item.total, 1), background: item.stage.color }} />)}
         </div> : null}
         <ul className="gx-pipe-legend">{stages.map(item => <li key={item.stage.id}><span style={{ background: item.stage.color }} aria-hidden="true" />{item.stage.label}<em>{item.count} · {item.total === null ? '—' : euros(item.total)}</em></li>)}</ul>
+        {forecast ? <section className="gx-fc" aria-labelledby="gx-fc-title">
+          <h3 id="gx-fc-title">Previsión por mes de cierre</h3>
+          <ol className="gx-fc-months">{forecast.months.map(month => <li key={month.month} data-empty={month.deals ? undefined : 'true'}>
+            <span className="gx-fc-month">{month.label}</span>
+            <strong title="Importe × probabilidad de la etapa">{euros(month.probable)}</strong>
+            <span className="gx-fc-range">{month.deals ? euros(month.committed) + ' seguro · ' + euros(month.optimistic) + ' si cierran todas' : 'Nada previsto'}</span>
+            <span className="gx-fc-count">{month.deals === 1 ? '1 oportunidad' : month.deals + ' oportunidades'}{month.missingAmount ? ', ' + month.missingAmount + ' sin importe' : ''}</span>
+          </li>)}</ol>
+          {outside.length ? <p className="gx-pipe-note">Fuera de estos meses: {outside.join(' · ')}.</p> : null}
+          <p className="gx-pipe-note">«Seguro» suma las etapas desde el {Math.round(COMMITTED_FROM * 100)} %. Probabilidad por etapa: {probabilities.map(item => item.label + ' ' + Math.round(item.probability * 100) + ' %').join(' · ')}.{byPosition ? ' Estimada por su orden; escribe el porcentaje en el nombre de la etapa (por ejemplo «Propuesta 40 %») para fijarla.' : ''}</p>
+        </section> : null}
         {attention.length ? <ul className="oc-task-list gx-pipe-list">{attention.map(({ record, stage, amount, status }) => <li key={record.id}>
           <span className="oc-chip" data-tone={status.tone === 'late' ? 'danger' : 'warn'}>{status.tone === 'late' ? 'Cierre vencido' : 'Cierra pronto'}</span>
           <div style={{ minWidth: 0 }}><strong title={recordName(record, spec)}>{recordName(record, spec)}</strong><span className="oc-due">{stage.label + ' · ' + (amount === null ? 'Sin importe' : euros(amount))}</span></div>

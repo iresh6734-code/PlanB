@@ -1,3 +1,4 @@
+import { History } from 'lucide-react';
 import { useEffect, useId, useState } from 'react';
 import { changedFields, type HistoryField, type HistoryValue } from '../../shared/change-history.js';
 import type { AppSpec, Change, CrmRecord } from '../../shared/model.js';
@@ -5,6 +6,7 @@ import { SavedChangesSchema } from '../../shared/recovery-integrity.js';
 import { api } from '../api.js';
 import { displayValue } from '../components.js';
 import { ErrorState, Skeleton } from '../ui/index.js';
+import { RecordThen } from './RecordThen.js';
 
 type Props = { spec: AppSpec; record: CrmRecord; records: CrmRecord[] };
 type TimelineRead = { values: CrmRecord['values']; attempt: number } &
@@ -31,6 +33,7 @@ function TimelineForRecord({ spec, record, records }: Props) {
   const [read, setRead] = useState<TimelineRead | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [all, setAll] = useState(false);
+  const [then, setThen] = useState(false);
   const { changes, error } = read?.values === values && read.attempt === attempt ? read : {};
   useEffect(() => {
     const controller = new AbortController();
@@ -69,7 +72,11 @@ function TimelineForRecord({ spec, record, records }: Props) {
   );
   const shown = changes ? (all ? changes : changes.slice(0, 5)) : [];
   return <section className="gx-timeline" aria-labelledby={titleId}>
-    <h3 id={titleId}>Historial de esta ficha</h3>
+    <div className="gx-timeline-top">
+      <h3 id={titleId}>Historial de esta ficha</h3>
+      {!then ? <button type="button" className="text-button" onClick={() => setThen(true)}><History size={14} aria-hidden="true" />Ver cómo estaba</button> : null}
+    </div>
+    {then ? <RecordThen entity={entityName} id={id} values={values} label={label} show={show} onClose={() => setThen(false)} /> : null}
     {error ? <ErrorState title="No se pudo leer el historial" onAction={() => setAttempt(value => value + 1)}>{error}</ErrorState>
       : !changes ? <Skeleton rows={2} label="Leyendo el historial…" />
       : !changes.length ? <p className="gx-related-note">Sin cambios locales: la ficha está como llegó en la copia.</p>

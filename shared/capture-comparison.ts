@@ -28,14 +28,14 @@ export interface CaptureComparison {
   };
   limitations: string[];
 }
-const compare = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
-function clip(value: string, limit: number) {
+export const compare = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
+export function clip(value: string, limit: number) {
   let end = Math.min(value.length, limit);
   if (end > 0 && end < value.length && value.charCodeAt(end - 1) >= 0xd800 && value.charCodeAt(end - 1) <= 0xdbff && value.charCodeAt(end) >= 0xdc00 && value.charCodeAt(end) <= 0xdfff) end--;
   return value.slice(0, end);
 }
 // Object property order is irrelevant; array order remains part of declared configuration.
-function canonical(value: unknown): string {
+export function canonical(value: unknown): string {
   if (Array.isArray(value)) return '[' + value.map(canonical).join(',') + ']';
   if (value && typeof value === 'object') return '{' + Object.keys(value).sort(compare).map(key => JSON.stringify(key) + ':' + canonical((value as Record<string, unknown>)[key])).join(',') + '}';
   return JSON.stringify(value) ?? 'null';

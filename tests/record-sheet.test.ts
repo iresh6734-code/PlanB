@@ -43,3 +43,12 @@ test('K8 · Inicio tiene un solo botón relleno: «Tu siguiente paso»; el de la
   assert.equal(filled(strip), 0);
   assert.equal(filled(read('app-shell/PipelineCard.tsx')) + filled(read('app-shell/CoolingCard.tsx')) + filled(read('app-shell/MorningBrief.tsx')), 0);
 });
+
+test('K10 · en el móvil la ficha es una hoja inferior a todo el ancho y los controles miden 44 px', () => {
+  const css = read('cuaderno.css');
+  const sheet = css.slice(css.indexOf('/* K10'));
+  const mobile = sheet.slice(sheet.indexOf('@media (max-width: 760px)'), sheet.indexOf('@keyframes k10-sheet-in'));
+  assert.match(mobile, /\.record-drawer\[data-entity="deals"\] \{ inset: 32px 0 0 0; width: 100vw; max-width: none;/);
+  assert.match(mobile, /\.drawer-footer \{ padding-bottom: calc\(10px \+ env\(safe-area-inset-bottom\)\); \}/);
+  assert.match(read('faro.css'), /@media \(max-width: 767px\) \{\r?\n  html body :is\(button, select, \[role="tab"\][^\n]+\{ min-height: 44px; \}/);
+});

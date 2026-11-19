@@ -530,4 +530,13 @@ html body .drawer-stamp[data-tone="ok"] { --stamp-ink: var(--success); }
   html body .drawer-fields > :not(.field), html body .drawer-fields > .field[data-wide] { grid-column: 1 / -1; }
 }
 
+/* K10 · Móvil de verdad. En pantallas estrechas la ficha sube como hoja inferior: todo el ancho (sin el tope de 440 px
+ * de refinements.css), deja ver 32 px de la página detrás (pulsarlos sigue cerrándola) y el pie respeta la zona segura.
+ * Los objetivos de 44 px (D7, faro.css) y los recuentos de la barra inferior (MobileNav) ya estaban. */
+@media (max-width: 760px) {
+  html body .record-drawer, html body .record-drawer[data-entity="deals"] { inset: 32px 0 0 0; width: 100vw; max-width: none; border-left: 0; border-top: 1px solid var(--border-strong); border-radius: var(--r-lg) var(--r-lg) 0 0; box-shadow: none; animation: k10-sheet-in 220ms cubic-bezier(.2, .8, .3, 1) both; }
+  html body .record-drawer .drawer-footer { padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+}
+@keyframes k10-sheet-in { from { opacity: 0; transform: translateY(32px); } to { opacity: 1; transform: none; } }
+
 @media (prefers-reduced-motion: reduce) { html body *, html body *::before, html body *::after { transition-duration: 0ms !important; animation-duration: 0ms !important; } }

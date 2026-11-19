@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import type { EntityName } from '../../shared/model.js';
 import type { PageId } from './session.js';
 
-export const SHORTCUTS: [string, string][] = [['Ctrl K', 'Buscar en toda la copia'], ['Ctrl J', 'Órdenes: ir a un apartado o lanzar una acción escribiendo'], ['Alt ← →', 'Mover la oportunidad enfocada a la etapa anterior o siguiente'], ['/', 'Buscar en la lista que estás viendo'], ['N', 'Nuevo registro (en Clientes, Empresas, Oportunidades o Tareas)'], ['↑ ↓', 'Moverse por las filas de una tabla'], ['G  I', 'Ir a Inicio'], ['G  H', 'Ir a Hoy'], ['G  C · E · O · T', 'Clientes · Empresas · Oportunidades · Tareas'], ['G  M', 'Ir a Cambios'], ['G  R', 'Ir al Radar (Laboratorio, con datos de prueba)'], ['G  F', 'Comprobar una fecha (Laboratorio, con datos de prueba)'], ['G  N', 'Ir a Continuidad'], ['G  X', 'Ir a Exportar'], ['?', 'Ver estos atajos'], ['Esc', 'Cerrar la ficha o la ventana abierta']];
+export const SHORTCUTS: [string, string][] = [['Ctrl K', 'Buscar en toda la copia'], ['Ctrl J', 'Órdenes: ir a un apartado o lanzar una acción escribiendo'], ['Alt ← →', 'Mover la oportunidad enfocada a la etapa anterior o siguiente'], ['/', 'Buscar en la lista que estás viendo'], ['N', 'Nuevo registro (en Clientes, Empresas, Oportunidades o Tareas)'], ['↑ ↓', 'Moverse por las filas de una tabla, la cola de Hoy o una columna del tablero'], ['← →', 'Pasar a la columna vecina del tablero de oportunidades'], ['G  I', 'Ir a Inicio'], ['G  H', 'Ir a Hoy'], ['G  C · E · O · T', 'Clientes · Empresas · Oportunidades · Tareas'], ['G  M', 'Ir a Cambios'], ['G  R', 'Ir al Radar (Laboratorio, con datos de prueba)'], ['G  F', 'Comprobar una fecha (Laboratorio, con datos de prueba)'], ['G  N', 'Ir a Continuidad'], ['G  X', 'Ir a Exportar'], ['?', 'Ver estos atajos'], ['Esc', 'Cerrar la ficha o la ventana abierta']];
 
 type Options = {
   /** Sesión abierta y estado cargado. */ active: boolean; ready: boolean; runtime: boolean;
@@ -23,9 +23,24 @@ export function useShortcuts(options: Options) {
       const target = event.target as HTMLElement | null;
       if (target && (/^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName) || target.isContentEditable)) return;
       if (blocked || document.querySelector('[role="dialog"]')) return;
-      if (target?.classList?.contains('record-link') && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
-        const links = [...document.querySelectorAll<HTMLElement>('.table-container .record-link')], next = links[links.indexOf(target) + (event.key === 'ArrowDown' ? 1 : -1)];
+      const vertical = event.key === 'ArrowDown' || event.key === 'ArrowUp', step = event.key === 'ArrowDown' || event.key === 'ArrowRight' ? 1 : -1;
+      const rowList = target?.classList?.contains('record-link') ? '.table-container .record-link' : target?.classList?.contains('lop-open-task') ? '.lop-tasks .lop-open-task' : null;
+      if (rowList && vertical) {
+        const links = [...document.querySelectorAll<HTMLElement>(rowList)], next = links[links.indexOf(target!) + step];
         if (next) { event.preventDefault(); next.focus(); }
+        return;
+      }
+      if (target?.classList?.contains('deal-card') && (vertical || event.key === 'ArrowLeft' || event.key === 'ArrowRight')) {
+        const column = target.closest('.kanban-column'), cards = (el: Element | null) => el ? [...el.querySelectorAll<HTMLElement>('.deal-card')] : [];
+        const at = cards(column).indexOf(target);
+        let next: HTMLElement | undefined;
+        if (vertical) next = cards(column)[at + step];
+        else {
+          // La columna vecina con fichas, a la misma altura o a la última ficha si es más corta; las vacías se saltan.
+          const columns = [...document.querySelectorAll('.kanban-column')];
+          for (let index = columns.indexOf(column!) + step; index >= 0 && index < columns.length && !next; index += step) { const list = cards(columns[index]); next = list[Math.min(at, list.length - 1)]; }
+        }
+        if (next) { event.preventDefault(); next.focus(); next.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
         return;
       }
       const letter = event.key.toLowerCase();

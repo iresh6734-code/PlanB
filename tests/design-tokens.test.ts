@@ -101,7 +101,7 @@ test('cuaderno: la paleta efectiva cumple AA en claro y en oscuro y fija la dens
   const faro = read('faro.css'), cuaderno = read('cuaderno.css');
   const light = new Map(tokens); apply(light, faro, rootBlocks); apply(light, cuaderno, rootBlocks);
   const dark = new Map(light); apply(dark, faro, darkBlocks); apply(dark, cuaderno, darkBlocks);
-  assert.equal(light.get('primary'), '#1d4ed8', 'se están comprobando los tokens del Cuaderno');
+  assert.equal(light.get('primary'), '#2f3e9e', 'se están comprobando los tokens del Cuaderno (tinta ultramar)');
   for (const [name, eff] of [['claro', light], ['oscuro', dark]] as const) {
     const c = (fg: string, bg: string) => { const a = eff.get(fg) ?? '', b = eff.get(bg) ?? ''; assert.match(a + b, /^#[0-9a-f]{6}#[0-9a-f]{6}$/i, `${name}: --${fg}/--${bg} deben ser #rrggbb`); return contrast(a, b); };
     for (const text of ['text-1', 'text-2', 'text-3']) for (const surface of ['bg-surface', 'bg-canvas', 'bg-subtle', 'bg-hover', 'bg-active']) assert.ok(c(text, surface) >= 4.5, `${name}: ${text} sobre ${surface}: ${c(text, surface).toFixed(2)}`);

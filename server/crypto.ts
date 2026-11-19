@@ -3,8 +3,13 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
+const testMode = () => process.env.NODE_ENV === 'test';
+
 // Windows user scope: the protected key cannot be unwrapped by another Windows user.
+// Tests and demos never reach DPAPI: each call spawns powershell.exe with ProtectedData, which
+// corporate endpoint protection reports as «Suspicious DPAPI Activity».
 function dpapi(value: string, decrypt: boolean): string {
+  if (testMode()) throw new Error('En modo de pruebas no se usa la protección de Windows (DPAPI).');
   const method = decrypt ? 'Unprotect' : 'Protect';
   const script = "Add-Type -AssemblyName System.Security; $v=[Console]::In.ReadToEnd(); $b=[Convert]::FromBase64String($v); $r=[Security.Cryptography.ProtectedData]::" + method + "($b,$null,[Security.Cryptography.DataProtectionScope]::CurrentUser); [Console]::Out.Write([Convert]::ToBase64String($r))";
   const result = spawnSync('powershell.exe', ['-NoProfile','-NonInteractive','-Command',script], { input: value, encoding: 'utf8', windowsHide: true });
@@ -18,13 +23,14 @@ export function localKey(folder: string): Buffer {
   if(existsSync(filename)&&keyCache.has(filename))return keyCache.get(filename)!;
   if (existsSync(filename)) {
     const value = JSON.parse(readFileSync(filename, 'utf8'));
+    if (value.kind === 'dpapi' && testMode()) throw new Error('Esta carpeta está protegida por Windows y el modo de pruebas no abre esa protección. Usa una carpeta de datos nueva.');
     if (value.kind === 'dpapi' && process.platform === 'win32') {const key=Buffer.from(dpapi(value.data,true),'base64');keyCache.set(filename,key);return key;}
     if (value.kind === 'test' && process.env.NODE_ENV === 'test') {const key=Buffer.from(value.data,'base64');keyCache.set(filename,key);return key;}
     throw new Error('La clave local requiere Windows o el entorno de pruebas original.');
   }
   const key = randomBytes(32);
-  if (process.platform !== 'win32' && process.env.NODE_ENV !== 'test') throw new Error('La protección local comercial requiere Windows.');
-  writeFileSync(filename, JSON.stringify(process.platform === 'win32' ? { kind: 'dpapi', data: dpapi(key.toString('base64'), false) } : { kind: 'test', data: key.toString('base64') }), { mode: 0o600, flag: 'wx' });
+  if (process.platform !== 'win32' && !testMode()) throw new Error('La protección local comercial requiere Windows.');
+  writeFileSync(filename, JSON.stringify(testMode() ? { kind: 'test', data: key.toString('base64') } : { kind: 'dpapi', data: dpapi(key.toString('base64'), false) }), { mode: 0o600, flag: 'wx' });
   keyCache.set(filename,key);
   return key;
 }

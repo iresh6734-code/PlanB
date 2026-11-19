@@ -1,6 +1,6 @@
-# Plan B · Sistema de interfaz (identidad Cuaderno)
+# Plan B · Sistema de interfaz (identidad Cuaderno · tinta y papel)
 
-Identidad vigente desde el 19/11/2026 («Cuaderno»; antes «Faro» y «Grafito»). Plan B es lo que una pyme usa cuando su CRM cae, y el plan B de siempre en una oficina española es **el cuaderno cuadriculado**: se apunta a mano, se tacha lo hecho, se subraya en rojo lo que vence y se marca con fluorescente lo que hay que revisar. La interfaz es ese cuaderno, ordenado y denso: papel con cuadrícula casi invisible, margen rojo, cuatro tintas y nada de decoración.
+Identidad vigente desde el 19/11/2026 («Cuaderno»; antes «Faro» y «Grafito»), con la paleta «tinta y papel» del mismo día. Plan B es lo que una pyme usa cuando su CRM cae, y el plan B de siempre en una oficina española es **el cuaderno**: se apunta a mano, se tacha lo hecho, se sella lo que vence y se marca lo que hay que revisar. La interfaz es ese cuaderno de papelería, ordenado y denso: papel marfil con trama de puntos, tapas de cartón kraft para el menú, un margen de lacre, cuatro tintas y nada de decoración.
 
 Todo vive en `src/cuaderno.css`, que se importa la **última** en `src/main.tsx` (después de `faro.css`) y gana la cascada. Las capas anteriores siguen cargadas por estructura; su aspecto queda sustituido. Brief de superficie: `.impeccable/surfaces/src-app-shell.md`.
 
@@ -10,31 +10,31 @@ Un solo papel y cuatro tintas, cada una con un único significado. No se usan pa
 
 | Tinta | Significa | Claro | Oscuro |
 | --- | --- | --- | --- |
-| Azul (`--primary`, `--primary-text`) | lo que se pulsa, la selección y el foco | `#1d4ed8` · texto `#1c47c4` | `#2f5fe0` · texto `#94b2ff` |
-| Boli rojo (`--danger`, `--pen`) | vencido, en riesgo, error | `#b42318` / `#fdecea` | `#ff8f85` / `#351b1b` |
-| Fluorescente (`--warning`, `--highlighter`) | pendiente de revisar, aviso | `#664a00` / `#fff2a6` | `#f0d863` / `#2e2910` |
-| Lápiz (`--pencil`) | borradores, simulaciones, datos de prueba (trazo discontinuo) | `#6b7079` | `#9ea5b0` |
+| Ultramar (`--primary`, `--primary-text`) | lo que se pulsa, la selección y el foco | `#2f3e9e` · texto `#2c3a96` | `#5566d6` · texto `#aeb9f4` |
+| Lacre (`--danger`, `--pen`, sello `--seal`) | vencido, en riesgo, error | `#a3302b` / `#f8e6e1` · sello `#a3302b` | `#f19a8d` / `#3a1e1a` · sello `#e77d6f` |
+| Ocre (`--warning`, sello `--seal-warn`) | pendiente de revisar, aviso | `#6b4800` / `#f5e3b5` · sello `#c08a1e` | `#e9c66b` / `#2f2713` · sello `#d7aa45` |
+| Lápiz (`--pencil`) | borradores, simulaciones, datos de prueba (trazo discontinuo) | `#7a7262` | `#a8a092` |
 
 | Papel | Claro | Oscuro |
 | --- | --- | --- |
-| Lienzo con cuadrícula · superficie · apoyo | `#f6f6f1` · `#fffffd` · `#f0f0ea` | `#15181d` · `#1b1f25` · `#20252c` |
-| Menú lateral (papel más gris) | `#efefe8` | `#111419` |
-| Margen rojo (borde entre menú y página) | `#e0a19d` | `#7d3a38` |
-| Texto 1 · 2 · 3 | `#191d24` · `#383e48` · `#545a64` | `#e8ebf0` · `#c4c9d1` · `#9ea5b0` |
-| Filetes · bordes · borde de campo | `#e7e9ec` · `#dcdfe3` · `#7a808a` | `#252a32` · `#2c323b` · `#79808c` |
-| Éxito | `#1d6b3c` / `#e4f2e8` | `#82d6a0` / `#15291d` |
+| Lienzo punteado · superficie · apoyo | `#f5f1e6` · `#fffcf4` · `#efe9db` | `#191815` · `#201e1a` · `#26241f` |
+| Menú lateral (cartón kraft; de noche, cuero) | `#e6d9bf` · pestaña activa `#f7f1e2` | `#12110e` · activa `#272b47` |
+| Margen de lacre (borde entre menú y página) | `#d8a397` | `#6e3a33` |
+| Texto 1 · 2 · 3 | `#1f1c17` · `#3d382f` · `#5b5447` | `#ede7da` · `#cfc8b9` · `#a8a092` |
+| Filetes · bordes · borde de campo | `#e9e2d3` · `#ddd5c4` · `#7d7565` | `#2a2723` · `#34312b` · `#877f71` |
+| Verde botella (solo confirma: hecho, sin riesgo) | `#2c6643` / `#e2eee3` | `#93d1a7` / `#172a1f` |
 
-La cuadrícula es de 16 px (`--grid-line`, opacidad 7,5 % en claro y 4,5 % en oscuro) y solo se dibuja en el lienzo, nunca dentro de tarjetas ni tablas. Nunca colores fijos en componentes nuevos: siempre tokens, para que el modo oscuro («el cuaderno bajo la lámpara») funcione solo. Todo par texto/fondo cumple AA en claro y oscuro; lo comprueba `tests/design-tokens.test.ts` sobre los tokens efectivos (`planb-ui` → `faro` → `cuaderno`).
+La trama es de puntos cada 16 px (`--grid-line`) y solo se dibuja en el lienzo, nunca dentro de tarjetas ni tablas. Las etapas abiertas del tablero y de «Oportunidades abiertas» son diluciones de la tinta ultramar (de clara a plena según avanzan); ganada en verde botella y perdida a lápiz. El color guardado en cada etapa se ignora a propósito. Nunca colores fijos en componentes nuevos: siempre tokens, para que el modo oscuro («el cuaderno bajo la lámpara») funcione solo. Todo par texto/fondo cumple AA en claro y oscuro; lo comprueba `tests/design-tokens.test.ts` sobre los tokens efectivos (`planb-ui` → `faro` → `cuaderno`).
 
-## Estados como trazos
+## Estados como sellos y trazos
 
 Los estados se escriben como se haría a mano, no como pastillas de colores:
 
-- **Vencido:** texto rojo subrayado con 2 px (`Vencida · 16 d`), punto cuadrado rojo en la línea semanal.
-- **Aviso / por revisar:** fondo de fluorescente bajo el texto (no la caja entera).
-- **Hecho:** verde, o tachado cuando la tarea se cierra.
+- **Vencido:** sello cuadrado de lacre de 6 px y texto en lacre (`■ Vencida · 16 d`); sin subrayado ni fondo. En «Tu siguiente paso», el mismo sello de 8 px delante del título.
+- **Aviso / por revisar:** sello ocre y texto ocre; el fondo ocre solo en recuentos y avisos de bloque.
+- **Hecho:** verde botella, o tachado cuando la tarea se cierra.
 - **Datos de prueba / simulación:** recuadro de trazo discontinuo («lápiz»).
-- **Hoy:** línea roja vertical, como el margen.
+- **Hoy:** línea de lacre vertical, como el margen.
 - Ninguna tarjeta ni aviso lleva franja de color a la izquierda: la marca, si existe, es de 1 px.
 
 ## Tipografía
@@ -53,11 +53,11 @@ Los estados se escriben como se haría a mano, no como pastillas de colores:
 ## Composición
 
 - **Barra superior:** a la izquierda, el estado de la copia (con su antigüedad) y el modo de datos (`Producción · lectura` o `Datos de prueba`, este último en trazo de lápiz); a la derecha, solo iconos con nombre accesible: tema, órdenes (Ctrl J), bloquear y ayuda. El nombre de la copia vive al pie del menú.
-- **Menú:** cinco lugares (Inicio, Hoy, Clientes, Continuidad, Ajustes) y Laboratorio, en acordeón; los recuentos se escriben como cifras subrayadas (rojo si hay vencidas). En móvil, barra inferior y «Más» (paleta).
-- **Inicio:** título y saludo en una línea; «La semana en una línea» siempre visible como regla de días (fines de semana sombreados, hoy en rojo) con los recuentos al lado; después «Tu siguiente paso» como una línea escrita en tinta, y a la derecha el estado de la copia.
-- **Hoy y Propuestas:** pestañas subrayadas con recuento, cola como hoja de cuaderno (grupos con cabecera gris, filas de 32 px, «Abrir →» discreto y toda la fila pulsable).
+- **Menú:** cinco lugares (Inicio, Hoy, Clientes, Continuidad, Ajustes) y Laboratorio, en acordeón; los recuentos se escriben como cifras subrayadas (lacre si hay vencidas). En móvil, barra inferior y «Más» (paleta).
+- **Inicio:** título y saludo en una línea; «La semana en una línea» siempre visible como regla de días (fines de semana sombreados, hoy en lacre) con los recuentos al lado; después «Tu siguiente paso» como una línea escrita en tinta (el único botón lleno de la pantalla), y a la derecha fichas de consulta (estado de la copia, Radar, calidad) con botones de contorno. Todas las tarjetas llevan la misma cabecera: rótulo y acción sobre un filete.
+- **Hoy y Propuestas:** pestañas subrayadas con recuento, cola como hoja de cuaderno (grupos con cabecera gris, filas de 32 px, «Abrir →» discreto y toda la fila pulsable). El título de la tarea «Acción · Cliente» se escribe con la acción en tinta y el cliente a lápiz; con ↑ ↓ se pasa de una tarea a otra.
 - **Listas:** cabecera con búsqueda, filtros rápidos y vistas; en móvil, tarjetas con pares etiqueta · valor.
-- **Oportunidades:** tablero plano; las columnas se separan con un filete vertical, sin cajas de color.
+- **Oportunidades:** tablero plano; las columnas se separan con un filete vertical y su cabecera lleva un filete de 2 px en la tinta de la etapa. El cierre de cada ficha es una nota al pie con sello. Con ↑ ↓ se recorre una columna y con ← → se salta a la vecina (Alt + ← → mueve la ficha).
 - **Continuidad:** pestañas Estado · Evidencia e impacto · Copias y archivo · Operaciones; parte para compartir.
 - Capas flotantes (paneles, práctica guiada) nunca tapan los botones de una ficha abierta.
 

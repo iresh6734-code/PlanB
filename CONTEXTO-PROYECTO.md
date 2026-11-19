@@ -1,8 +1,45 @@
 # Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026, 11:16, Europe/Madrid**. Rediseño integral «Cuaderno» (identidad nueva de la app local) y regla para evitar alertas DPAPI de Defender en equipos corporativos.
+Última revisión: **19/11/2026, 12:10, Europe/Madrid**. Paleta «tinta y papel» del Cuaderno, mejoras de uso en Hoy y Oportunidades, y modo de pruebas sin DPAPI.
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
+
+## Cuaderno «tinta y papel», mejoras de uso y modo de pruebas sin DPAPI · 19/11/2026, 12:10, Europe/Madrid
+
+Al usuario le gusta el estilo cuaderno pero no sus colores. Pidió una pasada más original en jerarquía, orden y color, y que se reforzaran las funciones, **sin provocar alertas de Defender** y sin baterías Playwright, servidores de demostración ni datos.
+
+- **Paleta «tinta y papel»** (`src/cuaderno.css`):
+  - papel marfil con trama de puntos, en lugar de la cuadrícula;
+  - menú de cartón kraft, con la pestaña activa como hoja de papel;
+  - tinta ultramar `#2f3e9e` para la acción;
+  - lacre `#a3302b` para lo vencido y ocre `#6b4800` para los avisos;
+  - verde botella `#2c6643`, que solo confirma;
+  - modo oscuro cálido «bajo la lámpara».
+
+  `tests/design-tokens.test.ts` comprueba el AA efectivo en claro y en oscuro.
+- **Jerarquía:**
+  - Los estados se marcan con un sello cuadrado de lacre u ocre, sin subrayados ni pastillas rojas. Se aplica en la cola de Hoy, las prioridades de Inicio, el cierre de las fichas del tablero, «Tu siguiente paso» y el Radar.
+  - Las etapas del tablero y de «Oportunidades abiertas» son diluciones de la tinta; ganada en verde y perdida a lápiz. Se ignoran los colores de etapa guardados.
+  - Cabeceras de tarjeta iguales: rótulo y acción sobre un filete.
+  - En la columna derecha de Inicio, los botones son de contorno; el único botón lleno es el de «Tu siguiente paso».
+- **Funciones:**
+  - El título de tarea «Acción · Cliente» se pinta con el cliente atenuado, en Hoy e Inicio. El texto completo no cambia: `splitTaskLabel` en `src/task-display.ts`.
+  - Con ↑ ↓ se pasa de una tarea a otra en la cola de Hoy.
+  - En el tablero de oportunidades, ↑ ↓ recorre una columna y ← → salta a la columna vecina con fichas. Alt + ← → sigue moviendo la ficha.
+  - Los atajos están en `src/app-shell/useShortcuts.ts` y en la ayuda («?»).
+- **Modo de pruebas sin DPAPI** (`server/crypto.ts`):
+  - Con `NODE_ENV=test`, las carpetas nuevas reciben una clave de tipo `test` y nunca se lanza PowerShell `ProtectedData`.
+  - Una carpeta ya protegida con DPAPI se rechaza con un mensaje claro.
+  - `playwright.config.ts` pasa `NODE_ENV=test` a su servidor.
+  - `tests/local-key-test-mode.test.ts` cubre los dos casos.
+  - La regla para agentes está en AGENTS.md.
+  - Producción, es decir `npm start` sin `NODE_ENV=test`, sigue usando DPAPI como antes.
+- **Comprobación, sin servidores ni datos:**
+  - `tests/design-tokens.test.ts` y `tests/local-key-test-mode.test.ts`: 13/13.
+  - `npm run build` correcto.
+  - Detector de diseño sin hallazgos en `src/cuaderno.css`.
+  - No se lanzaron Playwright, servidores de demostración ni la batería completa.
+- **Pendiente:** cuando se pueda, una revisión visual en la app real (claro y oscuro, 1440 y 390 px) y la batería e2e en modo de pruebas.
 
 ## Rediseño «Cuaderno» y alerta DPAPI · 19/11/2026, 11:16, Europe/Madrid
 

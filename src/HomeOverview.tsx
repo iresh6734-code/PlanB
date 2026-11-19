@@ -11,7 +11,7 @@ import { QualityPanel } from './app-shell/QualityPanel.js';
 import type { CrmRecord } from '../shared/model.js';
 import { loadLocalOperations } from './local-operations-client.js';
 import { loadCommitments, loadRadarCapability } from './commitment-radar-client.js';
-import { daysLate, dueLabel, taskChip } from './task-display.js';
+import { daysLate, dueLabel, splitTaskLabel, taskChip } from './task-display.js';
 import { continuityAlerts, type AlertTarget } from './app-shell/continuity-alerts.js';
 import { FirstRun } from './app-shell/FirstRun.js';
 import { PipelineCard } from './app-shell/PipelineCard.js';
@@ -199,9 +199,9 @@ export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, 
         <div className="oc-card-head"><h2 id="oc-first-title">Prioridades de hoy</h2><button type="button" className="oc-link" onClick={onOpenToday}>Ver cola de Hoy →</button></div>
         {!ops ? (opsError ? <p className="oc-empty-line" role="status">{opsError}</p> : <Skeleton rows={3} label="Leyendo las tareas de tu copia…" />)
           : tasks.length === 0 ? <p className={'oc-empty-line ui-empty' + (snapshot ? ' ui-empty-ok' : '')}>{urgent.length ? 'La única prioridad se muestra arriba.' : 'No hay tareas vencidas ni para las próximas 24 h.'}</p>
-          : <ul className="oc-task-list">{tasks.map(task => { const chip = taskChip(task.bucket, task.due, now); return <li key={task.id}>
+          : <ul className="oc-task-list">{          tasks.map(task => { const chip = taskChip(task.bucket, task.due, now), [what, who] = splitTaskLabel(task.label || 'Tarea sin título'); return <li key={task.id}>
               <span className="oc-chip" data-tone={chip.tone}>{chip.text}</span>
-              <div style={{ minWidth: 0 }}><strong title={task.label}>{task.label || 'Tarea sin título'}</strong><span className="oc-due">{task.nextAction}</span></div>
+                        <div style={{ minWidth: 0 }}><strong title={task.label}>{what}{who ? <span className="oc-task-who">{who}</span> : null}</strong><span className="oc-due">{task.nextAction}</span></div>
               <span className="oc-due">{dueLabel(task.due, task.dueKind, now)}</span>
               <button type="button" className="oc-small-button" onClick={() => onOpenTask(task.id)} aria-label={'Abrir ' + (task.label || 'tarea') + ' en Hoy'}>Abrir</button>
             </li>; })}</ul>}

@@ -25,3 +25,8 @@ export function taskChip(bucket: string, due: string | null, now = new Date()): 
   if (bucket === 'needs-review') return { tone: 'neutral', text: 'Revisar datos' };
   return { tone: 'neutral', text: 'Más adelante' };
 }
+/** Separa «Acción · Cliente» en dos trozos para atenuar el segundo; sin separador, todo es la acción. El texto completo no cambia. */
+export function splitTaskLabel(label: string): [string, string] {
+  const at = label.indexOf(' · ');
+  return at > 0 && at + 3 < label.length ? [label.slice(0, at), label.slice(at)] : [label, ''];
+}

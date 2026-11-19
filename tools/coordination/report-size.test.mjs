@@ -44,6 +44,34 @@ test('--task comprueba solo los .md de coordinación del encargo y no da por bue
   assert.throws(() => run(['--task', 'NO-EXISTE'], root), /No existe el encargo/);
 });
 
+test('R2 (revisión 445): un límite no finito se rechaza y nunca aprueba', t => {
+  const root = fixture(t);
+  for (const limit of ['Infinity', '-Infinity', 'NaN', '1e999', '-5', '0', '30abc', ''])
+    assert.throws(() => run(['--limit', limit, '--check'], root), RangeError, 'límite ' + JSON.stringify(limit));
+  assert.throws(() => evaluate([], Infinity), RangeError);
+  assert.throws(() => evaluate([], Number.NaN), RangeError);
+  assert.equal(run(['--limit', '29.5', '--check'], root).exitCode, 1);
+});
+
+test('R2 (revisión 445): una carpeta con nombre de informe no cuenta como informe', t => {
+  const root = fixture(t);
+  mkdirSync(join(root, 'coordination', 'reports', 'directory.md'));
+  const result = run(['coordination/reports/directory.md', '--check', '--json'], root);
+  assert.equal(result.exitCode, 1);
+  assert.deepEqual(JSON.parse(result.output).missing, [{ file: 'coordination/reports/directory.md', bytes: null, problem: 'no es un archivo' }]);
+  assert.match(run(['coordination/reports/directory.md'], root).output, /no es un archivo: coordination\/reports\/directory\.md/);
+  // En el análisis general la carpeta tampoco se cuenta.
+  assert.ok(!scan(root).some(entry => entry.file.endsWith('directory.md')));
+});
+
+test('R2 (revisión 445): --task y --limit sin valor son errores de uso, no un análisis general', t => {
+  const root = fixture(t);
+  for (const argv of [['--task'], ['--task', '--check'], ['--limit'], ['--limit', '--check'], ['--check', '--task']])
+    assert.throws(() => run(argv, root), /Falta el valor de --(task|limit)/, argv.join(' '));
+  assert.throws(() => run(['--task', 't-1'], root), /ID de encargo no válido/);
+  assert.throws(() => run(['--task', '../board'], root), /ID de encargo no válido/);
+});
+
 test('sin --check informa pero no falla; el límite y las rutas se pueden indicar', t => {
   const root = fixture(t);
   assert.equal(run([], root).exitCode, 0);

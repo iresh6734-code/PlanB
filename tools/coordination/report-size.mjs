@@ -31,28 +31,47 @@ export function taskReports(root, id) {
   return (task.files ?? []).filter(file => file.startsWith('coordination/') && file.endsWith('.md'));
 }
 
+/** Tamaño de cada ruta indicada. Solo cuenta un archivo regular: una carpeta (aunque se llame `algo.md`) no es un informe (R2, 445). */
 export function measureFiles(root, files) {
   return files.map(file => {
-    const path = resolve(root, file);
-    return { file: relative(root, path).split(sep).join('/'), bytes: existsSync(path) ? statSync(path).size : null };
+    const path = resolve(root, file), name = relative(root, path).split(sep).join('/');
+    if (!existsSync(path)) return { file: name, bytes: null, problem: 'no existe' };
+    const stat = statSync(path);
+    return stat.isFile() ? { file: name, bytes: stat.size } : { file: name, bytes: null, problem: 'no es un archivo' };
   });
 }
 
-/** Separa lo que supera el límite. Un archivo inexistente no se da por bueno. */
+/** Separa lo que supera el límite. Lo que no existe o no es un archivo no se da por bueno. */
 export function evaluate(entries, limitKb = DEFAULT_LIMIT_KB) {
-  if (!(limitKb > 0)) throw new RangeError('El límite debe ser positivo');
+  if (typeof limitKb !== 'number' || !Number.isFinite(limitKb) || !(limitKb > 0)) throw new RangeError('El límite debe ser un número finito y positivo de KB');
   const limit = Math.round(limitKb * 1024);
   const over = entries.filter(entry => entry.bytes !== null && entry.bytes > limit).sort((a, b) => b.bytes - a.bytes);
   const missing = entries.filter(entry => entry.bytes === null);
   return { limitBytes: limit, checked: entries.length, over, missing, ok: over.length === 0 && missing.length === 0 };
 }
 
+const TASK_ID = /^[A-Z0-9]+(?:-[A-Z0-9]+)*$/;
+
 function options(argv) {
   const files = [], result = { limit: DEFAULT_LIMIT_KB, check: false, json: false, task: null, files };
+  // Una opción que necesita valor no puede quedarse sin él ni tomar la opción siguiente como valor (R2, 445).
+  const value = (index, option) => {
+    const next = argv[index];
+    if (next === undefined || next.startsWith('--')) throw new Error('Falta el valor de ' + option);
+    return next;
+  };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
-    if (arg === '--limit') result.limit = Number(argv[++i]);
-    else if (arg === '--task') result.task = argv[++i];
+    if (arg === '--limit') {
+      const text = value(++i, '--limit');
+      if (!/^\d+(\.\d+)?$/.test(text)) throw new RangeError('El límite debe ser un número finito y positivo de KB');
+      result.limit = Number(text);
+    }
+    else if (arg === '--task') {
+      const id = value(++i, '--task');
+      if (!TASK_ID.test(id)) throw new Error('ID de encargo no válido: ' + id);
+      result.task = id;
+    }
     else if (arg === '--check') result.check = true;
     else if (arg === '--json') result.json = true;
     else if (arg.startsWith('--')) throw new Error('Opción desconocida: ' + arg);
@@ -70,7 +89,7 @@ export function run(argv, root = resolve(dirname(fileURLToPath(import.meta.url))
   else {
     lines.push('Informes del tablón: ' + result.checked + ' revisados, límite ' + opts.limit + ' KB.');
     for (const entry of result.over) lines.push('  ' + (entry.bytes / 1024).toFixed(1).padStart(8) + ' KB  ' + entry.file);
-    for (const entry of result.missing) lines.push('  no existe: ' + entry.file);
+    for (const entry of result.missing) lines.push('  ' + (entry.problem ?? 'no existe') + ': ' + entry.file);
     lines.push(result.ok ? 'Todo dentro del límite.' : 'Resume el cuerpo y pasa tablas, registros o capturas a un anexo.');
   }
   return { result, output: lines.join('\n'), exitCode: opts.check && !result.ok ? 1 : 0 };

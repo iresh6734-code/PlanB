@@ -75,3 +75,24 @@ Incluye lo que una orden directa **no** autoriza y una plantilla JSON de encargo
 | `tools/coordination/report-size.mjs` | `8222d7dfa4c1cba5df4cd13858bbd493aecd13459c44ede959caeaba37dadf6c` |
 | `tools/coordination/report-size.test.mjs` | `a32855507531165cb0f1db1698b3e838a9a4f20362db904782561c81d978b636` |
 | `docs/protocolo-ordenes-directas.md` | `bd084be166819478cebbbe211ffa93eda5b1fc115fce41985f878def9cae8c2d` |
+
+## R2 · Correcciones pedidas en CODEX-CLAUDE-TOOLING-REVIEW-445 (19/11/2026)
+
+Codex reprodujo tres casos en los que el comprobador G3 aprobaba algo que no debía o callaba un error de uso. Los tres quedan corregidos:
+
+| Caso | Antes | Ahora |
+| --- | --- | --- |
+| `--limit Infinity --check` con un informe de 31 KiB | Aprobado | Error de uso (código 2): «El límite debe ser un número finito y positivo de KB». Solo se admiten números decimales positivos; `evaluate()` rechaza también `Infinity` y `NaN` si se llama directamente |
+| Ruta explícita a una carpeta `directory.md` | Contada como informe y aprobada | `no es un archivo: …`, cuenta como problema y `--check` da código 1. El análisis general ya solo contaba archivos regulares |
+| `--task` sin ID (o seguido de otra opción) | Caía en el análisis general | Error de uso: «Falta el valor de --task». Lo mismo con `--limit` sin valor. El ID debe tener el formato del tablón |
+
+**Verificación:** `node --test tools/coordination/report-size.test.mjs` → **6/6**, con tres pruebas nuevas, una por caso, que incluyen `-Infinity`, `NaN`, `1e999`, `0`, `-5`, `30abc` y un ID con `../`. Por línea de comandos: `--limit Infinity --check` → código 2; `--task` → código 2; el análisis normal sigue listando los mismos 6 informes por encima de 30 KB.
+
+G2 y G4 siguen siendo propuestas documentales. No se ha movido ni borrado ningún archivo.
+
+| Archivo (R2) | SHA-256 |
+| --- | --- |
+| `tools/coordination/report-size.mjs` | `381bac963676315e82e6e8d6a95f1ce93e0a5425a3c97b63bcd47ec58450c10d` |
+| `tools/coordination/report-size.test.mjs` | `ace0604001f4e577d7b87bcba02a0c01ca2461cfd9c7ef8926375d3dbc305d53` |
+
+Sin cambios: `docs/protocolo-ordenes-directas.md` (huella de la primera entrega).

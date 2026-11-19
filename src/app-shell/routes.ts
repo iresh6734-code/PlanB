@@ -8,7 +8,7 @@ export type Place = { page: PageId; entity?: EntityName; recordId?: string };
 
 const ENTITY_PATH: Record<EntityName, string> = { contacts: 'clientes', companies: 'empresas', deals: 'oportunidades', tasks: 'tareas' };
 const PAGE_PATH: Record<Exclude<PageId, 'workspace'>, string> = {
-  home: '/inicio', today: '/hoy', agents: '/hoy/propuestas',
+  home: '/inicio', today: '/hoy', week: '/hoy/semana', agents: '/hoy/propuestas',
   continuity: '/continuidad', changes: '/continuidad/cambios', export: '/continuidad/exportar', 'team-sync': '/continuidad/equipo',
   integrations: '/ajustes/integraciones', prepare: '/ajustes/preparacion', plan: '/ajustes/plan',
   radar: '/laboratorio/radar', 'date-check': '/laboratorio/fecha',

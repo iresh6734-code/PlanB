@@ -1,7 +1,7 @@
 import type { EntityName } from '../../shared/model.js';
 
 /** Apartados de la App local. */
-export const PAGES = ['home', 'continuity', 'changes', 'prepare', 'workspace', 'export', 'today', 'agents', 'integrations', 'team-sync', 'radar', 'date-check', 'plan'] as const;
+export const PAGES = ['home', 'continuity', 'changes', 'prepare', 'workspace', 'export', 'today', 'week', 'agents', 'integrations', 'team-sync', 'radar', 'date-check', 'plan'] as const;
 export type PageId = typeof PAGES[number];
 
 // Recordar dónde estabas: solo el apartado y el tipo de registro, en la sesión de esta pestaña. Nunca datos.

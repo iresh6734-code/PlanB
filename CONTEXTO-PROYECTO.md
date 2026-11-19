@@ -1,13 +1,16 @@
 ﻿# Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026, 15:10, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 a V6 hechas. Oleada 3: H2, H4, H5 y H6 hechas; H1 aplazada (requiere e2e). Continuidad: C2 y C5 hechas. Negocio: M1, M2, M3 y M6 hechas. Datos: D1, D2 y D3 hechas. Rendimiento: P3 hecha.
+Última revisión: **19/11/2026, 16:00, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 a V6 hechas. Oleada 3: H2, H3, H4, H5 y H6 hechas; H1 aplazada (requiere e2e). Continuidad: C2 y C5 hechas. Negocio: M1, M2, M3 y M6 hechas. Datos: D1, D2 y D3 hechas. Rendimiento: P3 hecha.
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
 
+## Super plan H3 · Revisión semanal · 19/11/2026, 16:00, Europe/Madrid
+
+Nueva página `week` en `/hoy/semana` (grupo Hoy, «Revisión semanal»; comando «Ir a Revisión semanal»), cargada bajo demanda desde `app-shell/lazy-pages.tsx` para no subir el JS inicial (sin eso superaba el techo de P3 en 1,5 KB). Lógica pura en `src/app-shell/weekly-review.ts`: ventana de 7 días en hora de Madrid; hechas y ganadas salen del diario de cambios (`/v2/changes`), sin duplicados y descartando lo deshecho después; «pospuestas» son tareas abiertas cuya fecha se ha movido hacia delante más de dos veces (`POSTPONE_LIMIT`) y no se repiten en vencidas; vencidas ordenadas por días de retraso; oportunidades abiertas sin tarea abierta enlazada (`null` si no hay campo de enlace o la lectura de tareas está incompleta). `nextStepTask` crea «Seguimiento: …» con el preset de tareas. UI en `src/app-shell/WeeklyReview.tsx`: resumen con medidor «Decididas X de Y», cinco cifras, tarjetas con acciones en la misma pantalla (Hecha, Mañana, Lunes, Seguimiento, Abrir) y «Copiar como texto». Estilos `.wr-*` en `faro.css`, con variante móvil. Pruebas: `tests/weekly-review.test.ts`. Sin verificación visual en este equipo.
+
 ## Super plan P3 · Presupuesto de tamaño
 
-	ests/bundle-budget.test.ts mide el dist real con nalyze() de 	ools/perf/bundle.mjs y aplica los techos initialJs (778 KB) e initialJsGzip (236 KB) de 	ools/perf/budgets.json. Hoy: 764 KB y 233 KB. También falla si el JS inicial lleva eact.development.js: ocurre si 
-pm run build hereda NODE_ENV=test de una sesión de pruebas, y entonces el JS inicial sube a 1,2 MB. Compilar siempre en una terminal limpia. Sin dist, se salta. El CSS inicial (373 KB) supera ya su techo de 340 KB y no entra en esta prueba; adelgazarlo es tarea pendiente.
+`tests/bundle-budget.test.ts` mide el `dist` real con `analyze()` de `tools/perf/bundle.mjs` y aplica los techos `initialJs` (778 KB) e `initialJsGzip` (236 KB) de `tools/perf/budgets.json`. Hoy: 764 KB y 233 KB. También falla si el JS inicial lleva `react.development.js`: ocurre si `npm run build` hereda `NODE_ENV=test` de una sesión de pruebas, y entonces el JS inicial sube a 1,2 MB. Compilar siempre en una terminal limpia. Sin `dist`, se salta. El CSS inicial (373 KB) supera ya su techo de 340 KB y no entra en esta prueba; adelgazarlo es tarea pendiente.
 
 ## Super plan H5 · Accesibilidad de la cola · 19/11/2026, 14:45, Europe/Madrid
 

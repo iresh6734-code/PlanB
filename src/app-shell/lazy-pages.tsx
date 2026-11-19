@@ -22,3 +22,4 @@ export const OperationalRehearsal = deferred(() => import('../OperationalRehears
 export const DateCheck = deferred(() => import('../DateCheck.js').then(m => m.DateCheck), 'Abriendo Comprobar una fecha…');
 export const DecisionReview = deferred(() => import('../DecisionReview.js').then(m => m.DecisionReview), 'Abriendo las decisiones…');
 export const Settings = deferred(() => import('../Settings.js').then(m => m.Settings), 'Abriendo los ajustes…');
+export const WeeklyReview = deferred(() => import('./WeeklyReview.js').then(m => m.WeeklyReview), 'Abriendo la revisión semanal…');

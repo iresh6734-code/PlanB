@@ -28,6 +28,7 @@ export function navigationGroups(context: NavContext): NavGroup[] {
   const groups: NavGroup[] = [{ id: 'home', label: 'Inicio', target: { kind: 'page', page: 'home' }, items: [] }];
   if (!context.runtime) groups.push({ id: 'today', label: 'Hoy', target: { kind: 'page', page: 'today' }, badge: 'overdue', items: [
     { id: 'today', label: 'Tareas de hoy', target: { kind: 'page', page: 'today' }, badge: 'overdue' },
+    { id: 'week', label: 'Revisión semanal', target: { kind: 'page', page: 'week' }, needsReady: true },
     { id: 'agents', label: 'Propuestas', target: { kind: 'page', page: 'agents' } },
   ] });
   groups.push({ id: 'clients', label: 'Clientes', target: { kind: 'entity', entity: 'contacts' }, needsReady: true, items: [
@@ -60,7 +61,7 @@ export function navigationGroups(context: NavContext): NavGroup[] {
 export function groupOfPage(page: PageId): GroupId {
   switch (page) {
     case 'home': return 'home';
-    case 'today': case 'agents': return 'today';
+    case 'today': case 'week': case 'agents': return 'today';
     case 'workspace': return 'clients';
     case 'continuity': case 'changes': case 'export': case 'team-sync': return 'continuity';
     case 'integrations': case 'prepare': case 'plan': return 'settings';
@@ -92,6 +93,6 @@ export function itemActive(item: NavItem, page: PageId, entity: EntityName): boo
  */
 export function fallbackPage(page: PageId, context: NavContext): PageId | null {
   if (LAB_PAGES.includes(page) && !labVisible(context)) return 'home';
-  if (context.runtime && (page === 'today' || page === 'agents' || page === 'integrations' || page === 'team-sync' || page === 'plan')) return 'home';
+  if (context.runtime && (page === 'today' || page === 'week' || page === 'agents' || page === 'integrations' || page === 'team-sync' || page === 'plan')) return 'home';
   return null;
 }

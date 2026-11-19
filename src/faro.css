@@ -1322,6 +1322,20 @@ html body .company-table-scroll { border: 1px solid var(--border); border-radius
 .gx-quality-kind[data-kind="duplicate"] { background: var(--primary-subtle); color: var(--primary-text); }
 .gx-quality-note { margin: 0; font-size: var(--fs-xs); }
 html body .gx-quality .oc-link { justify-self: start; }
+/* D3 · registros completos por tipo, con tendencia diaria guardada en el navegador */
+.gx-qc { display: grid; gap: 6px; }
+.gx-qc-head { margin: 0; font-size: var(--fs-xs); font-weight: 600; color: var(--text-2); }
+.gx-qc ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.gx-qc li { display: grid; grid-template-columns: minmax(64px, 7em) minmax(40px, 1fr) 3.4em 48px; align-items: center; gap: 2px 8px; }
+.gx-qc-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-sm); color: var(--text-1); }
+.gx-qc-bar { height: 6px; border-radius: var(--r-sm); background: var(--rule); overflow: hidden; }
+.gx-qc-bar i { display: block; height: 100%; border-radius: inherit; background: var(--primary); }
+.gx-qc li strong { font-size: var(--fs-sm); font-variant-numeric: tabular-nums; text-align: right; color: var(--text-1); }
+.gx-qc-spark { width: 48px; height: 16px; overflow: visible; }
+.gx-qc-spark polyline { fill: none; stroke: var(--text-3); stroke-width: 1.5; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.gx-qc li small { grid-column: 1 / -1; font-size: var(--fs-xs); color: var(--text-3); }
+.gx-qc-delta[data-dir="up"] { color: var(--success); }
+.gx-qc-delta[data-dir="down"] { color: var(--danger); }
 
 /* ---- Edición en línea de campos de lista: parece una etiqueta hasta que se pasa el ratón o se enfoca ---- */
 html body .main-content .table-container td select.gx-inline.gx-inline.gx-inline { width: auto; max-width: 100%; height: 24px !important; min-height: 24px !important; padding: 0 22px 0 7px; border: 1px solid var(--border); border-radius: 5px; background-color: var(--bg-subtle); background-position: right 5px center; background-size: 10px; font-size: var(--fs-xs); font-weight: 600; color: var(--text-2); cursor: pointer; transition: border-color 110ms, background-color 110ms; }
@@ -2032,6 +2046,9 @@ html[data-theme="dark"] body .ds-steps [data-state="done"] .ds-mark { background
 html[data-theme="dark"] body .ds-steps [data-state="won"] button { background: #1b6a45; border-color: var(--success); }
 html[data-theme="dark"] body .ds-steps [data-state="lost"] button { background: var(--danger-bg); }
 @media (max-width: 600px) { html body .ds-steps button { min-height: 44px; } }
+/* D2 · lo que pide la etapa: aviso, no bloqueo */
+html body .ds-need { display: flex; align-items: baseline; gap: 6px; margin: 0; padding: 6px 10px; border: 1px solid var(--warning-border); border-radius: var(--r-md); background: var(--warning-bg); font-size: var(--fs-xs); color: var(--text-1); }
+html body .ds-need svg { flex: none; transform: translateY(2px); color: var(--warning); }
 /* Escritorio: las etapas reparten el ancho y una etapa vacía se estrecha para dar sitio a las que tienen tarjetas. */
 @media (min-width: 761px) {
   html body .workspace > .kanban { display: flex; align-items: stretch; }
@@ -2112,6 +2129,9 @@ html body .gx-pipe-list { border-top: 1px solid var(--border); }
 html body .gx-pipe-note { margin: 0; padding: 8px 16px 12px; font-size: var(--fs-sm); color: var(--text-3); }
 /* Inicio · previsión ponderada por mes de cierre (super plan V4). */
 html body .gx-fc { border-top: 1px solid var(--border); padding: 12px 0 0; }
+html body .gx-need { border-top: 1px solid var(--border); padding: 12px 0 0; }
+html body .gx-need h3 { display: flex; align-items: center; gap: 6px; margin: 0 16px 8px; font-size: var(--fs-xs); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); }
+html body .gx-need h3 span { padding: 0 6px; border-radius: var(--r-sm); background: var(--warning-bg); color: var(--warning); letter-spacing: 0; font-variant-numeric: tabular-nums; }
 html body .gx-fc h3 { margin: 0 16px 8px; font-size: var(--fs-xs); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); }
 html body .gx-fc-months { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0 16px; padding: 0; list-style: none; border: 1px solid var(--rule, var(--border)); border-radius: var(--r-md, 3px); }
 html body .gx-fc-months li { display: grid; gap: 2px; padding: 10px 12px; min-width: 0; }

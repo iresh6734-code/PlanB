@@ -6,6 +6,7 @@ import { madridDay } from '../task-display.js';
 import { ErrorState, Skeleton } from '../ui/index.js';
 import { closeStatus, euros, stageKind } from './deal-insights.js';
 import { COMMITTED_FROM, stageProbabilities, weightedForecast } from './forecast.js';
+import { fieldList, missingFor, stageNeeds } from './stage-rules.js';
 import { recordListPath } from './useRecordList.js';
 import { BOARD_MAX_PAGES, readPages, type ListPage } from './pager.js';
 
@@ -78,6 +79,8 @@ export function PipelineCard({ spec, revision, onOpenRecord, onOpenDeals }: {
   const probabilities = stageProbabilities(spec.stages.filter(stage => stageKind(stage) === 'open'));
   const forecast = closeField && open.length ? weightedForecast(open.map(item => ({ stageId: item.stage.id, amount: item.amount, close: item.record.values[closeField.key] })), probabilities, today) : null;
   const byPosition = probabilities.some(item => item.source === 'position');
+  const needs = stageNeeds(spec);
+  const unmet = open.flatMap(item => { const missing = missingFor(item.record.values, item.stage.id, needs); return missing.length ? [{ ...item, missing }] : []; });
   const outside = forecast ? [
     forecast.late.deals ? forecast.late.deals + ' con el cierre vencido (' + euros(forecast.late.probable) + ' ponderado)' : '',
     forecast.later.deals ? forecast.later.deals + ' más adelante (' + euros(forecast.later.probable) + ')' : '',
@@ -115,6 +118,16 @@ export function PipelineCard({ spec, revision, onOpenRecord, onOpenDeals }: {
           <span className="oc-due">{status.label.replace(/^.* · /, '')}</span>
           {onOpenRecord ? <button type="button" className="oc-small-button" onClick={() => onOpenRecord(record)} aria-label={'Abrir la oportunidad ' + recordName(record, spec)}>Abrir</button> : null}
         </li>)}</ul> : null}
+        {unmet.length ? <section className="gx-need" aria-labelledby="gx-need-title">
+          <h3 id="gx-need-title">Les falta lo que pide su etapa <span>{unmet.length}</span></h3>
+          <ul className="oc-task-list gx-pipe-list">{unmet.slice(0, 3).map(({ record, stage, missing }) => <li key={record.id}>
+            <span className="oc-chip" data-tone="warn">{stage.label}</span>
+            <div style={{ minWidth: 0 }}><strong title={recordName(record, spec)}>{recordName(record, spec)}</strong><span className="oc-due">Falta {fieldList(missing)}</span></div>
+            <span />
+            {onOpenRecord ? <button type="button" className="oc-small-button" onClick={() => onOpenRecord(record)} aria-label={'Completar la oportunidad ' + recordName(record, spec)}>Completar</button> : null}
+          </li>)}</ul>
+          {unmet.length > 3 ? <p className="gx-pipe-note">Y {unmet.length - 3} más. Aviso, no bloqueo: se puede guardar sin estos datos.</p> : <p className="gx-pipe-note">Aviso, no bloqueo: se puede guardar sin estos datos.</p>}
+        </section> : null}
       </>}
     {amounts.missing ? <p className="gx-pipe-note">{amounts.missing === 1 ? '1 oportunidad abierta sin importe.' : amounts.missing + ' oportunidades abiertas sin importe.'}</p> : null}
     {uncertain ? <p className="gx-pipe-note">{uncertain === 1 ? '1 oportunidad con etapa por revisar.' : uncertain + ' oportunidades con etapa por revisar.'}</p> : null}

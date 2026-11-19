@@ -1,8 +1,14 @@
 ﻿# Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026, 14:34, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 a V6 hechas. Oleada 3: H2, H4 y H6 hechas; H1 aplazada (requiere e2e). Continuidad: C2 y C5 hechas. Negocio: M1, M2, M3 y M6 hechas. Datos: D1 hecha.
+Última revisión: **19/11/2026, 14:39, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 a V6 hechas. Oleada 3: H2, H4 y H6 hechas; H1 aplazada (requiere e2e). Continuidad: C2 y C5 hechas. Negocio: M1, M2, M3 y M6 hechas. Datos: D1, D2 y D3 hechas.
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
+
+## Super plan D2 y D3 · Reglas por etapa y calidad con tendencia · 19/11/2026, 14:39, Europe/Madrid
+
+- D2: `stage-rules.ts` calcula qué conviene tener en cada etapa (importe desde la segunda abierta, fecha de cierre en la mitad final, las dos al ganar; por proceso; si una regla configurada ya lo exige, no se repite). Es un aviso: `DealSummary` lo enseña bajo los pasos y en el título de cada paso; `PipelineCard` lista las abiertas que no lo cumplen con «Completar».
+- D3: `completeness` (en `quality.ts`) cuenta registros completos por tipo sobre columnas visibles y obligatorios, y señala el campo que más falta. `quality-trend.ts` guarda un punto al día en `localStorage` (`planb.quality-trend.v1`, por título de la app, 14 puntos, solo porcentajes) y solo cuando la revisión es completa y estable.
+- Sin revisión visual (ver en casa).
 
 ## Super plan D1 · Normalizar al importar y al editar · 19/11/2026, 14:34, Europe/Madrid
 

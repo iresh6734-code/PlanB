@@ -3,7 +3,10 @@ import { MAX_PAGES, PAGE_SIZE, type RecordPage } from './related.js';
 
 /** Un aviso de calidad sobre un registro concreto. Son comprobaciones de forma, no de negocio: no deciden nada ni cambian datos. */
 export type QualityIssue = { kind: 'required' | 'email' | 'duplicate' | 'dangling'; record: CrmRecord; field: string; text: string };
-export type QualityReport = { issues: QualityIssue[]; scanned: number; total: number; complete: boolean; unstable?: true };
+export type QualityReport = { issues: QualityIssue[]; scanned: number; total: number; complete: boolean; unstable?: true; completeness?: EntityCompleteness[] };
+/** Registros «completos» de un tipo: los que tienen rellenos todos los campos que se ven en la lista y los obligatorios.
+ *  `gap` es el campo que más falta, para saber por dónde empezar. */
+export type EntityCompleteness = { entity: EntityName; label: string; total: number; complete: number; pct: number; gap?: { field: string; label: string; missing: number } };
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const empty = (value: unknown) => value === null || value === undefined || (typeof value === 'string' && value.trim() === '');
@@ -52,6 +55,30 @@ export function checkQuality(spec: AppSpec, records: CrmRecord[], completeEntiti
   return [...unique.values()];
 }
 
+/** Porcentaje de registros completos por tipo. Solo cuenta campos editables que no sean casillas: una casilla vacía es un «no». */
+export function completeness(spec: AppSpec, records: CrmRecord[]): EntityCompleteness[] {
+  const result: EntityCompleteness[] = [];
+  for (const entity of spec.entities) {
+    const own = records.filter(record => record.entity === entity.id);
+    if (!own.length) continue;
+    const fields = entity.fields.filter(field => !field.readOnly && field.type !== 'boolean' && (field.required || entity.columns.includes(field.key)));
+    const missing = new Map<string, number>();
+    let complete = 0;
+    for (const record of own) {
+      let whole = true;
+      for (const field of fields) if (empty(record.values[field.key])) { whole = false; missing.set(field.key, (missing.get(field.key) ?? 0) + 1); }
+      if (whole) complete++;
+    }
+    let gap: EntityCompleteness['gap'];
+    for (const field of fields) {
+      const count = missing.get(field.key) ?? 0;
+      if (count && (!gap || count > gap.missing)) gap = { field: field.key, label: field.label, missing: count };
+    }
+    result.push({ entity: entity.id, label: entity.label, total: own.length, complete, pct: Math.round(complete / own.length * 100), ...(gap ? { gap } : {}) });
+  }
+  return result;
+}
+
 /** Lee la copia (como mucho MAX_PAGES de PAGE_SIZE por tipo) y la revisa. Dice cuánto revisó frente a cuánto hay. */
 export async function loadQuality(
   spec: AppSpec,
@@ -86,7 +113,7 @@ export async function loadQuality(
     total += Math.max(count ?? 0, own.size);
   }
   return {
-    issues: checkQuality(spec, records, complete), scanned: records.length, total,
+    issues: checkQuality(spec, records, complete), scanned: records.length, total, completeness: completeness(spec, records),
     complete: complete.size === spec.entities.length, ...(unstable ? { unstable: true } : {}),
   };
 }

@@ -1,6 +1,13 @@
 /** Presentación compartida de tareas (Inicio y Hoy): fecha legible en Madrid, días de retraso y etiqueta de estado. Solo formatea; no decide nada. */
 const dayMs = 86_400_000;
 export const madridDay = (date: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
+/** Día de Madrid (AAAA-MM-DD) de una fecha límite: una fecha sola se toma tal cual y un instante se pasa a Madrid; null si no es legible. */
+export function dueDay(due: unknown): string | null {
+  if (typeof due !== 'string' || !/^\d{4}-\d{2}-\d{2}/.test(due)) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(due)) return due;
+  const parsed = new Date(due);
+  return Number.isNaN(parsed.getTime()) ? due.slice(0, 10) : madridDay(parsed);
+}
 /** Días completos de retraso respecto a hoy en Madrid; null si la fecha no es legible. */
 export function daysLate(due: string | null, now = new Date()): number | null {
   if (!due) return null;

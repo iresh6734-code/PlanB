@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Modal } from '../components.js';
 
-import { matchCommands, type Command } from './commands.js';
+import { matchCommands, rememberCommand, withRecent, type Command } from './commands.js';
+
+const RECENT_KEY = 'planb:commands:recent';
+const readRecent = (): string[] => { try { const value = JSON.parse(localStorage.getItem(RECENT_KEY) ?? '[]'); return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []; } catch { return []; } };
+const writeRecent = (recent: string[]) => { try { localStorage.setItem(RECENT_KEY, JSON.stringify(recent)); } catch { /* sin almacenamiento: no se recuerdan */ } };
 
 /** Paleta de órdenes (Ctrl J): ir a un apartado, lanzar una acción o abrir un registro escribiendo.
  *  No hace nada que no pueda hacerse con los botones de la app. Los registros se buscan en la copia local (`findRecords`). */
@@ -11,8 +15,9 @@ export function CommandPalette({ commands, close, findRecords }: { commands: Com
   const input = useRef<HTMLInputElement>(null), list = useRef<HTMLUListElement>(null), sequence = useRef(0);
   // La función llega nueva en cada pintado de App: se guarda en una referencia para no relanzar la búsqueda por eso.
   const finder = useRef(findRecords); finder.current = findRecords;
+  const [recent] = useState(readRecent);
   const records = found && found.query === query.trim() ? found.items : [];
-  const shown = [...matchCommands(commands, query), ...records];
+  const shown = [...withRecent(matchCommands(commands, query), recent, query), ...records];
   // El buscador se enfoca al pintarse (autoFocus) y el modal respeta ese foco: lo escrito justo tras Ctrl J llega aquí.
   useEffect(() => { setIndex(0); }, [query]);
   useEffect(() => { list.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' }); }, [index]);
@@ -28,7 +33,7 @@ export function CommandPalette({ commands, close, findRecords }: { commands: Com
     }, 160);
     return () => clearTimeout(timer);
   }, [query]);
-  const run = (command: Command | undefined) => { if (!command) return; close(); command.run(); };
+  const run = (command: Command | undefined) => { if (!command) return; writeRecent(rememberCommand(recent, command.id)); close(); command.run(); };
   const key = (event: KeyboardEvent) => {
     if (event.key === 'ArrowDown') { event.preventDefault(); setIndex(current => Math.max(0, Math.min(shown.length - 1, current + 1))); }
     else if (event.key === 'ArrowUp') { event.preventDefault(); setIndex(current => Math.max(0, current - 1)); }

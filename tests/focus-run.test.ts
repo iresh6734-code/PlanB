@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { makeDemoSpec, makeFixture } from '../shared/fixtures.js';
 import type { CrmRecord } from '../shared/model.js';
-import { daysBetween, doneOption, loadFocusReview, overdueTasks } from '../src/app-shell/focus.js';
+import { daysBetween, doneOption, loadFocusReview, nextMonday, overdueTasks } from '../src/app-shell/focus.js';
 
 // «Despachar vencidas» (fase 2 del plan Faro 2): lógica pura.
 const snapshot = makeFixture('agency'), spec = makeDemoSpec(snapshot);
@@ -34,6 +34,20 @@ test('overdueTasks: una tarea de hoy no está vencida y una sin fecha legible se
 test('daysBetween cuenta días de calendario', () => {
   assert.equal(daysBetween('2026-11-02', '2026-11-13'), 11);
   assert.equal(daysBetween('2026-11-13', '2026-11-13'), 0);
+});
+
+test('overdueTasks y daysBetween usan el día de Madrid de un instante, como Hoy', () => {
+  // 23:30 UTC del 9 es ya el día 10 en Madrid: no está vencida el 10.
+  const late = [{ entity: 'tasks', id: 'noche', values: { subject: 'Noche', due_date: '2026-11-09T23:30:00Z', status: 'pending' } }] as CrmRecord[];
+  assert.deepEqual(overdueTasks(spec, late, '2026-11-10'), []);
+  assert.equal(overdueTasks(spec, late, '2026-11-11').length, 1);
+  assert.equal(daysBetween('2026-11-09T23:30:00Z', '2026-11-12'), 2);
+});
+
+test('nextMonday: siempre un lunes posterior, también si hoy es lunes', () => {
+  assert.equal(nextMonday('2026-11-19'), '2026-11-23'); // jueves
+  assert.equal(nextMonday('2026-11-22'), '2026-11-23'); // domingo
+  assert.equal(nextMonday('2026-11-23'), '2026-11-30'); // lunes
 });
 
 const today = '2026-11-10';

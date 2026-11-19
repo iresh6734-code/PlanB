@@ -4,6 +4,7 @@ import type { AppState, Change } from '../shared/model.js';
 import {INVALID_RECOVERY_MESSAGE,RecoveryChangesSchema,SavedChangesSchema,type RecoveryIntegrity} from '../shared/recovery-integrity.js';
 import type { RecoveryField, RecoveryOperation, RecoveryPlan } from '../shared/operations.js';
 import { useReturnExplanation } from './app-shell/useReturnExplanation.js';
+import { pollWhileVisible } from './app-shell/poll.js';
 import { api, post, download } from './api.js';
 import { Spinner } from './components.js';
 import { ManualRecovery } from './ManualRecovery.js';
@@ -31,7 +32,7 @@ export function ChangesView({runtime,production=false,spec=null}:{runtime:boolea
     }catch(f){if(!owns())return;trusted.current=false;setIntegrity(null);setPlan(null);setReviewed(false);setLoadError(f instanceof Error?f.message:'No se pudo comprobar el estado guardado.');throw f;}
     finally{if(owns()){controller.current=null;setChecking(false);}}
   };
-  useEffect(()=>{alive.current=true;void load().catch(()=>{});const timer=setInterval(()=>void load().catch(()=>{}),2500);return()=>{alive.current=false;sequence.current++;controller.current?.abort();clearInterval(timer);};},[]);
+  useEffect(()=>{alive.current=true;void load().catch(()=>{});const stop=pollWhileVisible(()=>void load().catch(()=>{}),2500);return()=>{alive.current=false;sequence.current++;controller.current?.abort();stop();};},[]);
   const run=async(fn:()=>Promise<unknown>,requiresIntegrity=false)=>{if(action.current||requiresIntegrity&&!trusted.current)return;action.current=true;setBusy(true);setError('');try{await fn();await load();}catch(f){if(alive.current)setError((f as Error).message);}finally{action.current=false;if(alive.current)setBusy(false);}};
   const destinations={simulation,token:token||undefined};
   // C4 (CLAUDE-RETURN-EXPLAIN-UI): la devolución explicada por cliente. Mientras carga o si falla, la vista anterior.

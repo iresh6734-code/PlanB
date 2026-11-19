@@ -1,4 +1,5 @@
 import type { AppSpec, CrmRecord } from '../../shared/model.js';
+import { dueDay } from '../task-display.js';
 import { MAX_PAGES, PAGE_SIZE } from './related.js';
 
 type FocusPage = { records: CrmRecord[]; related: CrmRecord[]; total: number };
@@ -50,10 +51,13 @@ export function doneOption(spec: AppSpec): { key: string; id: string; label: str
 export function overdueTasks(spec: AppSpec, records: CrmRecord[], today: string): CrmRecord[] {
   const dueKey = spec.roles?.dueDate ?? 'due_date', done = doneOption(spec);
   return records.filter(record => record.entity === 'tasks')
-    .filter(record => { const due = record.values[dueKey]; return typeof due === 'string' && /^\d{4}-\d{2}-\d{2}/.test(due) && due.slice(0, 10) < today; })
+    .filter(record => { const day = dueDay(record.values[dueKey]); return day !== null && day < today; })
     .filter(record => !done || String(record.values[done.key] ?? '') !== done.id)
     .sort((a, b) => String(a.values[dueKey]).localeCompare(String(b.values[dueKey])) || a.id.localeCompare(b.id));
 }
 
-/** Días completos entre una fecha AAAA-MM-DD y hoy. */
-export const daysBetween = (from: string, today: string) => Math.round((Date.parse(today + 'T12:00:00Z') - Date.parse(from.slice(0, 10) + 'T12:00:00Z')) / 86_400_000);
+/** Próximo lunes (AAAA-MM-DD) después de `today`; si hoy es lunes, el de la semana siguiente. */
+export const nextMonday = (today: string) => { const date = new Date(today + 'T12:00:00Z'), ahead = ((8 - date.getUTCDay()) % 7) || 7; return new Date(date.getTime() + ahead * 86_400_000).toISOString().slice(0, 10); };
+
+/** Días completos entre una fecha límite (fecha o instante, en día de Madrid) y hoy. */
+export const daysBetween = (from: string, today: string) => Math.round((Date.parse(today + 'T12:00:00Z') - Date.parse((dueDay(from) ?? from.slice(0, 10)) + 'T12:00:00Z')) / 86_400_000);

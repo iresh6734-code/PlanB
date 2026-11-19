@@ -18,6 +18,7 @@ import { TabList, tabPanelProps } from './TabList.js';
 import { CopyTimeline } from './app-shell/CopyTimeline.js';
 import { buildContinuityReport, reportHtml } from './app-shell/continuity-report.js';
 import { captureAutomation } from './app-shell/copy-timeline.js';
+import { pollWhileVisible } from './app-shell/poll.js';
 import { captureRecordCount, describeCapture, workspaceCopy } from './app-shell/workspace-copy.js';
 import './continuity-home-hub.css';
 export type ContinuityTab='estado'|'evidencia'|'copias'|'operaciones';
@@ -46,7 +47,7 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
   const workSource=workRead?.owner===workOwner&&workRead.result.kind==='read'?toWorkSource(workRead.result.summary):undefined;
   const hubNavigate=useMemo(()=>({'open-preparation':prepare,'open-export':exportCopy,'open-continuity':()=>{setTab('evidencia');requestAnimationFrame(()=>hubRef.current?.scrollIntoView({block:'start'}));},...(onOpenToday?{'open-today':onOpenToday}:{}),...(onOpenIntegrations?{'open-integrations':onOpenIntegrations}:{})}),[prepare,exportCopy,onOpenToday,onOpenIntegrations]);
   useEffect(()=>{if(!returnedFrom)return;setTab('evidencia');setReturnNote(true);const frame=requestAnimationFrame(()=>{const heading=hubRef.current?.querySelector<HTMLElement>('.cph > h2');if(heading){heading.tabIndex=-1;heading.focus();heading.scrollIntoView({block:'start'});}onReturnHandled?.();});return()=>cancelAnimationFrame(frame);},[returnedFrom]);
-  useEffect(()=>{void load().catch(f=>setError((f as Error).message));const timer=setInterval(()=>void load().catch(()=>{}),2500);return()=>clearInterval(timer);},[]);
+  useEffect(()=>{void load().catch(f=>setError((f as Error).message));return pollWhileVisible(()=>void load().catch(()=>{}),2500);},[]);
   useEffect(()=>{if(connectRequest)void api<{configured:boolean}>('/v2/auth/status').then(g=>g.configured?setConnection(true):protect()).catch(f=>setError(f.message));},[connectRequest]);
   // Parte de continuidad: se genera en el navegador con el estado ya leído y se descarga; no envía nada a ningún sitio.
   const shareReport=()=>{if(!status)return;const html=reportHtml(buildContinuityReport(status,new Date(),APP_VERSION));const url=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));const anchor=document.createElement('a');anchor.href=url;anchor.download='plan-b-parte-continuidad-'+new Date().toISOString().slice(0,10)+'.html';anchor.click();setTimeout(()=>URL.revokeObjectURL(url),10_000);};

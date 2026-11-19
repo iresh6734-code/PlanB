@@ -3,7 +3,7 @@ import test from 'node:test';
 import { makeDemoSpec, makeFixture } from '../shared/fixtures.js';
 import type { CrmRecord, EntityName } from '../shared/model.js';
 import { loadRelated, pointingTo, sourcesFor, PAGE_SIZE, MAX_PAGES } from '../src/app-shell/related.js';
-import { matchCommands, type Command } from '../src/app-shell/commands.js';
+import { matchCommands, rememberCommand, withRecent, type Command } from '../src/app-shell/commands.js';
 
 // «Ficha 360» y paleta de órdenes (fase 2 del plan Faro 2): lógica pura, sin navegador.
 const snapshot = makeFixture('agency'), spec = makeDemoSpec(snapshot);
@@ -69,4 +69,15 @@ test('matchCommands: todas las palabras, sin acentos ni mayúsculas', () => {
   assert.deepEqual(matchCommands(commands, 'ir tarea').map(command => command.id), ['c']);
   assert.equal(matchCommands(commands, '').length, 3);
   assert.equal(matchCommands(commands, 'zzz').length, 0);
+});
+
+test('órdenes recientes: primero con buscador vacío, sin registros ni repetidos', () => {
+  const commands: Command[] = [{ id: 'a', label: 'Ir a Inicio', group: 'Ir a', run() {} }, { id: 'b', label: 'Nueva tarea', group: 'Crear', run() {} }, { id: 'c', label: 'Ir a Tareas', group: 'Ir a', hint: 'G T', run() {} }];
+  let recent = rememberCommand([], 'b'); recent = rememberCommand(recent, 'c'); recent = rememberCommand(recent, 'b'); recent = rememberCommand(recent, 'rec-contacts-1');
+  assert.deepEqual(recent, ['b', 'c']);
+  assert.deepEqual(rememberCommand(['a', 'b', 'c', 'd'], 'e'), ['e', 'a', 'b', 'c']);
+  const shown = withRecent(commands, [...recent, 'gone'], '');
+  assert.deepEqual(shown.map(command => command.id), ['b', 'c', 'a']);
+  assert.deepEqual(shown.slice(0, 2).map(command => [command.group, command.hint]), [['Recientes', 'Crear'], ['Recientes', 'G T']]);
+  assert.deepEqual(withRecent(commands, recent, 'ir').map(command => command.id), ['a', 'b', 'c']);
 });

@@ -4,11 +4,11 @@ import { api } from '../api.js';
 import { Modal, displayValue, recordName } from '../components.js';
 import { madridDay } from '../task-display.js';
 import { Skeleton } from '../ui/index.js';
-import { daysBetween, doneOption, loadFocusReview } from './focus.js';
+import { daysBetween, doneOption, loadFocusReview, nextMonday } from './focus.js';
 import { recordListPath } from './useRecordList.js';
 
-type Outcome = 'done' | 'tomorrow' | 'skipped';
-const LABEL: Record<Outcome, string> = { done: 'hecha', tomorrow: 'a mañana', skipped: 'saltada' };
+type Outcome = 'done' | 'tomorrow' | 'monday' | 'skipped';
+const LABEL: Record<Outcome, string> = { done: 'hecha', tomorrow: 'a mañana', monday: 'al lunes', skipped: 'saltada' };
 
 /** «Despachar vencidas»: recorre las tareas vencidas una a una. Cada acción guarda con la validación de la ficha (saveField);
  *  «Saltar» no cambia nada. La lista se fija al abrir: lo que se resuelve no vuelve a aparecer. */
@@ -40,7 +40,7 @@ export function FocusRun({ spec, saveField, onOpen, close }: { spec: AppSpec; sa
     setProblem('');
     if (outcome !== 'skipped') {
       setBusy(true);
-      const issue = outcome === 'done' && done ? await saveField(current, done.key, done.id) : await saveField(current, dueKey, tomorrow);
+      const issue = outcome === 'done' && done ? await saveField(current, done.key, done.id) : await saveField(current, dueKey, outcome === 'monday' ? nextMonday(today) : tomorrow);
       setBusy(false);
       if (issue) { setProblem(issue); return; }
     }
@@ -51,6 +51,7 @@ export function FocusRun({ spec, saveField, onOpen, close }: { spec: AppSpec; sa
     const letter = event.key.toLowerCase();
     if (letter === 'h' && done) { event.preventDefault(); void act('done'); }
     else if (letter === 'm') { event.preventDefault(); void act('tomorrow'); }
+    else if (letter === 'l') { event.preventDefault(); void act('monday'); }
     else if (letter === 's' || event.key === 'ArrowRight') { event.preventDefault(); void act('skipped'); }
     else if (letter === 'a' && current) { event.preventDefault(); close(); onOpen(current); }
   };
@@ -70,7 +71,7 @@ export function FocusRun({ spec, saveField, onOpen, close }: { spec: AppSpec; sa
           <button type="button" className="button primary" onClick={close}>Cerrar</button>
         </div>
       : finished ? <div className="gx-focus-end" role="status"><p className="gx-focus-big">Listo: {list.length} {list.length === 1 ? 'tarea revisada' : 'tareas revisadas'}.</p>
-          <p>{[counts.done ? counts.done + (counts.done === 1 ? ' hecha' : ' hechas') : '', counts.tomorrow ? counts.tomorrow + ' a mañana' : '', counts.skipped ? counts.skipped + (counts.skipped === 1 ? ' saltada' : ' saltadas') : ''].filter(Boolean).join(' · ')}. Todo lo cambiado está guardado en tu copia local y aparece en Cambios.</p>
+          <p>{[counts.done ? counts.done + (counts.done === 1 ? ' hecha' : ' hechas') : '', counts.tomorrow ? counts.tomorrow + ' a mañana' : '', counts.monday ? counts.monday + ' al lunes' : '', counts.skipped ? counts.skipped + (counts.skipped === 1 ? ' saltada' : ' saltadas') : ''].filter(Boolean).join(' · ')}. Todo lo cambiado está guardado en tu copia local y aparece en Cambios.</p>
           <button type="button" className="button primary" onClick={close}>Cerrar</button></div>
       : current ? <>
           <div className="gx-focus-progress" aria-hidden="true"><span style={{ width: (index / list.length * 100) + '%' }} /></div>
@@ -84,6 +85,7 @@ export function FocusRun({ spec, saveField, onOpen, close }: { spec: AppSpec; sa
           <div className="gx-focus-actions">
             {done ? <button type="button" className="button primary" disabled={busy} onClick={() => void act('done')}>Marcar {done.label.toLowerCase()} <kbd>H</kbd></button> : null}
             <button type="button" className="button secondary" disabled={busy} onClick={() => void act('tomorrow')}>Pasar a mañana <kbd>M</kbd></button>
+            <button type="button" className="button secondary" disabled={busy} onClick={() => void act('monday')}>Al lunes <kbd>L</kbd></button>
             <button type="button" className="button secondary" disabled={busy} onClick={() => { close(); onOpen(current); }}>Abrir ficha <kbd>A</kbd></button>
             <button type="button" className="text-button" disabled={busy} onClick={() => void act('skipped')}>Saltar <kbd>S</kbd></button>
           </div>

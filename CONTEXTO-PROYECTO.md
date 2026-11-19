@@ -1,8 +1,25 @@
 # Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026, 12:10, Europe/Madrid**. Paleta «tinta y papel» del Cuaderno, mejoras de uso en Hoy y Oportunidades, y modo de pruebas sin DPAPI.
+Última revisión: **19/11/2026, 11:47, Europe/Madrid**. Análisis completo de mejoras (`docs/plan-mejoras.md`) y primeras mejoras de uso: órdenes recientes, filtros vacíos, una sola regla de vencida, posponer al lunes y sondeo en pausa con la pestaña oculta.
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
+
+## Plan de mejoras y primeras entregas · 19/11/2026, 11:47, Europe/Madrid
+
+El usuario pidió un análisis completo de cómo mejorar lo existente y de funciones nuevas, y seguir desarrollando mientras tanto con las normas anti-alertas: nada de DPAPI/PowerShell, sin Playwright, sin servidores demo y sin datos. La hora de la entrada anterior («12:10») era una estimación; esta es la hora real.
+
+- **Análisis:** se revisaron en solo lectura tres áreas: vender, el día y continuidad/plataforma. Resultado, con el orden recomendado y las normas, en [docs/plan-mejoras.md](docs/plan-mejoras.md). Son 22 mejoras de lo existente y 8 funciones nuevas.
+- **Entregado:**
+  - **Órdenes recientes** en Ctrl J (`commands.ts`: `rememberCommand` y `withRecent`). Se guarda en el navegador `planb:commands:recent`, solo con identificadores de órdenes y nunca con registros.
+  - **Listas:** estado vacío «Ningún registro con este filtro» con «Quitar filtros», aviso cuando el CSV sale de una sola página, y `RECORD_PAGE_SIZE` en la paginación.
+  - **`dueDay` en `task-display.ts`:** Hoy y «Despachar vencidas» calculan «vencida» con el mismo día de Madrid.
+  - **«Al lunes» (L)** en «Despachar vencidas» (`nextMonday`).
+  - **`app-shell/poll.ts` (`pollWhileVisible`):** Continuidad y Cambios no consultan con la pestaña oculta y leen al volver a ella.
+- **Validación:**
+  - Pruebas unitarias en modo prueba: `related-records`, `focus-run`, `poll`, `record-list`, `recovery-integrity-ui`, `independent-return-integrity-ui`, `continuity-home-hub` y `return-explain-ui` (todas verdes).
+  - `npm run build` correcto.
+  - Sin comprobación visual ni e2e, por las normas del usuario.
+- **Siguiente:** seguir el orden recomendado del plan, empezando por deshacer en los avisos (1), el desplegable que guarda solo al confirmar (5), la barra superior (17) y los errores de lectura visibles (20).
 
 ## Cuaderno «tinta y papel», mejoras de uso y modo de pruebas sin DPAPI · 19/11/2026, 12:10, Europe/Madrid
 

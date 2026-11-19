@@ -1,5 +1,5 @@
 import { useId, useState } from 'react';
-import { BASIS_LABEL, CURRENCY_LABEL, SOURCE_LABEL, contextLabel, passportToHtml, passportToJson, when, type Claim, type Passport, type PassportAction, type Section } from '../shared/continuity-passport.js';
+import { BASIS_LABEL, CURRENCY_LABEL, SOURCE_LABEL, contextLabel, passportFingerprint, passportToHtml, passportToJson, when, type Claim, type Passport, type PassportAction, type Section } from '../shared/continuity-passport.js';
 import './continuity-passport.css';
 
 // Pasaporte de continuidad (unidad 214): presentación de un `Passport` ya construido. No llama a la red, no captura, no envía ni exporta por sí solo:
@@ -35,11 +35,13 @@ function SectionView({ section }: { section: Section }) {
 }
 export function ContinuityPassport({ passport, onAction, onDownload = saveFile }: ContinuityPassportProps) {
   const titleId = useId(), [notice, setNotice] = useState('');
-  const download = (kind: 'html' | 'json') => {
+  const download = (kind: 'html' | 'json' | 'both') => {
     const day = passport.generatedAt.slice(0, 10) || 'sin-fecha';
-    onDownload(kind === 'html' ? { name: 'pasaporte-continuidad-' + day + '.html', type: 'text/html', text: passportToHtml(passport) } : { name: 'pasaporte-continuidad-' + day + '.json', type: 'application/json', text: passportToJson(passport) });
-    setNotice('Se preparó el fichero ' + kind.toUpperCase() + ' en tu equipo. No se envió a ningún sitio.');
+    if (kind !== 'json') onDownload({ name: 'pasaporte-continuidad-' + day + '.html', type: 'text/html', text: passportToHtml(passport) });
+    if (kind !== 'html') onDownload({ name: 'pasaporte-continuidad-' + day + '.json', type: 'application/json', text: passportToJson(passport) });
+    setNotice(kind === 'both' ? 'Se prepararon el HTML y el JSON en tu equipo. No se envió nada a ningún sitio.' : 'Se preparó el fichero ' + kind.toUpperCase() + ' en tu equipo. No se envió a ningún sitio.');
   };
+  const fingerprint = passportFingerprint(passport);
   const step = passport.nextStep;
   return <section className="cpp" aria-labelledby={titleId} data-mixed={passport.mixedContexts ? 'true' : 'false'}>
     <header className="cpp-head"><h2 id={titleId}>Pasaporte de continuidad</h2>
@@ -52,8 +54,9 @@ export function ContinuityPassport({ passport, onAction, onDownload = saveFile }
     {passport.sections.map(section => <SectionView key={section.key} section={section} />)}
     <details className="cpp-prov"><summary>Procedencia y exportación</summary>
       <ul className="cpp-claims">{passport.provenance.map(row => <li key={row.source} className="cpp-claim"><p><strong>{SOURCE_LABEL[row.source]}</strong>: {row.status === 'read' ? 'leído' : row.status === 'unavailable' ? 'no se pudo leer' : 'no solicitado'}</p><small>{row.at ? when(row.at) : 'sin fecha'}{row.context ? ' · ' + contextLabel(row.context) : ''}</small></li>)}</ul>
-      <p className="cpp-export-note">La exportación es manual, no incluye fichas, credenciales ni rutas del equipo, y separa lo observado, lo declarado y lo no comprobado.</p>
-      <div className="cpp-actions"><button type="button" className="button secondary" onClick={() => download('html')}>Descargar HTML</button><button type="button" className="button secondary" onClick={() => download('json')}>Descargar JSON</button></div>
+      <p className="cpp-export-note">La exportación es manual, no incluye fichas, credenciales ni rutas del equipo, y separa lo observado, lo declarado y lo no comprobado. El HTML está pensado para imprimirlo y enseñarlo a un auditor: resume la evidencia, deja sitio para la firma y lleva la huella SHA-256 del JSON para comprobar que los dos ficheros son la misma hoja.</p>
+      <p className="cpp-fingerprint">Huella del JSON: <code>{fingerprint.slice(0, 16)}…</code></p>
+      <div className="cpp-actions"><button type="button" className="button primary" onClick={() => download('both')}>Descargar para auditoría (HTML + JSON)</button><button type="button" className="button secondary" onClick={() => download('html')}>Descargar HTML</button><button type="button" className="button secondary" onClick={() => download('json')}>Descargar JSON</button></div>
       {notice ? <p className="cpp-notice" role="status">{notice}</p> : null}
     </details>
   </section>;

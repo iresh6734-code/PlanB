@@ -1,5 +1,6 @@
 import type { ContinuityEvidenceApiResponse } from './continuity-evidence-api.js';
 import type { ReadCheckApiState } from './hubspot-read-check-api.js';
+import { sha256Hex } from './sha256.js';
 
 // PASAPORTE DE CONTINUIDAD (unidad 214). Modelo puro: transforma ENTRADAS EXPLÍCITAS en una hoja corta de afirmaciones trazables.
 // No lee la red, no captura, no envía y no exporta por sí solo. Cada afirmación lleva su base, su alcance, su origen y su instante:
@@ -239,16 +240,47 @@ export function passportExport(passport: Passport) {
   };
 }
 export const passportToJson = (passport: Passport): string => JSON.stringify(passportExport(passport), null, 2) + '\n';
+/** SHA-256 del JSON exactamente como se descarga (UTF-8): permite comprobar que el HTML y el JSON son de la misma hoja. */
+export const passportFingerprint = (passport: Passport): string => sha256Hex(passportToJson(passport));
+export interface PassportTally { observed: number; declared: number; unverified: number; notApplicable: number; expired: number; total: number }
+export function passportTally(passport: Passport): PassportTally {
+  const claims = passport.sections.flatMap(section => section.claims);
+  return {
+    observed: claims.filter(c => c.basis === 'observed').length, declared: claims.filter(c => c.basis === 'declared').length,
+    unverified: claims.filter(c => c.basis === 'unverified').length, notApplicable: claims.filter(c => c.basis === 'not-applicable').length,
+    expired: claims.filter(c => c.currency === 'expired').length, total: claims.length,
+  };
+}
 const esc = (text: string) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-/** HTML autocontenido: escapa todo el contenido, sin scripts, sin recursos externos y con CSP restrictiva. */
+/** HTML autocontenido para enseñar a un auditor: escapa todo el contenido, sin scripts, sin recursos externos y con CSP restrictiva. */
 export function passportToHtml(passport: Passport): string {
-  const e = passportExport(passport);
-  const claim = (c: typeof e.sections[number]['claims'][number]) => '<li class="c ' + esc(c.basis) + '"><span class="b">' + esc(BASIS_LABEL[c.basis]) + (CURRENCY_LABEL[c.currency] ? ' · ' + esc(CURRENCY_LABEL[c.currency]) : '') + '</span> ' + esc(c.text) + '<small>' + esc(c.scope) + (c.at ? ' · ' + esc(when(c.at)) : '') + ' · ' + esc(SOURCE_LABEL[c.source]) + (c.context ? ' · ' + esc(c.context) : '') + '</small></li>';
-  const css = 'body{font:15px/1.5 system-ui,sans-serif;max-width:46rem;margin:1.5rem auto;padding:0 1rem;color:#0f1a2b}h1{font-size:1.4rem}h2{font-size:1.05rem;margin:1.4rem 0 .4rem}ul{list-style:none;padding:0;margin:0}.c{border-left:3px solid #8a93a6;padding:.4rem .6rem;margin:.4rem 0;background:#f4f6fa;overflow-wrap:anywhere}.c.observed{border-color:#17684a}.c.declared{border-color:#2c58dc}.c.unverified{border-color:#80510a}.b{font-weight:600}small{display:block;color:#394659}.n{background:#e8eefd;padding:.6rem;border-radius:6px}';
+  const e = passportExport(passport), tally = passportTally(passport), print = passportFingerprint(passport);
+  const badge = (basis: Basis, currency: Currency) => '<span class="b ' + esc(basis) + '">' + esc(BASIS_LABEL[basis]) + '</span>' + (CURRENCY_LABEL[currency] && currency !== 'current' ? '<span class="k ' + esc(currency) + '">' + esc(CURRENCY_LABEL[currency]) + '</span>' : '');
+  const claim = (c: typeof e.sections[number]['claims'][number]) => '<li>' + badge(c.basis, c.currency) + ' ' + esc(c.text) + '<small>' + esc(c.scope) + (c.at ? ' · ' + esc(when(c.at)) : '') + ' · ' + esc(SOURCE_LABEL[c.source]) + (c.context ? ' · ' + esc(c.context) : '') + '</small></li>';
+  const summaryRow = (s: typeof e.sections[number]) => { const first = s.claims[0]; return '<tr><th scope="row">' + esc(s.question) + '</th><td>' + (first ? badge(first.basis, first.currency) : '<span class="b unverified">Sin comprobar</span>') + '</td><td class="num">' + s.claims.length + '</td></tr>'; };
+  const css = '@page{size:A4;margin:16mm 15mm}body{font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;max-width:48rem;margin:1.5rem auto;padding:0 1rem;color:#14202b;background:#fff}'
+    + 'h1{font:600 1.6rem/1.2 Georgia,"Sitka Heading",serif;margin:0 0 .2rem}h2{font-size:.78rem;text-transform:uppercase;letter-spacing:.07em;color:#4a5765;margin:1.6rem 0 .5rem;padding-bottom:.25rem;border-bottom:1px solid #d6dce3}'
+    + 'h3{font-size:1rem;margin:1.1rem 0 .3rem}.meta{color:#4a5765;font-size:.82rem;margin:.2rem 0}.lede{margin:.6rem 0 0}'
+    + '.tally{display:flex;flex-wrap:wrap;gap:.4rem 1.6rem;margin:.4rem 0 0;font-variant-numeric:tabular-nums}.tally span{font-size:.82rem;color:#4a5765}.tally b{display:block;font-size:1.4rem;color:#14202b}'
+    + 'table{width:100%;border-collapse:collapse;font-size:.88rem}th,td{text-align:left;vertical-align:top;padding:.45rem .4rem;border-top:1px solid #e3e8ee}th{font-weight:500}.num{text-align:right;font-variant-numeric:tabular-nums;width:3.5rem}thead th{font-size:.72rem;color:#4a5765;text-transform:uppercase;letter-spacing:.05em}'
+    + 'ul{list-style:none;padding:0;margin:0}li{padding:.4rem 0;border-top:1px solid #eef1f4;overflow-wrap:anywhere}small{display:block;color:#4a5765;font-size:.78rem}'
+    + '.b,.k{display:inline-block;font-size:.7rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;padding:0 .35rem;border:1px solid currentColor;border-radius:2px;margin-right:.3rem}'
+    + '.b.observed{color:#17684a}.b.declared{color:#2c4fb8}.b.unverified{color:#80510a}.b.not-applicable{color:#5b6670}.k{color:#5b6670}.k.expired{color:#9b2c1f}'
+    + '.n{border:1px solid #c9d3e0;background:#f3f6fa;padding:.55rem .7rem;border-radius:3px;margin:.8rem 0}'
+    + 'code{font:.82rem ui-monospace,Consolas,monospace;word-spacing:.35rem;overflow-wrap:anywhere}.sign{display:grid;grid-template-columns:1fr 1fr;gap:1.4rem 2rem;margin-top:.8rem}.sign div{border-bottom:1px solid #14202b;height:2.2rem;font-size:.75rem;color:#4a5765}'
+    + 'footer{margin-top:1.8rem;font-size:.75rem;color:#4a5765}@media print{body{margin:0;max-width:none}section,li,tr{break-inside:avoid}h2{break-after:avoid}}';
   return '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pasaporte de continuidad</title><style>' + css + '</style></head><body>'
-    + '<h1>Pasaporte de continuidad</h1><p>' + esc(e.notice) + '</p><p><small>Formato ' + esc(e.format) + ' · generado ' + esc(when(e.generatedAt)) + (e.identity.installId ? ' · instalación ' + esc(e.identity.installId) : '') + '</small></p>'
+    + '<h1>Pasaporte de continuidad</h1><p class="meta">Formato ' + esc(e.format) + ' · generado ' + esc(when(e.generatedAt)) + (e.identity.installId ? ' · instalación ' + esc(e.identity.installId) : '')
+    + (e.identity.copy.captureId ? ' · copia ' + esc(shortId(e.identity.copy.captureId) ?? '') + ' del ' + esc(when(e.identity.copy.capturedAt)) + (e.identity.copy.testData ? ' · datos de ensayo' : '') : ' · sin copia activa identificada') + '</p>'
+    + '<p class="lede">' + esc(e.notice) + '</p>'
+    + '<h2>Resumen para auditoría</h2><div class="tally"><span><b>' + tally.observed + '</b>observados</span><span><b>' + tally.declared + '</b>declarados</span><span><b>' + tally.unverified + '</b>sin comprobar</span>' + (tally.expired ? '<span><b>' + tally.expired + '</b>caducados</span>' : '') + '<span><b>' + tally.total + '</b>datos en total</span></div>'
+    + '<table><thead><tr><th scope="col">Pregunta</th><th scope="col">Primer dato</th><th scope="col" class="num">Datos</th></tr></thead><tbody>' + e.sections.map(summaryRow).join('') + '</tbody></table>'
     + (e.mixedContexts ? '<p class="n">Hay observaciones de más de una copia: se muestran por separado y no se suman.</p>' : '')
     + (e.nextStep ? '<p class="n"><strong>Próximo paso:</strong> ' + esc(e.nextStep.label) + '. ' + esc(e.nextStep.reason) + '</p>' : '')
-    + e.sections.map(s => '<h2>' + esc(s.question) + '</h2><ul>' + s.claims.map(claim).join('') + '</ul>').join('')
-    + '<h2>Procedencia</h2><ul>' + e.provenance.map(r => '<li class="c"><span class="b">' + esc(SOURCE_LABEL[r.source]) + '</span> ' + esc(r.status === 'read' ? 'leído' : r.status === 'unavailable' ? 'no se pudo leer' : 'no solicitado') + '<small>' + (r.at ? esc(when(r.at)) : 'sin fecha') + (r.context ? ' · ' + esc(r.context) : '') + '</small></li>').join('') + '</ul></body></html>';
+    + '<h2>Evidencia</h2>' + e.sections.map(s => '<section><h3>' + esc(s.question) + '</h3><ul>' + s.claims.map(claim).join('') + '</ul></section>').join('')
+    + '<h2>Procedencia</h2><ul>' + e.provenance.map(r => '<li><strong>' + esc(SOURCE_LABEL[r.source]) + '</strong>: ' + esc(r.status === 'read' ? 'leído' : r.status === 'unavailable' ? 'no se pudo leer' : 'no solicitado') + '<small>' + (r.at ? esc(when(r.at)) : 'sin fecha') + (r.context ? ' · ' + esc(r.context) : '') + '</small></li>').join('') + '</ul>'
+    + '<h2>Integridad</h2><p class="meta">Huella SHA-256 del JSON de esta misma hoja, descargado a la vez desde Plan B:</p><p><code>' + print.replace(/(.{8})/g, '$1 ').trim() + '</code></p>'
+    + '<p class="meta">Para comprobarla en Windows: <code>Get-FileHash -Algorithm SHA256</code> sobre el fichero JSON. Si no coincide, alguno de los dos ficheros no corresponde a esta hoja.</p>'
+    + '<h2>Revisión</h2><div class="sign"><div>Revisado por</div><div>Cargo</div><div>Fecha</div><div>Firma</div></div>'
+    + '<footer>Sin fichas, credenciales ni rutas del equipo: solo afirmaciones con su base, su vigencia y su origen.</footer></body></html>';
 }

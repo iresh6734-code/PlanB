@@ -1,8 +1,14 @@
 ﻿# Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026, 14:10, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1, V2, V3 y V5 hechas. Oleada 3: H2 y H4 hechas; H1 aplazada (requiere e2e). Continuidad: C2 y C5 hechas. Negocio: M1 y M3 hechas.
+Última revisión: **19/11/2026, 14:15, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1, V2, V3 y V5 hechas. Oleada 3: H2 y H4 hechas; H1 aplazada (requiere e2e). Continuidad: C2 y C5 hechas. Negocio: M1, M2 y M3 hechas.
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
+
+## Super plan M2 · Pasaporte para auditoría · 19/11/2026, 14:15, Europe/Madrid
+
+- `passportToHtml` reescrito como hoja de auditoría; conserva la lista blanca de `passportExport`, el escape, la CSP `default-src 'none'` y todos los textos de las afirmaciones. Ya no usa franjas laterales de color: insignias con borde por base y vigencia.
+- Nuevos `passportTally` y `passportFingerprint` (SHA-256 de `passportToJson` tal cual se descarga en UTF-8). `shared/sha256.ts` es puro y síncrono; su prueba lo contrasta con `node:crypto`.
+- `tests/e2e/source-reading-history.spec.ts` fija la huella del fichero `continuity-passport.ts` y cae a una copia congelada: no se ha ejecutado (sin e2e aquí).
 
 ## Super plan C2 · Lista imprimible de recuperación manual · 19/11/2026, 14:10, Europe/Madrid
 

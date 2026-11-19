@@ -27,6 +27,8 @@
 .cpp-counts{font-weight:400;margin-left:4px}
 .cpp-prov{margin-top:16px;border-top:1px solid var(--border,#e0e5ee);padding-top:6px}
 .cpp-export-note{margin:8px 0;color:var(--text-2,#394659);font-size:13px}
+.cpp-fingerprint{margin:0 0 10px;color:var(--text-3,#4a5765);font-size:12px}
+.cpp-fingerprint code{font-family:ui-monospace,Consolas,monospace;color:var(--text-2,#394659)}
 .cpp-actions{display:flex;flex-wrap:wrap;gap:8px}
 .cpp-notice{margin:8px 0 0;padding:6px 10px;border-radius:6px;background:var(--success-bg,#e2f3ea)}
 body .cpp .button{display:inline-flex;align-items:center;justify-content:center;min-height:var(--control-h,32px);height:auto;padding-block:6px;max-width:100%;text-align:center}

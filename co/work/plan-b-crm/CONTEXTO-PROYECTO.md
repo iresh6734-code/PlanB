@@ -1,3 +1,7 @@
+# Base compartida para el segundo equipo · 19/11/2026
+
+Esta rama contiene Plan B 0.6.0 y la landing verificada. La fuente de partida es el corte confirmado f4bd239 más las fuentes de la landing cotejadas. Cada equipo trabaja en su propio clon, con datos ficticios y una rama por tarea. Acordad las rutas a modificar en el pull request antes de editar. Consulta AGENTS.md y README.md para los límites y el arranque. Las notas que siguen corresponden al historial anterior del repositorio.
+
 # Plan B · Contexto y continuidad del proyecto
 
 Última revisión: **26 de octubre de 2026, Europe/Madrid**.

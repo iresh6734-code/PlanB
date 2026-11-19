@@ -8,22 +8,39 @@ import { hubspotRemote } from './hubspot-remote.js';
 import { lockInstance } from './instance.js';
 import { inspectConnection } from './connection.js';
 import { publishEndpoint } from './endpoint.js';
+import { registerTeamSync } from './team-sync.js';
+import { registerCopyInspection } from './copy-inspection.js';
+import { mountHubspotReadCheck } from './hubspot-read-check-mount.js';
+import { mountRelayRehearsal } from './relay-rehearsal-mount.js';
+import { registerTaskIntents } from './task-intents-api.js';
+import { mountSharedModules } from './modules.js';
+import { registerCsvImport } from './csv-import.js';
 
 const root = process.cwd();
 const releaseLock=lockInstance(resolve(process.env.PLANB_DATA_DIR || join(root,'data')));
 if (existsSync(join(root, '.env.local'))) process.loadEnvFile(join(root, '.env.local'));
 const providers = new ProviderSettings(join(root, '.ai.local.json'));
-const { app, store } = await createBaseApp({
+const { app, store, security } = await createBaseApp({
   dbPath: resolve(process.env.PLANB_DATA_DIR || join(root, 'data'), 'planb.sqlite'),
   root, staticDir: join(root, 'dist'),
+  taskRevisions: true,
   aiConfigured: () => !!providers.read(),
   aiPublic: () => providers.public(),
   hubspotConfigured: () => !!process.env.PLANB_HUBSPOT_TOKEN
   ,external:{capture:importHubspot,remote:hubspotRemote,inspect:inspectConnection}
 });
+mountHubspotReadCheck(app, store, security);
+mountRelayRehearsal(app, store, security);
 registerGenerator(app, store, providers);
+registerCopyInspection(app,store);
+registerTaskIntents(app, store);
+// Módulos compartidos con la App portátil (evidencia, Laboratorio, resumen de trabajo): ver server/modules.ts.
+mountSharedModules(app, store);
+// Importar registros desde CSV (vista previa y aplicación con marca): ver server/csv-import.ts.
+registerCsvImport(app, store);
+registerTeamSync(app,store,process.env.PLANB_TEAM_ORIGIN,process.env.PLANB_TEAM_DEMO==='1');
 const seed = join(root, 'demo.seed.json');
-if (!store.snapshot && existsSync(seed)) store.restoreBundle(JSON.parse(readFileSync(seed, 'utf8')));
+if (!store.snapshot && store.recoveryIntegrity().state!=='invalid' && existsSync(seed)) store.restoreBundle(JSON.parse(readFileSync(seed, 'utf8')));
 let port = Number(process.env.PLANB_PORT || 4317);
 for (;;) {
   try { await app.listen({ host: '127.0.0.1', port }); break; }

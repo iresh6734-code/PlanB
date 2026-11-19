@@ -1,0 +1,25 @@
+/* Kit de Relevo · estilos propios acotados a .rc (sin tocar estilos globales). Identidad de DESIGN.md: tinta oscura, azul de acción, blanco/gris. */
+.rc { --ink: #19314f; --ink-2: #52627a; --line: #d9e1eb; --canvas: #f2f4f7; --card: #fffefd; --blue: #2858dc; --blue-soft: #e6edff; --ok: #216448; --ok-bg: #edf6f0; --warn: #835c1c; --warn-bg: #fff7e8; --err: #a2343f; --err-bg: #fff1f1;
+  font: 14px/1.5 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; color: var(--ink); background: var(--canvas); min-height: 100vh; padding: 16px; box-sizing: border-box; max-width: 960px; margin: 0 auto; }
+.rc *, .rc *::before, .rc *::after { box-sizing: border-box; overflow-wrap: anywhere; }
+.rc h1 { font-size: 24px; line-height: 30px; margin: 0; font-weight: 600; } .rc h2 { font-size: 16px; margin: 0 0 8px; font-weight: 600; } .rc h3 { font-size: 14px; margin: 12px 0 4px; }
+.rc-head, .rc-card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 16px; margin-bottom: 16px; min-width: 0; }
+.rc-sub, .rc-hint { color: var(--ink-2); margin: 4px 0; font-size: 13px; }
+.rc-banner { background: var(--warn-bg); color: var(--warn); border: 1px solid #e6cf92; border-radius: 4px; padding: 8px 12px; font-weight: 600; margin: 8px 0; }
+.rc-steps { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; padding: 0; margin: 0 0 12px; }
+.rc-steps li { border: 1px solid var(--line); border-radius: 999px; background: #fff; } .rc-steps li.now { background: var(--blue-soft); border-color: var(--blue); } .rc-steps li.done { background: var(--ok-bg); }
+.rc-link { background: none; border: 0; min-height: 44px; padding: 0 16px; font: inherit; color: var(--ink); cursor: pointer; font-weight: 600; }
+.rc-live { min-height: 22px; color: var(--ok); margin-bottom: 8px; }
+.rc-alert { background: var(--err-bg); color: var(--err); border: 1px solid #efbab6; border-radius: 4px; padding: 10px 12px; margin-bottom: 16px; }
+.rc-btn { min-height: 44px; padding: 0 16px; border: 1px solid #818c9f; border-radius: 6px; background: #fff; color: var(--ink); font: inherit; cursor: pointer; display: inline-flex; align-items: center; text-decoration: none; }
+.rc-btn.primary { background: var(--blue); border-color: var(--blue); color: #fff; font-weight: 600; } .rc-btn:disabled { opacity: .55; cursor: not-allowed; }
+.rc button:focus-visible, .rc a:focus-visible, .rc input:focus-visible, .rc [tabindex]:focus-visible { outline: 3px solid #1c3c9c; outline-offset: 2px; }
+.rc-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0; }
+.rc-field { display: grid; gap: 4px; margin: 8px 0; font-size: 13px; font-weight: 600; } .rc-field input { min-height: 44px; padding: 8px 10px; border: 1px solid #818c9f; border-radius: 6px; font: inherit; width: 100%; max-width: 420px; }
+.rc-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px 16px; margin: 8px 0; } .rc-facts dt { font-size: 12px; color: var(--ink-2); } .rc-facts dd { margin: 0; }
+.rc-result { border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; margin: 12px 0; background: #f9fbfd; }
+.rc-fieldset { border: 1px solid var(--line); border-radius: 6px; margin: 0 0 8px; padding: 8px 12px; } .rc-radio, .rc-check { display: flex; gap: 8px; align-items: center; min-height: 44px; } .rc-radio input, .rc-check input { width: 22px; height: 22px; }
+.rc code { background: #eaf0f6; padding: 1px 6px; border-radius: 4px; }
+.rc-loading { display: grid; place-items: center; }
+@media (max-width: 480px) { .rc { padding: 8px; } .rc-btn { width: 100%; justify-content: center; } .rc h1 { font-size: 22px; } .rc-field input { max-width: none; } }
+@media (prefers-reduced-motion: reduce) { .rc * { animation: none !important; transition: none !important; } }

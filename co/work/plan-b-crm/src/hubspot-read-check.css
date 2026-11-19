@@ -1,0 +1,15 @@
+.hrc{margin-top:12px;padding:16px;border:1px solid var(--border,#e0e5ee);border-radius:10px;background:var(--bg-surface,#fff);font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+.hrc-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.hrc h4{margin:0;font-size:14px}
+.hrc p{margin:8px 0;max-width:78ch}
+.hrc .hrc-status{font-weight:600;color:var(--text-1,#0f1a2b)}
+.hrc-issue{color:var(--warning,#80510a)}
+.hrc-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}
+.hrc-observation{padding-top:8px;border-top:1px solid var(--border,#e0e5ee);color:var(--text-2,#394659)}
+.hrc-observation dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 16px;margin:8px 0}
+.hrc-observation dt{font-weight:600}
+.hrc-observation dd{margin:0}
+.hrc-consent{margin:16px 0 0;padding:12px 16px;border:1px solid var(--info-border,#c4d3f2);border-radius:8px;background:var(--info-bg,#e8eefd)}
+.hrc-consent legend{font-weight:600;padding:0 6px}
+.hrc button{min-height:44px}
+@media(max-width:600px){.hrc{padding:14px 12px}.hrc-actions{align-items:stretch;flex-direction:column}.hrc-consent{padding:12px}.hrc-heading{align-items:flex-start;flex-direction:column}}

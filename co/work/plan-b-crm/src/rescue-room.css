@@ -1,0 +1,53 @@
+/* Modo Rescate · estilos propios y acotados a .rr (sin tocar estilos globales). Identidad de DESIGN.md: tinta oscura, azul de acción, blanco/gris. */
+.rr { --ink: #19314f; --ink-2: #52627a; --line: #d9e1eb; --canvas: #f2f4f7; --card: #fffefd; --blue: #2858dc; --blue-soft: #e6edff; --ok: #216448; --ok-bg: #edf6f0; --warn: #835c1c; --warn-bg: #fff7e8; --err: #a2343f; --err-bg: #fff1f1;
+  font: 14px/1.5 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; color: var(--ink); background: var(--canvas); min-height: 100vh; padding: 16px; box-sizing: border-box; max-width: 1280px; margin: 0 auto; }
+.rr *, .rr *::before, .rr *::after { box-sizing: border-box; overflow-wrap: anywhere; }
+.rr h1 { font-size: 24px; line-height: 30px; margin: 0; font-weight: 600; }
+.rr h2 { font-size: 16px; line-height: 22px; margin: 0 0 8px; font-weight: 600; }
+.rr h3 { font-size: 14px; margin: 12px 0 4px; }
+.rr section, .rr aside, .rr header { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 16px; margin-bottom: 16px; min-width: 0; }
+.rr-head { display: grid; gap: 12px; }
+.rr-sub, .rr-hint { color: var(--ink-2); margin: 4px 0; font-size: 13px; }
+.rr-banner { background: var(--warn-bg); color: var(--warn); border: 1px solid #e6cf92; border-radius: 4px; padding: 8px 12px; font-weight: 600; margin: 0; }
+.rr-prov { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 8px 16px; margin: 0; }
+.rr-prov dt { font-size: 12px; color: var(--ink-2); } .rr-prov dd { margin: 0; overflow-wrap: anywhere; }
+.rr-live { min-height: 22px; color: var(--ok); margin: 0 0 8px; }
+.rr-alert { background: var(--err-bg); color: var(--err); border: 1px solid #efbab6; border-radius: 4px; padding: 10px 12px; margin-bottom: 16px; }
+.rr-rail { display: flex; flex-wrap: wrap; gap: 4px 8px; list-style: none; padding: 0; margin: 8px 0 12px; }
+.rr-rail li { padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-2); font-size: 12px; }
+.rr-rail li.now { background: var(--blue-soft); border-color: var(--blue); color: var(--blue); font-weight: 600; } .rr-rail li.done { background: var(--ok-bg); color: var(--ok); }
+.rr-btn { min-height: 44px; padding: 0 16px; border: 1px solid #818c9f; border-radius: 6px; background: #fff; color: var(--ink); font: inherit; cursor: pointer; display: inline-flex; align-items: center; text-decoration: none; }
+.rr-btn.primary { background: var(--blue); border-color: var(--blue); color: #fff; font-weight: 600; }
+.rr-btn:disabled { opacity: .55; cursor: not-allowed; }
+.rr button:focus-visible, .rr a:focus-visible, .rr input:focus-visible, .rr select:focus-visible, .rr textarea:focus-visible, .rr [tabindex]:focus-visible { outline: 3px solid #1c3c9c; outline-offset: 2px; }
+.rr-chip { min-height: 44px; padding: 0 16px; border: 1px solid #818c9f; border-radius: 999px; background: #fff; color: var(--ink); font: inherit; cursor: pointer; }
+.rr-chip[aria-pressed="true"] { background: var(--blue); color: #fff; border-color: var(--blue); }
+.rr-chip:disabled { opacity: .55; cursor: not-allowed; }
+.rr-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0; }
+.rr-field { display: grid; gap: 4px; margin: 8px 0; font-size: 13px; font-weight: 600; } .rr-field.inline { display: inline-grid; margin: 0; }
+.rr-field input, .rr-field select, .rr-field textarea { min-height: 44px; padding: 8px 10px; border: 1px solid #818c9f; border-radius: 6px; font: inherit; font-weight: 400; background: #fff; color: var(--ink); width: 100%; max-width: 100%; }
+.rr-check { display: inline-flex; gap: 8px; align-items: center; min-height: 44px; } .rr-check input { width: 22px; height: 22px; }
+.rr-err { color: var(--err); font-weight: 400; }
+.rr-tag { display: inline-block; padding: 1px 8px; border-radius: 999px; background: #eaf0f6; color: var(--ink); font-size: 12px; margin-right: 4px; }
+.rr-tag.ok { background: var(--ok-bg); color: var(--ok); } .rr-tag.overdue { background: var(--err-bg); color: var(--err); } .rr-tag.due-in-window { background: var(--warn-bg); color: var(--warn); }
+.rr-cols { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: 16px; align-items: start; }
+.rr-cols > * { margin-bottom: 0 !important; }
+.rr-scroll { position: relative; overflow: auto; max-width: 100%; border: 1px solid var(--line); border-radius: 6px; max-height: 70vh; }
+.rr table { width: 100%; border-collapse: collapse; min-width: 560px; }
+.rr th, .rr td { text-align: left; padding: 8px 10px; border-top: 1px solid var(--line); vertical-align: top; }
+.rr thead th { position: sticky; top: 0; background: #eaf0f6; border-top: 0; font-size: 12px; z-index: 1; }
+.rr tr.sel { background: var(--blue-soft); } .rr tr.conflict { background: var(--warn-bg); }
+.rr small { display: block; color: var(--ink-2); font-size: 12px; font-weight: 400; }
+.rr-link { background: none; border: 0; padding: 0; min-height: 32px; color: var(--blue); font: inherit; font-weight: 600; text-align: left; cursor: pointer; text-decoration: underline; }
+.rr-decision { border: 0; padding: 0; margin: 0; display: grid; gap: 4px; } .rr-decision label { display: flex; gap: 6px; align-items: center; min-height: 32px; }
+.rr-decision input { width: 20px; height: 20px; }
+.rr-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.rr-uncertain { border: 1px solid #e6cf92; background: var(--warn-bg); border-radius: 6px; padding: 12px; margin-top: 12px; }
+.rr-preview { border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; margin: 8px 0; background: #f9fbfd; }
+.rr-journal ol { padding-left: 20px; margin: 0; max-height: 320px; overflow: auto; } .rr-journal li { margin: 4px 0; }
+.rr fieldset { border: 1px solid var(--line); border-radius: 6px; margin: 0 0 8px; padding: 8px 12px; min-width: 0; } .rr legend { font-size: 12px; color: var(--ink-2); padding: 0 4px; }
+.rr-plan-list { margin: 4px 0; padding-left: 20px; }
+.rr-loading { display: grid; place-items: center; }
+@media (max-width: 980px) { .rr-cols { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 480px) { .rr { padding: 8px; } .rr section, .rr aside, .rr header { padding: 12px; } .rr-btn, .rr-chip { width: 100%; justify-content: center; } .rr h1 { font-size: 22px; } }
+@media (prefers-reduced-motion: reduce) { .rr * { animation: none !important; transition: none !important; } }

@@ -16,7 +16,7 @@ export type SavedConnection=z.infer<typeof ConnectionSchema>;
 export function readonlyFetch(fetcher:typeof fetch):typeof fetch {
   return async(input,init)=>{
     const url=new URL(String(input)),method=(init?.method??'GET').toUpperCase();
-    const allowedPost=/^\/crm\/((objects\/2026-09|v3\/objects)\/(contacts|companies|deals|tasks)\/search|(associations\/2026-09|v4\/associations)\/(contacts|companies|deals|tasks)\/(contacts|companies|deals|tasks)\/batch\/read)$/.test(url.pathname);
+    const allowedPost=/^\/crm\/((objects\/2026-09|v3\/objects)\/(contacts|companies|deals|tasks)\/search|objects\/2026-09\/(notes|meetings|calls|emails)\/search|(associations\/2026-09|v4\/associations)\/(contacts|companies|deals|tasks)\/(contacts|companies|deals|tasks)\/batch\/read)$/.test(url.pathname);
     if(url.origin!=='https://api.hubapi.com'||!(method==='GET'||method==='POST'&&allowedPost))throw new AppError(403,'Esta conexión solo permite lecturas de HubSpot.');
     return fetcher(input,{...init,redirect:'error'});
   };
@@ -26,7 +26,7 @@ export async function inspectConnection(connection:SavedConnection,fetcher:typeo
   const safe=readonlyFetch(fetcher);
   async function get(path:string){
     const response=await safe('https://api.hubapi.com'+path,{headers:{Authorization:'Bearer '+connection.token},signal:AbortSignal.timeout(30000)});
-    if(!response.ok)throw new AppError(response.status===401||response.status===403?response.status:502,response.status===401?'HubSpot no aceptó la credencial. Vuelve a copiarla.':response.status===403?'Faltan permisos de lectura. Revisa el alcance de la clave.':'HubSpot no confirmó la lectura. Reintenta conservando tu copia.');
+    if(!response.ok)throw new AppError(response.status===403?403:502,response.status===401?'HubSpot no aceptó la credencial. Vuelve a copiarla.':response.status===403?'Faltan permisos de lectura. Revisa el alcance de la clave.':'HubSpot no confirmó la lectura. Reintenta conservando tu copia.');
     return response.json();
   }
   const account=await get('/account-info/2026-09/details');

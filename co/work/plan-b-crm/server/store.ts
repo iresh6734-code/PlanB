@@ -4,6 +4,7 @@ import { dirname } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { localKey, open, seal } from './crypto.js';
 import type { RecoveryPlan } from '../shared/operations.js';
+import {inspectPersistedRecoveryPlan,INVALID_RECOVERY_MESSAGE} from '../shared/recovery-integrity.js';
 import {
   AppSpecSchema, BundleSchema, RecordSchema, SnapshotSchema, reconcile, validateRecord, validateSpec,
   type AppSpec, type Change, type ContinuityBundle, type CrmRecord, type CrmSnapshot,
@@ -16,6 +17,19 @@ export class AppError extends Error {
 export class Store {
   db: DatabaseSync;
   private key: Buffer | null;
+  private recoveryCache:{encoded:string|null;state:ReturnType<typeof inspectPersistedRecoveryPlan>}|null=null;
+  /**
+   * Texto descifrado de filas de `records`, indexado por el texto cifrado exacto (LRU con topes).
+   * Solo la usan records() y record(): metadatos (réplica, credenciales, diarios), archivos y capturas
+   * se descifran en cada lectura como siempre y nunca quedan retenidos aquí (CODEX-STORE-REVIEW-357).
+   * Cada escritura sella con un IV nuevo, así que cualquier cambio —de esta conexión, de otra o de otro
+   * proceso— produce otra clave: nunca se sirve contenido antiguo y no hace falta invalidar. El JSON se
+   * analiza en cada llamada, de modo que quien llama recibe siempre objetos nuevos.
+   */
+  private plainCache=new Map<string,string>();
+  private plainCacheChars=0;
+  // entry: un registro anómalamente grande no se guarda, para no expulsar de golpe todo lo demás.
+  private plainCacheLimit={entries:4*MAX_RECORDS,chars:48*1024*1024,entry:16*1024*1024};
   constructor(public filename: string) {
     if (filename !== ':memory:') mkdirSync(dirname(filename), { recursive: true });
     this.key = filename === ':memory:' ? null : localKey(dirname(filename));
@@ -33,19 +47,46 @@ export class Store {
     // A killed generation must not silently release its worst-case reservation.
     this.db.prepare("UPDATE usage SET status='interrupted' WHERE status='pending'").run();
   }
-  close() { this.db.close(); }
+  close() { this.forgetPlain(); this.db.close(); }
+  /** Olvida todo el texto descifrado; se llama al vaciar la tabla de registros (coherente con secure_delete). */
+  private forgetPlain() { this.plainCache.clear(); this.plainCacheChars = 0; }
   encode(value: unknown) { const text = JSON.stringify(value); return this.key ? seal(text, this.key) : text; }
   decode<T>(value: string): T { return JSON.parse(this.key ? open(value,this.key) : value) as T; }
+  /** Solo para filas de `records`: usa la caché de texto descifrado. Metadatos, archivos y diarios siguen por decode(). */
+  private decodeRecord(value: string): CrmRecord { return JSON.parse(this.key ? this.plain(value) : value) as CrmRecord; }
+  private plain(value: string): string {
+    if (!value.startsWith('enc1:')) return open(value, this.key!);
+    const cached = this.plainCache.get(value);
+    if (cached !== undefined) { this.plainCache.delete(value); this.plainCache.set(value, cached); return cached; }
+    const text = open(value, this.key!), size = value.length + text.length, limit = this.plainCacheLimit;
+    if (size > limit.entry || size > limit.chars) return text;
+    this.plainCache.set(value, text); this.plainCacheChars += size;
+    for (const [oldest, old] of this.plainCache) {
+      if (this.plainCache.size <= limit.entries && this.plainCacheChars <= limit.chars) break;
+      this.plainCache.delete(oldest); this.plainCacheChars -= oldest.length + old.length;
+    }
+    return text;
+  }
   private migrateEncryption() {
     if (!this.key) return;
     let changed = false;
     this.transaction(() => {
       for (const [table, columns] of Object.entries({ meta: ['value'], records: ['value'], changes: ['before_json','after_json'], archives: ['bundle'], captures: ['payload'] })) {
-        const rows = this.db.prepare('SELECT rowid AS rid,' + columns.join(',') + ' FROM ' + table).all() as Record<string, string | number | null>[];
+        const rows = this.db.prepare('SELECT rowid AS rid,' + (table === 'meta' ? 'key,' : '') + columns.join(',') + ' FROM ' + table).all() as Record<string, string | number | null>[];
         for (const row of rows) for (const column of columns) {
           const value = row[column];
           if (typeof value === 'string' && !value.startsWith('enc1:')) {
-            JSON.parse(value);
+            const recoveryPlanRow = table === 'meta' && row.key === 'recoveryPlan';
+            let parsed: unknown;
+            try { parsed = JSON.parse(value); }
+            catch (error) {
+              // The journal reader quarantines unreadable entries individually. Leave the original bytes available to it.
+              const journalRow = table === 'meta' && typeof row.key === 'string' && row.key.startsWith('task-intent:');
+              if (recoveryPlanRow || journalRow) continue;
+              throw error;
+            }
+            // Preserve invalid recovery evidence exactly; its reader exposes the fixed R1 diagnostic.
+            if (recoveryPlanRow && inspectPersistedRecoveryPlan(parsed).integrity.state === 'invalid') continue;
             this.db.prepare('UPDATE ' + table + ' SET ' + column + '=? WHERE rowid=?').run(seal(value,this.key!),row.rid);
             changed = true;
           }
@@ -61,6 +102,18 @@ export class Store {
   set(key: string, value: unknown) {
     this.db.prepare('INSERT INTO meta(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run(key, this.encode(value));
   }
+  private checkedRecoveryState(){
+    const row=this.db.prepare('SELECT value FROM meta WHERE key=?').get('recoveryPlan') as {value:string}|undefined,encoded=row?.value??null;
+    if(!this.recoveryCache||this.recoveryCache.encoded!==encoded){
+      let raw:unknown=null;try{if(encoded!==null)raw=this.decode<unknown>(encoded);}catch{raw=undefined;}
+      this.recoveryCache={encoded,state:inspectPersistedRecoveryPlan(raw)};
+    }
+    return this.recoveryCache.state;
+  }
+  recoveryIntegrity(){return {...this.checkedRecoveryState().integrity};}
+  recoveryState(){const state=this.checkedRecoveryState();return {integrity:{...state.integrity},plan:state.plan?structuredClone(state.plan):null};}
+  assertRecoveryIntegrity(){if(this.checkedRecoveryState().integrity.state==='invalid')throw new AppError(409,INVALID_RECOVERY_MESSAGE,{code:'RECOVERY_PLAN_INVALID'});}
+  validatedRecoveryPlan(){const state=this.checkedRecoveryState();if(state.integrity.state==='invalid')throw new AppError(409,INVALID_RECOVERY_MESSAGE,{code:'RECOVERY_PLAN_INVALID'});return state.plan?structuredClone(state.plan):null;}
   get snapshot() { return this.get<CrmSnapshot | null>('snapshot', null); }
   get spec() { return this.get<AppSpec | null>('spec', null); }
   get generation() { return this.get<Generation | null>('generation', null); }
@@ -69,6 +122,21 @@ export class Store {
   get ready() {
     return !!(this.snapshot && this.spec && this.generation?.approved &&
       this.reconciliation?.complete);
+  }
+  /** Identidad del último cambio local (sin descifrar nada), o null si no hay. */
+  latestChange(): { id: number; at: string; entity: EntityName; recordId: string } | null {
+    const row = this.db.prepare('SELECT id, at, entity, record_id FROM changes ORDER BY id DESC LIMIT 1').get() as { id: number; at: string; entity: EntityName; record_id: string } | undefined;
+    return row ? { id: Number(row.id), at: row.at, entity: row.entity, recordId: row.record_id } : null;
+  }
+  /**
+   * Época de la copia activa (CLAUDE-UNDO-LAST R3, revisión 399): cambia en cada restauración, aunque se restaure la misma
+   * copia con su misma sesión. Va en la etiqueta de cada cambio para que una etiqueta anterior a Restaurar no valga después,
+   * aunque coincidan su ID y su fecha.
+   */
+  copyEpoch(): string {
+    const current = this.get<string>('copyEpoch', '');
+    if (current) return current;
+    const created = randomUUID(); this.set('copyEpoch', created); return created;
   }
   get changesCount() {
     return Number((this.db.prepare('SELECT COUNT(*) AS n FROM changes').get() as { n: number }).n);
@@ -83,6 +151,7 @@ export class Store {
     catch (error) { this.db.exec('ROLLBACK'); throw error; }
   }
   importSnapshot(raw: unknown, replace = false): Reconciliation {
+    this.assertRecoveryIntegrity();
     if(this.get('returnBusy',false))throw new AppError(409,'Hay una devolución en curso.');
     if(this.get('continuitySession',null))throw new AppError(409,'Cierra la sesión de continuidad antes de importar otra captura.');
     const parsed = SnapshotSchema.safeParse(raw);
@@ -107,9 +176,10 @@ export class Store {
       return report;
     }
     this.transaction(() => {
+      this.assertRecoveryIntegrity();
       const existing = this.bundleOrNull();
       if (existing) this.db.prepare('INSERT INTO archives(id,at,bundle) VALUES(?,?,?)').run(randomUUID(), new Date().toISOString(), this.encode(existing));
-      this.db.exec('DELETE FROM records; DELETE FROM changes;');
+      this.db.exec('DELETE FROM records; DELETE FROM changes;'); this.forgetPlain();
       for (const record of snapshot.records) this.insertRecord(record);
       this.set('snapshot', snapshot); this.set('reconciliation', report);
       this.set('spec', null); this.set('generation', null); this.set('lastError', null);
@@ -120,6 +190,7 @@ export class Store {
     return report;
   }
   saveGeneration(raw: unknown, generation: Generation) {
+    this.assertRecoveryIntegrity();
     if(this.get('returnBusy',false))throw new AppError(409,'Hay una devolución en curso.');
     if(this.get('continuitySession',null))throw new AppError(409,'La generación queda pausada durante una sesión de continuidad.');
     const candidate = this.candidate;
@@ -132,8 +203,8 @@ export class Store {
       this.failGeneration('La generación no superó la validación.');
       throw new AppError(422, 'La aplicación no está preparada. Revisa la generación.', errors);
     }
-    if (this.ready) this.set('candidate', { ...(candidate ?? { snapshot, reconciliation: this.reconciliation!, replaceRecords: false, replaceApproved: false, baselineChanges: this.changesCount }), spec: parsed.data, generation: { ...generation, approved: false }, error: null });
-    else this.transaction(() => { this.set('spec', parsed.data); this.set('generation', { ...generation, approved: false }); this.set('lastError', null); });
+    if (this.ready) this.transaction(()=>{this.assertRecoveryIntegrity();this.set('candidate', { ...(candidate ?? { snapshot, reconciliation: this.reconciliation!, replaceRecords: false, replaceApproved: false, baselineChanges: this.changesCount }), spec: parsed.data, generation: { ...generation, approved: false }, error: null });});
+    else this.transaction(() => { this.assertRecoveryIntegrity();this.set('spec', parsed.data); this.set('generation', { ...generation, approved: false }); this.set('lastError', null); });
   }
   get candidate() { return this.get<{ snapshot: CrmSnapshot; reconciliation: Reconciliation; spec: AppSpec | null; generation: Generation | null; error: string | null; replaceRecords: boolean; replaceApproved: boolean; baselineChanges: number } | null>('candidate',null); }
   failGeneration(message: string) {
@@ -144,6 +215,7 @@ export class Store {
     } else this.set('lastError', message);
   }
   activate() {
+    this.assertRecoveryIntegrity();
     if(this.get('continuitySession',null))throw new AppError(409,'Cierra la sesión de continuidad antes de activar otra versión.');
     const candidate = this.candidate;
     const spec = candidate?.spec ?? (!candidate ? this.spec : null), snapshot = candidate?.snapshot ?? this.snapshot, generation = candidate?.generation ?? (!candidate ? this.generation : null);
@@ -160,10 +232,11 @@ export class Store {
       throw new AppError(422, 'No se puede activar todavía.', errors.slice(0, 50));
     }
     this.transaction(() => {
+      this.assertRecoveryIntegrity();
       if (candidate) {
         const old = this.bundleOrNull();
         if (old) this.db.prepare('INSERT INTO archives(id,at,bundle) VALUES(?,?,?)').run(randomUUID(),new Date().toISOString(),this.encode(old));
-        if (candidate.replaceRecords) { this.db.exec('DELETE FROM records; DELETE FROM changes;'); for (const record of snapshot.records) this.insertRecord(record);this.resetReturnState(); }
+        if (candidate.replaceRecords) { this.db.exec('DELETE FROM records; DELETE FROM changes;'); this.forgetPlain(); for (const record of snapshot.records) this.insertRecord(record);this.resetReturnState(); }
         this.set('snapshot',snapshot); this.set('spec',spec); this.set('reconciliation',candidate.reconciliation);
       }
       this.set('generation', { ...generation, approved: true }); this.set('candidate',null); this.set('lastError',null);
@@ -176,16 +249,21 @@ export class Store {
   records(entity?: EntityName): CrmRecord[] {
     const rows = entity ? this.db.prepare('SELECT value FROM records WHERE entity=? ORDER BY rowid').all(entity)
       : this.db.prepare('SELECT value FROM records ORDER BY rowid').all();
-    return (rows as { value: string }[]).map(r => this.decode<CrmRecord>(r.value));
+    return (rows as { value: string }[]).map(r => this.decodeRecord(r.value));
   }
   record(entity: EntityName, id: string): CrmRecord | null {
     const row = this.db.prepare('SELECT value FROM records WHERE entity=? AND id=?').get(entity, id) as { value: string } | undefined;
-    return row ? this.decode<CrmRecord>(row.value) : null;
+    return row ? this.decodeRecord(row.value) : null;
   }
-  saveRecord(entity: EntityName, values: CrmRecord['values'], id?: string): CrmRecord {
-    if(!id&&this.records().length>=MAX_RECORDS)throw new AppError(413,'El piloto admite hasta 10.000 registros totales.');
+  /**
+   * Guarda un registro y anota su cambio. Opciones (CLAUDE-UNDO-LAST R2): `guard` se ejecuta DENTRO de la misma transacción
+   * (BEGIN IMMEDIATE) antes de escribir y puede lanzar para abortar sin cambios; `onChange` recibe la identidad del cambio creado.
+   */
+  saveRecord(entity: EntityName, values: CrmRecord['values'], id?: string, options?: { guard?: () => void; onChange?: (change: { id: number; at: string; copy: string }) => void }): CrmRecord {
+    this.assertRecoveryIntegrity();
+    if(!id&&Number((this.db.prepare('SELECT COUNT(*) AS n FROM records').get() as {n:number}).n)>=MAX_RECORDS)throw new AppError(413,'El piloto admite hasta 10.000 registros totales.');
     if(this.get('returnBusy',false))throw new AppError(409,'Espera a que termine la devolución revisada.');
-    const plan=this.get<RecoveryPlan|null>('recoveryPlan',null);
+    const plan=this.validatedRecoveryPlan();
     if(plan&&plan.status!=='complete'&&plan.operations.some(o=>['applied','sending','uncertain'].includes(o.status)))throw new AppError(409,'Resuelve la devolución parcial antes de seguir editando. Tus cambios actuales se conservan.');
     if (!this.ready || !this.spec) throw new AppError(409, 'Revisa y activa primero la aplicación.');
     const previous = id ? this.record(entity, id) : null;
@@ -201,12 +279,18 @@ export class Store {
       if (!previous && field.readOnly && value !== undefined && value !== null && value !== '') errors[field.key] = 'Este campo no se puede crear manualmente.';
     }
     if (Object.keys(errors).length) throw new AppError(422, 'Revisa los campos señalados.', errors);
+    let changeIdentity: { id: number; at: string; copy: string } | null = null;
     this.transaction(() => {
+      this.assertRecoveryIntegrity();
+      options?.guard?.();
       this.insertRecord(record);
-      this.db.prepare('INSERT INTO changes(at,entity,record_id,operation,before_json,after_json) VALUES(?,?,?,?,?,?)')
-        .run(new Date().toISOString(), entity, record.id, previous ? 'update' : 'create', previous ? this.encode(previous) : null, this.encode(record));
+      const at = new Date().toISOString();
+      const inserted = this.db.prepare('INSERT INTO changes(at,entity,record_id,operation,before_json,after_json) VALUES(?,?,?,?,?,?)')
+        .run(at, entity, record.id, previous ? 'update' : 'create', previous ? this.encode(previous) : null, this.encode(record));
       this.set('returnComplete',false);
+      changeIdentity = { id: Number(inserted.lastInsertRowid), at, copy: this.copyEpoch() };
     });
+    if (changeIdentity) options?.onChange?.(changeIdentity);
     return record;
   }
   changes(): Change[] {
@@ -219,9 +303,10 @@ export class Store {
     }));
   }
   bundleOrNull(): ContinuityBundle | null {
+    this.assertRecoveryIntegrity();
     const snapshot = this.snapshot, spec = this.spec, generation = this.generation;
     if (!snapshot || !spec || !generation) return null;
-    const plan=this.get<RecoveryPlan|null>('recoveryPlan',null);
+    const plan=this.validatedRecoveryPlan();
     const manualReport=this.get<NonNullable<ContinuityBundle['returnState']>['manualReport']|null>('manualRecoveryReport',null);
     return { format: snapshot.version===3?'planb-continuity-v3':'planb-continuity-v2', exportedAt: new Date().toISOString(), sessionId: this.get('sessionId',''),
       returnState:{accountId:snapshot.source.accountId,watermark:this.get('returnWatermark:hubspot',0),mapping:this.get('remoteMapping:hubspot',{}),plan:plan?.source==='hubspot'?plan:null,...(manualReport?{manualReport}:{})},
@@ -231,7 +316,8 @@ export class Store {
     if (!this.ready) throw new AppError(409, 'Activa una aplicación verificada antes de exportar.');
     return this.bundleOrNull()!;
   }
-  restoreBundle(raw: unknown) {
+  restoreBundle(raw: unknown, request?: { replace: boolean }) {
+    this.assertRecoveryIntegrity();
     if(this.get('returnBusy',false))throw new AppError(409,'Espera a que termine la revisión de cambios.');
     const parsed = BundleSchema.safeParse(raw);
     if (!parsed.success) throw new AppError(422, 'El paquete de continuidad no es válido.');
@@ -277,41 +363,63 @@ export class Store {
     }
     if (!report.complete || errors.length || !bundle.generation.approved) throw new AppError(422, 'El paquete no superó la comprobación de integridad.', [...report.errors, ...errors]);
     this.transaction(() => {
-      this.db.exec('DELETE FROM records; DELETE FROM changes;');
+      this.assertRecoveryIntegrity();
+      if (this.get('returnBusy', false)) throw new AppError(409, 'Espera a que termine la revisión de cambios.');
+      if (request && !request.replace && this.changesCount) {
+        throw new AppError(409, 'Exporta tus cambios y confirma la sustitución antes de restaurar.');
+      }
+      this.assertPortal(bundle.snapshot);
+      const previous = request ? this.bundleOrNull() : null;
+      this.db.exec('DELETE FROM records; DELETE FROM changes;'); this.forgetPlain();
       for (const record of bundle.records) this.insertRecord(record);
       for (const change of bundle.changes) this.db.prepare('INSERT INTO changes(id,at,entity,record_id,operation,before_json,after_json) VALUES(?,?,?,?,?,?,?)')
         .run(change.id, change.at, change.entity, change.recordId, change.operation, change.before ? this.encode(change.before) : null, this.encode(change.after));
       this.set('snapshot', bundle.snapshot); this.set('spec', bundle.spec); this.set('generation', bundle.generation);
       this.set('reconciliation', report); this.set('lastError', null); this.set('disconnected', true);
-      this.set('candidate',null); this.set('sessionId',bundle.sessionId ?? randomUUID());
+      this.set('candidate',null); this.set('sessionId',bundle.sessionId ?? randomUUID()); this.set('copyEpoch', randomUUID());
       this.resetReturnState();
       if(returned){
         this.set('returnWatermark:hubspot',returned.watermark);this.set('remoteMapping:hubspot',returned.mapping);
         if(returned.manualReport)this.set('manualRecoveryReport',returned.manualReport);
         const plan=returned.plan;
         if(plan){
-          if(plan.status==='applying'){for(const op of plan.operations)if(op.status==='sending'){op.status='uncertain';op.error='La copia se exportó durante un envío. Verifica el resultado remoto antes de repetir.';}plan.status='partial';}
-          if(plan.status==='approved'){plan.status='review';plan.approvedAt=null;}
+          // No sender survives a restore. Treat every outstanding send as unknown even if the saved plan status is inconsistent.
+          for(const op of plan.operations)if(op.status==='sending'){op.status='uncertain';op.error='La copia se exportó durante un envío. Verifica el resultado remoto antes de repetir.';}
+          if(plan.status==='applying'||plan.operations.some(op=>op.status==='uncertain')){plan.status='partial';plan.approvedAt=null;}
+          else if(plan.status==='approved'){plan.status='review';plan.approvedAt=null;}
           this.set('recoveryPlan',plan);
         }
       }
+      if (request) {
+        if (previous) this.set('lastRestoreArchive', previous);
+        this.set('recoveryCopy', { exportedAt: bundle.exportedAt, restoredAt: new Date().toISOString() });
+      }
+      this.addCapture(bundle.snapshot, { checkStorageOnExisting: true });
     });
-    this.addCapture(bundle.snapshot);
   }
-  addCapture(snapshot: CrmSnapshot) {
+  addCapture(snapshot: CrmSnapshot, { checkStorageOnExisting = false }: { checkStorageOnExisting?: boolean } = {}) {
     const validated=SnapshotSchema.safeParse(snapshot);
     if(!validated.success)throw new AppError(422,'Captura incompatible con el formato o el límite de 10.000 registros.');
     this.assertPortal(snapshot);
     const report = reconcile(snapshot);
     if (!report.complete) throw new AppError(422,'La captura no está conciliada.',report.errors);
-    const id = snapshot.id + ':' + snapshot.capturedAt, payload = this.encode(snapshot);
-    if(this.db.prepare('SELECT id FROM captures WHERE id=?').get(id))return id;
+    const id = snapshot.id + ':' + snapshot.capturedAt;
+    if (this.db.prepare('SELECT id FROM captures WHERE id=?').get(id)) {
+      if (checkStorageOnExisting) this.assertStorageCapacity(0);
+      return id;
+    }
+    const payload = this.encode(snapshot);
+    const bytes = Buffer.byteLength(payload);
     this.pruneCaptures();
-    const used=this.storageBytes();
-    if (used + Buffer.byteLength(payload) > 2 * 1024 ** 3) throw new AppError(507,'Se alcanzó el límite local de 2 GB. Conserva los cambios pendientes y revisa el historial.');
-    this.db.prepare('INSERT OR IGNORE INTO captures(id,at,bytes,payload) VALUES(?,?,?,?)').run(id,snapshot.capturedAt,Buffer.byteLength(payload),payload);
+    this.assertStorageCapacity(bytes);
+    this.db.prepare('INSERT OR IGNORE INTO captures(id,at,bytes,payload) VALUES(?,?,?,?)').run(id,snapshot.capturedAt,bytes,payload);
     this.pruneCaptures();
     return id;
+  }
+  private assertStorageCapacity(additionalBytes: number) {
+    if (this.storageBytes() + additionalBytes > 2 * 1024 ** 3) {
+      throw new AppError(507, 'Se alcanzó el límite local de 2 GB. Conserva los cambios pendientes y revisa el historial.');
+    }
   }
   storageBytes(){
     let total=0;
@@ -322,6 +430,8 @@ export class Store {
     return total;
   }
   private resetReturnState() {
+    this.assertRecoveryIntegrity();
+    this.set('agentState',{runs:[],proposals:[],artifacts:[]});
     this.set('manualRecoveryReport',null);
     for(const key of ['recoveryPlan','continuitySession','simulatedRemote'])this.set(key,null);
     for(const kind of ['simulation','hubspot']){this.set('returnWatermark:'+kind,0);this.set('remoteMapping:'+kind,{});}
@@ -361,8 +471,11 @@ export class Store {
     const needle = normalize(query);
     const matching = all.filter(r => r.entity === entity && (!pipeline || r.values.pipeline === pipeline) && (!needle || normalize(Object.values(r.values).join(' ') + ' ' + fields.filter(f=>f.type==='reference').map(f=>names.get(f.referenceEntity+':'+r.values[f.key]) ?? '').join(' ')).includes(needle)));
     const records = matching.slice(offset,offset+limit), related = new Map<string,CrmRecord>();
+    const byKey = new Map<string,CrmRecord>();
+    for (const r of all) if (!byKey.has(r.entity+':'+r.id)) byKey.set(r.entity+':'+r.id, r);
     for (const record of records) for (const field of fields) if (field.type === 'reference' && record.values[field.key]) {
-      const item = all.find(r=>r.entity===field.referenceEntity && r.id===record.values[field.key]);
+      const target = record.values[field.key]; // Igual que la búsqueda anterior: solo un ID de texto idéntico.
+      const item = typeof target === 'string' ? byKey.get(field.referenceEntity+':'+target) : undefined;
       if (item) related.set(item.entity+':'+item.id,item);
     }
     return { records, related: [...related.values()], total: matching.length, offset, limit };
@@ -373,9 +486,11 @@ export class Store {
     return { usedUsd: row.used, reservedUsd: row.reserved, limitUsd: 25, requests: row.requests };
   }
   reserveUsage(worstCaseUsd: number): string {
+    this.assertRecoveryIntegrity();
     if (!Number.isFinite(worstCaseUsd) || worstCaseUsd < 0) throw new AppError(422, 'La reserva de presupuesto no es válida.');
     const id = randomUUID(), month = new Date().toISOString().slice(0, 7);
     this.transaction(() => {
+      this.assertRecoveryIntegrity();
       const used = this.usage();
       if (used.usedUsd + used.reservedUsd + worstCaseUsd > used.limitUsd) throw new AppError(429, 'Se alcanzó el límite local de 25 USD para pruebas de IA.');
       this.db.prepare("INSERT INTO usage(id,month,reserved_usd,used_usd,status) VALUES(?,?,?,0,'pending')").run(id, month, worstCaseUsd);

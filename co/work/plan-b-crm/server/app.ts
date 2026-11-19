@@ -1,3 +1,4 @@
+import { registerUndo } from './undo.js';
 import Fastify, { type FastifyInstance } from 'fastify';
 import staticPlugin from '@fastify/static';
 import { existsSync } from 'node:fs';
@@ -8,19 +9,34 @@ import { runtimeZip } from './exporter.js';
 import { registerSecurity } from './security.js';
 import { registerV2, type ExternalServices } from './v2.js';
 import { randomUUID } from 'node:crypto';
+import { registerV4 } from './v4.js';
+import { registerResponseQueue } from './response-queue.js';
+import { registerWorkspaceSearch, workspaceSearchIdentity } from './workspace-search.js';
+import type { WorkspaceSearchContext } from '../shared/workspace-search.js';
+import { registerLocalOperations } from './local-operations.js';
+import { registerTaskRevision } from './task-revision.js';
 
+/** Celda CSV entrecomillada. Una celda que una hoja de cálculo ejecutaría como fórmula (= + - @ o tabulador/retorno iniciales) se
+ *  prefija con una comilla simple; los números, incluso negativos, no se tocan. */
+export function csvCell(value: unknown) {
+  const text = String(value ?? '');
+  const formula = /^[=+\-@\t\r]/.test(text) && !/^-?\d+(\.\d+)?$/.test(text);
+  return '"' + (formula ? "'" : '') + text.replace(/"/g, '""') + '"';
+}
 export interface AppOptions {
   dbPath: string; root: string; staticDir: string; runtime?: boolean;
   aiConfigured?: () => boolean; aiPublic?: () => AppState['aiSettings'];
   hubspotConfigured?: () => boolean;
+  /** Enable only for launchers that enforce one cooperative writer per data directory. */
+  taskRevisions?: boolean;
   external?:ExternalServices;
 }
-export async function createBaseApp(options: AppOptions): Promise<{ app: FastifyInstance; store: Store }> {
+export async function createBaseApp(options: AppOptions): Promise<{ app: FastifyInstance; store: Store; security: ReturnType<typeof registerSecurity> }> {
   const store = new Store(options.dbPath);
   if(!store.get('instanceId',null))store.set('instanceId',randomUUID());
   if (options.runtime) store.set('disconnected', true);
   const app = Fastify({ logger: false, bodyLimit: 20 * 1024 * 1024, requestTimeout: 180000 });
-  registerSecurity(app,store);
+  const security = registerSecurity(app,store);
   app.addHook('onClose', async () => { store.close(); });
   app.addHook('onRequest', async (request, reply) => {
     const host = request.headers.host ?? '';
@@ -46,7 +62,7 @@ export async function createBaseApp(options: AppOptions): Promise<{ app: Fastify
     const status = error && typeof error === 'object' && 'statusCode' in error ? Number(error.statusCode) : 500;
     return reply.code(status >= 400 && status < 500 ? status : 500).send({ error: status === 413 ? 'El archivo es demasiado grande.' : 'No se pudo completar la operación. La última copia válida sigue guardada.' });
   });
-  const readState = async (): Promise<AppState> => ({
+  const readState = async (): Promise<AppState & { workspaceSearchContext: WorkspaceSearchContext | null }> => ({
     snapshot: store.snapshot, spec: store.spec, generation: store.generation,
     reconciliation: store.reconciliation, disconnected: store.disconnected, runtime: !!options.runtime,
     ready: store.ready, changes: store.changesCount, usage: store.usage(),
@@ -54,7 +70,7 @@ export async function createBaseApp(options: AppOptions): Promise<{ app: Fastify
     hubspotConfigured: !options.runtime && (!!store.get('hubspotConnection',null)||(options.hubspotConfigured?.() ?? false)),
     lastError: store.get<string | null>('lastError', null),
     aiSettings: options.runtime ? null : options.aiPublic?.() ?? null
-    ,candidate: store.candidate
+    ,candidate: store.candidate, workspaceSearchContext: workspaceSearchIdentity(store)
   });
   app.get('/api/state',readState);
   app.get('/api/v2/state',async()=>{
@@ -69,13 +85,18 @@ export async function createBaseApp(options: AppOptions): Promise<{ app: Fastify
   });
   app.post<{ Params: { entity: string } }>('/api/records/:entity', async request => {
     const entity = EntityNameSchema.parse(request.params.entity);
-    const body = z.object({ values: z.record(z.union([z.string(), z.number().finite(), z.boolean(), z.null()])) }).strict().parse(request.body);
-    return { record: store.saveRecord(entity, body.values) };
+    const body = z.object({ values: z.record(z.string(),z.union([z.string(), z.number().finite(), z.boolean(), z.null()])) }).strict().parse(request.body);
+    // La identidad del cambio permite deshacer exactamente este guardado (CLAUDE-UNDO-LAST R2).
+    let change: { id: number; at: string } | null = null;
+    const record = store.saveRecord(entity, body.values, undefined, { onChange: value => { change = value; } });
+    return { record, change };
   });
   app.patch<{ Params: { entity: string; id: string } }>('/api/records/:entity/:id', async request => {
     const entity = EntityNameSchema.parse(request.params.entity);
-    const body = z.object({ values: z.record(z.union([z.string(), z.number().finite(), z.boolean(), z.null()])) }).strict().parse(request.body);
-    return { record: store.saveRecord(entity, body.values, request.params.id) };
+    const body = z.object({ values: z.record(z.string(),z.union([z.string(), z.number().finite(), z.boolean(), z.null()])) }).strict().parse(request.body);
+    let change: { id: number; at: string } | null = null;
+    const record = store.saveRecord(entity, body.values, request.params.id, { onChange: value => { change = value; } });
+    return { record, change };
   });
   app.post('/api/activate', async request => {
     z.object({ reviewed: z.literal(true) }).strict().parse(request.body);
@@ -114,11 +135,10 @@ export async function createBaseApp(options: AppOptions): Promise<{ app: Fastify
   app.get<{ Querystring: { format?: string } }>('/api/export/changes', async (request, reply) => {
     const changes = store.changes();
     if (request.query.format === 'csv') {
-      const quote = (value: unknown) => '"' + String(value ?? '').replace(/"/g, '""') + '"';
       const rows = [['fecha', 'entidad', 'id', 'operacion', 'antes_json', 'despues_json'],
         ...changes.map(c => [c.at, c.entity, c.recordId, c.operation, JSON.stringify(c.before), JSON.stringify(c.after)])];
       return reply.type('text/csv; charset=utf-8').header('Content-Disposition', 'attachment; filename="plan-b-cambios.csv"')
-        .send('\uFEFF' + rows.map(row => row.map(quote).join(',')).join('\r\n'));
+        .send('\uFEFF' + rows.map(row => row.map(csvCell).join(',')).join('\r\n'));
     }
     return reply.header('Content-Disposition', 'attachment; filename="plan-b-cambios.json"').send({ exportedAt: new Date().toISOString(), changes });
   });
@@ -127,6 +147,12 @@ export async function createBaseApp(options: AppOptions): Promise<{ app: Fastify
     return reply.type('application/zip').header('Content-Disposition', 'attachment; filename="Plan-B-independiente.zip"').send(zip);
   });
   registerV2(app,store,options.root,!!options.runtime,options.external);
+  registerV4(app,store,!!options.runtime);
+  registerResponseQueue(app,store);
+  registerUndo(app,store);
+  registerWorkspaceSearch(app,store);
+  registerLocalOperations(app,store);
+  if (options.taskRevisions) registerTaskRevision(app,store);
   if (existsSync(options.staticDir)) {
     await app.register(staticPlugin, { root: options.staticDir, prefix: '/', decorateReply: true });
     app.setNotFoundHandler((request, reply) => {
@@ -134,5 +160,5 @@ export async function createBaseApp(options: AppOptions): Promise<{ app: Fastify
       return reply.sendFile('index.html');
     });
   }
-  return { app, store };
+  return { app, store, security };
 }

@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { resolve } from 'node:path';
 import { makeFixture } from '../../shared/fixtures.js';
+import { openSection } from './menu';
 const output=resolve(process.env.PLANB_EVIDENCE_DIR||'test-results');
 
 test('v3: preparación guiada, clasificación real y recuperación manual sin escrituras',async({page,request,context})=>{
@@ -20,7 +21,7 @@ test('v3: preparación guiada, clasificación real y recuperación manual sin es
   await dialog.getByRole('combobox',{name:'Modo de conexión',exact:true}).selectOption('production_readonly');
   await expect(dialog.getByText('Tengo autorización del cliente',{exact:false})).toBeVisible();
   await dialog.getByRole('button',{name:'Cerrar',exact:true}).click();
-  await page.getByRole('button',{name:'Trabajar',exact:true}).click();await page.getByRole('button',{name:'Editar Lucía Martín',exact:true}).click();
+  await openSection(page, 'Clientes');await page.getByRole('button',{name:'Editar Lucía Martín',exact:true}).click();
   await page.getByLabel('Teléfono',{exact:true}).fill('600 321 321');await page.getByRole('button',{name:'Guardar cambios',exact:true}).click();
   await page.getByRole('button',{name:'Cambios',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Recuperación manual verificada',exact:true})).toBeVisible();

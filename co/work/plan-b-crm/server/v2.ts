@@ -12,12 +12,16 @@ import { summarizeCapture } from './assessment.js';
 import { ConnectionSchema, type inspectConnection } from './connection.js';
 import { verifyManualRecovery } from './manual-recovery.js';
 import { APP_VERSION, RUNTIME_ZIP } from '../shared/version.js';
+import { rememberExport, confirmRecoveryCopy, bundleRevision } from './recovery-copy.js';
+import { registerCaptureComparison } from './capture-comparison.js';
 
 export interface ExternalServices { capture:CaptureImporter; remote:(token:string,accountId:string,spec:import('../shared/model.js').AppSpec,fetcher?:typeof fetch,readOnly?:boolean)=>Remote; inspect?:typeof inspectConnection; }
 export function registerV2(app:FastifyInstance,store:Store,root:string,runtime=false,external?:ExternalServices) {
+  registerCaptureComparison(app,store);
   const continuity=new Continuity(store,root,runtime,external?.capture),recovery=new Recovery(store);
   const remoteSchema=z.object({simulation:z.boolean().default(false),token:z.string().max(4096).optional()});
   function remote(raw:unknown){
+    store.assertRecoveryIntegrity();
     if(runtime)throw new AppError(403,'La devolución se prepara en el generador, no en el paquete independiente.');
     const options=remoteSchema.parse(raw);
     if(options.simulation)return simulatedRemote(store);
@@ -81,8 +85,9 @@ export function registerV2(app:FastifyInstance,store:Store,root:string,runtime=f
     if(continuity.status().session&&enabled)throw new AppError(409,'Cierra la sesión de continuidad para habilitar importación e IA. La devolución usa su propio recorrido revisado.');
     store.set('disconnected',!enabled);return {connected:enabled};
   });
-  app.get('/api/v2/changes',async()=>({changes:store.changes(),plan:recovery.plan(),revision:recovery.revision(),pendingChanges:store.pendingChangesCount,watermark:store.get('returnWatermark:hubspot',0),manualReport:store.get('manualRecoveryReport',null)}));
+  app.get('/api/v2/changes',async()=>{const recoveryState=store.recoveryState();return {changes:store.changes(),plan:recoveryState.plan,recoveryIntegrity:recoveryState.integrity,revision:recovery.revision(),pendingChanges:store.pendingChangesCount,watermark:store.get('returnWatermark:hubspot',0),manualReport:store.get('manualRecoveryReport',null)};});
   if(!runtime)app.post('/api/v3/manual-recovery/verify',async request=>{
+    store.assertRecoveryIntegrity();
     const body=z.object({revision:z.string().min(1),mapping:z.array(z.object({entity:EntityNameSchema,localId:z.string(),remoteId:z.string().regex(/^\d+$/)}).strict()).max(10000),reviewed:z.literal(true)}).strict().parse(request.body);
     const connection=continuity.connection();
     if(!connection||connection.mode!=='production_readonly'||!store.spec||store.get<{mode?:string}|null>('connectionPublic',null)?.mode!=='production_readonly')throw new AppError(403,'Autoriza primero la conexión de producción de esta instalación.');
@@ -118,13 +123,21 @@ export function registerV2(app:FastifyInstance,store:Store,root:string,runtime=f
   });
   }
   app.post('/api/v2/export/encrypted',async(request,reply)=>{
-    const {password}=z.object({password:z.string().min(12).max(200)}).strict().parse(request.body);
-    const encrypted=encodePortable(store.bundle(),password);store.set('recoveryCopy',{exportedAt:new Date().toISOString()});
+    const {password,revision}=z.object({password:z.string().min(12).max(200),revision:z.string().optional()}).strict().parse(request.body);
+    const bundle=store.bundle();if(revision&&revision!==bundleRevision(bundle))throw new AppError(409,'El espacio cambió. Revisa de nuevo el contenido de la exportación.');
+    const encrypted=encodePortable(bundle,password);rememberExport(store,bundle,encrypted);
     return reply.type('application/json').header('Content-Disposition','attachment; filename="plan-b-copia-cifrada.json"').send(encrypted);
   });
   app.post('/api/v2/export/package',async(request,reply)=>{
-    const {password}=z.object({password:z.string().min(12).max(200)}).strict().parse(request.body);
-    const zip=await runtimeZip(store.bundle(),root,password);store.set('recoveryCopy',{exportedAt:new Date().toISOString()});
+    const {password,revision}=z.object({password:z.string().min(12).max(200),revision:z.string().optional()}).strict().parse(request.body);
+    const bundle=store.bundle(), exportRevision=bundleRevision(bundle);
+    const changed='El espacio cambió. Revisa de nuevo el contenido de la exportación.';
+    if(revision&&revision!==exportRevision)throw new AppError(409,changed);
+    const zip=await runtimeZip(bundle,root,password);
+    store.transaction(()=>{
+      if(bundleRevision(store.bundle())!==exportRevision)throw new AppError(409,changed);
+      rememberExport(store,bundle,zip);
+    });
     return reply.type('application/zip').header('Content-Disposition','attachment; filename="'+RUNTIME_ZIP+'"').send(zip);
   });
   app.post('/api/v2/restore',async request=>{
@@ -135,14 +148,12 @@ export function registerV2(app:FastifyInstance,store:Store,root:string,runtime=f
     if((bundle as any)?.snapshot?.source?.isTestData===false&&(!password||JSON.parse(file).format!=='planb-encrypted-v2'||!store.get('password',null)))throw new AppError(403,'Los datos reales requieren una copia cifrada y una contraseña local configurada antes de restaurar.');
     // Validate in a disposable store before touching the active database.
     const probe=new Store(':memory:');try{probe.restoreBundle(bundle);}finally{probe.close();}
-    const old=store.bundleOrNull();
-    if(old)store.set('lastRestoreArchive',old);
-    store.restoreBundle(bundle);store.set('recoveryCopy',{exportedAt:(bundle as any).exportedAt,restoredAt:new Date().toISOString()});return {restored:true};
+    store.restoreBundle(bundle, { replace });
+    return { restored: true };
   });
   app.post('/api/v3/recovery-copy/confirm',async request=>{
-    z.object({storedSeparately:z.literal(true)}).strict().parse(request.body);
-    const copy=store.get<{exportedAt:string}|null>('recoveryCopy',null);if(!copy)throw new AppError(409,'Exporta primero una copia cifrada.');
-    store.set('recoveryCopy',{...copy,confirmedAt:new Date().toISOString()});return {confirmed:true};
+    const {revision}=z.object({storedSeparately:z.literal(true),revision:z.string().regex(/^[a-f0-9]{64}$/).optional()}).strict().parse(request.body);
+    return confirmRecoveryCopy(store,revision);
   });
   app.get('/api/v3/diagnostics',async(_request,reply)=>{
     const status=continuity.status();

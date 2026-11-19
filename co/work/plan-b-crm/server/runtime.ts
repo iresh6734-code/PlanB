@@ -3,14 +3,20 @@ import { resolve, join } from 'node:path';
 import { createBaseApp } from './app.js';
 import { lockInstance } from './instance.js';
 import { publishEndpoint } from './endpoint.js';
+import { registerTaskIntents } from './task-intents-api.js';
+import { mountSharedModules } from './modules.js';
 // Deliberately does not import the generator, provider settings, or CRM connector.
 const root = process.cwd();
 const releaseLock=lockInstance(resolve(process.env.PLANB_DATA_DIR || join(root,'data')));
 const { app, store } = await createBaseApp({
   dbPath: resolve(process.env.PLANB_DATA_DIR || join(root, 'data'), 'planb.sqlite'),
-  root, staticDir: join(root, 'dist'), runtime: true
+  root, staticDir: join(root, 'dist'), runtime: true, taskRevisions: true
 });
-if (!store.snapshot) {
+registerTaskIntents(app, store);
+// Módulos compartidos con la App portátil (evidencia, Laboratorio, resumen de trabajo): ver server/modules.ts.
+mountSharedModules(app, store);
+// Preserve damaged return evidence; never replace it automatically with the package seed.
+if (!store.snapshot && store.recoveryIntegrity().state!=='invalid') {
   const encrypted=join(root,'continuity.encrypted.json');
   const seed = join(root, 'continuity.seed.json');
   if (!existsSync(seed)&&!existsSync(encrypted)) throw new Error('Falta el archivo de inicio. Extrae el paquete completo antes de iniciar.');

@@ -1,0 +1,14 @@
+.work-queue { min-width:0; }
+.work-queue-tools { display:flex; align-items:flex-end; gap:12px; flex-wrap:wrap; margin-block:12px; }
+.work-queue-tools label { flex:1 1 180px; min-width:0; display:grid; gap:6px; font-size:12px; color:var(--muted); }
+.work-queue-tools input { width:100%; min-width:0; min-height:44px; padding:10px 12px; border:1px solid var(--line); border-radius:5px; background:var(--surface,#fff); color:var(--ink,#19314e); font:inherit; }
+.work-queue-tools input:focus-visible { outline:2px solid var(--blue); outline-offset:2px; }
+.work-queue .work-queue-count { font-size:12px; color:var(--muted); margin-block:10px; }
+.work-queue .work-queue-coverage { margin-block:12px; padding:10px 12px; border-left:3px solid #b7791f; background:#fff9ed; color:#74501c; font-size:12px; line-height:1.6; }
+.work-queue-pages { display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin-block:14px 4px; }
+.work-queue-pages span { flex:1; min-width:70px; text-align:center; color:var(--muted); font-size:12px; }
+body .work-queue button { min-height:44px; }
+.work-queue .priority-row > .text-button { min-width:44px; }
+.work-queue .priority-row strong,.work-queue .commitment-list strong,.work-queue small { overflow-wrap:anywhere; }
+.work-queue .commitment-list small { display:block; color:var(--muted); font-size:11px; margin-top:4px; }
+@media(max-width:500px) { .work-queue-pages { gap:7px; }.work-queue-pages .button { padding-inline:11px; }.work-queue-tools { display:grid; }.work-queue-tools label { width:100%; } }

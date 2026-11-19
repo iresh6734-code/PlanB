@@ -1,0 +1,7 @@
+Tipografía de Plan B (identidad Faro), empaquetada en la aplicación para no depender de las fuentes del equipo.
+
+- Inter (texto): inter-latin-var.woff2 — variable 400–700, subconjunto latino (incluye á é í ó ú ñ ü ¿ ¡ €).
+- Source Serif 4 (títulos): source-serif-4-latin-var.woff2 — variable 400–700, subconjunto latino.
+
+Licencia: SIL Open Font License 1.1 (OFL-Inter.txt, OFL-SourceSerif4.txt). Descargadas de Google Fonts
+(fonts.gstatic.com) el 17/11/2026 con autorización expresa del usuario. Sin paquetes npm.

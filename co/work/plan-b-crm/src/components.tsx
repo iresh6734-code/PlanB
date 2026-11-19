@@ -10,31 +10,41 @@ export function Brand() {
 export function Spinner({ text = 'Preparando…' }: { text?: string }) {
   return <span className="inline-loading"><LoaderCircle size={17} className="spin" />{text}</span>;
 }
-export function Modal({ title, children, close, wide = false }: { title: string; children: ReactNode; close: () => void; wide?: boolean }) {
+export function Modal({ title, children, close, wide = false, side = false, confirmClose }: { title: string; children: ReactNode; close: () => void; wide?: boolean; side?: boolean; confirmClose?: () => boolean }) {
   const dialog = useRef<HTMLElement>(null);
-  useDialogFocus(dialog);
+  // Quién abrió la ventana se anota en el primer pintado: un campo con autoFocus ya tiene el foco cuando corren los efectos.
+  const [opener] = useState(focusedElement);
+  useDialogFocus(dialog, opener);
+  // El cierre (botón, Escape o clic fuera) pasa por la misma guarda. Se lee desde una referencia para que el efecto no se
+  // reinicie ni robe el foco cuando el padre se vuelve a pintar con una función `close` nueva.
+  const closing = useRef({ close, confirmClose });
+  closing.current = { close, confirmClose };
+  const requestClose = () => { if (!closing.current.confirmClose || closing.current.confirmClose()) closing.current.close(); };
   useEffect(() => {
-    const key = (event: KeyboardEvent) => { if (event.key === 'Escape') close(); };
-    const previous = document.activeElement as HTMLElement | null;
+    // Un modal dentro de una pantalla oculta o inerte (sesión bloqueada) no responde a Escape.
+    const key = (event: KeyboardEvent) => { if (event.key === 'Escape' && !dialog.current?.closest('[inert],[hidden]')) requestClose(); };
     document.addEventListener('keydown', key);
-    const timer = setTimeout(() => document.querySelector<HTMLElement>('[role="dialog"] button')?.focus(), 0);
-    return () => { clearTimeout(timer); document.removeEventListener('keydown', key); previous?.focus(); };
-  }, [close]);
-  return <div className="modal-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) close(); }}>
-    <section ref={dialog} role="dialog" aria-modal="true" aria-label={title} className={'modal ' + (wide ? 'modal-wide' : '')}>
-      <header className="modal-header"><h2>{title}</h2><button className="icon-button" aria-label="Cerrar" onClick={close}><X size={22} /></button></header>
+    // Primer botón de ESTA ventana (no de la primera del documento), y solo si un campo con autoFocus no tiene ya el foco.
+    const timer = setTimeout(() => { if (!dialog.current?.contains(document.activeElement)) dialog.current?.querySelector<HTMLElement>('button')?.focus(); }, 0);
+    return () => { clearTimeout(timer); document.removeEventListener('keydown', key); };
+  }, []);
+  return <div className="modal-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) requestClose(); }}>
+    <section ref={dialog} role="dialog" aria-modal="true" aria-label={title} className={'modal ' + (wide ? 'modal-wide' : '')+(side?' modal-side':'')}>
+      <header className="modal-header"><h2>{title}</h2><button className="icon-button" aria-label="Cerrar" onClick={requestClose}><X size={22} /></button></header>
       {children}
     </section>
   </div>;
 }
-function useDialogFocus(ref: { current: HTMLElement | null }) {
+const focusedElement = () => (typeof document === 'undefined' ? null : document.activeElement as HTMLElement | null);
+/** Foco inicial dentro de la ventana, Tab encerrado y, al cerrar, foco de vuelta a quien la abrió (`opener`, anotado al pintar). */
+function useDialogFocus(ref: { current: HTMLElement | null }, opener: HTMLElement | null) {
   useEffect(() => {
-    const previous = document.activeElement as HTMLElement | null;
+    const previous = opener;
     const panel = ref.current;
     const focusable = () => [...(panel?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex="0"]') ?? [])];
-    const timer = setTimeout(() => focusable()[0]?.focus(), 0);
+    const timer = setTimeout(() => { if (!panel?.contains(document.activeElement)) focusable()[0]?.focus(); }, 0);
     const key = (event: KeyboardEvent) => {
-      if (event.key !== 'Tab' || [...document.querySelectorAll('[role="dialog"]')].at(-1) !== panel) return;
+      if (event.key !== 'Tab' || [...document.querySelectorAll('[role="dialog"]')].at(-1) !== panel || panel?.closest('[inert],[hidden]')) return;
       const items = focusable(), first = items[0], last = items.at(-1);
       if (event.shiftKey && (document.activeElement === first || !panel?.contains(document.activeElement))) { event.preventDefault(); last?.focus(); }
       else if (!event.shiftKey && (document.activeElement === last || !panel?.contains(document.activeElement))) { event.preventDefault(); first?.focus(); }
@@ -61,13 +71,20 @@ export function displayValue(value: FieldValue | undefined, field: Field, record
   if(field.type==='multiselect')return String(value).split(';').map(v=>field.options.find(o=>o.id===v)?.label??v).join(', ');
   return String(value);
 }
-export function RecordDrawer({ entityName, selected, spec, records, close, saved }: {
+export function RecordDrawer({ entityName, selected, spec, records, close, saved, extra, summary }: {
   entityName: EntityName; selected: CrmRecord | 'new'; spec: AppSpec; records: CrmRecord[];
-  close: () => void; saved: (record: CrmRecord) => Promise<void>;
+  close: () => void;
+  /** change: identidad del cambio guardado (para «Deshacer»); null si el servidor no la devuelve. */
+  saved: (record: CrmRecord, change: { id: number; at: string; copy: string } | null) => Promise<void>;
+  /** Contenido adicional bajo los campos (p. ej. lo relacionado). Recibe si la ficha tiene cambios sin guardar. */
+  extra?: (dirty: boolean) => ReactNode;
+  /** Resumen sobre los campos (p. ej. importe y avance de una oportunidad). Recibe los valores del formulario y cómo cambiarlos. */
+  summary?: (values: Record<string, FieldValue>, set: (key: string, value: FieldValue) => void, saving: boolean) => ReactNode;
 }) {
   const entity = spec.entities.find(e => e.id === entityName)!;
   const dialog = useRef<HTMLElement>(null);
-  useDialogFocus(dialog);
+  const [opener] = useState(focusedElement);
+  useDialogFocus(dialog, opener);
   const isNew = selected === 'new';
   const [values, setValues] = useState<Record<string, FieldValue>>(() => isNew
     ? Object.fromEntries(entity.fields.map(f => [f.key, f.type === 'boolean' ? false : f.type === 'number' && f.required ? 0
@@ -90,21 +107,22 @@ export function RecordDrawer({ entityName, selected, spec, records, close, saved
     setSaving(true);
     try {
       const path = '/records/' + entityName + (isNew ? '' : '/' + encodeURIComponent(selected.id));
-      const result = await api<{ record: CrmRecord }>(path, { method: isNew ? 'POST' : 'PATCH', body: JSON.stringify({ values }) });
-      await saved(result.record);
+      const result = await api<{ record: CrmRecord; change?: { id: number; at: string; copy: string } | null }>(path, { method: isNew ? 'POST' : 'PATCH', body: JSON.stringify({ values }) });
+      await saved(result.record, result.change ?? null);
     } catch (error) {
       if (error instanceof ApiError && error.details && typeof error.details === 'object' && !Array.isArray(error.details)) setErrors(error.details as Record<string, string>);
       else setErrors({ _form: error instanceof Error ? error.message : 'No se pudo guardar.' });
     } finally { setSaving(false); }
   };
-  return <aside ref={dialog} className="record-drawer" role="dialog" aria-modal="true" aria-label={correctedTitle}>
+  return <aside ref={dialog} className="record-drawer" data-entity={entityName} role="dialog" aria-modal="true" aria-label={correctedTitle}>
     <header className="drawer-header"><div><h2>{correctedTitle}</h2><p>{entity.singular[0].toUpperCase() + entity.singular.slice(1)}{relatedCompany ? ' · ' + relatedCompany.values.name : ' · Copia local'}</p></div>
       <button className="icon-button" aria-label="Cerrar edición" onClick={close}><X size={23} /></button></header>
     <form onSubmit={submit} className="drawer-form" noValidate>
       <div className="drawer-fields">
+        {summary ? summary(values, set, saving) : null}
         {entity.fields.map(field => <label className="field" key={field.key} htmlFor={'record-' + field.key}>
           <span>{field.label}{field.required ? <span className="required"> *</span> : null}{field.readOnly ? <small>Solo lectura</small> : null}</span>
-          {field.type==='reference'?<ReferenceSelect id={'record-'+field.key} value={String(values[field.key]??'')} entity={field.referenceEntity!} spec={spec} disabled={field.readOnly||saving} onChange={value=>set(field.key,value)}/>
+          {field.type==='reference'?<ReferenceSelect id={'record-'+field.key} label={field.label} value={String(values[field.key]??'')} entity={field.referenceEntity!} spec={spec} disabled={field.readOnly||saving} onChange={value=>set(field.key,value)}/>
             : field.type === 'enum' || field.type==='multiselect'
             ? <select id={'record-' + field.key} multiple={field.type==='multiselect'} value={field.type==='multiselect'?String(values[field.key]??'').split(';').filter(Boolean):String(values[field.key] ?? '')} disabled={field.readOnly || saving} aria-invalid={!!errors[field.key]}
                 onChange={event => set(field.key,field.type==='multiselect'?[...event.target.selectedOptions].map(o=>o.value).join(';')||null: event.target.value || null)}>
@@ -129,6 +147,7 @@ export function RecordDrawer({ entityName, selected, spec, records, close, saved
           {spec.rules.filter(rule => rule.entity === entityName).map(rule => <div key={rule.id}><p>{rule.description}</p>
             <small>{rule.origin === 'configuration' ? 'Configuración importada' : 'Instrucción del usuario'}</small></div>)}
         </div> : null}
+        {extra ? extra(!isNew && JSON.stringify(values) !== JSON.stringify(selected.values)) : null}
       </div>
       <footer className="drawer-footer"><button type="button" className="button secondary" onClick={close} disabled={saving}>Cancelar</button>
         <button type="submit" className="button primary" disabled={saving}>{saving ? <Spinner text="Guardando…" /> : isNew ? 'Crear ' + entity.singular : 'Guardar cambios'}</button></footer>

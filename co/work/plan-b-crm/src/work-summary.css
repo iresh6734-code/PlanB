@@ -1,0 +1,17 @@
+/* Tarjeta del trabajo local pendiente (clases wks-*). Sin estilos globales. */
+.wks{display:grid;gap:8px;padding:12px 14px;border:1px solid var(--border,#d5dbe7);border-left-width:4px;border-radius:8px;background:var(--surface,#fff);color:var(--text-1,#0f1a2b);line-height:1.5}
+.wks *{min-width:0}
+.wks h3{margin:0;font-size:16px}
+.wks-ok{border-left-color:var(--success,#17684a)}
+.wks-attention{border-left-color:var(--warning,#80510a)}
+.wks-unknown{border-left-color:var(--text-3,#8a93a6)}
+.wks-head{margin:0;font-weight:600;overflow-wrap:anywhere}
+.wks-detail,.wks-hint,.wks-quarantine{margin:0;overflow-wrap:anywhere}
+.wks-quarantine{padding:6px 10px;border-radius:6px;background:var(--warning-bg,#fbefd2)}
+.wks-counts{margin:0;padding-left:18px}
+.wks-counts li{margin:2px 0;overflow-wrap:anywhere}
+.wks-meta{color:var(--text-2,#394659);overflow-wrap:anywhere}
+.wks-actions{display:flex;flex-wrap:wrap;gap:8px}
+body .wks .wks-actions .button{display:inline-flex;align-items:center;justify-content:center;min-height:var(--control-h,32px);height:auto;padding-block:6px;max-width:100%}
+.wks-export>summary{cursor:pointer;min-height:36px;display:flex;align-items:center;font-weight:600}
+@media (max-width:600px){body .wks .wks-actions .button{min-height:44px;flex:1 1 100%}.wks-export>summary{min-height:44px}}

@@ -1,10 +1,12 @@
 import { z } from 'zod';
+// CSP restricts runtime code generation in the browser and the portable app.
+z.config({jitless:true});
 
 export const entityNames = ['contacts', 'companies', 'deals', 'tasks'] as const;
 export const MAX_RECORDS = 10000;
 export const ConnectionModeSchema = z.enum(['test', 'production_readonly']);
 export type ConnectionMode = z.infer<typeof ConnectionModeSchema>;
-export const CaptureSelectionSchema = z.record(z.enum(['contacts','companies','deals','tasks']), z.array(z.string().regex(/^[a-zA-Z][a-zA-Z0-9_]{0,99}$/)).max(60)).optional();
+export const CaptureSelectionSchema = z.partialRecord(z.enum(['contacts','companies','deals','tasks']), z.array(z.string().regex(/^[a-zA-Z][a-zA-Z0-9_]{0,99}$/)).max(60)).optional();
 export const EntityNameSchema = z.enum(entityNames);
 export type EntityName = z.infer<typeof EntityNameSchema>;
 export type FieldValue = string | number | boolean | null;
@@ -44,7 +46,7 @@ export type Entity = z.infer<typeof EntitySchema>;
 export const RecordSchema = z.object({
   id: z.string().min(1),
   entity: EntityNameSchema,
-  values: z.record(valueSchema)
+  values: z.record(z.string(),valueSchema)
 }).strict();
 export type CrmRecord = z.infer<typeof RecordSchema>;
 export const StageSchema = z.object({
@@ -81,7 +83,7 @@ export const SnapshotSchema = z.object({
   unsupported: z.array(z.string()),
   manifest: z.object({
     complete: z.boolean(),
-    expectedCounts: z.record(z.number().int().nonnegative()),
+    expectedCounts: z.record(z.string(),z.number().int().nonnegative()),
     expectedLinks: z.number().int().nonnegative()
   }).strict()
 }).strict().superRefine((snapshot, ctx) => {
@@ -159,7 +161,7 @@ export const RecoveryPlanSchema=z.object({
 export const BundleSchema = z.object({
   format: z.enum(['planb-continuity-v1', 'planb-continuity-v2', 'planb-continuity-v3']),
   sessionId: z.string().optional(),
-  returnState:z.object({accountId:z.string(),watermark:z.number().int().min(0),mapping:z.record(z.string().min(1)),plan:RecoveryPlanSchema.nullable(),manualReport:z.object({id:z.string(),sessionId:z.string(),captureId:z.string(),revision:z.string(),watermark:z.number().int().min(0),verifiedAt:z.string().datetime(),method:z.literal('manual_verified'),records:z.number().int().min(0)}).strict().optional()}).strict().optional(),
+  returnState:z.object({accountId:z.string(),watermark:z.number().int().min(0),mapping:z.record(z.string(),z.string().min(1)),plan:RecoveryPlanSchema.nullable(),manualReport:z.object({id:z.string(),sessionId:z.string(),captureId:z.string(),revision:z.string(),watermark:z.number().int().min(0),verifiedAt:z.string().datetime(),method:z.literal('manual_verified'),records:z.number().int().min(0)}).strict().optional()}).strict().optional(),
   exportedAt: z.string().datetime(),
   snapshot: SnapshotSchema,
   spec: AppSpecSchema,

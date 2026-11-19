@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mesa de trabajo comercial (prototipo)</title>
+  <meta name="description" content="Prototipo de interfaz de la mesa de trabajo comercial de Plan B. Sin conexión a servicios.">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231f4e8c'/%3E%3Cpath d='M9 9h8a5 5 0 010 10h-4v4H9z' fill='%23ffffff'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="pbw-root">
+  <a class="pbw-skip" id="pbw-skip" href="#pbw-main">Saltar al contenido</a>
+
+  <div class="pbw-shell" id="pbw-shell">
+    <section class="pbw-proto" id="pbw-proto" aria-label="Herramientas del prototipo"></section>
+
+    <header class="pbw-header" role="banner">
+      <div class="pbw-header__inner" id="pbw-header-content"></div>
+      <nav class="pbw-nav" aria-label="Vistas principales">
+        <ul class="pbw-nav__list" id="pbw-nav-list"></ul>
+      </nav>
+    </header>
+
+    <div class="pbw-notices" id="pbw-notices"></div>
+
+    <main class="pbw-main" id="pbw-main" tabindex="-1">
+      <noscript><p class="pbw-banner pbw-banner--warn">Este prototipo necesita JavaScript activado para mostrar la mesa de trabajo.</p></noscript>
+    </main>
+
+    <footer class="pbw-footer">
+      <p>Prototipo de interfaz · sin conexión a servicios. Los datos de muestra usan correos example.invalid y no pertenecen a Plan B. Todo vive en la memoria de esta pestaña.</p>
+    </footer>
+  </div>
+
+  <div class="pbw-panel-host" id="pbw-panel-host" hidden></div>
+
+  <div class="pbw-sr" id="pbw-status" role="status" aria-live="polite" aria-atomic="true"></div>
+  <div class="pbw-sr" id="pbw-alert" role="alert" aria-live="assertive" aria-atomic="true"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

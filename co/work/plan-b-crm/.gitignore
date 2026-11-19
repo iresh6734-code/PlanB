@@ -22,3 +22,13 @@ delivery/
 planb-local-*/
 planb-hubspot-*/
 planb-ensayo-retorno-*/
+infrastructure/**/.terraform/
+infrastructure/**/*.tfstate*
+infrastructure/**/*.tfvars
+infrastructure/**/*.tfplan
+
+# Registros de depuración locales
+debug.log
+
+# Configuracion local de conexiones de desarrollo.
+.mcp.json

@@ -1,0 +1,25 @@
+import {z} from 'zod';
+export const MAX_COPY_REVIEW_BYTES=32*1024*1024;
+const hash=z.string().regex(/^[a-f0-9]{64}$/),count=z.number().int().nonnegative();
+export const CopyReferenceSchema=z.object({available:z.boolean(),revision:hash.nullable(),captureId:z.string().nullable(),accountId:z.string().nullable(),isTestData:z.boolean().nullable(),records:count.nullable(),changes:count.nullable(),pendingChanges:count.nullable(),reason:z.enum(['NO_ACTIVE_COPY','REFERENCE_TOO_LARGE','RECOVERY_STATE_INVALID']).nullable()}).superRefine((r,c)=>{if(r.available&&(r.revision===null||r.captureId===null||r.accountId===null||r.isTestData===null||r.records===null||r.changes===null||r.pendingChanges===null||r.reason!==null))c.addIssue({code:'custom',message:'Referencia incompleta.'});if(!r.available&&(r.revision!==null||r.reason===null))c.addIssue({code:'custom',message:'Referencia ausente incoherente.'});});
+export type CopyReference=z.infer<typeof CopyReferenceSchema>;
+const SummarySchema=z.object({format:z.string(),exportedAt:z.string(),captureId:z.string(),capturedAt:z.string(),accountId:z.string(),isTestData:z.boolean(),capturedRecords:count,activeRecords:count,counts:z.object({contacts:count,companies:count,deals:count,tasks:count}),changeLogEntries:count,pendingChanges:count,uncertainOperationsAfterRestore:count,approvalWouldBeReset:z.boolean()});
+const InspectionSchema=z.object({status:z.enum(['valid','invalid','incompatible']),artifactHash:hash,encrypted:z.boolean().nullable(),targetIdentityMatches:z.boolean().nullable(),summary:SummarySchema.nullable(),issues:z.array(z.object({code:z.string(),message:z.string()})).max(100),limitations:z.array(z.string()).max(30)});
+const DifferencesSchema=z.object({missingRecordsInBackup:count,extraRecordsInBackup:count,changedRecords:count,snapshotChanged:z.boolean(),specChanged:z.boolean(),generationChanged:z.boolean(),sessionChanged:z.boolean(),returnStateChanged:z.boolean()});
+const CoverageSchema=z.object({status:z.enum(['matches-reference','missing-local-changes','different-revision','incompatible','invalid']),referenceRevision:hash.nullable(),backupRevision:hash.nullable(),sameSource:z.boolean().nullable(),sameCapture:z.boolean().nullable(),missingLocalChanges:count.nullable(),differences:DifferencesSchema.nullable(),nextAction:z.string()});
+export const CopyReviewSchema=z.object({artifact:z.object({sha256:hash,bytes:count.max(MAX_COPY_REVIEW_BYTES)}),reference:CopyReferenceSchema,inspection:InspectionSchema,coverage:CoverageSchema.nullable(),inspectedAt:z.string().datetime(),limitations:z.array(z.string()).max(30)}).superRefine((r,c)=>{
+ if(r.artifact.sha256!==r.inspection.artifactHash)c.addIssue({code:'custom',message:'Hash discordante.'});
+ if(r.inspection.status!=='invalid'&&r.inspection.summary===null)c.addIssue({code:'custom',message:'Falta el resumen de integridad.'});
+ if(r.inspection.summary&&Object.values(r.inspection.summary.counts).reduce((n,v)=>n+v,0)!==r.inspection.summary.activeRecords)c.addIssue({code:'custom',message:'Recuento discordante.'});
+ if(r.coverage&&(!r.reference.available||r.coverage.referenceRevision!==r.reference.revision))c.addIssue({code:'custom',message:'Cobertura de otra referencia.'});
+ if(r.reference.available&&r.inspection.status!=='invalid'&&!r.coverage)c.addIssue({code:'custom',message:'Falta el dictamen de cobertura.'});
+ if(r.inspection.status==='invalid'&&r.coverage)c.addIssue({code:'custom',message:'Cobertura de un archivo inválido.'});
+ if(r.inspection.status==='invalid'&&r.inspection.summary!==null)c.addIssue({code:'custom',message:'Resumen de un archivo inválido.'});
+ if(r.reference.available&&r.inspection.status==='valid'&&r.inspection.targetIdentityMatches!==true)c.addIssue({code:'custom',message:'Falta la identidad de destino.'});
+ if(r.inspection.status==='incompatible'&&r.inspection.targetIdentityMatches!==false)c.addIssue({code:'custom',message:'Incompatibilidad sin destino distinto.'});
+ if(r.inspection.targetIdentityMatches===true&&r.inspection.summary&&(r.inspection.summary.accountId!==r.reference.accountId||r.inspection.summary.isTestData!==r.reference.isTestData))c.addIssue({code:'custom',message:'Identidad de destino discordante.'});
+ if(r.coverage?.status==='matches-reference'&&r.inspection.summary&&(r.inspection.summary.activeRecords!==r.reference.records||r.inspection.summary.changeLogEntries!==r.reference.changes||r.inspection.summary.pendingChanges!==r.reference.pendingChanges))c.addIssue({code:'custom',message:'Recuentos de coincidencia discordantes.'});
+ if(r.coverage?.status==='matches-reference'&&(r.inspection.status!=='valid'||r.inspection.targetIdentityMatches!==true||r.coverage.missingLocalChanges!==0||r.coverage.sameSource!==true||r.coverage.sameCapture!==true))c.addIssue({code:'custom',message:'Coincidencia no acreditada.'});
+ if(r.coverage?.status==='missing-local-changes'&&(!r.coverage.missingLocalChanges||r.coverage.missingLocalChanges>(r.reference.changes??0)))c.addIssue({code:'custom',message:'Conteo de cobertura inválido.'});
+});
+export type CopyReview=z.infer<typeof CopyReviewSchema>;

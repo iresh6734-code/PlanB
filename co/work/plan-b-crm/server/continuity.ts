@@ -11,6 +11,7 @@ import type { ContinuityBundle } from '../shared/model.js';
 import { planDrill } from './drill-plan.js';
 import { assessDrill, summarizeCapture } from './assessment.js';
 import type { SavedConnection } from './connection.js';
+import { recoveryCopyStatus } from './recovery-copy.js';
 
 export class Continuity {
   jobs:Jobs;
@@ -23,15 +24,18 @@ export class Continuity {
       this.analysis={id:captures[0].id,summary:summarizeCapture(captures[0].id,snapshot),issues:planDrill(makeDemoSpec(snapshot),snapshot.records).issues};
     }
     if(!captures.length)this.analysis=null;
-    const reports=this.store.get<DrillReport[]>('drills',[]),latestCapture=this.analysis?.summary??null;
+    const reports=this.store.get<DrillReport[]>('drills',[]),latestCapture=this.analysis?.summary??null,recoveryIntegrity=this.store.recoveryIntegrity();
     return {captures,jobs:this.jobs.list(),reports,latestCapture,readiness:assessDrill(latestCapture,this.analysis?.issues??[],reports),latestCaptureAt:at,ageMinutes:age,stale:age===null || age>75,
       session:this.store.get('continuitySession',null),schedule:this.store.get('schedule',{enabled:false,intervalMinutes:60,lastAttempt:null}),
       connected:!this.store.disconnected,protected:!!this.store.get('password',null),accountId:this.store.snapshot?.source.accountId??null,
-      changes:this.store.changesCount,pendingChanges:this.store.pendingChangesCount,runtime:this.runtime,realDataEnabled:this.store.get<{mode?:string}|null>('connectionPublic',null)?.mode==='production_readonly',connection:this.store.get('connectionPublic',null),recoveryCopy:this.store.get('recoveryCopy',null)};
+      changes:this.store.changesCount,pendingChanges:this.store.pendingChangesCount,runtime:this.runtime,realDataEnabled:this.store.get<{mode?:string}|null>('connectionPublic',null)?.mode==='production_readonly',connection:this.store.get('connectionPublic',null),recoveryCopy:recoveryCopyStatus(this.store),
+      recoveryIntegrity,operations:{lastAttempt:this.store.get('captureLastAttempt',null)??this.store.get<{lastAttempt:string|null}>('schedule',{lastAttempt:null}).lastAttempt,
+        lastSuccess:this.store.get('captureLastSuccess',null),error:this.store.get('operationError',null),paused:this.runtime||this.store.disconnected||!!this.store.get('continuitySession',null)||recoveryIntegrity.state==='invalid'}};
   }
   private secretKey(){return localKey(dirname(this.store.filename));}
   connection() { const text=this.store.get<string|null>('hubspotConnection',null); return text?{mode:'test' as const,...JSON.parse(open(text,this.secretKey()))} as SavedConnection:null; }
   saveConnection(token:string,accountId:string,details?:Omit<SavedConnection,'token'|'accountId'>,verified?:{accountType:string;verifiedAt:string}) {
+    this.store.assertRecoveryIntegrity();
     if(this.runtime)throw new AppError(403,'El paquete independiente no contiene conectores.');
     if(!/^\d+$/.test(accountId)||token.length<10)throw new AppError(422,'Revisa el ID de cuenta y la credencial.');
     const bound=this.store.get<{accountId:string}|null>('connectionPublic',null)?.accountId??this.connection()?.accountId??(this.store.snapshot?.source.kind==='hubspot'?this.store.snapshot.source.accountId:null);
@@ -44,19 +48,34 @@ export class Continuity {
     });
   }
   capture() {
+    this.store.assertRecoveryIntegrity();
     if(this.runtime || this.store.disconnected || this.status().session)throw new AppError(409,'Habilita los servicios fuera de una sesión de continuidad.');
     const connection=this.connection();if(!connection)throw new AppError(422,'Configura una cuenta de prueba de HubSpot.');
     if(connection.mode==='production_readonly'&&(!this.store.get('password',null)||this.store.get<{mode?:string}|null>('connectionPublic',null)?.mode!=='production_readonly'))throw new AppError(403,'Revisa y autoriza la conexión de producción en esta instalación.');
     return this.jobs.start('capture',async(progress,signal)=>{
-      if(!this.importer)throw new AppError(503,'El importador no está incluido en este paquete.');
-      const snapshot=await this.importer({...connection,confirmedTestAccount:connection.mode!=='production_readonly',progress,signal});
-      signal.throwIfAborted();
-      if(snapshot.records.length>10000)throw new AppError(413,'El piloto admite hasta 10.000 registros totales.');
-      if(snapshot.source.accountId!==connection.accountId)throw new AppError(422,'La captura pertenece a otro portal.');
-      const id=this.store.addCapture(snapshot);return {captureId:id,records:snapshot.records.length,links:snapshot.links.length};
+      try {
+        this.store.set('captureLastAttempt',new Date().toISOString());
+        if(!this.importer)throw new AppError(503,'El importador no está incluido en este paquete.');
+        const snapshot=await this.importer({...connection,confirmedTestAccount:connection.mode!=='production_readonly',progress,signal});
+        signal.throwIfAborted();
+        if(snapshot.records.length>10000)throw new AppError(413,'El piloto admite hasta 10.000 registros totales.');
+        if(snapshot.source.accountId!==connection.accountId)throw new AppError(422,'La captura pertenece a otro portal.');
+        const id=this.store.transaction(()=>{
+          this.store.assertRecoveryIntegrity();
+          const captureId=this.store.addCapture(snapshot);
+          this.store.set('captureLastSuccess',new Date().toISOString());
+          this.store.set('operationError',null);
+          this.store.set('scheduleError',null);
+          return captureId;
+        });
+        return {captureId:id,records:snapshot.records.length,links:snapshot.links.length};
+      } catch(error) {
+        this.store.set('operationError',{at:new Date().toISOString(),message:signal.aborted?'Captura cancelada.':'La captura no se completó; la copia anterior se conserva.',action:'Revisa la conexión y el último trabajo antes de volver a capturar.'});throw error;
+      }
     });
   }
   begin(captureId:string) {
+    this.store.assertRecoveryIntegrity();
     if(this.status().session)throw new AppError(409,'Ya hay una sesión de continuidad abierta. Continúa trabajando o ciérrala antes de abrir otra copia.');
     if(this.jobs.list().some(j=>['queued','running'].includes(j.status)))throw new AppError(409,'Espera a que termine el trabajo actual.');
     if(this.store.pendingChangesCount)throw new AppError(409,'Conserva y cierra los cambios pendientes antes de abrir otra captura.');
@@ -67,6 +86,7 @@ export class Continuity {
     return session;
   }
   end() {
+    this.store.assertRecoveryIntegrity();
     if(this.store.pendingChangesCount)throw new AppError(409,'Devuelve los cambios o conserva la sesión. Exportar no los marca como devueltos.');
     this.store.set('continuitySession',null);this.store.set('sessionCapture','');this.store.set('returnComplete',false);return {ended:true};
   }
@@ -93,13 +113,17 @@ export class Continuity {
       signal.throwIfAborted();this.store.set('drills',[report,...this.store.get<DrillReport[]>('drills',[])].slice(0,36));return report;
     });
   }
-  configureSchedule(enabled:boolean){this.store.set('schedule',{...this.status().schedule,enabled,intervalMinutes:60});return this.status().schedule;}
+  configureSchedule(enabled:boolean){this.store.assertRecoveryIntegrity();this.store.set('schedule',{...this.status().schedule,enabled,intervalMinutes:60});return this.status().schedule;}
   tick() {
-    const status=this.status();if(this.runtime || !status.schedule.enabled || !status.connected || status.session || this.jobs.list().some(j=>['running','queued'].includes(j.status)))return;
+    const status=this.status();if(this.runtime || status.recoveryIntegrity?.state==='invalid' || !status.schedule.enabled || !status.connected || status.session || this.jobs.list().some(j=>['running','queued'].includes(j.status)))return;
     const now=new Date().toISOString();
     if(!status.schedule.lastAttempt || Date.now()-Date.parse(status.schedule.lastAttempt)>=3600_000){
       this.store.set('schedule',{...status.schedule,lastAttempt:now});
-      try{this.capture();}catch(error){this.store.set('scheduleError',error instanceof Error?error.message:'No se pudo iniciar la captura.');}
+      try{this.capture();}catch{
+        this.store.set('captureLastAttempt',now);
+        this.store.set('operationError',{at:now,message:'No se pudo iniciar la captura programada.',action:'Configura la conexión y comprueba que los servicios estén habilitados.'});
+        this.store.set('scheduleError','No se pudo iniciar la captura programada.');
+      }
       return;
     }
     const last=status.reports[0];if(status.captures.length && (!last || Date.now()-Date.parse(last.completedAt)>30*86400_000)){try{this.drill();}catch{}}

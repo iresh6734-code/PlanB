@@ -1,0 +1,47 @@
+{
+  "retrievedAt": "2026-10-26T22:34:54.383Z",
+  "assets": [
+    {
+      "id": "hubspot",
+      "file": "hubspot.svg",
+      "source": "https://www.hubspot.com/hubfs/Media%20Assets/Blog/Navigation/sprocket.svg",
+      "sha256": "4ba0147cc1b2b3533f1b6555da306efee422b25db28f76f25d1ca308f9a964fb",
+      "bytes": 1563
+    },
+    {
+      "id": "gmail",
+      "file": "gmail.png",
+      "source": "https://fonts.gstatic.com/s/i/productlogos/gmail_2020q4/v11/web-48dp/logo_gmail_2020q4_color_2x_web_48dp.png",
+      "sha256": "e4b1abfe0e160bb73094838a7de1a76e0093fd5f91cbaf754a39447fd2aa5cd5",
+      "bytes": 1084
+    },
+    {
+      "id": "calendar",
+      "file": "calendar.png",
+      "source": "https://fonts.gstatic.com/s/i/productlogos/calendar_2020q4/v13/web-48dp/logo_calendar_2020q4_color_2x_web_48dp.png",
+      "sha256": "f43e0a59bd0ae58cb61ff65f2e68d73f1cfe8292eab80ba12521da8f9ca199ee",
+      "bytes": 1074
+    },
+    {
+      "id": "drive",
+      "file": "drive.png",
+      "source": "https://fonts.gstatic.com/s/i/productlogos/drive_2020q4/v10/web-48dp/logo_drive_2020q4_color_2x_web_48dp.png",
+      "sha256": "52ac4ffe5453545f83c478aa9714b9ca2be77dcb2d1c29bb3cce94e7d21ccf4d",
+      "bytes": 2388
+    },
+    {
+      "id": "docs",
+      "file": "docs.png",
+      "source": "https://fonts.gstatic.com/s/i/productlogos/docs_2020q4/v11/web-48dp/logo_docs_2020q4_color_2x_web_48dp.png",
+      "sha256": "847dd64eee44da9ba829bd44a3dbe2bc11a5f8ce6547f88c62c98910f096a27e",
+      "bytes": 382
+    },
+    {
+      "id": "sheets",
+      "file": "sheets.png",
+      "source": "https://fonts.gstatic.com/s/i/productlogos/sheets_2020q4/v11/web-48dp/logo_sheets_2020q4_color_2x_web_48dp.png",
+      "sha256": "53003bd128e636190c6a0de8ce0166b4bc3c43c96f80f5fd6889e0e8ca8293d8",
+      "bytes": 319
+    }
+  ]
+}

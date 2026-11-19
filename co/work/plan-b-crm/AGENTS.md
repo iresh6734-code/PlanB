@@ -2,6 +2,16 @@
 
 El usuario pide mantener actualizado el contexto del proyecto entre tareas.
 
+## Coordinación con Claude
+
+- Para trabajar en paralelo con Claude, lee `COORDINACION.md` y usa `tools/coordination/board.mjs` antes de asignar o editar archivos de una entrega compartida.
+- Cada encargo debe reservar archivos exactos. No edites los de otro agente ni amplíes el alcance sin un nuevo encargo. La reserva continúa durante revisión y no caduca por lentitud.
+- Codex revisa y acepta las entregas. No aceptes hashes antiguos si el archivo cambió ni liberes trabajo pendiente descartándolo. El tablón es un protocolo de colaboración, no una barrera del sistema operativo.
+- Claude empieza con un informe propio fuera de la app; no se presupone una sesión Claude iniciada ni conexión automática. No envíes código o datos a un proveedor sin el alcance y la cuenta propios autorizados.
+- El usuario ha pedido colaboración directa Codex + Claude durante el desarrollo. Dentro del alcance de envío ya autorizado, Codex prepara el encargo, consulta la CLI, contrasta la respuesta y ejecuta pruebas sin pedir al usuario que copie mensajes. `tools/duet/consult.mjs` solo admite las seis versiones autorizadas el28/10/2026; otro contenido necesita autorización específica. No usar el ejecutor general del chat o ampliar herramientas/MCP de Claude implícitamente.
+- El panel local de solo lectura `http://127.0.0.1:4347/` muestra estado y respuestas recibidas. Mantén el estado fiel a los hechos; una autenticación o un proceso iniciado no prueba respuesta del modelo. La consulta a Claude no controla sesiones existentes de su app ni garantiza trabajo después de terminar este chat.
+- Actualización posterior28/10/2026: el usuario pide encadenar tareas y continuar después de cada entrega. Heartbeat **Plan B · Desarrollo continuo con Claude**, ID `plan-b-desarrollo-continuo-con-claude`, activo cada30min en este chat. En cada ejecución avanza trabajo útil, coordina/reserva/revisa y elige la siguiente unidad; no repitas consultas sin novedades. La continuidad depende del programador/app disponible y permisos; no significa que dos modelos estén ejecutándose permanentemente. Mantén silencio si no hay avance útil o cambio accionable. Respeta el alcance de envío ya autorizado; las propuestas generales sin nuevos archivos pueden intercambiarse con Claude dentro de los topes.
+
 ## Límite de equipos vigente
 
 El ordenador original es de la empresa y queda fuera del alcance. El usuario autoriza trabajar con la copia del repositorio en cloud y con una instalación independiente en el ordenador actual.

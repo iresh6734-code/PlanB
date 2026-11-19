@@ -1,0 +1,134 @@
+{
+  "description": "Fallos conocidos de la batería unitaria con NODE_ENV=test. Cada uno con causa y responsable; se retira en cuanto pasa. Ver tools/ci/README.md.",
+  "updated": "2026-11-17",
+  "failures": [
+    {
+      "file": "tests/continuity-evidence-mount.test.ts",
+      "name": "the main entry point registers protected local evidence and rejects an obsolete revision",
+      "cause": "Arranca el servidor completo como proceso propio y espera respuesta con un plazo fijo; con la batería entera en marcha a veces no responde a tiempo («El servidor propio no respondió»). Aislada pasa (14/11).",
+      "owner": "Codex (prueba de CODEX-CONTINUITY-EVIDENCE-MOUNT-239)",
+      "flaky": true
+    },
+    {
+      "file": "tests/date-check-decision-independent-339.test.ts",
+      "name": "339 · el ID de alternativa debe corresponder a las ofertas exactas de la decisión",
+      "cause": "Sonda independiente de CODEX-OPUS-DECISION-REVIEW-339 que documenta defectos abiertos en «Revisar una decisión»; queda roja a propósito hasta que se corrijan.",
+      "owner": "Sesión Opus (CLAUDE-OPUS-DATE-CHECK-REVIEW, devuelta por Codex)"
+    },
+    {
+      "file": "tests/date-check-decision-independent-339.test.ts",
+      "name": "339 · un acta de otra solicitud no sustituye el acta de la instalación revisada",
+      "cause": "Sonda independiente de CODEX-OPUS-DECISION-REVIEW-339 que documenta defectos abiertos en «Revisar una decisión»; queda roja a propósito hasta que se corrijan.",
+      "owner": "Sesión Opus (CLAUDE-OPUS-DATE-CHECK-REVIEW, devuelta por Codex)"
+    },
+    {
+      "file": "tests/date-check-decision-independent-339.test.ts",
+      "name": "339 · una proyección no probada conserva el retraso observado sin dar por acreditada su atribución",
+      "cause": "Sonda independiente de CODEX-OPUS-DECISION-REVIEW-339 que documenta defectos abiertos en «Revisar una decisión»; queda roja a propósito hasta que se corrijan.",
+      "owner": "Sesión Opus (CLAUDE-OPUS-DATE-CHECK-REVIEW, devuelta por Codex)"
+    },
+    {
+      "file": "tests/date-check-decision-independent-339.test.ts",
+      "name": "339 · una terminación observada sin fecha ofrecida no acredita incumplimiento",
+      "cause": "Sonda independiente de CODEX-OPUS-DECISION-REVIEW-339 que documenta defectos abiertos en «Revisar una decisión»; queda roja a propósito hasta que se corrijan.",
+      "owner": "Sesión Opus (CLAUDE-OPUS-DATE-CHECK-REVIEW, devuelta por Codex)"
+    },
+    {
+      "file": "tests/independent-continuity-lab.test.ts",
+      "name": "099 new capture must not collide with an already present foreign evidence generation",
+      "cause": "Sonda independiente de CODEX-LAB-REVIEW-099 sobre la identidad de captura del laboratorio de continuidad; documenta un defecto abierto de shared/continuity-lab.ts.",
+      "owner": "Codex (CODEX-LAB-035)"
+    },
+    {
+      "file": "tests/independent-continuity-lab.test.ts",
+      "name": "099 valid opaque IDs with a large numeric suffix must still produce a different capture identity",
+      "cause": "Sonda independiente de CODEX-LAB-REVIEW-099 sobre la identidad de captura del laboratorio de continuidad; documenta un defecto abierto de shared/continuity-lab.ts.",
+      "owner": "Codex (CODEX-LAB-035)"
+    },
+    {
+      "file": "tests/operational-date-check-independent-337.test.ts",
+      "name": "337 · cancelar después de las alternativas impide certificar la matriz de escenarios",
+      "cause": "Sonda independiente de CODEX-OPUS-DATE-CHECK-CORE-REVIEW-337 que documenta defectos abiertos del motor de «Comprobar una fecha»; queda roja a propósito hasta que se corrijan.",
+      "owner": "Sesión Opus (CLAUDE-OPUS-DATE-CHECK-CORE, devuelta por Codex)"
+    },
+    {
+      "file": "tests/operational-date-check-independent-337.test.ts",
+      "name": "337 · la baja de un técnico no puede conservar dos protecciones que exigen 140 minutos con 120 de capacidad",
+      "cause": "Sonda independiente de CODEX-OPUS-DATE-CHECK-CORE-REVIEW-337 que documenta defectos abiertos del motor de «Comprobar una fecha»; queda roja a propósito hasta que se corrijan.",
+      "owner": "Sesión Opus (CLAUDE-OPUS-DATE-CHECK-CORE, devuelta por Codex)"
+    },
+    {
+      "file": "tests/operational-date-check-independent-337.test.ts",
+      "name": "337 · una instalación de 35 minutos no cabe en una ventana de 30 aunque la fecha pedida sea posterior",
+      "cause": "Sonda independiente de CODEX-OPUS-DATE-CHECK-CORE-REVIEW-337 que documenta defectos abiertos del motor de «Comprobar una fecha»; queda roja a propósito hasta que se corrijan.",
+      "owner": "Sesión Opus (CLAUDE-OPUS-DATE-CHECK-CORE, devuelta por Codex)"
+    },
+    {
+      "file": "tests/rescue-capsule-integrity.test.ts",
+      "name": "la aprobación está ligada al contenido exacto: otro SHA, otra revisión o un archivo sustituido tras inspeccionar se rechazan (409) y liberan el reclamo",
+      "cause": "Cuenta las carpetas rescue106-* de todo el directorio compartido tests/.tmp: el 14/11 había 133 restos de ejecuciones anteriores (desde el 02/11) y otras ejecuciones en paralelo crean más, así que el recuento no coincide. Falla igual sin los cambios del 14/11; pasa o falla según los restos y lo que otros procesos creen a la vez, por eso va marcada como inestable. Arreglo propuesto: comparar solo las carpetas que crea la propia prueba.",
+      "owner": "Claude (CLAUDE-RESCUE-KIT-116, sin sesión activa)",
+      "flaky": true
+    },
+    {
+      "file": "tests/rescue-capsule-integrity.test.ts",
+      "name": "un componente alterado con su digest sin actualizar se detecta (DIGEST_MISMATCH); con digests recalculados lo delatan la coherencia o la comprobación estándar",
+      "cause": "Cuenta las carpetas rescue106-* de todo el directorio compartido tests/.tmp: el 14/11 había 133 restos de ejecuciones anteriores (desde el 02/11) y otras ejecuciones en paralelo crean más, así que el recuento no coincide. Falla igual sin los cambios del 14/11; pasa o falla según los restos y lo que otros procesos creen a la vez, por eso va marcada como inestable. Arreglo propuesto: comparar solo las carpetas que crea la propia prueba.",
+      "owner": "Claude (CLAUDE-RESCUE-KIT-116, sin sesión activa)",
+      "flaky": true
+    },
+    {
+      "file": "tests/rescue-capsule-integrity.test.ts",
+      "name": "un paquete de la capa estándar incompatible (válido en forma, rechazado por restoreBundle) se rechaza al inspeccionar e importar, sin destino ni staging y con el origen intacto",
+      "cause": "Cuenta las carpetas rescue106-* de todo el directorio compartido tests/.tmp: el 14/11 había 133 restos de ejecuciones anteriores (desde el 02/11) y otras ejecuciones en paralelo crean más, así que el recuento no coincide. Falla igual sin los cambios del 14/11; pasa o falla según los restos y lo que otros procesos creen a la vez, por eso va marcada como inestable. Arreglo propuesto: comparar solo las carpetas que crea la propia prueba.",
+      "owner": "Claude (CLAUDE-RESCUE-KIT-116, sin sesión activa)",
+      "flaky": true
+    },
+    {
+      "file": "tests/rescue-capsule-rehearsal.test.ts",
+      "name": "exclusión · dos importaciones concurrentes de la MISMA cápsula: exactamente una crea destino y las demás se rechazan (ALREADY_IMPORTED)",
+      "cause": "Cuenta las carpetas rescue106-* de todo el directorio compartido tests/.tmp: el 14/11 había 133 restos de ejecuciones anteriores (desde el 02/11) y otras ejecuciones en paralelo crean más, así que el recuento no coincide. Falla igual sin los cambios del 14/11; pasa o falla según los restos y lo que otros procesos creen a la vez, por eso va marcada como inestable. Arreglo propuesto: comparar solo las carpetas que crea la propia prueba.",
+      "owner": "Claude (CLAUDE-RESCUE-KIT-116, sin sesión activa)",
+      "flaky": true
+    },
+    {
+      "file": "tests/rescue-capsule-rehearsal.test.ts",
+      "name": "interrupción · el proceso MUERE en «import:components-written»: artefactos reales, origen intacto y continuación segura",
+      "cause": "Cuenta las carpetas rescue106-* de todo el directorio compartido tests/.tmp: el 14/11 había 133 restos de ejecuciones anteriores (desde el 02/11) y otras ejecuciones en paralelo crean más, así que el recuento no coincide. Falla igual sin los cambios del 14/11; pasa o falla según los restos y lo que otros procesos creen a la vez, por eso va marcada como inestable. Arreglo propuesto: comparar solo las carpetas que crea la propia prueba.",
+      "owner": "Claude (CLAUDE-RESCUE-KIT-116, sin sesión activa)",
+      "flaky": true
+    },
+    {
+      "file": "tests/rescue-capsule-rehearsal.test.ts",
+      "name": "interrupción · el proceso MUERE en «import:published»: artefactos reales, origen intacto y continuación segura",
+      "cause": "Cuenta las carpetas rescue106-* de todo el directorio compartido tests/.tmp: el 14/11 había 133 restos de ejecuciones anteriores (desde el 02/11) y otras ejecuciones en paralelo crean más, así que el recuento no coincide. Falla igual sin los cambios del 14/11; pasa o falla según los restos y lo que otros procesos creen a la vez, por eso va marcada como inestable. Arreglo propuesto: comparar solo las carpetas que crea la propia prueba.",
+      "owner": "Claude (CLAUDE-RESCUE-KIT-116, sin sesión activa)",
+      "flaky": true
+    },
+    {
+      "file": "tests/rescue-capsule-rehearsal.test.ts",
+      "name": "interrupción · el proceso MUERE en «import:staging-created»: artefactos reales, origen intacto y continuación segura",
+      "cause": "Cuenta las carpetas rescue106-* de todo el directorio compartido tests/.tmp: el 14/11 había 133 restos de ejecuciones anteriores (desde el 02/11) y otras ejecuciones en paralelo crean más, así que el recuento no coincide. Falla igual sin los cambios del 14/11; pasa o falla según los restos y lo que otros procesos creen a la vez, por eso va marcada como inestable. Arreglo propuesto: comparar solo las carpetas que crea la propia prueba.",
+      "owner": "Claude (CLAUDE-RESCUE-KIT-116, sin sesión activa)",
+      "flaky": true
+    },
+    {
+      "file": "tests/task-intent-consumer-independent-322.test.ts",
+      "name": "322 · abortar dentro de onDispatch impide el POST, el escritor y el historial",
+      "cause": "Sonda independiente de CODEX-A4-CONSUMER-REVIEW-322 sobre el cliente A4: aborto dentro de onDispatch, 401 tras vencer la consulta y verificación con el intento de otra tarea. Documenta defectos abiertos.",
+      "owner": "Claude A (CLAUDE-A4-CLIENT-STRATEGY, devuelta por Codex)"
+    },
+    {
+      "file": "tests/task-intent-consumer-independent-322.test.ts",
+      "name": "322 · el adaptador no verifica una tarea con el intento válido de otra",
+      "cause": "Sonda independiente de CODEX-A4-CONSUMER-REVIEW-322 sobre el cliente A4: aborto dentro de onDispatch, 401 tras vencer la consulta y verificación con el intento de otra tarea. Documenta defectos abiertos.",
+      "owner": "Claude A (CLAUDE-A4-CLIENT-STRATEGY, devuelta por Codex)"
+    },
+    {
+      "file": "tests/task-intent-consumer-independent-322.test.ts",
+      "name": "322 · un 401 real tras vencer la consulta anterior no bloquea la sesión nueva",
+      "cause": "Sonda independiente de CODEX-A4-CONSUMER-REVIEW-322 sobre el cliente A4: aborto dentro de onDispatch, 401 tras vencer la consulta y verificación con el intento de otra tarea. Documenta defectos abiertos.",
+      "owner": "Claude A (CLAUDE-A4-CLIENT-STRATEGY, devuelta por Codex)"
+    }
+  ]
+}

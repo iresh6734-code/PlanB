@@ -1,0 +1,34 @@
+body .sidebar .preparation-navigation {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+body .sidebar .preparation-navigation .preparation-toggle,
+body .sidebar .preparation-navigation .preparation-subnav .nav-item {
+  min-height: 44px;
+}
+body .sidebar .preparation-toggle > span {
+  flex: 1;
+  text-align: left;
+}
+body .sidebar .preparation-toggle > svg:last-child.expanded {
+  transform: rotate(180deg);
+}
+
+@media (max-width: 600px) {
+  body .sidebar .preparation-navigation {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+  body .sidebar .preparation-navigation .preparation-toggle {
+    width: 100%;
+  }
+  body .sidebar .preparation-navigation .preparation-subnav {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    margin: 0;
+    padding: 4px 0;
+    border-inline: 0;
+  }
+}

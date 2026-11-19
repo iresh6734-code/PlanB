@@ -20,7 +20,7 @@ import { DealSummary } from './app-shell/DealSummary.js';
 import { RecordSummary } from './app-shell/RecordSummary.js';
 import { linkedPreset, taskPreset } from './app-shell/task-preset.js';
 import { canLogActivity } from './app-shell/task-preset.js';
-import { CommandPalette, type PaletteAsk } from './app-shell/CommandPalette.js';
+import type { PaletteAsk } from './app-shell/CommandPalette.js';
 import type { ListPage } from './app-shell/pager.js';
 import { useRecordShortcuts } from './app-shell/useRecordShortcuts.js';
 import { PINNED_MAX } from './app-shell/recents.js';
@@ -28,6 +28,7 @@ import type { FocusScope } from './app-shell/FocusRun.js';
 import { DueReminder } from './app-shell/DueReminder.js';
 import { endContingency, startContingency, type IncidentWindow } from './app-shell/contingency.js';
 import { useContingency } from './app-shell/useContingency.js';
+import { undoTarget, useNotices } from './app-shell/useNotices.js';
 import { MobileNav } from './app-shell/MobileNav.js';
 import type { Command } from './app-shell/commands.js';
 import { currentDensity, toggleDensity, toggleTheme } from './app-shell/theme.js';
@@ -42,7 +43,7 @@ import { readinessFor } from './app-shell/continuity-insights.js';
 import type { ContinuityTab } from './ContinuityHome.js';
 import type { ContinuityStatus } from '../shared/operations.js';
 // Apartados que se descargan al visitarlos por primera vez (misma interfaz de uso que los originales).
-import { Agenda, ChangesView, ContingencyBand, ContinuityHome, CsvImport, DateCheck, DecisionReview, FocusRun, GuidedDrill, LicensePanel, LocalIntegrations, OperationalRehearsal, OutageLab, PortableExport, Preparation, QuickActivity, RadarHost, RecordTimeline, SequencePicker, Settings, ShortcutsHelp, TeamSync, WeeklyReview, WhatsNew } from './app-shell/lazy-pages.js';
+import { Agenda, ChangesView, CommandPalette, ContingencyBand, ContinuityHome, CsvImport, DateCheck, DecisionReview, FocusRun, GuidedDrill, LicensePanel, LocalIntegrations, OperationalRehearsal, OutageLab, PortableExport, Preparation, QuickActivity, RadarHost, RecordTimeline, SequencePicker, Settings, ShortcutsHelp, TeamSync, WeeklyReview, WhatsNew } from './app-shell/lazy-pages.js';
 import type { WorkspaceSearchContext } from '../shared/workspace-search.js';
 
 type LocalAppState = AppState & { workspaceSearchContext?: WorkspaceSearchContext | null };
@@ -157,9 +158,8 @@ export default function App() {
   }, [pendingRecord, auth, state?.ready]);
   useEffect(() => { if (!state) return; const next = fallbackPage(page, { runtime: !!state.runtime, testData: state.snapshot?.source.isTestData !== false, ready: !!state.ready }); if (next) setPage(next); }, [state?.runtime, state?.snapshot?.source.isTestData, state?.ready, page]);
 
-  const [notice, setNotice] = useState('');
-  // Último guardado que se puede deshacer desde el aviso (solo ediciones; el servidor comprueba que sigue siendo el último cambio).
-  const [undoable, setUndoable] = useState<{ changeId: number; at: string; copy: string } | null>(null);
+  // Aviso flotante y su «Deshacer» (T2): ver app-shell/useNotices.ts.
+  const { notice, setNotice, undoable, setUndoable } = useNotices();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -191,10 +191,6 @@ export default function App() {
   useRecordListLoader(list, { active: auth === 'open' && page === 'workspace' && !!state?.ready, entity: entityName, revision: dataRevision, onError: setError });
   const board = useBoardLoader({ active: auth === 'open' && page === 'workspace' && !!state?.ready && entityName === 'deals', query, pipeline, revision: dataRevision });
   const pulse = useDealPulse({ active: auth === 'open' && page === 'workspace' && !!state?.ready && entityName === 'deals', spec: state?.spec, revision: dataRevision });
-  useEffect(() => {
-    if (!notice) return;
-    const timer = setTimeout(() => { setNotice(''); setUndoable(null); }, undoable ? 8000 : 5000); return () => clearTimeout(timer);
-  }, [notice, undoable]);
   useEffect(() => {
     if (!selected) return;
     const key = (event: KeyboardEvent) => { if (event.key === 'Escape') setSelected(null); };
@@ -251,7 +247,7 @@ export default function App() {
   };
   const saveField = async (record: CrmRecord, key: string, value: string | null): Promise<string | null> => {
     const written = await writeField(record, key, value); if (written.reason) return written.reason;
-    try { await refresh(); setUndoable(written.change ? { changeId: written.change.id, at: written.change.at, copy: written.change.copy } : null); setNotice('Guardado en tu copia local.'); return null; }
+    try { await refresh(); setUndoable(undoTarget(written.change)); setNotice('Guardado en tu copia local.'); return null; }
     catch (failure) { return failure instanceof Error ? failure.message : 'No se pudo guardar el cambio.'; }
   };
   // Cambio en bloque (V3): uno a uno y un solo refresco al final. El «Deshacer» suelto deja de valer: ya no es el último cambio.
@@ -381,7 +377,7 @@ export default function App() {
         if (selected === 'new' && entityName !== 'deals') return null;
         return entityName === 'deals' ? <DealSummary spec={spec} values={values} set={set} records={records} disabled={saving} onNewTask={onNewTask} newTaskBlocked={!!newTask && !onNewTask} /> : <RecordSummary entityName={entityName} spec={spec} values={values} set={set} records={records} disabled={saving} onNewTask={onNewTask} newTaskBlocked={!!newTask && !onNewTask} onNewDeal={onNewDeal} newDealBlocked={!!newDeal && !onNewDeal} />; }}
       extra={selected === 'new' ? undefined : dirty => <><RelatedPanel spec={spec} record={selected} dirty={dirty} onOpen={record => { openEntity(record.entity); setRecords([record]); setSelected(record); }} />{canLogActivity(spec, selected) ? <><QuickActivity key={selected.entity + ':' + selected.id} spec={spec} record={selected} name={recordName(selected, spec)} createTask={createTask} /><SequencePicker key={'seq:' + selected.entity + ':' + selected.id} spec={spec} record={selected} name={recordName(selected, spec)} createTask={createTask} /></> : null}<RecordTimeline spec={spec} record={selected} records={records} /></>}
-      close={() => { setSelected(null); setPreset(null); }} saved={async (_record, change) => { const target = selected !== 'new' && change ? { changeId: change.id, at: change.at, copy: change.copy } : null; await refresh(); setSelected(null); setPreset(null); setUndoable(target); setNotice('Guardado en tu copia local.'); }} /></> : null}
+      close={() => { setSelected(null); setPreset(null); }} saved={async (_record, change) => { const target = selected !== 'new' ? undoTarget(change) : null; await refresh(); setSelected(null); setPreset(null); setUndoable(target); setNotice('Guardado en tu copia local.'); }} /></> : null}
     {notice ? <div className="toast" role="status"><CheckCircle2 size={19} />{notice}{undoable ? <button type="button" className="toast-action" onClick={() => void undoLast()}>Deshacer</button> : null}</div> : null}
     {modal === 'settings' ? <Settings state={state} close={() => setModal(null)} done={async () => { await refresh(); setNotice('Proveedor guardado.'); }} /> : null}
     {modal === 'csv' && spec && state.ready ? <CsvImport spec={spec} initialEntity={page === 'workspace' ? entityName : 'contacts'} close={() => setModal(null)} done={async (target, created) => { openEntity(target); setDataRevision(r => r + 1); await refresh(); setNotice(created + (created === 1 ? ' registro importado' : ' registros importados') + ' en tu copia local. Quedan en Cambios.'); }} /> : null}

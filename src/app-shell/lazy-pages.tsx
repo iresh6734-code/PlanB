@@ -48,3 +48,4 @@ export const SequencePicker = quiet(() => import('./SequencePicker.js').then(m =
 export const QuickActivity = quiet(() => import('./QuickActivity.js').then(m => m.QuickActivity), 'Registrar actividad');
 export const WhatsNew = quiet(() => import('./WhatsNew.js').then(m => m.WhatsNew), 'Novedades');
 export const MergeDialog = quiet(() => import('./MergeDialog.js').then(m => m.MergeDialog), 'Fusionar duplicados');
+export const CommandPalette = quiet(() => import('./CommandPalette.js').then(m => m.CommandPalette), 'Paleta de órdenes');

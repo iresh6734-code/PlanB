@@ -14,10 +14,12 @@ type SearchProblem = { key: string; message: string; contextConflict?: boolean; 
 const types = [{ id: 'all', label: 'Todos' }, { id: 'contacts', label: 'Clientes' }, { id: 'companies', label: 'Empresas' }, { id: 'deals', label: 'Oportunidades' }, { id: 'tasks', label: 'Tareas' }] as const;
 const failure = (error: unknown) => error instanceof ApiError && error.status === 404 ? 'Esta versión instalada no incluye la búsqueda global. Actualiza Plan B para usarla.' : error instanceof Error ? error.message : 'No se pudo completar la búsqueda.';
 
-export function WorkspaceSearch({ captureId, expectedContext, localRevision, refreshWorkspace, close, openRecord }: {
+export function WorkspaceSearch({ captureId, expectedContext, localRevision, refreshWorkspace, close, openRecord, askInstead }: {
   captureId: string; expectedContext: WorkspaceSearchContext | null; localRevision: number; close: () => void;
   refreshWorkspace?: (signal: AbortSignal) => Promise<unknown>;
   openRecord: (record: CrmRecord, related: CrmRecord[]) => void;
+  /** R4 · Lleva lo escrito a la paleta, que lo responde como pregunta («oportunidades abiertas de más de 5000»). */
+  askInstead?: (text: string) => void;
 }) {
   const [query, setQuery] = useState(''), [entity, setEntity] = useState<string>('all'), [page, setPage] = useState<{baseKey:string;offset:number}|null>(null), [nonce, setNonce] = useState(0);
   const [result, setResult] = useState<{ key: string; response: Response } | null>(null), [error, setError] = useState<SearchProblem | null>(null);
@@ -132,6 +134,7 @@ export function WorkspaceSearch({ captureId, expectedContext, localRevision, ref
       <header><div><h2 id="workspace-search-title">Buscar en toda la copia</h2><p>Clientes, empresas, oportunidades y tareas guardados en este ordenador.</p></div><button type="button" className="icon-button" aria-label="Cerrar búsqueda global" onClick={close}><X size={20} /></button></header>
       <label className="workspace-search-input"><Search size={19} aria-hidden="true" /><span className="sr-only">Buscar en toda la copia</span><input ref={input} type="search" maxLength={160} value={query} onChange={event => { setQuery(event.target.value); setOffset(0); }} onKeyDown={event => navigateResults(event, true)} placeholder="Nombre, correo, teléfono o ID…" aria-describedby={'workspace-search-help' + (data?.items.length ? ' workspace-search-keyboard-help' : '')} /></label>
       <p id="workspace-search-help" className="helper">Escribe al menos 2 caracteres. Se buscan todos los términos, sin distinguir acentos o mayúsculas. Solo consulta la copia activa.</p>
+      {askInstead && query.trim().split(/\s+/).length >= 2 ? <p className="helper workspace-search-ask">¿Es una pregunta, como «tareas vencidas» o «empresas sin teléfono»? <button type="button" className="text-button" onClick={() => askInstead(query.trim())}>Responder como pregunta</button></p> : null}
       {data?.items.length ? <p id="workspace-search-keyboard-help" className="helper workspace-search-keyboard-help">Usa ↑/↓ para recorrerlos; Inicio/Fin en la lista y Enter para abrir.</p> : null}
       <div className="workspace-search-filters"><label>Tipo de registro<select aria-label="Tipo de registro" value={entity} onChange={event => { setEntity(event.target.value); setOffset(0); }}>{types.map(type => <option key={type.id} value={type.id}>{type.label}{data ? ' (' + (type.id === 'all' ? Object.values(data.counts).reduce((a, b) => a + b, 0) : data.counts[type.id]) + ')' : ''}</option>)}</select></label><button type="button" className="button secondary" disabled={!valid || busy || opening || refreshing} onClick={refresh}>Actualizar búsqueda</button></div>
       <div className="workspace-search-results" aria-busy={busy || opening || refreshing}>

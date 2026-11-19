@@ -81,7 +81,7 @@ export function displayValue(value: FieldValue | undefined, field: Field, record
   if(field.type==='multiselect')return String(value).split(';').map(v=>field.options.find(o=>o.id===v)?.label??v).join(', ');
   return String(value);
 }
-export function RecordDrawer({ entityName, selected, spec, records, close, saved, extra, summary, preset }: {
+export function RecordDrawer({ entityName, selected, spec, records, close, saved, extra, summary, preset, headerAction }: {
   entityName: EntityName; selected: CrmRecord | 'new'; spec: AppSpec; records: CrmRecord[];
   close: () => void;
   /** change: identidad del cambio guardado (para «Deshacer»); null si el servidor no la devuelve. */
@@ -92,6 +92,8 @@ export function RecordDrawer({ entityName, selected, spec, records, close, saved
   summary?: (values: Record<string, FieldValue>, set: (key: string, value: FieldValue) => void, saving: boolean) => ReactNode;
   /** Valores con los que empieza una ficha nueva (p. ej. la tarea de un cliente ya enlazada a él). */
   preset?: Record<string, FieldValue>;
+  /** Botón junto a «Cerrar» (p. ej. anclar la ficha, F5). */
+  headerAction?: ReactNode;
 }) {
   const entity = spec.entities.find(e => e.id === entityName)!;
   const dialog = useRef<HTMLElement>(null);
@@ -128,7 +130,8 @@ export function RecordDrawer({ entityName, selected, spec, records, close, saved
   };
   return <aside ref={dialog} className="record-drawer" data-entity={entityName} role="dialog" aria-modal="true" aria-label={correctedTitle}>
     <header className="drawer-header"><div><h2>{correctedTitle}</h2><p>{entity.singular[0].toUpperCase() + entity.singular.slice(1)}{relatedCompany ? ' · ' + relatedCompany.values.name : ' · Copia local'}</p></div>
-      <button className="icon-button" aria-label="Cerrar edición" onClick={close}><X size={23} /></button></header>
+      {headerAction ? <span className="drawer-header-actions">{headerAction}<button className="icon-button" aria-label="Cerrar edición" onClick={close}><X size={23} /></button></span>
+        : <button className="icon-button" aria-label="Cerrar edición" onClick={close}><X size={23} /></button>}</header>
     <form onSubmit={submit} className="drawer-form" noValidate>
       <div className="drawer-fields">
         {summary ? summary(values, set, saving) : null}

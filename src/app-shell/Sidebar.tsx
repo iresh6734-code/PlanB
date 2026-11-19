@@ -1,5 +1,5 @@
 import { useEffect, useState, type ComponentType } from 'react';
-import { ArrowRight, BadgeCheck, Building2, CalendarCheck, CalendarDays, ChevronDown, Download, FlaskConical, GitBranch, Home, Inbox, ListTodo, PlugZap, Radar, Search, Settings2, ShieldCheck, SlidersHorizontal, Users } from 'lucide-react';
+import { ArrowRight, BadgeCheck, Building2, CalendarCheck, CalendarDays, ChevronDown, Download, FlaskConical, GitBranch, Home, Inbox, ListTodo, Pin, PlugZap, Radar, Search, Settings2, ShieldCheck, SlidersHorizontal, Users } from 'lucide-react';
 import type { AppState, EntityName } from '../../shared/model.js';
 import { APP_VERSION } from '../../shared/version.js';
 import { Brand } from '../components.js';
@@ -18,6 +18,7 @@ type Props = {
   setPage: (page: PageId) => void; setSelected: (value: null) => void; setPreparationOpen: Toggle;
   setGlobalSearch: (open: boolean) => void; setModal: (modal: 'settings') => void;
   openEntity: (entity: EntityName) => void; openPreparation: (step?: number) => void;
+  /** F5 · Fichas ancladas de esta copia (ya con su nombre leído de la copia). */ pins?: { key: string; label: string; title: string; open: () => void }[];
 };
 
 const GROUP_ICON: Record<GroupId, ComponentType<{ size?: number }>> = { home: Home, today: CalendarDays, clients: Users, continuity: ShieldCheck, settings: SlidersHorizontal, lab: FlaskConical };
@@ -30,7 +31,7 @@ const ITEM_ICON: Record<string, ComponentType<{ size?: number }>> = {
  * Navegación principal en cinco lugares (Inicio, Hoy, Clientes, Continuidad y Ajustes) más el Laboratorio cuando la
  * copia es de datos de prueba (CLAUDE-UI-NAV-LAB). Solo cambia de apartado; no lee ni guarda datos.
  */
-export function Sidebar({ state, page, entityName, selected, signals, step, preparationOpen, setPage, setSelected, setPreparationOpen, setGlobalSearch, setModal, openEntity, openPreparation }: Props) {
+export function Sidebar({ state, page, entityName, selected, signals, step, preparationOpen, setPage, setSelected, setPreparationOpen, setGlobalSearch, setModal, openEntity, openPreparation, pins }: Props) {
   const context = { runtime: !!state.runtime, testData: state.snapshot?.source.isTestData !== false, ready: !!state.ready };
   const groups = navigationGroups(context), current = groupOfPage(page);
   const [open, setOpen] = useState<Set<GroupId>>(() => new Set([current]));
@@ -92,6 +93,7 @@ export function Sidebar({ state, page, entityName, selected, signals, step, prep
         <div className="oc-nav-group" role="group" aria-label="Lugares">{main.map(group => <div key={group.id} className="gx-nav-place">{header(group)}</div>)}</div>
         {lab ? <div className="oc-nav-group gx-nav-lab" role="group" aria-label="Laboratorio">{header(lab)}</div> : null}
       </nav>
+      {pins?.length ? <section className="sidebar-pins" aria-label="Fichas ancladas"><h2>Anclados</h2>{pins.map(pin => <button key={pin.key} type="button" title={pin.title} disabled={!!selected} onClick={pin.open}><Pin size={14} aria-hidden="true" /><span>{pin.label}</span></button>)}</section> : null}
       <div className="sidebar-bottom"><span>{state.snapshot?.name ?? 'Tu copia, en tu ordenador'}</span><small>Plan B · v{APP_VERSION}</small></div>
     </aside>
   );

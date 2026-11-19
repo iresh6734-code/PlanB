@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { CheckCircle2, Circle, ShieldCheck, X } from 'lucide-react';
+import { CheckCircle2, Circle, Pin, PinOff, ShieldCheck, X } from 'lucide-react';
 import { validateRecord, type AppState, type CrmRecord, type EntityName, type FieldValue } from '../shared/model.js';
 import { api, post } from './api.js';
 import { Brand, Modal, RecordDrawer, Spinner, recordName } from './components.js';
@@ -23,7 +23,10 @@ import { linkedPreset, taskPreset } from './app-shell/task-preset.js';
 import { RecordTimeline } from './app-shell/RecordTimeline.js';
 import { QuickActivity } from './app-shell/QuickActivity.js';
 import { canLogActivity } from './app-shell/quick-activity.js';
-import { CommandPalette } from './app-shell/CommandPalette.js';
+import { CommandPalette, type PaletteAsk } from './app-shell/CommandPalette.js';
+import type { ListPage } from './app-shell/pager.js';
+import { useRecordShortcuts } from './app-shell/useRecordShortcuts.js';
+import { PINNED_MAX } from './app-shell/recents.js';
 import type { FocusScope } from './app-shell/FocusRun.js';
 import { DueReminder } from './app-shell/DueReminder.js';
 import { MobileNav } from './app-shell/MobileNav.js';
@@ -73,7 +76,7 @@ export default function App() {
   const receiveContinuity = useCallback((status: ContinuityStatus) => { setContinuityStatus(status); const next = continuityAlerts(status, new Date()); setCopyAlerts(current => current && JSON.stringify(current) === JSON.stringify(next) ? current : next); }, []);
   const [help, setHelp] = useState(false);
   useEffect(() => { if (page !== 'continuity') setContinuityTab(null); }, [page]);
-  const [commandsOpen, setCommandsOpen] = useState(false);
+  const [commandsOpen, setCommandsOpen] = useState(false), [paletteText, setPaletteText] = useState('');
   const [focusOpen, setFocusOpen] = useState<false | FocusScope>(false);
   const [preparationOpen,setPreparationOpen]=useState(false);
   // En la tira de navegación móvil, el apartado activo queda siempre a la vista.
@@ -98,6 +101,11 @@ export default function App() {
   const [lockFailed,setLockFailed]=useState(false);
   const outcomesControl=useRef<TaskOutcomesControl|null>(null);
   const [taskRequest,setTaskRequest]=useState<OpenTaskRequest|null>(null);
+  // F5 · Recientes y anclados de la copia abierta (solo tipo e ID en este navegador; los nombres se leen de la copia).
+  const shortcutScope = state?.ready && state.snapshot ? state.snapshot.id : '';
+  const recordShortcuts = useRecordShortcuts(shortcutScope, auth === 'open', String(dataRevision) + ':' + String(state?.changes ?? 0));
+  const rememberRecord = recordShortcuts.remember;
+  useEffect(() => { if (selected && selected !== 'new' && shortcutScope) rememberRecord({ entity: selected.entity, id: selected.id }); }, [selected && selected !== 'new' ? selected.entity + ':' + selected.id : '', shortcutScope]);
   const refreshSequence = useRef(0);
   const accessSequence = useRef(0);
   useEffect(() => {
@@ -305,10 +313,26 @@ export default function App() {
     const lists = await Promise.all(spec.entities.map(item => api<{ records: CrmRecord[] }>('/v2/records/' + item.id + '?q=' + encodeURIComponent(text) + '&offset=0&limit=4&pipeline=').then(data => data.records.map(record => ({ record, item }))).catch(() => [])));
     return lists.flat().map(({ record, item }) => ({ id: 'rec-' + record.entity + '-' + record.id, label: recordName(record, spec), hint: item.singular[0].toUpperCase() + item.singular.slice(1), group: 'Registros', run: () => { openEntity(record.entity); setRecords([record]); setSelected(record); } }));
   };
+  const openRecord = (record: CrmRecord) => { openEntity(record.entity); setRecords([record]); setSelected(record); };
+  const singularOf = (entityId: EntityName) => { const singular = spec?.entities.find(item => item.id === entityId)?.singular ?? ''; return singular ? singular[0].toUpperCase() + singular.slice(1) : ''; };
+  // R4 · «Pregunta a tu copia»: la paleta interpreta la frase y lee la copia por páginas (solo lectura, sin salir del equipo).
+  const paletteAsk: PaletteAsk | undefined = state.ready && spec ? {
+    spec, read: (path, pageSignal) => api<ListPage>(path, { signal: pageSignal }),
+    toCommand: (record, hint) => ({ id: 'rec-ans-' + record.entity + '-' + record.id, label: recordName(record, spec), hint: hint || singularOf(record.entity), group: 'Respuesta', run: () => openRecord(record) }),
+  } : undefined;
+  const shortcutCommands: Command[] = spec ? recordShortcuts.entries.map(entry => ({ id: 'rec-short-' + entry.ref.entity + '-' + entry.ref.id, label: recordName(entry.record, spec), hint: singularOf(entry.ref.entity), group: entry.pinned ? 'Anclados' : 'Abiertos hace poco', run: () => openRecord(entry.record) })) : [];
+  const pinnedCurrent = selected && selected !== 'new' ? recordShortcuts.shortcuts.pinned.some(ref => ref.entity === selected.entity && ref.id === selected.id) : false;
+  const togglePinned = (record: CrmRecord) => {
+    const result = recordShortcuts.toggle({ entity: record.entity, id: record.id });
+    setUndoable(null);
+    setNotice(result.full ? 'Ya tienes ' + PINNED_MAX + ' fichas ancladas: desancla alguna para anclar esta.' : result.pinned ? 'Ficha anclada: la tienes en el menú y en Ctrl J.' : 'Ficha desanclada.');
+  };
+  if (selected && selected !== 'new' && spec) commandList.push({ id: 'pin-current', label: (pinnedCurrent ? 'Desanclar' : 'Anclar') + ' esta ficha: ' + recordName(selected, spec), group: 'Acción', run: () => togglePinned(selected) });
+  const sidebarPins = spec ? recordShortcuts.entries.filter(entry => entry.pinned).map(entry => { const name = recordName(entry.record, spec); return { key: entry.ref.entity + ':' + entry.ref.id, label: name, title: singularOf(entry.ref.entity) + ' · ' + name, open: () => openRecord(entry.record) }; }) : [];
   const date = describeCapture(state.snapshot?.capturedAt).date ?? '';
   return <TaskOutcomesHost refreshState={refresh} onOpenTask={openTaskFromOutcomes} onClosed={(summary,reason)=>{setLockedOutcomes(previous=>addLockSummary(previous,summary));if(summary.dispatched+summary.notDispatched>0)setLockFailed(reason==='lock-not-completed');}} controlRef={outcomesControl}><div className={'app-shell ' + (selected ? 'has-drawer' : '')}>
     <a className="skip-link" href="#main-content">Saltar al contenido</a>
-    <Sidebar state={state} page={page} entityName={entityName} selected={!!selected} signals={{ ...signals, copy: copySignal, readiness: readinessDot }} step={step} preparationOpen={preparationOpen}
+    <Sidebar pins={sidebarPins} state={state} page={page} entityName={entityName} selected={!!selected} signals={{ ...signals, copy: copySignal, readiness: readinessDot }} step={step} preparationOpen={preparationOpen}
       setPage={setPage} setSelected={setSelected} setPreparationOpen={setPreparationOpen} setGlobalSearch={setGlobalSearch} setModal={setModal}
       openEntity={openEntity} openPreparation={openPreparation} />
     <div className="mobile-brand"><Brand /><span className="badge">{state.snapshot?.source.isTestData===false?'Producción · lectura':'Datos de prueba'}</span></div>
@@ -337,8 +361,9 @@ export default function App() {
           query={query} setQuery={setQuery} pipeline={pipeline} setPipeline={setPipeline} selected={selected} setSelected={setSelected} recordsLoading={recordsLoading} recordsError={recordsError} onRetry={() => setDataRevision(r => r + 1)} busy={busy} date={date} moveDeal={moveDeal} newWith={values => { setPreset(values); setSelected('new'); }} saveField={saveField} saveMany={saveMany} canUndo={!!undoable} onUndo={() => void undoLast()} setServerView={setServerView} facets={facets} board={board} pulse={pulse}
           viewCoverage={() => void viewCoverage()} toggleServices={() => act(() => post('/disconnect', { disconnected: !state.disconnected }), state.disconnected ? 'Servicios habilitados para importar o generar.' : 'HubSpot e IA desconectados. Sigue trabajando con tus datos locales.')} />}
     </main>
-    {globalSearch && state.ready && state.snapshot ? <WorkspaceSearch captureId={state.snapshot.id+':'+state.snapshot.capturedAt} expectedContext={state.workspaceSearchContext??null} localRevision={dataRevision} refreshWorkspace={refresh} close={() => setGlobalSearch(false)} openRecord={(record, related) => { setGlobalSearch(false); openEntity(record.entity); setRecords([record,...related]); setSelected(record); }}/>:null}
+    {globalSearch && state.ready && state.snapshot ? <WorkspaceSearch captureId={state.snapshot.id+':'+state.snapshot.capturedAt} expectedContext={state.workspaceSearchContext??null} localRevision={dataRevision} refreshWorkspace={refresh} close={() => setGlobalSearch(false)} openRecord={(record, related) => { setGlobalSearch(false); openEntity(record.entity); setRecords([record,...related]); setSelected(record); }} askInstead={paletteAsk ? text => { setGlobalSearch(false); setPaletteText(text); setCommandsOpen(true); } : undefined}/>:null}
     {selected && spec && state.ready ? <><div className="drawer-shade" onClick={() => { setSelected(null); setPreset(null); }} /><RecordDrawer key={selected === 'new' ? entityName + '-new' + (preset ? ':' + JSON.stringify(preset) : '') : selected.id} preset={selected === 'new' ? preset ?? undefined : undefined} entityName={entityName} selected={selected} spec={spec} records={records}
+      headerAction={selected === 'new' || !shortcutScope ? undefined : <button type="button" className="icon-button pin-toggle" aria-pressed={pinnedCurrent} aria-label={pinnedCurrent ? 'Desanclar esta ficha' : 'Anclar esta ficha'} title={pinnedCurrent ? 'Desanclar: deja de salir en el menú' : 'Anclar: queda a mano en el menú y en Ctrl J'} onClick={() => togglePinned(selected)}>{pinnedCurrent ? <PinOff size={19} /> : <Pin size={19} />}</button>}
       summary={(values, set, saving) => { const clean = selected !== 'new' && JSON.stringify(values) === JSON.stringify(selected.values);
         const newTask = selected === 'new' ? null : taskPreset(spec, selected), newDeal = selected === 'new' ? null : linkedPreset(spec, 'deals', selected);
         const onNewTask = newTask && clean ? () => { openEntity('tasks'); setPreset(newTask); setSelected('new'); } : undefined;
@@ -354,7 +379,7 @@ export default function App() {
     <MobileNav page={page} entityName={entityName} runtime={!!state.runtime} ready={!!state.ready} overdue={signals.overdue} changes={state.changes ?? 0} go={next => { setPage(next); setSelected(null); }} openEntity={openEntity} openMore={() => setCommandsOpen(true)} />
     {focusOpen && spec && state.ready ? <FocusRun spec={spec} saveField={saveField} createTask={createTask} initialScope={focusOpen} onOpen={record => { openEntity(record.entity); setRecords([record]); setSelected(record); }} close={() => setFocusOpen(false)} /> : null}
     {drill ? <GuidedDrill state={drill} onGo={goDrillStep} onClose={() => setDrill(null)} onRestart={startGuidedDrill} onPassport={() => { setDrillNote(drillHandoffNote(drill, Date.now())); setDrill(null); setSelected(null); setContinuityTab('evidencia'); setPage('continuity'); setReturnedFrom('drill'); }} /> : null}
-    {commandsOpen ? <CommandPalette commands={commandList} close={() => setCommandsOpen(false)} findRecords={state.ready && spec ? findRecords : undefined} /> : null}
+    {commandsOpen ? <CommandPalette commands={commandList} close={() => { setCommandsOpen(false); setPaletteText(''); }} findRecords={state.ready && spec ? findRecords : undefined} ask={paletteAsk} shortcuts={shortcutCommands} initialQuery={paletteText} /> : null}
     {modal === 'coverage' ? <Modal title="Cobertura de tu copia" close={() => setModal(null)} wide><div className="modal-body">
       <p className="muted">Comprobaciones sobre la captura y la aplicación que estás utilizando.</p>
       <div className="check-list">{probe ? probe.checks.map(check => <div key={check.id}>{check.passed ? <CheckCircle2 size={19} className="green" /> : <Circle size={19} className="muted" />}<span>{check.label}</span><small>{check.passed ? 'Verificado' : 'Pendiente'}</small></div>) : <Spinner />}</div>

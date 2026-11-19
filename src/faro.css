@@ -1167,6 +1167,31 @@ html body .gx-commands input { width: 100%; height: 36px; min-height: 36px; font
 .gx-commands li[aria-selected="true"] { background: var(--primary-subtle); box-shadow: inset 3px 0 0 var(--primary); color: var(--text-1); font-weight: 600; }
 .gx-commands li small { flex: none; font-size: var(--fs-xs); font-weight: 400; color: var(--text-3); }
 .gx-commands-none { margin: 0; padding: 14px 4px; font-size: var(--fs-sm); color: var(--text-3); }
+/* R4 · Respuesta a una pregunta: cómo se ha entendido (fragmentos), lo que no, y cuántas coinciden. */
+.gx-answer { display: grid; gap: 6px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--bg-subtle); }
+.gx-answer p { margin: 0; }
+.gx-answer-reading { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.gx-answer-tag { margin-right: 4px; font-size: var(--fs-xs); font-weight: 600; color: var(--primary-text); }
+.gx-answer-chip { padding: 1px 8px; border: 1px solid var(--border-strong); border-radius: 999px; background: var(--bg-surface); font-size: var(--fs-xs); color: var(--text-2); }
+.gx-answer-chip:first-of-type { border-color: var(--primary); color: var(--primary-text); font-weight: 600; }
+.gx-answer-note { font-size: var(--fs-xs); color: var(--warning); }
+.gx-answer-status { font-size: var(--fs-sm); color: var(--text-2); font-variant-numeric: tabular-nums; }
+.gx-answer-status strong { color: var(--text-1); }
+.gx-answer-partial { color: var(--warning); }
+.gx-commands li[data-group="respuesta"] small, .gx-commands li[data-group="anclados"] small { font-variant-numeric: tabular-nums; color: var(--primary-text); }
+/* F5 · Anclados en el menú lateral: accesos directos a fichas, sin datos guardados más allá del tipo y el ID. */
+.sidebar-pins { display: grid; gap: 1px; margin-top: 4px; }
+.sidebar-pins h2 { margin: 10px 10px 2px; font-family: inherit; font-size: var(--fs-xs); font-weight: 600; color: var(--sb-muted); }
+.sidebar-pins button:disabled { opacity: .55; cursor: default; }
+@media (max-width: 760px) { .sidebar-pins { display: none; } }
+.sidebar-pins button { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 28px; padding: 0 10px; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--sb-text); font-size: var(--fs-sm); text-align: left; cursor: pointer; }
+.sidebar-pins button:hover { background: var(--sb-hover); color: var(--sb-text-strong); }
+.sidebar-pins button:focus-visible { outline: 2px solid var(--sb-icon-active); outline-offset: -2px; }
+.sidebar-pins button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar-pins svg { flex: none; color: var(--sb-muted); }
+.pin-toggle[aria-pressed="true"] { color: var(--primary-text); }
+.drawer-header-actions { display: flex; align-items: center; gap: 2px; flex: none; }
+.pin-toggle svg { display: block; }
 
 /* =====================================================================================================
  * Fase 1 · Evidencia de Continuidad como expediente y Cambios con el historial como contenido principal.

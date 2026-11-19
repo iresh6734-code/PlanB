@@ -11,6 +11,7 @@ import { fallbackPage, labVisible } from './app-shell/navigation.js';
 import { pathOf, pendingStillWanted, placeOf } from './app-shell/routes.js';
 import { useBoardLoader, useRecordListLoader, useRecordListState } from './app-shell/useRecordList.js';
 import { useDealPulse } from './app-shell/useDealPulse.js';
+import { runBulk, type BulkItem, type BulkResult } from './app-shell/bulk-edit.js';
 import { ShortcutsHelp } from './app-shell/ShortcutsHelp.js';
 import { RecordsPage } from './app-shell/RecordsPage.js';
 import { Sidebar } from './app-shell/Sidebar.js';
@@ -228,13 +229,25 @@ export default function App() {
   const pageLabel = page==='workspace'?(entity?.label??'Trabajar'):({home:'Inicio',today:'Hoy',changes:'Cambios',agents:'Propuestas',radar:'Laboratorio · Radar','date-check':'Laboratorio · Comprobar una fecha',continuity:'Continuidad','team-sync':'Copia de equipo',export:'Exportar',integrations:'Integraciones',prepare:'Preparación'} as Record<string,string>)[page]??'';
   // Mover una oportunidad de etapa desde el tablero: misma validación y mismo guardado que la ficha. Devuelve el motivo si no se puede.
   // Cambiar un campo desde la tabla o el tablero: misma validación y mismo guardado que la ficha. Devuelve el motivo si no se puede.
-  const saveField = async (record: CrmRecord, key: string, value: string | null): Promise<string | null> => {
-    if (!spec) return 'La aplicación todavía no está lista.';
+  // Escribir un campo con la validación de la ficha, sin refrescar: lo usan el guardado suelto y el cambio en bloque.
+  const writeField = async (record: CrmRecord, key: string, value: string | null): Promise<{ reason: string | null; change?: { id: number; at: string; copy: string } | null }> => {
+    if (!spec) return { reason: 'La aplicación todavía no está lista.' };
     const next: CrmRecord = { ...record, values: { ...record.values, [key]: value } };
     const issues = validateRecord(spec, next, record);
-    if (Object.keys(issues).length) return Object.values(issues)[0];
-    try { const result = await api<{ change?: { id: number; at: string; copy: string } | null }>('/records/' + record.entity + '/' + encodeURIComponent(record.id), { method: 'PATCH', body: JSON.stringify({ values: next.values }) }); await refresh(); setUndoable(result.change ? { changeId: result.change.id, at: result.change.at, copy: result.change.copy } : null); setNotice('Guardado en tu copia local.'); return null; }
+    if (Object.keys(issues).length) return { reason: Object.values(issues)[0] };
+    try { const result = await api<{ change?: { id: number; at: string; copy: string } | null }>('/records/' + record.entity + '/' + encodeURIComponent(record.id), { method: 'PATCH', body: JSON.stringify({ values: next.values }) }); return { reason: null, change: result.change ?? null }; }
+    catch (failure) { return { reason: failure instanceof Error ? failure.message : 'No se pudo guardar el cambio.' }; }
+  };
+  const saveField = async (record: CrmRecord, key: string, value: string | null): Promise<string | null> => {
+    const written = await writeField(record, key, value); if (written.reason) return written.reason;
+    try { await refresh(); setUndoable(written.change ? { changeId: written.change.id, at: written.change.at, copy: written.change.copy } : null); setNotice('Guardado en tu copia local.'); return null; }
     catch (failure) { return failure instanceof Error ? failure.message : 'No se pudo guardar el cambio.'; }
+  };
+  // Cambio en bloque (V3): uno a uno y un solo refresco al final. El «Deshacer» suelto deja de valer: ya no es el último cambio.
+  const saveMany = async (items: BulkItem[], onProgress?: (handled: number, total: number) => void, signal?: AbortSignal): Promise<BulkResult> => {
+    const result = await runBulk(items, async item => (await writeField(item.record, item.key, item.after)).reason, { signal, onProgress });
+    if (result.done.length) { setUndoable(null); try { await refresh(); } catch { /* la lista se pondrá al día en el siguiente refresco */ } }
+    return result;
   };
   const moveDeal = (record: CrmRecord, stageId: string) => saveField(record, spec?.roles?.stage ?? 'dealstage', stageId);
   const undoLast = async () => {
@@ -302,7 +315,7 @@ export default function App() {
       : !state.ready || !spec || !entity ? <section className="empty-state"><ShieldCheck size={36} /><h1>Revisa la preparación</h1><p>La captura y las reglas deben estar verificadas antes de editar.</p>
           <button className="button primary" onClick={() => openPreparation(2)}>Revisar aplicación</button></section>
       : <RecordsPage state={state} spec={spec} entity={entity} entityName={entityName} rows={rows} records={records} total={total} offset={offset} setOffset={setOffset}
-          query={query} setQuery={setQuery} pipeline={pipeline} setPipeline={setPipeline} selected={selected} setSelected={setSelected} recordsLoading={recordsLoading} recordsError={recordsError} onRetry={() => setDataRevision(r => r + 1)} busy={busy} date={date} moveDeal={moveDeal} newWith={values => { setPreset(values); setSelected('new'); }} saveField={saveField} canUndo={!!undoable} onUndo={() => void undoLast()} setServerView={setServerView} facets={facets} board={board} pulse={pulse}
+          query={query} setQuery={setQuery} pipeline={pipeline} setPipeline={setPipeline} selected={selected} setSelected={setSelected} recordsLoading={recordsLoading} recordsError={recordsError} onRetry={() => setDataRevision(r => r + 1)} busy={busy} date={date} moveDeal={moveDeal} newWith={values => { setPreset(values); setSelected('new'); }} saveField={saveField} saveMany={saveMany} canUndo={!!undoable} onUndo={() => void undoLast()} setServerView={setServerView} facets={facets} board={board} pulse={pulse}
           viewCoverage={() => void viewCoverage()} toggleServices={() => act(() => post('/disconnect', { disconnected: !state.disconnected }), state.disconnected ? 'Servicios habilitados para importar o generar.' : 'HubSpot e IA desconectados. Sigue trabajando con tus datos locales.')} />}
     </main>
     {globalSearch && state.ready && state.snapshot ? <WorkspaceSearch captureId={state.snapshot.id+':'+state.snapshot.capturedAt} expectedContext={state.workspaceSearchContext??null} localRevision={dataRevision} refreshWorkspace={refresh} close={() => setGlobalSearch(false)} openRecord={(record, related) => { setGlobalSearch(false); openEntity(record.entity); setRecords([record,...related]); setSelected(record); }}/>:null}

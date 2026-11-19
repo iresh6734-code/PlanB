@@ -209,6 +209,8 @@ html body .table-container th:last-child { border-top-right-radius: var(--r-lg);
 html body .table-container td { height: var(--row-h); padding: 0 12px; border-bottom: 1px solid var(--rule); font-size: var(--fs-md); color: var(--text-2); }
 html body .table-container tbody tr:hover td { background: var(--bg-row-hover); }
 html body .table-container tbody tr.selected-row td { background: var(--bg-active); }
+html body .table-container tbody tr.marked-row td { background: var(--primary-subtle); }
+html body .gx-bulk { border-radius: var(--r-sm); }
 html body .table-container td:first-child, html body .record-link { color: var(--text-1); font-weight: 600; }
 html body .record-link:hover { color: var(--primary-text); text-decoration: underline; text-decoration-thickness: 1px; }
 html body .avatar, html[data-theme="dark"] body .avatar { width: 20px; height: 20px; border-radius: 2px; font-size: 10px; background: var(--primary-subtle); color: var(--primary-text); }

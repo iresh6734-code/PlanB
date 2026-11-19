@@ -11,6 +11,8 @@ import { RECORD_PAGE_SIZE, type BoardRead, type RecordListView } from './useReco
 import { pagedLabel } from './pager.js';
 import { formatRecordSort } from '../../shared/record-order.js';
 import { InlineSelect } from './InlineSelect.js';
+import { BulkBar } from './BulkBar.js';
+import { bulkFields, type BulkItem, type BulkResult } from './bulk-edit.js';
 
 const singular: Record<EntityName, string> = { contacts: 'Nuevo cliente', companies: 'Nueva empresa', deals: 'Nueva oportunidad', tasks: 'Nueva tarea' };
 type Spec = NonNullable<AppState['spec']>;
@@ -28,6 +30,8 @@ type Props = {
   newWith?: (values: Record<string, string>) => void;
   /** Cambia un campo de lista desde la tabla, con la validación y el guardado de la ficha. */
   saveField: (record: CrmRecord, key: string, value: string | null) => Promise<string | null>;
+  /** Cambio en bloque (V3): guarda varios uno a uno y refresca una sola vez. Sin esto, la tabla no ofrece casillas. */
+  saveMany?: (items: BulkItem[], onProgress?: (handled: number, total: number) => void, signal?: AbortSignal) => Promise<BulkResult>;
   /** El último guardado aún se puede deshacer (lo decide App, que caduca la opción a los pocos segundos). */
   canUndo?: boolean; onUndo?: () => void;
   /** Con esto, el orden y el filtro rápido los resuelve el servidor sobre todos los registros (V1); sin ello, solo la página. */
@@ -48,7 +52,7 @@ const writeView = (entity: EntityName, view: View) => { try { localStorage.setIt
 
 /** Clientes, Empresas, Oportunidades y Tareas: cabecera-barra, tabla ordenable o tablero por etapas, y barra de estado.
  *  Con `setServerView`, el orden y el filtro rápido llegan a todos los registros; las vistas inteligentes miran la página. */
-export function RecordsPage({ state, spec, entity, entityName, rows, records, total, offset, setOffset, query, setQuery, pipeline, setPipeline, selected, setSelected, recordsLoading, recordsError, onRetry, busy, date, viewCoverage, toggleServices, moveDeal, saveField, newWith, canUndo = false, onUndo, setServerView, facets, board, pulse = null }: Props) {
+export function RecordsPage({ state, spec, entity, entityName, rows, records, total, offset, setOffset, query, setQuery, pipeline, setPipeline, selected, setSelected, recordsLoading, recordsError, onRetry, busy, date, viewCoverage, toggleServices, moveDeal, saveField, saveMany, newWith, canUndo = false, onUndo, setServerView, facets, board, pulse = null }: Props) {
   const server = !!setServerView;
   // Tablero con todo el proceso (V2): en cuanto llega la primera página sustituye a la página de la lista; si falla, se vuelve a ella.
   const live = entityName === 'deals' && board && !board.error && (board.scanned > 0 || !board.loading) ? board : null, boardOn = !!live;
@@ -121,6 +125,21 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
     return sort.dir * (numeric ? nx - ny : displayValue(x, sortField, records, spec).localeCompare(displayValue(y, sortField, records, spec), 'es', { numeric: true, sensitivity: 'base' }));
   }) : filtered;
   const visible = pick && pickField && !server ? shown.filter(record => String(record.values[pickField.key] ?? '') === pick) : shown;
+  // Selección para el cambio en bloque: solo cuenta lo que sigue a la vista; cambiar de página, búsqueda o filtro la vacía.
+  const bulkOn = !!saveMany && entityName !== 'deals' && bulkFields(entity).length > 0;
+  const [marked, setMarked] = useState<Set<string>>(() => new Set());
+  const [anchor, setAnchor] = useState<number | null>(null);
+  useEffect(() => { setMarked(new Set()); setAnchor(null); }, [entityName, offset, query, pick, smart]);
+  const picked = bulkOn ? visible.filter(record => marked.has(record.id)) : [];
+  const allMarked = picked.length > 0 && picked.length === visible.length;
+  const markAll = () => { setMarked(allMarked ? new Set() : new Set(visible.map(record => record.id))); setAnchor(null); };
+  // Mayús + clic marca o desmarca el tramo desde la última casilla tocada.
+  const mark = (index: number, range: boolean) => {
+    const id = visible[index].id, on = !marked.has(id);
+    setMarked(current => { const next = new Set(current); const from = range && anchor !== null ? Math.min(anchor, index) : index, to = range && anchor !== null ? Math.max(anchor, index) : index; for (const record of visible.slice(from, to + 1)) { if (on) next.add(record.id); else next.delete(record.id); } return next; });
+    setAnchor(index);
+  };
+  const freshRecord = (id: string) => loaded.find(record => record.id === id);
   // Exportar la vista: lo que se ve en la tabla (búsqueda, filtro y orden aplicados), con los valores tal como se muestran.
   const exportView = () => {
     const columns = entity.columns.map(key => entity.fields.find(field => field.key === key)!).filter(Boolean);
@@ -204,18 +223,21 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
         {deals.length > CARD_CAP ? <button type="button" className="gx-col-more" aria-expanded={open} onClick={() => setExpanded(current => { const next = new Set(current); if (open) next.delete(stage.id); else next.add(stage.id); return next; })}>{open ? 'Ver menos' : 'Ver ' + (deals.length - CARD_CAP).toLocaleString('es-ES') + ' más'}</button> : null}
         {!deals.length ? <p className="column-empty">Sin oportunidades</p> : null}</section>;
     })}</div>
-    : <div className="table-container"><table><thead><tr>{entity.columns.map(key => <th key={key} aria-sort={sort?.key===key?(sort.dir===1?'ascending':'descending'):'none'}><button type="button" className="gx-sort" title={server?'Ordenar todos los registros por esta columna':total>rows.length?'Ordena los '+rows.length+' registros de esta página':'Ordenar por esta columna'} onClick={()=>{setSort(current=>current?.key===key?(current.dir===1?{key,dir:-1}:null):{key,dir:1});if(server)setOffset(0);}}>{entity.fields.find(f => f.key === key)!.label}</button></th>)}<th><span className="sr-only">Editar</span></th></tr></thead>
-  <tbody>{visible.map(record => <tr key={record.id} className={selected !== 'new' && selected?.id === record.id ? 'selected-row' : ''}>
+    : <div className="table-container"><table><thead><tr>{entity.columns.map((key, index) => { const sorter = <button type="button" className="gx-sort" title={server?'Ordenar todos los registros por esta columna':total>rows.length?'Ordena los '+rows.length+' registros de esta página':'Ordenar por esta columna'} onClick={()=>{setSort(current=>current?.key===key?(current.dir===1?{key,dir:-1}:null):{key,dir:1});if(server)setOffset(0);}}>{entity.fields.find(f => f.key === key)!.label}</button>;
+      return <th key={key} aria-sort={sort?.key===key?(sort.dir===1?'ascending':'descending'):'none'}>{index === 0 && bulkOn ? <span className="gx-pick-cell"><input type="checkbox" className="gx-pick" aria-label={allMarked ? 'Desmarcar todos' : 'Marcar los ' + visible.length + ' de la vista'} title={allMarked ? 'Desmarcar todos' : 'Marcar todos los de la vista para cambiarlos a la vez'} disabled={!visible.length} checked={allMarked} ref={node => { if (node) node.indeterminate = picked.length > 0 && !allMarked; }} onChange={markAll} />{sorter}</span> : sorter}</th>; })}<th><span className="sr-only">Editar</span></th></tr></thead>
+  <tbody>{visible.map((record, rowIndex) => <tr key={record.id} className={(selected !== 'new' && selected?.id === record.id ? 'selected-row' : '') + (bulkOn && marked.has(record.id) ? ' marked-row' : '')}>
         {entity.columns.map((key, index) => { const field = entity.fields.find(f => f.key === key)!; const value = displayValue(record.values[key], field, records, spec);
-          return <td key={key} data-label={field.label}>{index === 0 ? <button className="record-link" onClick={() => setSelected(record)}>
+          const link = <button className="record-link" onClick={() => setSelected(record)}>
             {entityName === 'contacts' ? <span className="avatar">{String(record.values.firstname || '?')[0]}{String(record.values.lastname || '')[0]}</span> : null}
-            {entityName === 'contacts' && key === entity.displayField ? recordName(record, spec) : value}</button>
+            {entityName === 'contacts' && key === entity.displayField ? recordName(record, spec) : value}</button>;
+          return <td key={key} data-label={field.label}>{index === 0 ? (bulkOn ? <span className="gx-pick-cell"><input type="checkbox" className="gx-pick" aria-label={'Marcar ' + recordName(record, spec)} title="Marcar para cambiar varios a la vez (Mayús + clic marca un tramo)" checked={marked.has(record.id)} onChange={event => mark(rowIndex, (event.nativeEvent as MouseEvent).shiftKey === true)} />{link}</span> : link)
             : field.type === 'enum' && !field.readOnly && field.options.length ? <InlineSelect className="gx-inline" aria-label={'Cambiar ' + field.label.toLowerCase() + ' de ' + recordName(record, spec)} title={'Cambiar ' + field.label.toLowerCase() + ' (con el teclado, confirma con Intro)'} value={String(record.values[key] ?? '')} disabled={editing !== null} data-saving={editing === record.id + ':' + key ? 'true' : undefined} onCommit={next => void change(record, key, next)}>
                 {field.required ? null : <option value="">—</option>}{!field.options.some(option => option.id === String(record.values[key] ?? '')) && record.values[key] ? <option value={String(record.values[key])}>{value}</option> : null}{field.options.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}</InlineSelect>
             : <span className={field.type === 'enum' ? 'enum-label' : field.type === 'date' && isPast(record, record.values[key]) ? 'gx-past' : ''} title={field.type === 'date' && isPast(record, record.values[key]) ? 'Fecha anterior a hoy' : undefined}>{value}</span>}{entityName === 'tasks' && key === dueKey && field.type === 'date' ? (() => { const hint = dueHint(record, record.values[key]); return hint ? <small className="gx-due-rel" data-tone={hint.tone}>{hint.text}</small> : null; })() : null}{entityName === 'tasks' && key === dueKey && field.type === 'date' && !field.readOnly && isPast(record, record.values[key]) ? <button type="button" className="gx-postpone" disabled={editing !== null} aria-label={'Pasar «' + recordName(record, spec) + '» a mañana'} onClick={() => void postpone(record)}>Mañana</button> : null}</td>; })}
         <td className="gx-row-open"><button className="icon-button" aria-label={'Editar ' + recordName(record, spec)} onClick={() => setSelected(record)}><ChevronRight size={18} /></button></td></tr>)}</tbody></table>
       {recordsLoading?<Skeleton rows={8} label="Cargando registros…" />:recordsError?<ErrorState title="No se pudieron cargar los registros" onAction={onRetry}>Tus datos siguen en este ordenador. {onRetry?'Vuelve a intentarlo; si se repite, comprueba que Plan B sigue abierto.':'Vuelve a seleccionar la sección para intentarlo de nuevo.'}</ErrorState>:!visible.length && filterActive && (rows.length || (server && pickActive)) ? <EmptyState icon={<Search size={22} />} title="Ningún registro con este filtro" action={<button type="button" className="button secondary" onClick={() => { choosePick(null); setSmart(null); }}>Quitar filtros</button>}>{pageOnly ? 'El filtro mira los ' + rows.length + ' registros cargados; prueba en la página siguiente o busca por nombre.' : server && !rows.length ? 'Ningún registro cumple el filtro elegido' + (query ? ' con esta búsqueda.' : '.') : 'Los ' + rows.length + ' registros de la lista no cumplen el filtro elegido.'}</EmptyState>:!visible.length ? <EmptyState icon={<Search size={22} />} title={query ? 'Sin resultados' : 'Todavía no hay registros'} action={query ? <button type="button" className="button secondary" onClick={() => { setQuery(''); setOffset(0); }}>Quitar la búsqueda</button> : <button type="button" className="button primary" onClick={() => setSelected('new')}><Plus size={16} />{singular[entityName]}</button>}>{query ? 'Prueba con otro nombre, correo o empresa.' : 'Crea el primer registro para empezar.'}</EmptyState> : null}
     </div>}
+    {bulkOn && saveMany ? <BulkBar key={entityName} spec={spec} entity={entity} picked={picked} fresh={freshRecord} reloading={recordsLoading} saveMany={saveMany} keep={ids => { setMarked(new Set(ids)); setAnchor(null); }} /> : null}
     <footer className="gx-statusbar"><div className="status-strip"><span className={'status-label ' + (state.disconnected ? 'independent' : '')}><span className="dot" />{state.disconnected ? 'Modo independiente' : 'Copia local activa'}</span>
   <span className="copy-date">Última copia · {date}</span><button className="text-button" onClick={viewCoverage}>Ver cobertura<ChevronRight size={14} /></button>
       {!state.runtime ? <button className="text-button disconnect" disabled={busy} onClick={toggleServices}>

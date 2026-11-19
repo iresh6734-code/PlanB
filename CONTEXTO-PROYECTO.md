@@ -1,8 +1,15 @@
 # Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026, 13:13, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1, V2 y V5 hechas.
+Última revisión: **19/11/2026, 13:27, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1, V2, V3 y V5 hechas.
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
+
+## Super plan V3 · Cambio en bloque · 19/11/2026, 13:27, Europe/Madrid
+
+- `src/app-shell/bulk-edit.ts` (puro): `bulkFields` (listas y fechas editables, nunca el nombre), `planBulk` (salta los que ya tienen el valor), `runBulk` (uno a uno, un fallo no para, cancelable), `undoItems` (al revés, solo lo guardado y solo si el campo sigue con el valor del lote) y `bulkSummary`. Tope `MAX_BULK = 200`.
+- `App.tsx`: `writeField` valida y guarda sin refrescar; `saveField` hace lo de siempre sobre él; `saveMany` ejecuta el lote, refresca una vez y retira el «Deshacer» suelto (ya no es el último cambio). Cada registro sigue siendo un cambio propio en Cambios.
+- `BulkBar.tsx` + `RecordsPage.tsx`: casilla dentro de la primera celda (para no romper la tarjeta móvil, que usa esa celda como título), cabecera con marcar todo/indeterminado, Mayús + clic para tramos. La selección se vacía al cambiar de tipo, página, búsqueda o filtro. No hay casillas en el tablero de Oportunidades.
+- Pruebas: `tests/bulk-edit.test.ts` nueva; `ui-states`, `design-tokens`, `team-audit`, `saved-views` y `record-list` en verde; build correcto. Sin revisión visual: ver en casa.
 
 ## Super plan V5 · Oportunidades paradas · 19/11/2026, Europe/Madrid
 

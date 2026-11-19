@@ -256,7 +256,7 @@ test('GUARDADO SIN RESOLVER: la tarea con un guardado incierto no se planifica s
 });
 
 test('AGENTES: la vista de Agentes y revisiones no ofrece la jornada y «Revisar mi copia» sigue guardando una revisión local', async ({ page }) => {
-  await begin(page, 'day'); await openSection(page, 'Propuestas'); await expect(page.getByRole('heading', { name: 'Agentes y revisiones' })).toBeVisible(); await expect(entry(page)).toHaveCount(0);
+  await begin(page, 'day'); await openSection(page, 'Propuestas'); await expect(page.getByRole('heading', { name: 'Propuestas', exact: true })).toBeVisible(); await expect(entry(page)).toHaveCount(0);
   const reviews = writes(page); await page.getByRole('button', { name: /Revisar mi copia|Reintentar la misma revisión/ }).click(); await expect(page.locator('.lop-confirmation')).toContainText('Revisión local guardada');
   expect(reviews.filter(line => line.startsWith('POST') && line.endsWith('/api/v7/local-operations/reviews')), 'una sola revisión').toHaveLength(1);
 });

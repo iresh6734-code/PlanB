@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Laptop, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import type { TeamRecord } from '../shared/team.js';
 import { TeamReplicaViewSchema, completeReplica, replicaContacts, type TeamReplicaView } from '../shared/team-replica-view.js';
 import { api, ApiError } from './api.js';
@@ -57,7 +57,7 @@ export function TeamSync(){
  };
  const closeEdit=()=>{if(!command.current){updateEdit(null);setPhone('');}};
  const reviewEdit=()=>{const current=authority.current;if(!edit||command.current||read.current||mustRead.current||!current?.revision)return;const row=current.records.find(r=>r.entity===edit.record.entity&&r.id===edit.record.id);if(row)updateEdit({record:row,revision:current.revision,stale:false});};
- return <section className="sales-page team-sync-page" aria-label="Copia de equipo"><header className="page-header"><div><h1>Tu equipo, también sin conexión.</h1><p className="page-subtitle">Una réplica separada, con cambios pendientes y conflictos revisables.</p></div><Laptop size={28}/></header>
+ return <section className="sales-page team-sync-page" aria-label="Copia de equipo"><header className="page-header"><div><h1>Copia de equipo</h1><p className="page-subtitle">Una réplica separada, con cambios pendientes y conflictos revisables.</p></div></header>
   {message?<p className="success-label" role="status">{message}</p>:null}
   {error&&!edit?<p className="error-box" role="alert">{error}</p>:null}
   {needsRead?<p className="info-box">Actualiza la lectura local antes de hacer otro intercambio. Este botón no repite la vinculación, el guardado ni la sincronización.</p>:null}

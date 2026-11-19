@@ -1,8 +1,32 @@
 # Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026, 9:16:11, Europe/Madrid**. El comparador descarta páginas de capturas alteradas. El auditor de Equipo vuelve a R2 con cuatro controles independientes.
+Última revisión: **19/11/2026, 11:16, Europe/Madrid**. Rediseño integral «Cuaderno» (identidad nueva de la app local) y regla para evitar alertas DPAPI de Defender en equipos corporativos.
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
+
+## Rediseño «Cuaderno» y alerta DPAPI · 19/11/2026, 11:16, Europe/Madrid
+
+Siguiendo el brief «REDISEÑO INTEGRAL» del usuario, que delegó la dirección visual, la app local pasa de «Faro» a **«Cuaderno»**. El concepto es el cuaderno cuadriculado de oficina: papel con cuadrícula tenue, margen rojo y cuatro tintas con significado único (azul = acción, rojo = vencido o error, fluorescente = aviso, lápiz discontinuo = prueba o borrador). Filetes de 1 px, radios de 2–4 px, controles de 28 px y filas de 32 px, solo Inter. Todo está en `src/cuaderno.css`, importado el último en `src/main.tsx`. El sistema se describe en DESIGN.md y el brief de superficie en `.impeccable/surfaces/src-app-shell.md`.
+
+- **Cambios de estructura:**
+  - La barra superior muestra el estado de la copia, el modo de datos y las herramientas como iconos.
+  - El nombre de la copia pasa al pie del menú.
+  - Inicio muestra siempre «La semana en una línea».
+  - Los títulos de página pasan a ser el nombre del apartado: Continuidad, Preparación, Propuestas, Hoy, Exportar, Cambios, Copia de equipo e Integraciones.
+- **Lo que no cambia:** textos de estados, flujos y API.
+- **Equipo:** los títulos de TeamApp no se han renombrado.
+- **Comprobación:**
+  - Capturas antes y después a 1440, 1366 y 390 px, en claro y oscuro: sin desbordes.
+  - `tests/design-tokens.test.ts` 11/11, con contraste AA efectivo de Cuaderno y orden de carga.
+  - `tsc` correcto.
+  - 12 specs e2e actualizados a los títulos nuevos con `exact: true`, pero **no ejecutados**.
+- **Fallos de la batería unitaria** (3235/3268): ninguno procede del rediseño.
+  - Las «huellas» de task-focus y task-save fallan porque este clon tiene finales CRLF (`core.autocrlf=true`). Normalizados a LF, los hashes coinciden.
+  - El resto (sesión de compromisos, radar, 342, H9a, rendimiento con 10.000 registros, worker, R3) es de servidor, que no se ha tocado.
+
+Durante las pruebas, Defender del equipo corporativo port428 abrió la alerta «Suspicious DPAPI Activity» sobre varios `powershell.exe`. La causa probable es `server/crypto.ts`, que protege la clave local con `ProtectedData` a través de PowerShell en cada carpeta de datos nueva y en cada arranque. No se ha confirmado el proceso padre. Se pararon pruebas y servidores de demo y no se tocó la alerta ni la protección. El usuario informa a su responsable. Desde ahora, en equipos corporativos no se ejecutan baterías, Playwright ni servidores de demo (ver AGENTS.md).
+
+Siguiente paso: ejecutar los specs e2e del rediseño en un equipo sin esa restricción y valorar DPAPI sin PowerShell (pendiente F3 de ESTADO.md).
 
 ## Landing comercial de continuidad · 18/11/2026, Europe/Madrid
 

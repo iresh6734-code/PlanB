@@ -58,7 +58,7 @@ async function enter(page: Page, hold = false) {
   });
   const gate = await page.request.get('/api/v2/auth/status').then(r => r.json());
   expect((await page.request.post('/api/v2/auth/' + (gate.configured ? 'login' : 'setup'), { data: { password } })).ok()).toBeTruthy();
-  await page.goto('/'); await page.getByRole('button', { name: 'Continuidad', exact: true }).click(); await expect(page.getByRole('heading', { name: 'Tu negocio puede seguir.' })).toBeVisible();
+  await page.goto('/'); await page.getByRole('button', { name: 'Continuidad', exact: true }).click(); await expect(page.getByRole('heading', { name: 'Continuidad', exact: true })).toBeVisible();
   return { errors, outside, writes, apiGets };
 }
 async function openSearch(page: Page) {
@@ -115,7 +115,7 @@ test('búsqueda: un 404 del servicio antiguo no se presenta como «sin resultado
 
 // ------------------------------------------------------------------ Hoy
 async function today(page: Page) {
-  await page.getByRole('button', { name: 'Hoy', exact: true }).click(); await expect(page.getByRole('heading', { name: 'Tu día, con un siguiente paso.', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Hoy', exact: true }).click(); await expect(page.getByRole('heading', { name: 'Hoy', exact: true })).toBeVisible();
   const priorities = page.getByRole('region', { name: 'Lista de prioridades', exact: true }), commitments = page.getByRole('region', { name: 'Lista de compromisos', exact: true });
   await expect(priorities.locator('.work-queue-count')).toHaveText('1–5 de ' + OPPS + ' prioridades'); await expect(commitments.locator('.work-queue-count')).toHaveText('1–5 de ' + TASKS + ' tareas');
   return { priorities, commitments };

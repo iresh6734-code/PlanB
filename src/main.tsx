@@ -10,6 +10,7 @@ import './design-system.css';
 import './planb-ui.css';
 import './operaciones-claras.css';
 import './faro.css';
+import './cuaderno.css';
 import { applyTheme, storedTheme } from './app-shell/theme.js';
 // El tema se aplica antes de pintar, para no ver un destello del tema contrario.
 applyTheme(storedTheme());

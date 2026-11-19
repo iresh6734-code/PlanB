@@ -147,11 +147,44 @@ export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, 
 
   return <section className="oc-home" aria-labelledby="oc-home-title">
     <header className="oc-home-head">
-      <div><p>{today.charAt(0).toUpperCase() + today.slice(1)}{snapshot ? ' · ' + snapshot.name : ''}</p><h1 id="oc-home-title">{firstRun ? 'Bienvenido a Plan B.' : greeting + '. Esto es lo que importa hoy.'}</h1></div>
-      <div className="oc-home-actions"><span className="oc-chip" data-tone={snapshot?.source.isTestData === false ? 'warn' : undefined}>{snapshot?.source.isTestData === false ? 'Producción · lectura' : 'Datos de prueba'}</span></div>
+      <h1 id="oc-home-title">{firstRun ? 'Bienvenido a Plan B' : 'Inicio'}</h1>
+      <p>{greeting} · {today}{snapshot ? ' · ' + snapshot.name : ''}</p>
     </header>
 
     {firstRun ? <FirstRun protectedAccess={status ? status.protected : null} onProtect={onProtect} onPrepare={onPrepare} onOpenContinuity={onOpenContinuity} /> : <>
+    {!state.runtime ? <>
+    <section className="fx-line" aria-labelledby="fx-line-title">
+      <div className="fx-line-head">
+        <div><h2 id="fx-line-title">La semana en una línea</h2><p>{lineSummary}</p></div>
+        <button type="button" className="fx-report-open" disabled={!ops} onClick={() => { setCopied(false); setReport(true); }}>Resumen de la semana</button>
+        <div className="fx-counts">
+      <button type="button" className="oc-card oc-kpi" data-tone={counts && counts.overdue > 0 ? 'danger' : 'ok'} onClick={onOpenToday} aria-label={'Tareas vencidas: ' + (counts ? counts.overdue : 'sin dato') + '. Abrir Hoy'}>
+        <span className="oc-kpi-label">Tareas vencidas</span><span className="oc-kpi-value">{counts ? counts.overdue : '—'}</span>
+        <span className="oc-kpi-note">{!counts ? (opsError || 'Leyendo…') : counts.overdue === 0 ? 'Nada atrasado' : oldest > 0 ? 'La más antigua, hace ' + oldest + (oldest === 1 ? ' día' : ' días') : 'Revisa las de hoy'}</span>
+      </button>
+      <button type="button" className="oc-card oc-kpi" data-tone={counts && counts.upcoming > 0 ? 'warn' : undefined} onClick={onOpenToday} aria-label={'Próximas 24 horas: ' + (counts ? counts.upcoming : 'sin dato') + '. Abrir Hoy'}>
+        <span className="oc-kpi-label">Próximas 24 h</span><span className="oc-kpi-value">{counts ? counts.upcoming : '—'}</span>
+        <span className="oc-kpi-note" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nextUp ? nextUp.label : counts ? 'Sin vencimientos cercanos' : '—'}</span>
+      </button>
+      {lab ? <button type="button" className="oc-card oc-kpi" data-tone={atRisk.length > 0 ? 'danger' : uncertaintyFirst ? 'warn' : undefined} onClick={onOpenRadar} aria-label={radarLabel + ': ' + (radar.state === 'ready' ? radarCount : 'sin dato') + '. Abrir Radar'}>
+        <span className="oc-kpi-label">{radarLabel}</span><span className="oc-kpi-value">{radar.state === 'ready' ? radarCount : '—'}</span>
+        <span className="oc-kpi-note">{radar.state === 'ready' ? 'De ' + open.length + ' abiertos en el Radar' : radar.state === 'off' ? radar.reason : 'Leyendo…'}</span>
+      </button> : null}
+        </div>
+      </div>
+      {lineDays.length ? <ol className="fx-days" style={{ gridTemplateColumns: 'repeat(' + lineDays.length + ', minmax(0, 1fr))' }}>
+        {lineDays.map(day => <li key={day.offset} data-today={day.offset === 0 ? 'true' : undefined} data-past={day.offset < 0 ? 'true' : undefined} data-weekend={day.weekend ? 'true' : undefined}>
+          {day.marks.length ? <div className="fx-pop" aria-hidden="true"><strong>{day.offset === 0 ? 'Hoy' : day.weekday + ' ' + day.number}{day.clamped ? ' y antes' : ''}</strong>{day.marks.slice(0, 5).map(mark => <span key={mark.key} data-tone={mark.tone} data-kind={mark.kind}>{mark.label}</span>)}{day.marks.length > 5 ? <em>y {day.marks.length - 5} más</em> : null}</div> : null}
+          <div className="fx-stack">
+            {day.marks.slice(0, 7).map(mark => <button key={mark.key} type="button" className="fx-dot" data-kind={mark.kind} data-tone={mark.tone} title={mark.label} aria-label={mark.aria} onClick={mark.open}/>)}
+            {day.marks.length > 7 ? <span className="fx-more">+{day.marks.length - 7}</span> : null}
+          </div>
+          <span className="fx-day"><b>{day.offset === 0 ? 'Hoy' : day.number}</b><i>{day.clamped ? 'y antes' : day.weekday}</i></span>
+        </li>)}
+      </ol> : <p className={'oc-empty-line' + (opsError ? '' : ' ui-loading ui-loading-sm')} role="status">{opsError || 'Leyendo las fechas de tu copia…'}</p>}
+      <p className="fx-key"><span data-tone="danger">Vencido</span><span data-tone="warn">Próximas 24 h</span><span data-tone="later">Más adelante</span>{lab ? <span data-kind="commitment">Compromiso del Radar</span> : null}</p>
+    </section>
+    </> : null}
     <div className="oc-home-grid">
       <div className="oc-home-main-stack">
     <section className="fx-next" data-tone={first ? first.tone : 'ok'} aria-labelledby="fx-next-title">
@@ -205,40 +238,6 @@ export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, 
         {state.ready && state.spec && onOpenRecord ? <QualityPanel spec={state.spec} revision={state.snapshot?.capturedAt + ':' + state.changes} onOpen={onOpenRecord} /> : null}
       </div>
     </div>
-    {!state.runtime ? <details className="fx-week">
-      <summary>Planificación semanal</summary>
-    <section className="fx-line" aria-labelledby="fx-line-title">
-      <div className="fx-line-head">
-        <div><h2 id="fx-line-title">La semana en una línea</h2><p>{lineSummary}</p></div>
-        <button type="button" className="fx-report-open" disabled={!ops} onClick={() => { setCopied(false); setReport(true); }}>Resumen de la semana</button>
-        <div className="fx-counts">
-      <button type="button" className="oc-card oc-kpi" data-tone={counts && counts.overdue > 0 ? 'danger' : 'ok'} onClick={onOpenToday} aria-label={'Tareas vencidas: ' + (counts ? counts.overdue : 'sin dato') + '. Abrir Hoy'}>
-        <span className="oc-kpi-label">Tareas vencidas</span><span className="oc-kpi-value">{counts ? counts.overdue : '—'}</span>
-        <span className="oc-kpi-note">{!counts ? (opsError || 'Leyendo…') : counts.overdue === 0 ? 'Nada atrasado' : oldest > 0 ? 'La más antigua, hace ' + oldest + (oldest === 1 ? ' día' : ' días') : 'Revisa las de hoy'}</span>
-      </button>
-      <button type="button" className="oc-card oc-kpi" data-tone={counts && counts.upcoming > 0 ? 'warn' : undefined} onClick={onOpenToday} aria-label={'Próximas 24 horas: ' + (counts ? counts.upcoming : 'sin dato') + '. Abrir Hoy'}>
-        <span className="oc-kpi-label">Próximas 24 h</span><span className="oc-kpi-value">{counts ? counts.upcoming : '—'}</span>
-        <span className="oc-kpi-note" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nextUp ? nextUp.label : counts ? 'Sin vencimientos cercanos' : '—'}</span>
-      </button>
-      {lab ? <button type="button" className="oc-card oc-kpi" data-tone={atRisk.length > 0 ? 'danger' : uncertaintyFirst ? 'warn' : undefined} onClick={onOpenRadar} aria-label={radarLabel + ': ' + (radar.state === 'ready' ? radarCount : 'sin dato') + '. Abrir Radar'}>
-        <span className="oc-kpi-label">{radarLabel}</span><span className="oc-kpi-value">{radar.state === 'ready' ? radarCount : '—'}</span>
-        <span className="oc-kpi-note">{radar.state === 'ready' ? 'De ' + open.length + ' abiertos en el Radar' : radar.state === 'off' ? radar.reason : 'Leyendo…'}</span>
-      </button> : null}
-        </div>
-      </div>
-      {lineDays.length ? <ol className="fx-days" style={{ gridTemplateColumns: 'repeat(' + lineDays.length + ', minmax(0, 1fr))' }}>
-        {lineDays.map(day => <li key={day.offset} data-today={day.offset === 0 ? 'true' : undefined} data-past={day.offset < 0 ? 'true' : undefined} data-weekend={day.weekend ? 'true' : undefined}>
-          {day.marks.length ? <div className="fx-pop" aria-hidden="true"><strong>{day.offset === 0 ? 'Hoy' : day.weekday + ' ' + day.number}{day.clamped ? ' y antes' : ''}</strong>{day.marks.slice(0, 5).map(mark => <span key={mark.key} data-tone={mark.tone} data-kind={mark.kind}>{mark.label}</span>)}{day.marks.length > 5 ? <em>y {day.marks.length - 5} más</em> : null}</div> : null}
-          <div className="fx-stack">
-            {day.marks.slice(0, 7).map(mark => <button key={mark.key} type="button" className="fx-dot" data-kind={mark.kind} data-tone={mark.tone} title={mark.label} aria-label={mark.aria} onClick={mark.open}/>)}
-            {day.marks.length > 7 ? <span className="fx-more">+{day.marks.length - 7}</span> : null}
-          </div>
-          <span className="fx-day"><b>{day.offset === 0 ? 'Hoy' : day.number}</b><i>{day.clamped ? 'y antes' : day.weekday}</i></span>
-        </li>)}
-      </ol> : <p className={'oc-empty-line' + (opsError ? '' : ' ui-loading ui-loading-sm')} role="status">{opsError || 'Leyendo las fechas de tu copia…'}</p>}
-      <p className="fx-key"><span data-tone="danger">Vencido</span><span data-tone="warn">Próximas 24 h</span><span data-tone="later">Más adelante</span>{lab ? <span data-kind="commitment">Compromiso del Radar</span> : null}</p>
-    </section>
-    </details> : null}
     </>}
     {report ? <Modal title="Resumen de la semana" close={() => setReport(false)} wide><div className="modal-body fx-report">
       <p className="fx-report-meta">{snapshot?.name ?? 'Plan B'} · {today}. Calculado con lo leído ahora de tu copia local.</p>

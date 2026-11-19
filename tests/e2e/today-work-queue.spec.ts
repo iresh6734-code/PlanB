@@ -24,7 +24,7 @@ async function setup(page:Page,partial=false) {
   page.on('request',r=>{if(r.method()!=='GET')writes.push(r.method()+' '+new URL(r.url()).pathname);});
   await page.route('**/*',route=>{const url=new URL(route.request().url());if(url.origin!==origin){outside.push(url.origin);return route.abort();}return route.fallback();});
   await page.goto('/');await page.getByRole('button',{name:'Hoy',exact:true}).click();
-  await expect(page.getByRole('heading',{name:'Tu día, con un siguiente paso.',exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Hoy',exact:true})).toBeVisible();
   const priorities=page.getByRole('region',{name:'Lista de prioridades',exact:true}),commitments=page.getByRole('region',{name:'Lista de compromisos',exact:true});
   await expect(priorities.locator('.work-queue-count')).toHaveText(partial?'1–5 de 20 prioridades':'1–5 de 47 prioridades');
   return {priorities,commitments,errors,outside,writes};

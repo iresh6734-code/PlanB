@@ -301,7 +301,7 @@ test('NAVEGAR DURANTE LA RECARGA: Hoy se desmonta con la lectura de la cola rete
   await completeTask2(page); hold = true; await saveButton(page).click(); await expect.poll(() => held).toBe(1);
   await expect(dialog(page)).toContainText('Actualizando la cola de Hoy'); await dialog(page).getByRole('button', { name: 'Volver a Hoy' }).click().catch(() => leave(page));
   await leave(page).catch(() => undefined);
-  await openSection(page, 'Propuestas'); await expect(page.getByRole('heading', { name: 'Agentes y revisiones' })).toBeVisible();   // Hoy se desmonta con su lectura retenida
+  await openSection(page, 'Propuestas'); await expect(page.getByRole('heading', { name: 'Propuestas', exact: true })).toBeVisible();   // Hoy se desmonta con su lectura retenida
   await openSection(page, 'Tareas de hoy');   // dentro del grupo Hoy su cabecera solo pliega: se vuelve por su apartado (CLAUDE-UI-NAV-LAB) await expect(page.getByRole('heading', { name: 'Hoy', exact: true })).toBeVisible();
   barrier.release();
   await expect(taskButton(page, 'task-2')).toHaveCount(0); await expect(taskButton(page, 'task-3')).toHaveCount(1);

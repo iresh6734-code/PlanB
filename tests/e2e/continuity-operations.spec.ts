@@ -137,7 +137,7 @@ test('una captura retirada del historial con la comparación en vuelo no deja re
 
 test('lo existente sigue accesible: historial, simulacro, copia/recuperación y navegación; móvil sin desbordamiento', async ({ page }) => {
   const { block } = await open(page);
-  await expect(page.getByRole('heading', { name: 'Tu negocio puede seguir.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Continuidad', exact: true })).toBeVisible();
   // Con las pestañas de Continuidad cada bloque sigue a un clic: historial y restauración en «Copias y archivo»; simulacro y mantenimiento en «Estado».
   await page.getByRole('tab', { name: 'Copias y archivo', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Historial de capturas' })).toBeVisible();

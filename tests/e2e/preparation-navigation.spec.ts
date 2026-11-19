@@ -120,7 +120,7 @@ test('main App: imported tasks appear in Hoy and a saved review survives a faile
   await expect(page.locator('.lop-tasks li')).toHaveCount(14);
   await expect(page.getByRole('button', { name: 'Abrir tareas', exact: true })).toHaveCount(0);
   await openSection(page, 'Propuestas');
-  await expect(page.getByRole('heading', { name: 'Agentes y revisiones', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Propuestas', exact: true })).toBeVisible();
   let posts = 0, failRead = false;
   await page.route('**/api/v7/local-operations/reviews', async route => {
     posts++;

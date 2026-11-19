@@ -16,7 +16,7 @@ async function open(page: Page) {
   expect((await page.request.post('/api/v2/auth/' + (status.configured ? 'login' : 'setup'), { data: { password: localPassword } })).ok()).toBeTruthy();
   await page.goto('/'); await expect(page).toHaveTitle('Plan B · Tu CRM sigue contigo');
   await page.getByRole('button', { name: 'Exportar', exact: true }).click();
-  const view = page.locator('.export-page'); await expect(view.getByRole('heading', { name: 'Tu copia, contigo.' })).toBeVisible();
+  const view = page.locator('.export-page'); await expect(view.getByRole('heading', { name: 'Exportar', exact: true })).toBeVisible();
   await expect(view.getByRole('heading', { name: 'Qué contiene esta descarga' })).toBeVisible();
   return { view, errors, outside, exports };
 }

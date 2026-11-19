@@ -19,7 +19,7 @@ test('v4: Hoy, revisión, simulación persistente, integraciones y móvil sin en
   await page.route('**/*',route=>{if(new URL(route.request().url()).hostname!=='127.0.0.1'){external.push(route.request().url());return route.abort();}return route.continue();});
   const before=await request.get('/api/records').then(r=>r.json());
   await page.goto('/');await page.getByRole('button',{name:'Hoy',exact:true}).click();
-  await expect(page.getByRole('heading',{name:'Tu día, con un siguiente paso.'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Hoy',exact:true})).toBeVisible();
   await expect(page.locator('.priority-workspace')).toBeVisible();await page.screenshot({path:resolve(output,'v0.4.0-hoy.png'),fullPage:true});
   await page.getByRole('button',{name:'Preparar seguimiento simulado',exact:true}).click();
   await expect(page.getByRole('status')).toContainText('Análisis terminado');
@@ -37,7 +37,7 @@ test('v4: Hoy, revisión, simulación persistente, integraciones y móvil sin en
   expect(await request.get('/api/records').then(r=>r.json())).toEqual(before);
   expect((await request.get('/api/v2/changes').then(r=>r.json())).changes).toHaveLength(0);
   await openSection(page, 'Propuestas');
-  await expect(page.getByRole('heading',{name:'Trabajo preparado. Tú decides.'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Propuestas',exact:true})).toBeVisible();
   await page.screenshot({path:resolve(output,'v0.4.0-agentes.png'),fullPage:true});
   await page.getByRole('button',{name:'Integraciones',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Gmail',exact:true})).toBeVisible();

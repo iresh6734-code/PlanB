@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Download, FileJson, LockKeyhole } from 'lucide-react';
+import { Download, FileJson } from 'lucide-react';
 import { api, ApiError, download } from './api.js';
 import { Spinner } from './components.js';
 import { RUNTIME_ZIP } from '../shared/version.js';
@@ -34,7 +34,7 @@ export function PortableExport(){
   };
   const ready=!!summary&&reviewed===summary.revision&&!busy&&!loading&&password.length>=12&&password.length<=200&&password===confirm;
   const custodyCurrent=!!summary&&custody?.current===true&&custody.revision===summary.revision;
-  return <section className="export-page"><header className="page-header"><div><h1>Tu copia, contigo.</h1><p className="page-subtitle">Una aplicación independiente y una copia cifrada recuperable en otro equipo.</p></div><LockKeyhole size={29}/></header>
+  return <section className="export-page"><header className="page-header"><div><h1>Exportar</h1><p className="page-subtitle">Una aplicación independiente y una copia cifrada recuperable en otro equipo.</p></div></header>
     <div className="export-review-tools"><button type="button" className="button secondary" disabled={loading||busy} onClick={()=>{setError('');void load();}}>Actualizar contenido</button><p className="helper">La descarga corresponde al espacio activo, incluidos sus cambios locales.</p></div>
     {loading?<Spinner text="Comprobando el contenido de la exportación…"/>:summary?<div className="export-revision"><h2>Qué contiene esta descarga</h2><p><strong>{summary.name}</strong> · espacio de trabajo activo</p><p>Captura del {new Date(summary.capturedAt).toLocaleString('es-ES')} · {summary.records} registros · {summary.changes} cambios locales incluidos</p><small>Captura: {summary.captureId}<br/>Revisión: {summary.revision.slice(0,12)}</small>{summary.differsFromLatest?<p className="warning-text">Hay otra captura más reciente en el historial. Esta descarga conserva el espacio activo y sus cambios; no sustituye esa otra captura.</p>:null}
       <label className="checkbox-label export-review-check"><input type="checkbox" disabled={busy} checked={reviewed===summary.revision} onChange={event=>setReviewed(event.target.checked?summary.revision:null)}/>He revisado la captura y los cambios incluidos en esta descarga.</label>

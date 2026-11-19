@@ -15,7 +15,7 @@ async function open(page: Page) {
   const gate = await page.request.get('/api/v2/auth/status').then(r => r.json());
   const auth = await page.request.post('/api/v2/auth/' + (gate.configured ? 'login' : 'setup'), { data: { password } }); expect(auth.ok()).toBeTruthy();
   await page.goto('/'); await expect(page).toHaveTitle('Plan B · Tu CRM sigue contigo');
-  await page.getByRole('button', { name: 'Continuidad', exact: true }).click(); await expect(page.getByRole('heading', { name: 'Tu negocio puede seguir.' })).toBeVisible();
+  await page.getByRole('button', { name: 'Continuidad', exact: true }).click(); await expect(page.getByRole('heading', { name: 'Continuidad', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Buscar en toda la copia', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Buscar en toda la copia', exact: true }); await expect(dialog).toBeVisible();
   const input = dialog.getByRole('searchbox', { name: 'Buscar en toda la copia' }); await expect(input).toBeFocused();

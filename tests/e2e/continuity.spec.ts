@@ -17,7 +17,7 @@ test('preparación y continuidad con todo el tráfico externo bloqueado', async 
   await page.getByRole('button',{name:'Continuidad',exact:true}).click();
   await expect(page).toHaveTitle('Plan B · Tu CRM sigue contigo');
   await page.getByRole('button',{name:'Preparar aplicación',exact:true}).click();
-  await expect(page.getByRole('heading', { name: 'Tu CRM, con un plan B.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Preparación', exact: true })).toBeVisible();
   await page.screenshot({ path: resolve(output, 'plan-b-v0.3.0-preparacion.png') });
   await page.getByRole('button', { name: 'Continuar con Agencia Norte', exact: true }).click();
   await expect(page.getByText('Captura conciliada', { exact: true })).toBeVisible();
@@ -125,7 +125,7 @@ test('móvil: navegación, edición y configuración sin desbordamiento de pági
 test('simulacro en proceso aislado y sesión de continuidad desde el historial',async({page,browser})=>{
   await page.goto('/');
   await page.getByRole('button',{name:'Continuidad',exact:true}).click();
-  await expect(page.getByRole('heading',{name:'Tu negocio puede seguir.',exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Continuidad',exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Probar mi Plan B',exact:true}).click();
   await expect(page.getByText('Simulacro superado',{exact:true})).toBeVisible({timeout:45000});
   const reportDownload=page.waitForEvent('download');await page.getByRole('button',{name:'Informe para compartir',exact:true}).click();
@@ -232,12 +232,12 @@ test('protección local, cierre de sesión y recuperación del acceso',async({pa
   await page.getByLabel('Contraseña local',{exact:true}).fill('solo-prueba-local-2026');
   await page.getByLabel('Repite la contraseña',{exact:true}).fill('solo-prueba-local-2026');
   await page.getByRole('button',{name:'Guardar protección',exact:true}).click();
-  await expect(page.getByRole('heading',{name:'Tu negocio puede seguir.',exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Continuidad',exact:true})).toBeVisible();
   await lockButton(page).click();
   await expect(page.getByRole('heading',{name:'Tu copia está protegida',exact:true})).toBeVisible();
   await page.getByLabel('Contraseña local',{exact:true}).fill('solo-prueba-local-2026');
   await page.getByRole('button',{name:'Desbloquear',exact:true}).click();
-  await expect(page.getByRole('heading',{name:'Tu negocio puede seguir.',exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Continuidad',exact:true})).toBeVisible();
 });
 
 test('página para agencias prepara un guion local sin solicitudes externas',async({page})=>{

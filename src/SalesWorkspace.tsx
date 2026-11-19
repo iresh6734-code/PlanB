@@ -21,7 +21,7 @@ export function SalesWorkspace({view,openProposals,openDeal}:{view:View;openProp
   useEffect(()=>{void load().catch(f=>setError((f as Error).message));},[view]);
   const run=async(fn:()=>Promise<unknown>,notice='')=>{setBusy(true);setError('');setMessage('');try{await fn();await load();setReviewed(null);setMessage(notice);}catch(f){setError((f as Error).message);}finally{setBusy(false);}};
   const analyze=()=>run(async()=>{const result=await post<{status:string;message:string}>('/v4/agent-runs',{mode:'simulation'});if(result.status==='failed')throw new Error(result.message);},'Análisis terminado. Revisa las propuestas en Cambios.');
-  const titles={today:'Tu día, con un siguiente paso.',agents:'Trabajo preparado. Tú decides.',integrations:'Tus herramientas, conectadas.',proposals:'Propuestas de agentes'};
+  const titles={today:'Hoy',agents:'Propuestas',integrations:'Integraciones',proposals:'Propuestas de agentes'};
   const pending=overview?.proposals.filter(p=>p.status==='review'&&!p.stale).length??0;
   return <section className={'sales-page sales-'+view}>
     {view==='proposals'?<div className="section-heading"><div><h2>{titles[view]}</h2><p className="muted">Revisa el motivo, los destinatarios y cada acción antes de simular.</p></div><span className="badge">Solo ensayo</span></div>

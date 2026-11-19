@@ -82,7 +82,7 @@ test('saving a task that remains queued restores focus to its updated button and
 test('Agentes keeps its review workflow, no task opening buttons, and a persisted receipt without CRM edits', async ({ page }) => {
   const before = await page.request.get(origin + '/api/records').then(r => r.json()); let posts = 0;
   page.on('request', r => { if (r.method() === 'POST' && new URL(r.url()).pathname.endsWith('/local-operations/reviews')) posts++; });
-  await openSection(page, 'Propuestas'); await expect(page.getByRole('heading', { name: 'Agentes y revisiones' })).toBeVisible();
+  await openSection(page, 'Propuestas'); await expect(page.getByRole('heading', { name: 'Propuestas', exact: true })).toBeVisible();
   await expect(page.locator('.lop-open-task')).toHaveCount(0); await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByRole('button', { name: 'Revisar mi copia', exact: true }).click(); await expect(page.locator('.lop-confirmation')).toContainText('Revisión local guardada');
   await page.reload(); await openSection(page, 'Propuestas'); await expect(page.locator('.lop-confirmation')).toContainText('Revisión local guardada');
@@ -99,7 +99,7 @@ test('navigation aborts the saved-task queue read; a late route cannot replace t
   await opener(page).click(); const dialog = page.getByRole('dialog'); await dialog.locator('#ltf-f-status').selectOption('completed'); hold = true;
   await dialog.getByRole('button', { name: 'Guardar cambios', exact: true }).click(); await expect(dialog.getByRole('heading', { name: 'Cambios guardados' })).toBeVisible(); await pending;
   await dialog.getByRole('button', { name: 'Volver a Hoy', exact: true }).click(); await openSection(page, 'Propuestas');
-  await expect(page.getByRole('heading', { name: 'Agentes y revisiones' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Propuestas', exact: true })).toBeVisible();
   const current = await page.request.get(origin + '/api/v7/local-operations').then(r => r.json());
   expect(current.tasks.length).toBe(oldQueue.tasks.length - 1);
   const late = await held!.fulfill({ json: oldQueue }).then(() => 'fulfilled', e => String(e));

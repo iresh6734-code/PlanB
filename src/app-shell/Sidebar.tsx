@@ -85,9 +85,9 @@ export function Sidebar({ state, page, entityName, selected, signals, step, prep
       <button type="button" className="oc-search" disabled={!state.ready || !!selected} onClick={() => setGlobalSearch(true)}><Search size={16} /><span>Buscar en toda la copia</span></button>
       <nav aria-label="Navegación principal">
         <div className="oc-nav-group" role="group" aria-label="Lugares">{main.map(group => <div key={group.id} className="gx-nav-place">{header(group)}</div>)}</div>
-        {lab ? <div className="oc-nav-group gx-nav-lab" role="group" aria-labelledby="oc-nav-lab"><p className="oc-nav-caption" id="oc-nav-lab">Con datos de prueba</p>{header(lab)}</div> : null}
+        {lab ? <div className="oc-nav-group gx-nav-lab" role="group" aria-label="Laboratorio">{header(lab)}</div> : null}
       </nav>
-      <div className="sidebar-bottom"><span className="dot" />{state.snapshot?.source.isTestData === false ? 'Producción · lectura' : 'Datos de prueba'}<small>{state.snapshot?.name ?? 'Tu copia, en tu ordenador'} · v{APP_VERSION}</small></div>
+      <div className="sidebar-bottom"><span>{state.snapshot?.name ?? 'Tu copia, en tu ordenador'}</span><small>Plan B · v{APP_VERSION}</small></div>
     </aside>
   );
 }

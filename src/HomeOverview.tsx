@@ -14,7 +14,8 @@ import { loadCommitments, loadRadarCapability } from './commitment-radar-client.
 import { daysLate, dueLabel, splitTaskLabel, taskChip } from './task-display.js';
 import { continuityAlerts, type AlertTarget } from './app-shell/continuity-alerts.js';
 import { readinessFor } from './app-shell/continuity-insights.js';
-import { FirstRun } from './app-shell/FirstRun.js';
+import { FirstRun, FirstRunStrip, passportSeen } from './app-shell/FirstRun.js';
+import { anyDrillPassed, firstRunPlan } from './app-shell/first-run.js';
 import { PipelineCard } from './app-shell/PipelineCard.js';
 import { captureRecordCount, describeCapture, workspaceCopy } from './app-shell/workspace-copy.js';
 
@@ -36,12 +37,14 @@ type Props = {
   onOpenAlert?: (target: AlertTarget) => void;
   /** Primer uso: proteger el acceso y abrir la preparación de la copia. */
   onProtect?: () => void; onPrepare?: () => void;
+  /** Primeros pasos: abrir el pasaporte (Continuidad › Evidencia). */
+  onOpenPassport?: () => void;
   /** El Laboratorio (Radar) solo existe con datos de prueba: sin él, Inicio no lee ni enseña el Radar. */
   lab?: boolean;
 };
 type Radar = { state: 'loading' } | { state: 'off'; reason: string } | { state: 'ready'; items: CommitmentSummary[] };
 
-export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, onOpenRadar, onRehearse, onOpenDateCheck, onOpenContinuity, onOpenChanges, onSignals, onOpenRecord, onOpenDeals, onContinuityStatus, onOpenAlert, onProtect, onPrepare, lab = true }: Props) {
+export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, onOpenRadar, onRehearse, onOpenDateCheck, onOpenContinuity, onOpenChanges, onSignals, onOpenRecord, onOpenDeals, onContinuityStatus, onOpenAlert, onProtect, onPrepare, onOpenPassport, lab = true }: Props) {
   const [ops, setOps] = useState<Operations | null>(null), [opsError, setOpsError] = useState('');
   const [status, setStatus] = useState<ContinuityStatus | null>(null);
   const [radar, setRadar] = useState<Radar>({ state: 'loading' });
@@ -92,6 +95,8 @@ export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, 
   const copyAlerts = status ? continuityAlerts(status, now).filter(alert => alert.id !== 'stale' && alert.id !== 'no-copy' && (alert.id !== 'drill' || activeReadiness)) : [];
   // Primer uso: sin copia (y fuera del paquete restaurado) Inicio enseña los tres pasos en lugar de un tablero vacío.
   const firstRun = !snapshot && !state.runtime;
+  const firstSteps = firstRunPlan({ protectedAccess: status ? status.protected : null, hasCopy: !!snapshot || !!status?.captures.length, drillPassed: anyDrillPassed(status), passportSeen: passportSeen() });
+  const firstActions = { onProtect, onPrepare, onTest: onOpenAlert ? () => onOpenAlert('estado') : undefined, onPassport: onOpenPassport, onOpenContinuity };
   const copyTone = !snapshot ? 'neutral' : stale || copyAlerts.length ? 'warn' : 'ok';
   const overdueCount = counts ? counts.overdue : null, riskCount = radar.state === 'ready' ? atRisk.length : null;
   useEffect(() => { onSignals?.({ overdue: overdueCount, atRisk: riskCount }); }, [overdueCount, riskCount]);
@@ -154,7 +159,8 @@ export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, 
       <p>{greeting} · {today}{snapshot ? ' · ' + snapshot.name : ''}</p>
     </header>
 
-    {firstRun ? <FirstRun protectedAccess={status ? status.protected : null} onProtect={onProtect} onPrepare={onPrepare} onOpenContinuity={onOpenContinuity} /> : <>
+    {firstRun ? <FirstRun plan={firstSteps} {...firstActions} /> : <>
+    {!state.runtime && status ? <FirstRunStrip plan={firstSteps} {...firstActions} /> : null}
     {!state.runtime ? <>
     <section className="fx-line" aria-labelledby="fx-line-title">
       <div className="fx-line-head">

@@ -3,7 +3,6 @@ import { CheckCircle2, Circle, ShieldCheck, X } from 'lucide-react';
 import { validateRecord, type AppState, type CrmRecord, type EntityName, type FieldValue } from '../shared/model.js';
 import { api, post } from './api.js';
 import { Brand, Modal, RecordDrawer, Spinner, recordName } from './components.js';
-import { CsvImport } from './CsvImport.js';
 import { Protection } from './Protection.js';
 import { type PageId, rememberPlace, storedEntity, storedPage } from './app-shell/session.js';
 import { useShortcuts } from './app-shell/useShortcuts.js';
@@ -25,7 +24,7 @@ import { RecordTimeline } from './app-shell/RecordTimeline.js';
 import { QuickActivity } from './app-shell/QuickActivity.js';
 import { canLogActivity } from './app-shell/quick-activity.js';
 import { CommandPalette } from './app-shell/CommandPalette.js';
-import { FocusRun, type FocusScope } from './app-shell/FocusRun.js';
+import type { FocusScope } from './app-shell/FocusRun.js';
 import { DueReminder } from './app-shell/DueReminder.js';
 import { MobileNav } from './app-shell/MobileNav.js';
 import type { Command } from './app-shell/commands.js';
@@ -42,7 +41,7 @@ import { readinessFor } from './app-shell/continuity-insights.js';
 import type { ContinuityTab } from './ContinuityHome.js';
 import type { ContinuityStatus } from '../shared/operations.js';
 // Apartados que se descargan al visitarlos por primera vez (misma interfaz de uso que los originales).
-import { ChangesView, ContinuityHome, DateCheck, DecisionReview, LicensePanel, LocalIntegrations, OperationalRehearsal, PortableExport, Preparation, RadarHost, Settings, TeamSync, WeeklyReview } from './app-shell/lazy-pages.js';
+import { ChangesView, ContinuityHome, CsvImport, DateCheck, DecisionReview, FocusRun, LicensePanel, LocalIntegrations, OperationalRehearsal, PortableExport, Preparation, RadarHost, Settings, TeamSync, WeeklyReview } from './app-shell/lazy-pages.js';
 import type { WorkspaceSearchContext } from '../shared/workspace-search.js';
 
 type LocalAppState = AppState & { workspaceSearchContext?: WorkspaceSearchContext | null };
@@ -317,7 +316,7 @@ export default function App() {
       {error ? <div role="alert" className="global-error"><span>{error}</span><button className="icon-button" aria-label="Cerrar aviso" onClick={() => setError('')}><X size={18} /></button></div> : null}
       <OutcomesLockNotice summary={lockedOutcomes} failed={lockFailed} onRetry={()=>void protect()} onDismiss={()=>{setLockedOutcomes(null);setLockFailed(false);}}/>
       {!state.runtime?<TaskOutcomesSurface/>:null}
-      {page==='home'?<HomeOverview state={state} onSignals={setSignals} onOpenDeals={() => openEntity('deals')} onOpenRecord={record => { openEntity(record.entity); setRecords([record]); setSelected(record); }}contextRevision={state.workspaceSearchContext?.contextRevision??null} onOpenToday={()=>{setPage('today');setSelected(null);}} onOpenTask={id=>openTaskFromOutcomes(id)} onOpenRadar={()=>{setRehearseFromToday(null);setPage('radar');setSelected(null);}} onRehearse={id=>{setRehearseFromToday(id);setPage('radar');setSelected(null);}} onOpenDateCheck={()=>{setPage('date-check');setSelected(null);}} onOpenContinuity={()=>{setPage('continuity');setSelected(null);}} onOpenChanges={()=>{setPage('changes');setSelected(null);}} onContinuityStatus={receiveContinuity} onOpenAlert={openAlert} onProtect={() => void protect()} onPrepare={() => openPreparation(0)} lab={lab}/>
+      {page==='home'?<HomeOverview state={state} onSignals={setSignals} onOpenDeals={() => openEntity('deals')} onOpenRecord={record => { openEntity(record.entity); setRecords([record]); setSelected(record); }}contextRevision={state.workspaceSearchContext?.contextRevision??null} onOpenToday={()=>{setPage('today');setSelected(null);}} onOpenTask={id=>openTaskFromOutcomes(id)} onOpenRadar={()=>{setRehearseFromToday(null);setPage('radar');setSelected(null);}} onRehearse={id=>{setRehearseFromToday(id);setPage('radar');setSelected(null);}} onOpenDateCheck={()=>{setPage('date-check');setSelected(null);}} onOpenContinuity={()=>{setPage('continuity');setSelected(null);}} onOpenChanges={()=>{setPage('changes');setSelected(null);}} onContinuityStatus={receiveContinuity} onOpenAlert={openAlert} onOpenPassport={()=>{setSelected(null);setContinuityTab('evidencia');setPage('continuity');focusWhenReady('ct-tab-evidencia');}} onProtect={() => void protect()} onPrepare={() => openPreparation(0)} lab={lab}/>
       :page==='continuity'?<ContinuityHome initialTab={continuityTab??'estado'} onStatus={receiveContinuity} onGuidedDrill={state.ready && !state.runtime ? startGuidedDrill : undefined} state={state} workspaceContextRevision={state.workspaceSearchContext?.contextRevision??null} refresh={refresh} work={()=>openEntity('contacts')} prepare={()=>openPreparation(0)} protect={()=>void protect()} exportCopy={()=>setPage('export')} connectRequest={connectRequest} onOpenToday={()=>{setPage('today');setSelected(null);}} onOpenIntegrations={()=>{setIntegrationsFrom('continuity');setPage('integrations');setSelected(null);}} returnedFrom={returnedFrom} drillNote={drillNote} onReturnHandled={()=>setReturnedFrom(null)}/>
       :page==='today'||page==='agents'?<>{page==='today'&&lab?<RehearsalTodayEntry contextRevision={state.workspaceSearchContext?.contextRevision??null} onOpen={id=>{setRehearseFromToday(id);setPage('radar');setSelected(null);}} onOpenRadar={()=>{setRehearseFromToday(null);setPage('radar');setSelected(null);}}/>:null}<LocalOperations key={page} view={page} onDispatch={state.ready && spec ? () => setFocusOpen('overdue') : undefined} onOpenTasks={()=>openEntity('tasks')} onOpenDeals={()=>openEntity('deals')} onOpenProposals={()=>setPage('changes')} onPrepare={()=>openPreparation(0)} onRecordSaved={refresh} openTaskRequest={taskRequest} onOpenTaskHandled={()=>setTaskRequest(null)}/></>
         :page==='integrations'?<>{integrationsFrom?<p className="back-link"><button type="button" className="text-button" onClick={()=>{setIntegrationsFrom(null);setPage('continuity');setSelected(null);setReturnedFrom('integrations');}}>← Volver a Continuidad</button></p>:null}<LocalIntegrations onConnectHubspot={()=>{setPage('continuity');setSelected(null);setConnectRequest(n=>n+1);}}/></>

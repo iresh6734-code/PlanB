@@ -1,8 +1,12 @@
 ﻿# Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026, 18:00, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 a V7 hechas. Oleada 3: H2, H3, H4, H5 y H6 hechas; H1 aplazada (requiere e2e). Continuidad: C2, C3, C4 y C5 hechas. Negocio: M1, M2, M3, M5 y M6 hechas. Datos: D1, D2 y D3 hechas. Rendimiento: P3 hecha.
+Última revisión: **19/11/2026, 18:30, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 a V7 hechas. Oleada 3: H2, H3, H4, H5 y H6 hechas; H1 aplazada (requiere e2e). Continuidad: C2, C3, C4 y C5 hechas. Negocio: M1 a M6 hechas. Datos: D1, D2 y D3 hechas. Rendimiento: P3 hecha.
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
+
+## Super plan M4 · Primer uso en 10 minutos · 19/11/2026, 18:30, Europe/Madrid
+
+Inicio guía el primer uso en cuatro pasos con tiempo estimado (1 + 4 + 3 + 2 minutos): proteger el acceso, preparar la primera copia, probarla con un simulacro y mirar el pasaporte. La lógica es pura en `src/app-shell/first-run.ts` (`firstRunPlan`, `anyDrillPassed`): pasos hechos, paso actual, porcentaje, minutos restantes y la frase de progreso («2 de 4 · quedan unos 5 minutos»). La prueba espera a la copia y el pasaporte a una prueba superada. Sin copia se muestra la tarjeta completa (`FirstRun`); con copia y pasos pendientes, una franja compacta (`FirstRunStrip`) con el siguiente paso, que se puede ocultar (`planb:first-run:hidden` en el navegador). Abrir el pasaporte lo marca como visto (`planb:first-run:passport-seen`) y lleva a Continuidad › Evidencia. Para mantener el JS inicial dentro del presupuesto, la importación CSV y la cola de foco pasan a cargarse bajo demanda en `lazy-pages.tsx`. Prueba pura en `tests/first-run.test.ts`. Ver en casa.
 
 ## Super plan M5 · Precios en la landing · 19/11/2026, 18:00, Europe/Madrid
 

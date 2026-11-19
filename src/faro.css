@@ -1767,6 +1767,19 @@ html body .gx-first { display: grid; grid-template-columns: minmax(0, 1fr) minma
 .gx-first-more { grid-column: 2; margin: -6px 0 0 46px; font-size: var(--fs-sm); color: var(--text-3); }
 .gx-first-more .text-button { margin: 0; padding: 0 4px; min-height: 24px; }
 @media (max-width: 900px) { html body .gx-first { grid-template-columns: minmax(0, 1fr); padding: 18px; } .gx-first-more { grid-column: 1; margin-left: 46px; } }
+.gx-first-meter { display: grid; gap: 6px; margin-top: 18px; max-width: 320px; }
+.gx-first-bar { display: block; height: 6px; border-radius: 999px; background: var(--rule); overflow: hidden; }
+.gx-first-bar i { display: block; height: 100%; border-radius: inherit; background: var(--primary); transition: width 240ms cubic-bezier(.2, .7, .2, 1); }
+.gx-first-progress { font-size: var(--fs-xs); color: var(--text-3); font-variant-numeric: tabular-nums; }
+.gx-first-time { margin-left: auto; font-size: var(--fs-xs); font-weight: 500; color: var(--text-3); font-variant-numeric: tabular-nums; }
+html body .gx-first-strip { display: grid; grid-template-columns: minmax(0, 1fr) minmax(160px, 220px) auto auto; align-items: center; gap: 12px 20px; margin-bottom: 18px; padding: 14px 16px 14px 20px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--bg-surface); }
+.gx-first-strip h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 2px; font-size: var(--fs-md); font-weight: 650; color: var(--text-1); }
+.gx-first-strip h2 > span { display: inline-grid; color: var(--primary-text); }
+.gx-first-strip p { margin: 0; font-size: var(--fs-sm); color: var(--text-2); line-height: 1.45; }
+.gx-first-strip .gx-first-meter { margin: 0; }
+.gx-first-strip .gx-first-waiting { font-size: var(--fs-xs); color: var(--text-3); }
+@media (max-width: 900px) { html body .gx-first-strip { grid-template-columns: minmax(0, 1fr) auto auto; } .gx-first-strip .gx-first-meter { grid-column: 1 / -1; grid-row: 2; max-width: none; } }
+@media (prefers-reduced-motion: reduce) { .gx-first-bar i { transition: none; } }
 /* Preparación · primer paso (solo sin copia): colores heredados de la paleta antigua por debajo de AA (3,25–4,45) y opciones
    blancas en oscuro. Pasan a los tokens de Faro. */
 html body .profile-options .profile-option { background: var(--bg-surface); border-color: var(--border); color: var(--text-1); }

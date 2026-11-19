@@ -59,3 +59,28 @@ Reconoce las filas que desplazan por su estilo real, no por su nombre de clase. 
 | --- | --- | --- |
 | `src/faro.css` | `ea1e31b8845d` | `bee58331cb2d` (incluye trabajo ajeno en curso) |
 | `tools/visual/mobile-scan.mts` | — | `7c8ac3c1b69a` (nuevo) |
+
+## R2 · Revisión 437 de Codex (escáner e informe)
+
+**La barra** recibe dictamen favorable en 20 vistas independientes. **El escáner** tenía dos huecos, los dos correctos:
+
+1. Si todas las rutas redirigían a `/sesion`, medía esa página y decía «Sin problemas».
+2. Solo miraba el contenedor que recorta más cercano: un botón que cabía en el interior (220 px) pero quedaba oculto por el exterior (100 px) pasaba.
+
+**Corrección** (`tools/visual/mobile-scan.mts`, todo en `scanPage`):
+
+- **Llegar a la vista** exige tres cosas: respuesta HTTP 200, la misma dirección final (sin redirección) y el título de la vista (`main h1`) visible. Si falta algo o se agota el tiempo (30 s), la vista cuenta como **fallida**.
+- **Recortes en toda la cadena de contenedores** hasta la vista, no solo el más cercano. Dentro de una fila que desplaza por sí misma, el control se alcanza desplazándola: desde ahí se mide la fila contra lo de fuera, así que esas filas siguen siendo válidas.
+- **`--self-test`**: seis controles con páginas sintéticas servidas por `page.route`, sin servidor ni red. Pasan **6/6**:
+  - una vista correcta pasa;
+  - una redirección a `/sesion` falla («acabó en /sesion»);
+  - sin título, falla;
+  - el recorte por un contenedor exterior se detecta;
+  - el recorte directo se sigue detectando;
+  - una fila que desplaza es válida.
+
+**Con la App real** (ensayo aislado), las 10 vistas a 390 y 320 px dan **sin problemas en 20 vistas**, con código 0 y las comprobaciones nuevas.
+
+**Corrección del informe.** El «sin problemas» de R1 se midió sin comprobar que se llegaba a cada vista. Ahora queda confirmado con las comprobaciones de llegada.
+
+**Huella R2:** `tools/visual/mobile-scan.mts` `f4ca79961134…`.

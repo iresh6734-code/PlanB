@@ -15,13 +15,12 @@ Columnas: archivos de la tarea que ya están en la rama / archivos declarados, y
 
 | Qué conviene hacer | Tareas |
 |---|---|
-| Trabajo en la rama: aceptar tras revisión visual en casa | 349 |
+| Trabajo en la rama: aceptar tras revisión visual en casa | 350 |
 | Archivos en la rama: confirmar si terminó y pasar a revisión | 18 |
 | Bloqueada: decidir si se desbloquea o se cancela | 12 |
 | Sin empezar: relanzar solo si sigue en el plan | 9 |
 | Ya existe en la rama: comprobar si sigue haciendo falta | 4 |
 | Interrumpida: relanzar o cancelar | 2 |
-| Hay cambios sin commit en sus archivos: revisar antes de nada | 1 |
 | Entrega parcial: revisar qué falta | 1 |
 
 ## En curso (20)
@@ -425,7 +424,7 @@ Columnas: archivos de la tarea que ya están en la rama / archivos declarados, y
 | CODEX-UNIT-BASELINE-381 | codex | Validar globalmente el corte posterior a la corrección de G6 | 1/1 | — | Trabajo en la rama: aceptar tras revisión visual en casa |
 | CODEX-UNIT-BASELINE-397 | codex | Repetir la batería unitaria completa sobre el corte actual | 1/1 | — | Trabajo en la rama: aceptar tras revisión visual en casa |
 | CODEX-UNIT-BASELINE-414 | codex | Repetir batería global con las pruebas reparadas | 1/1 | — | Trabajo en la rama: aceptar tras revisión visual en casa |
-| CODEX-UNIT-ENV-361 | codex | Entorno de prueba reproducible en npm test | 3/3 | — | Hay cambios sin commit en sus archivos: revisar antes de nada |
+| CODEX-UNIT-ENV-361 | codex | Entorno de prueba reproducible en npm test | 3/3 | — | Trabajo en la rama: aceptar tras revisión visual en casa |
 | CODEX-URL-ROUTES-R3-REVIEW-432 | codex | Verificación independiente de Enlaces R3 | 1/1 | — | Trabajo en la rama: aceptar tras revisión visual en casa |
 | CODEX-URL-ROUTES-REVIEW-411 | codex | Verificar navegación al abandonar una ficha pedida por enlace | 1/1 | — | Trabajo en la rama: aceptar tras revisión visual en casa |
 | CODEX-UX-032-REVIEW | codex | Revisión independiente del selector de clientes de Claude | 1/1 | — | Trabajo en la rama: aceptar tras revisión visual en casa |

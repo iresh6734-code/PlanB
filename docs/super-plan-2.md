@@ -152,8 +152,8 @@ Es lo más barato y lo que más se nota: el código ya existe y tiene pruebas.
 | E2 | **Evidencia: unir o retirar.**<br>Comparar `ContinuityEvidence.tsx` con lo que ya pinta `ContinuityHub` en Evidencia e impacto.<br>Si duplica, borrar el componente y su CSS. Si aporta algo, montarlo. | `ContinuityEvidence.tsx`, `ContinuityHub.tsx` | Pruebas de `continuity-evidence*` | S, UI | Pendiente |
 | E3 | **Estado de las fuentes en Integraciones.**<br>Montar `SourceStatusRow` y `SourceReadingHistory`: última lectura, resultado y antigüedad por fuente.<br>Antes, comprobar con `app.inject` que `registerSourceReadingHistory` está registrada en el arranque. | `LocalIntegrations.tsx`, `server/source-reading-history.ts` | `app.inject` + prueba del componente | M, UI+SRV, Ver en casa | Pendiente |
 | E4 | **Modo Rescate y Kit de Relevo en el Laboratorio**, como ensayo con datos ficticios y tal como están.<br>Es el paso previo de R1. Comprobar con `app.inject` que las rutas de rescate responden en modo prueba. | `RescueRoom.tsx`, `RescueCapsule.tsx`, `lazy-pages.tsx`, `navigation.ts` | `rescue-room-api`, `rescue-room`, `rescue-capsule-*` (revisarlas antes) | M, UI+SRV, Ver en casa | Pendiente |
-| E5 | **Guardia de código huérfano.**<br>Prueba estática que lista los `.tsx` de `src/` sin importador y falla si aparece uno nuevo que no esté en una lista justificada. | `tests/orphan-components.test.ts` nuevo | La propia prueba | S | Pendiente |
-| E6 | **Parte del tablero.**<br>Informe en `coordination/reports/` con cada tarea abierta del tablero, si su trabajo ya está en la rama y qué falta.<br>No cambia `board.json`, que es de los agentes. | `coordination/reports/COPILOT-BOARD-AUDIT.md` | — | S, DOC | Pendiente |
+| E5 | **Guardia de código huérfano.**<br>Prueba estática que lista los `.tsx` de `src/` sin importador y falla si aparece uno nuevo que no esté en una lista justificada. | `tests/orphan-components.test.ts` nuevo | La propia prueba | S | Hecha (19/11/2026) |
+\r
 
 ## Oleada 2 · Lo diferencial
 
@@ -200,7 +200,7 @@ La identidad está decidida (ver [DESIGN.md](../DESIGN.md)). Esta oleada **la co
 
 | ID | Tarea | Archivos | Prueba segura | Tamaño | Estado |
 |---|---|---|---|---|---|
-| T1 | **Índice de pruebas seguras.**<br>`tools/safe-tests.mjs` solo lee archivos: lista las `tests/*.test.ts` sin `.listen(`, `spawn(`, `child_process`, `playwright` ni `Get-CimInstance`, y las ejecuta en modo prueba de una en una.<br>Hace que respetar las reglas sea automático. | `tools/safe-tests.mjs` nuevo, `package.json` (`test:safe`) | Ejecución en seco del propio script | S | Pendiente |
+| T1 | **Índice de pruebas seguras.**<br>`tools/safe-tests.mjs` solo lee archivos: lista las `tests/*.test.ts` sin `.listen(`, `spawn(`, `child_process`, `playwright` ni `Get-CimInstance`, y las ejecuta en modo prueba de una en una.<br>Hace que respetar las reglas sea automático. | `tools/safe-tests.mjs` nuevo, `package.json` (`test:safe`) | Ejecución en seco del propio script | S | Hecha (19/11/2026) |
 | T2 | **`App.tsx` por porciones** (sustituye a P1).<br>Un gancho por commit: `useContinuityState`, `useNotices`, `useUndoStack` y `useNavigationState`. Cada paso compila y pasa las pruebas antes del siguiente. | `App.tsx`, `app-shell/use*.ts` | Pruebas de `app-shell` + build | 4 × S | Pendiente |
 | T3 | **`LocalTaskFocus.tsx` por porciones** (sustituye a P2).<br>Sacar a módulos puros la lógica de orden, agrupación y textos; el componente solo pinta. | `LocalTaskFocus.tsx`, módulos nuevos | Pruebas existentes + nuevas | M–L | Pendiente |
 | T4 | **`CommitmentRadar.tsx` y `ContinuityHome.tsx`**: lo mismo que T3. | esos archivos | Pruebas existentes | M cada uno | Pendiente |

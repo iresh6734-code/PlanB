@@ -15,12 +15,14 @@ import { APP_VERSION, RUNTIME_ZIP } from '../shared/version.js';
 import { rememberExport, confirmRecoveryCopy, bundleRevision } from './recovery-copy.js';
 import { registerCaptureComparison } from './capture-comparison.js';
 import { registerRecordHistory } from './record-history.js';
+import { registerRecordMerge } from './record-merge.js';
 import { parseRecordSort } from '../shared/record-order.js';
 
 export interface ExternalServices { capture:CaptureImporter; remote:(token:string,accountId:string,spec:import('../shared/model.js').AppSpec,fetcher?:typeof fetch,readOnly?:boolean)=>Remote; inspect?:typeof inspectConnection; }
 export function registerV2(app:FastifyInstance,store:Store,root:string,runtime=false,external?:ExternalServices) {
   registerCaptureComparison(app,store);
   registerRecordHistory(app,store);
+  registerRecordMerge(app,store);
   const continuity=new Continuity(store,root,runtime,external?.capture),recovery=new Recovery(store);
   const remoteSchema=z.object({simulation:z.boolean().default(false),token:z.string().max(4096).optional()});
   function remote(raw:unknown){

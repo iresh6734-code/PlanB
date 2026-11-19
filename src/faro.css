@@ -1273,6 +1273,21 @@ html body .company-table-scroll { border: 1px solid var(--border); border-radius
 .gx-quality-kind[data-kind="duplicate"] { background: var(--primary-subtle); color: var(--primary-text); }
 .gx-quality-note { margin: 0; font-size: var(--fs-xs); }
 html body .gx-quality .oc-link { justify-self: start; }
+/* F8 · «Fusionar» junto a un duplicado y lista de apartados pendientes de HubSpot */
+.gx-quality-list li.has-merge { display: flex; align-items: stretch; }
+.gx-quality-list li.has-merge > button:first-child { flex: 1; min-width: 0; }
+.gx-quality-list .gx-quality-merge { display: inline-flex; flex: none; align-items: center; gap: 5px; width: auto; padding: 0 12px; border-left: 1px solid var(--rule); font-size: var(--fs-xs); font-weight: 600; color: var(--primary-text); }
+.gx-quality-list .gx-quality-merge:hover { background: var(--primary-subtle); }
+.gx-merge-aside { display: grid; gap: 6px; }
+.gx-merge-aside .gx-qc-head { margin: 0; }
+.gx-merge-list { margin: 0; padding: 0; list-style: none; border: 1px dashed var(--border); border-radius: var(--r-md); background: var(--bg-subtle); }
+.gx-merge-list li { display: flex; align-items: center; gap: 10px; padding: 6px 10px; }
+.gx-merge-list li + li { border-top: 1px solid var(--rule); }
+.gx-merge-list li > div { display: grid; flex: 1; min-width: 0; }
+.gx-merge-list strong, .gx-merge-list small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gx-merge-list strong { font-size: var(--fs-sm); font-weight: 600; color: var(--text-1); }
+.gx-merge-list small { font-size: var(--fs-xs); color: var(--text-3); }
+.gx-merge-acts { display: inline-flex; flex: none; gap: 12px; }
 /* D3 · registros completos por tipo, con tendencia diaria guardada en el navegador */
 .gx-qc { display: grid; gap: 6px; }
 .gx-qc-head { margin: 0; font-size: var(--fs-xs); font-weight: 600; color: var(--text-2); }

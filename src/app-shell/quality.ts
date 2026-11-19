@@ -1,8 +1,9 @@
 import type { AppSpec, CrmRecord, EntityName } from '../../shared/model.js';
 import { MAX_PAGES, PAGE_SIZE, type RecordPage } from './related.js';
 
-/** Un aviso de calidad sobre un registro concreto. Son comprobaciones de forma, no de negocio: no deciden nada ni cambian datos. */
-export type QualityIssue = { kind: 'required' | 'email' | 'duplicate' | 'dangling'; record: CrmRecord; field: string; text: string };
+/** Un aviso de calidad sobre un registro concreto. Son comprobaciones de forma, no de negocio: no deciden nada ni cambian datos.
+ *  En los duplicados, `other` es la ficha que repite (la primera que se vio con ese valor). */
+export type QualityIssue = { kind: 'required' | 'email' | 'duplicate' | 'dangling'; record: CrmRecord; field: string; text: string; other?: CrmRecord };
 export type QualityReport = { issues: QualityIssue[]; scanned: number; total: number; complete: boolean; unstable?: true; completeness?: EntityCompleteness[] };
 /** Registros «completos» de un tipo: los que tienen rellenos todos los campos que se ven en la lista y los obligatorios.
  *  `gap` es el campo que más falta, para saber por dónde empezar. */
@@ -16,8 +17,9 @@ const norm = (value: unknown) => String(value ?? '').normalize('NFD').replace(/[
  *  - campos obligatorios vacíos,
  *  - correos con formato no válido,
  *  - posibles duplicados (mismo correo, o mismo nombre visible dentro del mismo tipo),
- *  - referencias a un registro que no existe (solo si ese tipo se revisó completo; si no, no se puede afirmar). */
-export function checkQuality(spec: AppSpec, records: CrmRecord[], completeEntities: ReadonlySet<EntityName>): QualityIssue[] {
+ *  - referencias a un registro que no existe (solo si ese tipo se revisó completo; si no, no se puede afirmar).
+ *  `setAside` («tipo:id») son duplicados ya apartados para fusionar en HubSpot: no cuentan para buscar duplicados. */
+export function checkQuality(spec: AppSpec, records: CrmRecord[], completeEntities: ReadonlySet<EntityName>, setAside: ReadonlySet<string> = new Set()): QualityIssue[] {
   const issues: QualityIssue[] = [];
   const ids = new Set(records.map(record => record.entity + ':' + record.id));
   for (const entity of spec.entities) {
@@ -42,9 +44,10 @@ export function checkQuality(spec: AppSpec, records: CrmRecord[], completeEntiti
     for (const [key, valueOf] of keys) {
       const seen = new Map<string, CrmRecord>();
       for (const record of own) {
+        if (setAside.has(record.entity + ':' + record.id)) continue;
         const value = valueOf(record).trim(); if (!value) continue;
         const first = seen.get(value);
-        if (first) issues.push({ kind: 'duplicate', record, field: key, text: 'Posible duplicado de «' + label(first) + '»' });
+        if (first) issues.push({ kind: 'duplicate', record, field: key, text: 'Posible duplicado de «' + label(first) + '»', other: first });
         else seen.set(value, record);
       }
     }
@@ -84,6 +87,7 @@ export async function loadQuality(
   spec: AppSpec,
   fetchPage: (entity: EntityName, offset: number, limit: number) => Promise<RecordPage>,
   signal?: AbortSignal,
+  setAside?: ReadonlySet<string>,
 ): Promise<QualityReport> {
   signal?.throwIfAborted();
   const records: CrmRecord[] = [];
@@ -113,7 +117,7 @@ export async function loadQuality(
     total += Math.max(count ?? 0, own.size);
   }
   return {
-    issues: checkQuality(spec, records, complete), scanned: records.length, total, completeness: completeness(spec, records),
+    issues: checkQuality(spec, records, complete, setAside), scanned: records.length, total, completeness: completeness(spec, records),
     complete: complete.size === spec.entities.length, ...(unstable ? { unstable: true } : {}),
   };
 }

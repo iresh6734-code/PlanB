@@ -47,3 +47,4 @@ export const MorningBrief = quiet(() => import('./MorningBrief.js').then(m => m.
 export const SequencePicker = quiet(() => import('./SequencePicker.js').then(m => m.SequencePicker), 'Secuencia de seguimiento');
 export const QuickActivity = quiet(() => import('./QuickActivity.js').then(m => m.QuickActivity), 'Registrar actividad');
 export const WhatsNew = quiet(() => import('./WhatsNew.js').then(m => m.WhatsNew), 'Novedades');
+export const MergeDialog = quiet(() => import('./MergeDialog.js').then(m => m.MergeDialog), 'Fusionar duplicados');

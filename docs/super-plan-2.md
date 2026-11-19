@@ -177,7 +177,7 @@ Es lo más barato y lo que más se nota: el código ya existe y tiene pruebas.
 | F5 | **Recientes y anclados.**<br>Los últimos 8 registros abiertos y hasta 12 anclados, en la paleta y en el menú. Solo se guardan los ID; el nombre se lee de la copia al mostrarlo. | `app-shell/recents.ts` nuevo, `CommandPalette.tsx`, `Sidebar.tsx` | `tests/recents.test.ts` | S, UI | Hecha (19/11/2026) |
 | F6 | **Clientes que se enfrían.**<br>Lista explicable: sin actividad en N días y con oportunidad abierta, ordenada por importe. Cada fila lleva su motivo. | `account-health.ts`, `HomeOverview.tsx` | `account-health` ampliado | S, UI | Hecha (19/11/2026) |
 | F7 | **Oportunidades en riesgo.**<br>Une reglas por etapa (D2), paradas (V5), cierre ya pasado y falta de próximo paso en una sola lista con motivos, sin puntuaciones opacas. Vista guardada «En riesgo». | `app-shell/deal-risk.ts` nuevo, `saved-views.ts` | `tests/deal-risk.test.ts` | S–M, UI | Hecha (19/11/2026) |
-| F8 | **Fusionar duplicados** (V8 heredada).<br>Se elige campo a campo qué queda y se archiva el otro con deshacer. Se marca para hacer a mano en HubSpot: nunca se devuelve sola. | `quality.ts`, `QualityPanel.tsx`, servidor de registros | `app.inject` + prueba pura del plan de fusión | L, SRV, Ver en casa | Pendiente |
+| F8 | **Fusionar duplicados** (V8 heredada).<br>Se elige campo a campo qué queda y se archiva el otro con deshacer. Se marca para hacer a mano en HubSpot: nunca se devuelve sola. | `quality.ts`, `QualityPanel.tsx`, servidor de registros | `app.inject` + prueba pura del plan de fusión | L, SRV, Ver en casa | Hecha (19/11/2026) |
 
 ## Oleada 4 · Cuaderno 2 (diseño)
 

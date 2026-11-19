@@ -44,6 +44,16 @@ test('duplicados: por correo y por nombre completo de cliente (sin acentos ni ma
   assert.match(issues[0].text, /^Posible duplicado de «/);
 });
 
+test('duplicados: citan la ficha que repiten y un duplicado apartado no cuenta', () => {
+  const records = base();
+  const [first, second, third] = records.filter(record => record.entity === 'contacts');
+  for (const copy of [second, third]) { copy.values.firstname = first.values.firstname; copy.values.lastname = first.values.lastname; }
+  const issues = checkQuality(spec, records, all);
+  assert.deepEqual(issues.map(issue => [issue.record.id, issue.other?.id]), [[second.id, first.id], [third.id, first.id]]);
+  const aside = checkQuality(spec, records, all, new Set(['contacts:' + first.id]));
+  assert.deepEqual(aside.map(issue => [issue.record.id, issue.other?.id]), [[third.id, second.id]]);
+});
+
 test('loadQuality: dice cuánto revisó y no afirma referencias rotas fuera de lo revisado', async () => {
   const records = base();
   const many = Array.from({ length: PAGE_SIZE * MAX_PAGES + 10 }, (_, index) => ({ entity: 'tasks', id: 't' + index, values: { subject: 'Tarea ' + index, due_date: '2026-11-20', status: 'pending', contact_id: null, deal_id: null } })) as CrmRecord[];

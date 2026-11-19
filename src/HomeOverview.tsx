@@ -29,6 +29,8 @@ type Props = {
   onSignals?: (signals: { overdue: number | null; atRisk: number | null }) => void;
   /** Abre la ficha de un registro (avisos de calidad de los datos). */
   onOpenRecord?: (record: CrmRecord) => void;
+  /** Una fusión de duplicados cambió la copia: la App vuelve a leer su estado (cambios pendientes). */
+  onDataChanged?: () => void;
   /** Abre el tablero de Oportunidades (tarjeta «Oportunidades abiertas»). */
   onOpenDeals?: () => void;
   /** Entrega a la App el estado de Continuidad ya leído aquí (avisos del menú), sin otra lectura. */
@@ -44,7 +46,7 @@ type Props = {
 };
 type Radar = { state: 'loading' } | { state: 'off'; reason: string } | { state: 'ready'; items: CommitmentSummary[] };
 
-export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, onOpenRadar, onRehearse, onOpenDateCheck, onOpenContinuity, onOpenChanges, onSignals, onOpenRecord, onOpenDeals, onContinuityStatus, onOpenAlert, onProtect, onPrepare, onOpenPassport, lab = true }: Props) {
+export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, onOpenRadar, onRehearse, onOpenDateCheck, onOpenContinuity, onOpenChanges, onSignals, onOpenRecord, onDataChanged, onOpenDeals, onContinuityStatus, onOpenAlert, onProtect, onPrepare, onOpenPassport, lab = true }: Props) {
   const [ops, setOps] = useState<Operations | null>(null), [opsError, setOpsError] = useState('');
   const [status, setStatus] = useState<ContinuityStatus | null>(null);
   const [radar, setRadar] = useState<Radar>({ state: 'loading' });
@@ -251,7 +253,7 @@ export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, 
               <div className="oc-row-actions" style={{ marginTop: 2 }}><button type="button" className="oc-alert-button" onClick={() => onRehearse(worst.id)}>Ensayar mi semana</button><button type="button" className="oc-alert-button" onClick={onOpenDateCheck}>Comprobar una fecha</button></div></div> : null}
           </>}
         </article> : null}
-        {state.ready && state.spec && onOpenRecord ? <QualityPanel spec={state.spec} revision={state.snapshot?.capturedAt + ':' + state.changes} onOpen={onOpenRecord} /> : null}
+        {state.ready && state.spec && onOpenRecord ? <QualityPanel spec={state.spec} revision={state.snapshot?.capturedAt + ':' + state.changes} onOpen={onOpenRecord} onChanged={onDataChanged} /> : null}
       </div>
     </div>
     </>}

@@ -117,3 +117,4 @@ Esfuerzo: S = pequeño, M = medio, L = grande. «Interfaz» = solo cambia la int
 | Super plan D2 · reglas por etapa (aviso) | `src/app-shell/stage-rules.ts` (puro), `DealSummary.tsx` (aviso y títulos de los pasos), `PipelineCard.tsx` (lista en Inicio), `faro.css`. Prueba: `tests/stage-rules.test.ts`. |
 | Super plan D3 · calidad con tendencia | `quality.ts` (`completeness`), `quality-trend.ts` (puro), `QualityPanel.tsx`, `faro.css`. Prueba: `tests/quality-trend.test.ts`. |
 | Super plan H5 · accesibilidad de la cola | `LocalOperations.tsx` (roles de tabla sobre la lista de Hoy), `FocusRun.tsx` (`progressbar` y anuncio), `faro.css` (`.lop-cell-action`). Prueba: `tests/queue-a11y.test.ts`. |
+| Super plan P3 · presupuesto de tamaño | 	ests/bundle-budget.test.ts (lee dist y los techos de JS de 	ools/perf/budgets.json; detecta React de desarrollo). Pendiente: el CSS inicial (373 KB) supera su techo de 340 KB. |

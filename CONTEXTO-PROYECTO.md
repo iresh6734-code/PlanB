@@ -1,8 +1,14 @@
 # Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026, 13:41, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1, V2, V3 y V5 hechas. Oleada 3: H2 y H4 hechas; H1 aplazada (requiere e2e).
+Última revisión: **19/11/2026, 13:47, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1, V2, V3 y V5 hechas. Oleada 3: H2 y H4 hechas; H1 aplazada (requiere e2e). Continuidad: C5 hecha.
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
+
+## Super plan C5 · Calendario de simulacros · 19/11/2026, 13:47, Europe/Madrid
+
+- `continuity-insights.ts` añade `DRILL_EVERY_DAYS = 30`, `DRILL_SOON_DAYS = 7` y `drillCalendar(status, now)`, que devuelve `never | ok | soon | due | changed` a partir del último informe superado. Prioridad: vencido > cambiado > pronto > al día. «Cambiado» compara la captura más reciente con la probada (`report.captureId`) usando `SHRINK_RATIO`; si la probada ya se podó, no hay comparación.
+- `ContinuityHome.tsx` lo pinta dentro de `ct-verify` (solo fuera del modo runtime): `.ct-cal` con icono, título, detalle y una regla de 30 días. Estilos en `continuity-insights.css`, solo con tokens.
+- Pruebas: dos nuevas en `continuity-insights.test.ts`; `design-tokens` en verde; build correcto. Sin revisión visual: ver en casa.
 
 ## Super plan H2 y H4 · Seguimiento y recordatorio · 19/11/2026, 13:41, Europe/Madrid
 

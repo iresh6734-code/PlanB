@@ -48,6 +48,22 @@ html body .ct-outage li { position: relative; padding: 5px 0 5px 16px; border-to
 html body .ct-outage li::before { content: ""; position: absolute; left: 2px; top: 11px; width: 6px; height: 6px; border-radius: 1px; background: var(--success); }
 html body .ct-outage li[data-tone="warn"]::before { background: var(--seal-warn); }
 html body .ct-outage li[data-tone="danger"]::before { background: var(--seal); }
+
+/* Calendario de simulacros (C5): treinta días como una regla; la muesca marca la última semana. */
+html body .ct-verify .ct-cal { display: grid; gap: 4px; margin: 10px 0 12px; padding: 10px 12px; border: 1px solid var(--rule); border-radius: var(--r-md); background: var(--bg-subtle); }
+html body .ct-verify .ct-cal p { margin: 0; }
+html body .ct-verify .ct-cal-title { display: flex; align-items: center; gap: 6px; font-size: var(--fs-sm); color: var(--text-1); }
+html body .ct-verify .ct-cal-title svg { flex: none; color: var(--success); }
+html body .ct-verify .ct-cal[data-tone="warn"] .ct-cal-title svg { color: var(--warning-text); }
+html body .ct-verify .ct-cal[data-tone="danger"] .ct-cal-title svg { color: var(--danger); }
+html body .ct-verify .ct-cal-detail { font-size: var(--fs-sm); color: var(--text-2); }
+html body .ct-verify .ct-cal-track { position: relative; height: 6px; margin-top: 6px; border-radius: var(--r-sm); background: var(--bg-surface); box-shadow: inset 0 0 0 1px var(--rule); }
+html body .ct-verify .ct-cal-track span { display: block; height: 100%; border-radius: var(--r-sm); background: var(--success); transition: width 300ms cubic-bezier(.2, .7, .2, 1); }
+html body .ct-verify .ct-cal[data-tone="warn"] .ct-cal-track span { background: var(--seal-warn); }
+html body .ct-verify .ct-cal[data-tone="danger"] .ct-cal-track span { background: var(--seal); }
+html body .ct-verify .ct-cal-track i { position: absolute; top: -3px; width: 1px; height: 12px; background: var(--text-3); }
+html body .ct-verify .ct-cal-ends { display: flex; justify-content: space-between; font-size: var(--fs-xs); color: var(--text-3); font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { html body .ct-verify .ct-cal-track span { transition: none; } }
 html body .ct-outage li[data-tone="danger"] { color: var(--danger); }
 
 /* Preparación en la columna: lo hecho en verde botella y una nota que explica cada paso. */

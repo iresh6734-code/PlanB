@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, CheckCircle2, Clock3, Database, Download, LockKeyhole, Play, RefreshCw, ShieldCheck, Unplug } from 'lucide-react';
+import { ArrowRight, CalendarClock, CheckCircle2, Clock3, Database, Download, LockKeyhole, Play, RefreshCw, ShieldCheck, Unplug } from 'lucide-react';
 import type { AppState } from '../shared/model.js';
 import type { ContinuityStatus } from '../shared/operations.js';
 import { api, post, download } from './api.js';
@@ -20,7 +20,7 @@ import { buildContinuityReport, reportHtml } from './app-shell/continuity-report
 import { captureAutomation } from './app-shell/copy-timeline.js';
 import { pollWhileVisible, useReadHealth } from './app-shell/poll.js';
 import { captureRecordCount, describeCapture, workspaceCopy } from './app-shell/workspace-copy.js';
-import { captureLedger, continuityReadiness, copyVitals, formatBytes, hourlyCaptures, jobStats, outageForecast, type LedgerFilter, type NextActionId, type StepId } from './app-shell/continuity-insights.js';
+import { captureLedger, continuityReadiness, copyVitals, drillCalendar, DRILL_EVERY_DAYS, DRILL_SOON_DAYS, formatBytes, hourlyCaptures, jobStats, outageForecast, type LedgerFilter, type NextActionId, type StepId } from './app-shell/continuity-insights.js';
 import './continuity-home-hub.css';
 import './continuity-insights.css';
 const LEDGER_FILTERS:readonly {id:LedgerFilter;label:string}[]=[{id:'all',label:'Todas'},{id:'today',label:'Hoy'},{id:'week',label:'7 días'},{id:'shrink',label:'Más pequeñas'}];
@@ -84,6 +84,7 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
   const hours=status?.captures.length?hourlyCaptures(status.captures,now):null;
   const ledger=status?captureLedger(status.captures,now,ledgerFilter):null;
   const stats=status?jobStats(status.jobs):null;
+  const calendar=status&&!state.runtime?drillCalendar(status,now):null;
   const step=(id:StepId)=>readiness?.steps.find(item=>item.id===id);
   const stepDetail=(id:StepId)=>{const item=step(id);return item?<small className="ct-step-detail">{item.detail}</small>:null;};
   const nextDisabled=(id:NextActionId)=>busy||(['refresh','resume','drill'].includes(id)&&!!active)||(id==='refresh'&&(!status?.connected||!!status?.session))||(id==='export'&&!state.ready)||(id==='drill'&&!latest);
@@ -136,6 +137,12 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
     {status?.session?<div className="info-box"><Unplug size={20}/><div><strong>Sesión de continuidad abierta</strong><p>Importaciones e IA pausadas. Tus cambios se conservan. La devolución a HubSpot tiene su propio proceso de revisión.</p><div className="button-row"><button className="text-button" onClick={work}>Abrir trabajo</button><button className="text-button" onClick={()=>run(()=>post('/v2/session/end',{}))}>Cerrar sesión de continuidad</button></div></div></div>:null}
     {active?<div className="job-progress" role="status"><Spinner text={active.message}/><progress max="100" value={active.progress}/><button className="text-button" onClick={()=>run(()=>post('/v2/jobs/'+active.id+'/cancel',{}))}>Cancelar trabajo</button></div>:null}
       <article className="ct-verify"><div className="section-heading"><h2>Comprueba tu Plan B</h2><Play size={21}/></div><p>Prueba buscar y editar, avanzar una oportunidad, crear y completar una tarea, y reiniciar. En una copia aislada con red bloqueada.</p>
+        {calendar?<div className="ct-cal" data-state={calendar.state} data-tone={calendar.tone}>
+          <p className="ct-cal-title"><CalendarClock size={16} aria-hidden="true"/><strong>{calendar.title}</strong></p>
+          <p className="ct-cal-detail">{calendar.detail}</p>
+          {calendar.lastLabel?<><div className="ct-cal-track" role="img" aria-label={'Han pasado '+Math.round(calendar.elapsed*DRILL_EVERY_DAYS)+' de '+DRILL_EVERY_DAYS+' días desde el último simulacro superado'}><span style={{width:(calendar.elapsed*100)+'%'}}/><i style={{left:((DRILL_EVERY_DAYS-DRILL_SOON_DAYS)/DRILL_EVERY_DAYS*100)+'%'}}/></div>
+            <div className="ct-cal-ends" aria-hidden="true"><small>{calendar.lastLabel}</small><small>{calendar.dueLabel}</small></div></>:null}
+        </div>:null}
         <div className="button-row ct-verify-actions"><button className="button secondary" disabled={!latest||busy||!!active} onClick={()=>run(()=>post('/v2/drills',{captureId:latest!.id}))}>Probar mi Plan B</button>{onGuidedDrill?<button type="button" className="text-button" title="Cinco gestos con tu copia, como si el CRM se hubiera caído. No guarda nada." onClick={onGuidedDrill}>Práctica guiada: un día sin CRM (5 min)</button>:null}</div>
         {diagnosis?<div className="drill-result"><strong className={diagnosis.status==='passed'?'green':diagnosis.status==='untested'||diagnosis.status==='empty'?'':'warning-text'} role="status">{readinessLabel}</strong>
           {diagnosis.issues.length?<ul>{diagnosis.issues.map(issue=><li key={issue}>{issue}</li>)}</ul>:null}

@@ -1,7 +1,7 @@
-import test from 'node:test';
+﻿import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { Job } from '../shared/operations.js';
-import { captureLedger, continuityReadiness, copyVitals, formatAge, formatBytes, hourlyCaptures, jobStats, outageForecast, readinessFor, readinessSignal, type InsightContext, type InsightSource } from '../src/app-shell/continuity-insights.js';
+import { captureLedger, continuityReadiness, copyVitals, drillCalendar, formatAge, formatBytes, hourlyCaptures, jobStats, outageForecast, readinessFor, readinessSignal, type InsightContext, type InsightSource } from '../src/app-shell/continuity-insights.js';
 
 const NOW = new Date(2026, 10, 19, 12, 30);
 const at = (hoursAgo: number) => new Date(NOW.getTime() - hoursAgo * 3_600_000).toISOString();
@@ -101,4 +101,27 @@ test('fiabilidad: los cancelados no cuentan, los interrumpidos sí y se guarda e
 test('formatos: edad y tamaño legibles sin inventar valores', () => {
   assert.equal(formatAge(null), 'sin dato'); assert.equal(formatAge(0.2), 'menos de 1 min'); assert.equal(formatAge(150), '3 h'); assert.equal(formatAge(3 * 1440), '3 d');
   assert.equal(formatBytes(0), '0 KB'); assert.equal(formatBytes(2048), '2 KB'); assert.equal(formatBytes(1.5 * 1024 * 1024), '1,5 MB');
+});
+
+const drill = (daysAgo: number, captureId = 'c1', passed = true) => ({ id: 'r' + daysAgo, captureId, startedAt: at(daysAgo * 24), completedAt: at(daysAgo * 24), passed, isolated: true, checks: [], durationMs: 1, dataSource: 'demo', limitations: [] });
+test('calendario de simulacros: sin ninguno superado, al día, pronto y vencido', () => {
+  const never = drillCalendar({ captures: [{ id: 'c1', at: at(1), bytes: 100 }], reports: [drill(3, 'c1', false)] }, NOW);
+  assert.equal(never.state, 'never'); assert.equal(never.title, 'Ningún simulacro superado todavía'); assert.equal(never.daysLeft, null);
+  const ok = drillCalendar({ captures: [{ id: 'c1', at: at(1), bytes: 100 }], reports: [drill(5), drill(40)] }, NOW);
+  assert.equal(ok.state, 'ok'); assert.equal(ok.daysLeft, 25); assert.ok(Math.abs(ok.elapsed - 5 / 30) < 1e-9);
+  const soon = drillCalendar({ captures: [{ id: 'c1', at: at(1), bytes: 100 }], reports: [drill(29)] }, NOW);
+  assert.equal(soon.state, 'soon'); assert.equal(soon.title, 'Próximo simulacro en 1 día');
+  const due = drillCalendar({ captures: [{ id: 'c1', at: at(1), bytes: 100 }], reports: [drill(33)] }, NOW);
+  assert.equal(due.state, 'due'); assert.equal(due.tone, 'danger'); assert.equal(due.daysLeft, -3); assert.equal(due.elapsed, 1); assert.match(due.detail, /hace 3 días/);
+});
+
+test('calendario de simulacros: la copia cambió mucho desde la probada, salvo que la probada ya no exista', () => {
+  const grown = drillCalendar({ captures: [{ id: 'c2', at: at(1), bytes: 130 }, { id: 'c1', at: at(200), bytes: 100 }], reports: [drill(10)] }, NOW);
+  assert.equal(grown.state, 'changed'); assert.match(grown.detail, /crecido un 30 %/);
+  const shrunk = drillCalendar({ captures: [{ id: 'c2', at: at(1), bytes: 80 }, { id: 'c1', at: at(200), bytes: 100 }], reports: [drill(10)] }, NOW);
+  assert.match(shrunk.detail, /encogido un 20 %/);
+  assert.equal(drillCalendar({ captures: [{ id: 'c2', at: at(1), bytes: 110 }, { id: 'c1', at: at(200), bytes: 100 }], reports: [drill(10)] }, NOW).state, 'ok');
+  const pruned = drillCalendar({ captures: [{ id: 'c2', at: at(1), bytes: 900 }], reports: [drill(10)] }, NOW);
+  assert.equal(pruned.state, 'ok'); assert.equal(pruned.growth, null);
+  assert.equal(drillCalendar({ captures: [{ id: 'c2', at: at(1), bytes: 900 }, { id: 'c1', at: at(800), bytes: 100 }], reports: [drill(31)] }, NOW).state, 'due', 'vencido manda sobre cambiado');
 });

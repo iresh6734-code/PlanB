@@ -88,6 +88,37 @@ function nextAction(status: InsightSource, context: InsightContext, recoveryDone
 export type Tone = 'ok' | 'warn' | 'danger' | 'neutral';
 export interface Vital { id: string; label: string; value: string; note: string; tone: Tone }
 
+/** Calendario de simulacros (C5): uno cada 30 días desde el último superado, o antes si la copia cambió mucho desde entonces. */
+export const DRILL_EVERY_DAYS = 30, DRILL_SOON_DAYS = 7;
+export type DrillCalendarState = 'never' | 'ok' | 'soon' | 'due' | 'changed';
+export interface DrillCalendar {
+  state: DrillCalendarState; tone: Tone; title: string; detail: string;
+  lastLabel: string | null; dueLabel: string | null;
+  /** Parte de los 30 días ya consumida (0–1) y días que faltan (negativos si se pasó). */ elapsed: number; daysLeft: number | null;
+  /** Variación de tamaño de la última captura frente a la probada (0,2 = +20 %); null si no se puede comparar. */ growth: number | null;
+}
+const shortDay = (time: number) => new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', day: 'numeric', month: 'short' }).format(new Date(time));
+export function drillCalendar(status: Pick<ContinuityStatus, 'reports' | 'captures'>, now: Date): DrillCalendar {
+  const last = status.reports.filter(report => report.passed && valid(report.completedAt)).sort((a, b) => Date.parse(b.completedAt) - Date.parse(a.completedAt))[0];
+  if (!last) return {
+    state: 'never', tone: 'warn', title: status.reports.length ? 'Ningún simulacro superado todavía' : 'Sin simulacros todavía',
+    detail: status.captures.length ? 'Haz el primero ahora: tarda menos de un minuto y desde ahí se programa uno al mes.' : 'Primero necesitas una captura; después, un simulacro al mes.',
+    lastLabel: null, dueLabel: null, elapsed: 0, daysLeft: null, growth: null,
+  };
+  const lastAt = Date.parse(last.completedAt), dueAt = lastAt + DRILL_EVERY_DAYS * DAY;
+  const daysLeft = Math.ceil((dueAt - now.getTime()) / DAY), elapsed = Math.min(1, Math.max(0, (now.getTime() - lastAt) / (DRILL_EVERY_DAYS * DAY)));
+  const tested = status.captures.find(capture => capture.id === last.captureId);
+  const newest = status.captures.filter(capture => valid(capture.at)).sort((a, b) => Date.parse(b.at) - Date.parse(a.at))[0];
+  const growth = tested && newest && newest.id !== tested.id && tested.bytes > 0 && Number.isFinite(newest.bytes) ? (newest.bytes - tested.bytes) / tested.bytes : null;
+  const lastLabel = shortDay(lastAt), dueLabel = shortDay(dueAt), base = { lastLabel, dueLabel, elapsed, daysLeft, growth };
+  if (daysLeft <= 0) return { ...base, state: 'due', tone: 'danger', title: 'Toca repetir el simulacro', detail: 'El último superado fue el ' + lastLabel + '; tocaba el ' + dueLabel + (daysLeft < 0 ? ' (hace ' + -daysLeft + (daysLeft === -1 ? ' día)' : ' días)') : '') + '.' };
+  if (growth !== null && Math.abs(growth) > SHRINK_RATIO) return { ...base, state: 'changed', tone: 'warn', title: 'La copia cambió desde el último simulacro',
+    detail: 'Ha ' + (growth > 0 ? 'crecido' : 'encogido') + ' un ' + Math.round(Math.abs(growth) * 100) + ' %. Conviene probarla otra vez sin esperar al ' + dueLabel + '.' };
+  const days = daysLeft + (daysLeft === 1 ? ' día' : ' días');
+  if (daysLeft <= DRILL_SOON_DAYS) return { ...base, state: 'soon', tone: 'warn', title: 'Próximo simulacro en ' + days, detail: 'El ' + dueLabel + '. Último superado: ' + lastLabel + '.' };
+  return { ...base, state: 'ok', tone: 'ok', title: 'Próximo simulacro: ' + dueLabel, detail: 'Faltan ' + days + '. Último superado: ' + lastLabel + '.' };
+}
+
 /** Veredicto de preparación resumido para fuera de Continuidad (línea en Inicio y punto del menú). */
 export interface ReadinessSignal { level: ReadinessLevel; tone: Tone; title: string; progress: string; next: string; steps: boolean[] }
 const LEVEL_TONE: Record<ReadinessLevel, Tone> = { ready: 'ok', almost: 'warn', risk: 'danger', start: 'neutral' };

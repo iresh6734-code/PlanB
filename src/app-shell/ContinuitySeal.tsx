@@ -2,6 +2,7 @@ import { Check, Circle } from 'lucide-react';
 import { ProBadge } from './ProBadge.js';
 import { continuitySeal, SEAL_DISCLAIMER, type ContinuitySeal, type SealLevel } from './continuity-seal.js';
 import type { ContinuityStatus } from '../../shared/operations.js';
+import './continuity-seal.css';
 
 type SealSource = Pick<ContinuityStatus, 'captures' | 'reports' | 'jobs' | 'stale'>;
 

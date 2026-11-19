@@ -15,9 +15,10 @@ const loadBundle = async () => await import(bundlePath) as BundleModule;
 
 const DIST = path.resolve('dist');
 const JS_BUDGETS = ['initialJs', 'initialJsGzip'] as const;
-// K1 · Techo de trinquete del CSS inicial: tras podar lo muerto y lo pisado (400 → 378 KiB). Solo baja.
-// La meta del plan son 340 KB (initialCss en budgets.json): falta llevar los estilos de páginas diferidas a su chunk.
-const INITIAL_CSS_CEILING = 380 * 1024;
+// K1 · Techo de trinquete del CSS inicial: tras podar lo muerto y lo pisado (400 → 378 KiB) y llevar a su chunk diferido
+// la revisión semanal, el sello de continuidad y el parte de la mañana (→ 372 KiB). Solo baja.
+// La meta del plan son 340 KB (initialCss en budgets.json): falta llevar más estilos de páginas diferidas a su chunk.
+const INITIAL_CSS_CEILING = 372 * 1024;
 
 function jsBudgets(): Record<string, number> {
   const budgets = JSON.parse(fs.readFileSync(path.resolve('tools/perf/budgets.json'), 'utf8')) as { bundle: Record<string, number> };

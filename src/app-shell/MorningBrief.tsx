@@ -5,6 +5,7 @@ import { SavedChangesSchema } from '../../shared/recovery-integrity.js';
 import { api } from '../api.js';
 import { madridDay } from '../task-display.js';
 import { briefSeen, briefText, markBriefSeen, morningBrief, shouldShowBrief, type BriefTask } from './morning-brief.js';
+import './morning-brief.css';
 
 const storage = () => { try { return window.localStorage; } catch { return null; } };
 type Props = {

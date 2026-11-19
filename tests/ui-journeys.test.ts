@@ -16,25 +16,25 @@ function makeLoader(mocks: Record<string, any> = {}) {
   const cache = new Map<string, any>();
   let hooks: any;
   const useHooks = (value: any) => { hooks = value; };
-  const resolveFile = (spec: string) => {
-    const base = path.resolve(SRC, spec.replace(/\.js$/, ''));
+  const resolveFile = (spec: string, from: string) => {
+    const base = path.resolve(from, spec.replace(/\.js$/, ''));
     return ['.tsx', '.ts'].map(ext => base + ext).find(file => fs.existsSync(file));
   };
   const jsx = (type: any, props: Record<string, any>) => ({ type, props });
-  const requireFrom = (spec: string): any => {
+  const requireFrom = (spec: string, from = SRC): any => {
     if (spec === 'react') return new Proxy({}, { get: (_t, name) => (hooks as any)[name] });
     if (spec === 'react/jsx-runtime') return { jsx, jsxs: jsx, Fragment: Symbol.for('fragment') };
     if (spec === 'lucide-react') return new Proxy({}, { get: () => () => null });
     if (spec.endsWith('.css')) return {};
     const key = path.basename(spec).replace(/\.js$/, '');
     if (key in mocks) return mocks[key];
-    const file = resolveFile(spec);
+    const file = resolveFile(spec, from);
     if (!file) throw new Error('Dependencia no resuelta en la prueba: ' + spec);
     if (cache.has(file)) return cache.get(file);
     const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText;
     const mod: { exports: any } = { exports: {} };
     cache.set(file, mod.exports);
-    new Function('require', 'exports', 'module', code)(requireFrom, mod.exports, mod);
+    new Function('require', 'exports', 'module', code)((next: string) => requireFrom(next, path.dirname(file)), mod.exports, mod);
     cache.set(file, mod.exports);
     return mod.exports;
   };

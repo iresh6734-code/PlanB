@@ -72,7 +72,7 @@ export function FirstRunStrip({ plan, ...actions }: { plan: FirstRunPlan } & Fir
       <p>{step.detail}</p>
     </div>
     <Meter plan={plan} />
-    {action ? <button type="button" className="button primary" onClick={action}>{ACTION[step.id]}</button> : <p className="gx-first-waiting">{step.waiting}</p>}
+    {action ? <button type="button" className="button secondary" onClick={action}>{ACTION[step.id]}</button> : <p className="gx-first-waiting">{step.waiting}</p>}
     <button type="button" className="icon-button gx-first-hide" aria-label="Ocultar los primeros pasos" title="Ocultar" onClick={() => { write(HIDDEN_KEY); setHidden(true); }}><X size={16} /></button>
   </section>;
 }

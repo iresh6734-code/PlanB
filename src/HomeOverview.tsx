@@ -235,7 +235,7 @@ export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, 
             </p> : null}
             {verdict && status && !state.runtime ? <HomeSeal status={status} steps={verdict.steps} onOpen={onOpenAlert ? () => onOpenAlert('estado') : onOpenContinuity} /> : null}
             {copyAlerts.length ? <ul className="oc-copy-alerts" aria-label="Avisos de la copia">{copyAlerts.map(alert => <li key={alert.id} data-tone={alert.tone}><span><strong>{alert.title}</strong> {alert.detail}</span>{onOpenAlert ? <button type="button" className="oc-link" aria-label={alert.action.label + ': ' + alert.title} onClick={() => onOpenAlert(alert.action.target)}>{alert.action.label}</button> : null}</li>)}</ul> : null}
-            <div className="oc-row-actions"><button type="button" className="button primary" onClick={onOpenContinuity}>{stale || !snapshot ? 'Ir a Continuidad' : 'Ver estado'}</button>{changes > 0 ? <button type="button" className="button secondary" onClick={onOpenChanges}>Revisar cambios</button> : null}</div>
+            <div className="oc-row-actions"><button type="button" className={'button ' + (first ? 'secondary' : 'primary')} onClick={onOpenContinuity}>{stale || !snapshot ? 'Ir a Continuidad' : 'Ver estado'}</button>{changes > 0 ? <button type="button" className="button secondary" onClick={onOpenChanges}>Revisar cambios</button> : null}</div>
           </div>
         </article>
         {lab ? <article className="oc-card oc-side-card" aria-labelledby="oc-radar-title">

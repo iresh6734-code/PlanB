@@ -3,6 +3,8 @@ import { X, LoaderCircle } from 'lucide-react';
 import { api, ApiError } from './api.js';
 import { ReferenceSelect } from './ReferenceSelect.js';
 import { validateRecord, type AppSpec, type CrmRecord, type EntityName, type Field, type FieldValue } from '../shared/model.js';
+import { isWideField, recordStamp } from './app-shell/record-sheet.js';
+import { madridDay } from './task-display.js';
 
 export function Brand() {
   return <div className="brand" aria-label="Plan B">Plan <span>B</span></div>;
@@ -128,14 +130,16 @@ export function RecordDrawer({ entityName, selected, spec, records, close, saved
       else setErrors({ _form: error instanceof Error ? error.message : 'No se pudo guardar.' });
     } finally { setSaving(false); }
   };
+  const stamp = isNew ? null : recordStamp(spec, entityName, values, madridDay(new Date()));
   return <aside ref={dialog} className="record-drawer" data-entity={entityName} role="dialog" aria-modal="true" aria-label={correctedTitle}>
-    <header className="drawer-header"><div><h2>{correctedTitle}</h2><p>{entity.singular[0].toUpperCase() + entity.singular.slice(1)}{relatedCompany ? ' · ' + relatedCompany.values.name : ' · Copia local'}</p></div>
+    <header className="drawer-header"><div><h2>{correctedTitle}</h2><p>{entity.singular[0].toUpperCase() + entity.singular.slice(1)}{relatedCompany ? ' · ' + relatedCompany.values.name : ' · Copia local'}
+      {stamp ? <span className="drawer-stamp" data-tone={stamp.tone} title={stamp.note}>{stamp.label}</span> : null}</p></div>
       {headerAction ? <span className="drawer-header-actions">{headerAction}<button className="icon-button" aria-label="Cerrar edición" onClick={close}><X size={23} /></button></span>
         : <button className="icon-button" aria-label="Cerrar edición" onClick={close}><X size={23} /></button>}</header>
     <form onSubmit={submit} className="drawer-form" noValidate>
       <div className="drawer-fields">
         {summary ? summary(values, set, saving) : null}
-        {entity.fields.map(field => <label className="field" key={field.key} htmlFor={'record-' + field.key}>
+        {entity.fields.map(field => <label className="field" key={field.key} htmlFor={'record-' + field.key} data-wide={isWideField(field, entity.displayField) ? '' : undefined}>
           <span>{field.label}{field.required ? <span className="required"> *</span> : null}{field.readOnly ? <small>Solo lectura</small> : null}</span>
           {field.type==='reference'?<ReferenceSelect id={'record-'+field.key} label={field.label} value={String(values[field.key]??'')} entity={field.referenceEntity!} spec={spec} disabled={field.readOnly||saving} onChange={value=>set(field.key,value)}/>
             : field.type === 'enum' || field.type==='multiselect'

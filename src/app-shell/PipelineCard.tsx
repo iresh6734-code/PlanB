@@ -57,7 +57,7 @@ function GoalStrip({ goal, onChange, won, committed, probable, today, undatedWon
     <form className="gx-goal-form" onSubmit={save}>
       <input inputMode="decimal" aria-label="Objetivo de ventas de este mes, en euros" aria-describedby="gx-goal-help" aria-invalid={problem ? 'true' : undefined} placeholder="Por ejemplo 12.500 €" maxLength={20}
         value={text} onChange={event => { setText(event.target.value); setProblem(null); }} onKeyDown={event => { if (event.key === 'Escape' && editing) { event.stopPropagation(); setEditing(false); setProblem(null); } }} />
-      <button type="submit" className="button primary" disabled={!text.trim()}>Fijar objetivo</button>
+      <button type="submit" className="button secondary" disabled={!text.trim()}>Fijar objetivo</button>
       {editing ? <button type="button" className="button secondary" onClick={() => { setEditing(false); setProblem(null); }}>Cancelar</button> : null}
     </form>
     <p className="gx-pipe-note" id="gx-goal-help" data-tone={problem ? 'error' : undefined} role={problem ? 'alert' : undefined}>{problem ?? 'Se guarda solo en este navegador. Lo ganado son las oportunidades ganadas con el cierre en este mes.'}</p>

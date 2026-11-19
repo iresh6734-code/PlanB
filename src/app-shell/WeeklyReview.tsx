@@ -12,6 +12,7 @@ import { BOARD_MAX_PAGES, readPages, type ListPage } from './pager.js';
 import { followUpDates } from './task-preset.js';
 import { recordListPath } from './useRecordList.js';
 import { nextStepTask, POSTPONE_LIMIT, reviewDay, reviewHeadline, reviewText, weeklyReview, type WeeklyReview as Review } from './weekly-review.js';
+import './weekly-review.css';
 
 type Props = {
   spec: AppSpec; revision: string; title: string;

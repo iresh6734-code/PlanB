@@ -514,4 +514,20 @@ html body .ct-seal-mark .seal-badge { animation: k2-stamp 280ms cubic-bezier(.2,
 @keyframes k2-stamp { from { opacity: 0; transform: scale(1.08); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { html body .gx-focus-card[data-done] h3::after, html body .ct-seal-mark .seal-badge { animation: none; } }
 
+/* K7 · La ficha como hoja. El estado (etapa, estado de la tarea, fase) va como sello junto al tipo de ficha: trazo de
+ * 1,5 px en su tinta y sin relleno; si venció lleva delante el cuadrado de lacre. En escritorio los campos se leen en
+ * dos columnas; el resumen, las reglas, lo relacionado y los campos largos ([data-wide]) ocupan el ancho entero. */
+html body .drawer-header p { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+html body .drawer-stamp { --stamp-ink: var(--text-2); display: inline-flex; align-items: center; gap: 6px; max-width: 100%; height: 20px; padding: 0 6px; border: 1.5px solid var(--stamp-ink); border-radius: 2px; color: var(--stamp-ink); font-size: var(--fs-xs); font-weight: 700; letter-spacing: .06em; line-height: 1; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html body .drawer-stamp[data-tone="danger"] { --stamp-ink: var(--danger); }
+html body .drawer-stamp[data-tone="danger"]::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 1px; background: var(--seal); }
+html body .drawer-stamp[data-tone="warn"] { --stamp-ink: var(--warning); }
+html body .drawer-stamp[data-tone="ok"] { --stamp-ink: var(--success); }
+@media (min-width: 1024px) {
+  html body .record-drawer { width: min(600px, 100vw); }
+  html body .record-drawer[data-entity="deals"] { width: min(640px, 100vw); }
+  html body .drawer-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 16px; }
+  html body .drawer-fields > :not(.field), html body .drawer-fields > .field[data-wide] { grid-column: 1 / -1; }
+}
+
 @media (prefers-reduced-motion: reduce) { html body *, html body *::before, html body *::after { transition-duration: 0ms !important; animation-duration: 0ms !important; } }

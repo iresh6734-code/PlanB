@@ -40,16 +40,23 @@ export const planKey = (plan: RecoveryPlan | null) => plan ? JSON.stringify([pla
 
 /** Explicación del plan para la pantalla; null mientras carga, si no hay plan o si no se pudo preparar. */
 export function useReturnExplanation(plan: RecoveryPlan | null, spec: AppSpec | null): ReturnExplanation | null {
-  const [explanation, setExplanation] = useState<ReturnExplanation | null>(null);
+  // La explicación se guarda con la clave del plan y la especificación para los que se calculó. Solo se devuelve si
+  // coinciden con lo que se está pintando ahora: con un plan nuevo y su lectura pendiente, la pantalla usa el respaldo
+  // desde el primer pintado, sin esperar a que corra ningún efecto (R2, revisión 430 F2).
+  const [stored, setStored] = useState<{ key: string; spec: AppSpec; explanation: ReturnExplanation } | null>(null);
   const key = planKey(plan);
   useEffect(() => {
-    if (!plan || !spec) { setExplanation(null); return; }
+    if (!plan || !spec) return;
     let alive = true;
     const fetchRecord: Fetch = (entity, id) => api<{ record: CrmRecord }>('/v2/records/' + entity + '/' + encodeURIComponent(id)).then(data => data.record);
     collectRecords(plan, spec, fetchRecord)
-      .then(records => { if (alive) setExplanation(explainReturnPlan(plan, spec, records)); })
-      .catch(() => { if (alive) setExplanation(null); });
+      .then(records => { if (alive) setStored({ key, spec, explanation: explainReturnPlan(plan, spec, records) }); })
+      .catch(() => undefined);
     return () => { alive = false; };
   }, [key, spec]);
-  return explanation;
+  return explanationFor(stored, key, spec);
 }
+
+/** La explicación guardada solo vale para el mismo plan (clave) y la misma especificación. Lógica pura. */
+export const explanationFor = (stored: { key: string; spec: AppSpec; explanation: ReturnExplanation } | null, key: string, spec: AppSpec | null) =>
+  stored && key && stored.key === key && stored.spec === spec ? stored.explanation : null;

@@ -68,3 +68,33 @@ Mientras se prepara la explicación, o si falla, se muestra la vista anterior ta
 | `src/faro.css` | `8a590f91a5d4` | `ea1e31b8845d` (incluye trabajo ajeno posterior) |
 | `src/app-shell/useReturnExplanation.ts` | — | `2b73d6911218` (nuevo) |
 | `tests/return-explain-ui.test.ts` | — | `5d49105f6473` (nuevo) |
+
+## R2 · Revisión 430 F2 de Codex
+
+**Hallazgo (correcto).** Con la explicación del plan A ya mostrada, llegaba un plan B con otras operaciones y su lectura pendiente. En ese pintado, el hook aún devolvía los grupos de A, y `ChangesView` buscaba la operación de A en B y fallaba con `TypeError` al leer `label`.
+
+**Corrección:**
+
+- **`useReturnExplanation`** guarda la explicación junto con la clave del plan y la especificación para los que se calculó. `explanationFor` solo la devuelve si coinciden con lo que se pinta. Con un plan nuevo, una decisión nueva o otra especificación, la pantalla usa el respaldo desde el primer pintado, sin esperar a ningún efecto. Una entrega tardía y fuera de orden tampoco se muestra, porque su clave ya no es la vigente.
+- **`ChangesView`:**
+  - guarda ante una operación ausente (`if(!op)return null`);
+  - el resumen cuenta también lo verificado y lo incierto, y los registros nuevos por crear según el modelo (F1).
+
+**Pruebas** (`tests/return-explain-ui.test.ts`, **6/6**):
+
+- reemplazo A → B con lectura pendiente;
+- otra especificación;
+- decisión dentro de la misma operación;
+- sin plan;
+- la guarda en la vista;
+- el hook devuelve solo la explicación vigente.
+
+`tsc` 0.
+
+**Huellas R2:**
+
+| Archivo | Huella |
+| --- | --- |
+| `src/app-shell/useReturnExplanation.ts` | `eee5bb985a7c…` |
+| `src/ChangesView.tsx` | `052a4284f807…` |
+| `tests/return-explain-ui.test.ts` | `13820aa54800…` |

@@ -6,11 +6,16 @@
 import type { AppSpec, CrmRecord, EntityName, Field, FieldValue } from './model.js';
 import type { RecoveryField, RecoveryOperation, RecoveryPlan } from './operations.js';
 
-export type ReturnTone = 'send' | 'same' | 'conflict' | 'overwrite' | 'keep' | 'create';
+/**
+ * Por hacer: send, conflict, overwrite, create. Sin envío: same, keep. Ya resuelto en el motor (R2, revisión 430):
+ * done (enviado y verificado), skipped (omitido) y uncertain (pudo llegar o no: se comprueba antes de repetir).
+ */
+export type ReturnTone = 'send' | 'same' | 'conflict' | 'overwrite' | 'keep' | 'create' | 'done' | 'skipped' | 'uncertain';
 export type ExplainedField = { field: string; label: string; tone: ReturnTone; text: string; base: string; local: string; remote: string };
 export type ExplainedOperation = { id: string; label: string; entity: EntityName; entityLabel: string; kind: RecoveryOperation['kind']; status: RecoveryOperation['status']; fields: ExplainedField[]; relations: string[] };
 export type ReturnGroup = { key: string; title: string; operations: ExplainedOperation[]; conflicts: number };
-export type ReturnSummary = { operations: number; send: number; same: number; conflicts: number; overwrite: number; keep: number; creates: number };
+/** Campos por tono, salvo `creates`: registros nuevos que aún hay que crear (los ya creados, aunque falten relaciones, no cuentan). */
+export type ReturnSummary = { operations: number; send: number; same: number; conflicts: number; overwrite: number; keep: number; creates: number; done: number; skipped: number; uncertain: number };
 export type ReturnExplanation = { summary: ReturnSummary; groups: ReturnGroup[]; target: string };
 
 const EMPTY = 'vacío';
@@ -37,14 +42,23 @@ export function formatValue(field: Field | undefined, value: FieldValue | undefi
 }
 
 /** Qué pasará con un campo y por qué, en una frase. `target` es el nombre del CRM («HubSpot»). */
-export function explainField(kind: RecoveryOperation['kind'], field: RecoveryField, values: { base: string; local: string; remote: string }, target: string): { tone: ReturnTone; text: string } {
+/** «lo de HubSpot», pero «lo del CRM de prueba». */
+const loDe = (target: string) => target.startsWith('el ') ? 'lo del ' + target.slice(3) : 'lo de ' + target;
+
+export function explainField(kind: RecoveryOperation['kind'], field: RecoveryField, values: { base: string; local: string; remote: string }, target: string, status: RecoveryOperation['status'] = 'pending', created = false): { tone: ReturnTone; text: string } {
   const { base, local, remote } = values;
-  if (kind === 'create') return { tone: 'create', text: 'Se creará en ' + target + ' con ' + q(local) + '.' };
+  // Lo que el motor ya resolvió no se vuelve a prometer en futuro.
+  if (status === 'applied') return { tone: 'done', text: field.decision === 'remote' || kind === 'update' && field.local === field.remote ? 'Sin cambios en ' + target + ': se quedó ' + q(remote) + '.' : 'Ya está en ' + target + ': ' + q(local) + ', enviado y verificado.' };
+  if (status === 'skipped') return { tone: 'skipped', text: 'Omitido: no se envía a ' + target + '.' };
+  if (status === 'uncertain' || status === 'sending') return { tone: 'uncertain', text: 'No se sabe si ' + q(local) + ' llegó a ' + target + '. Compruébalo antes de repetir.' };
+  if (kind === 'create') return created
+    ? { tone: 'done', text: 'Ya se creó en ' + target + ' con ' + q(local) + '; solo faltan sus relaciones.' }
+    : { tone: 'create', text: 'Se creará en ' + target + ' con ' + q(local) + '.' };
   if (field.conflict && field.decision === null) return { tone: 'conflict', text: 'Conflicto: al capturar era ' + q(base) + '; tú lo cambiaste a ' + q(local) + ' y en ' + target + ' alguien lo cambió a ' + q(remote) + '. Elige cuál se queda.' };
   if (field.conflict && field.decision === 'local') return { tone: 'overwrite', text: 'Se sustituirá lo que alguien puso en ' + target + ' (' + q(remote) + ') por tu valor, ' + q(local) + '.' };
   if (field.decision === 'remote') return field.local === field.remote || local === remote
     ? { tone: 'same', text: target + ' ya tiene ' + q(local) + '. No se envía nada.' }
-    : { tone: 'keep', text: 'Se queda lo de ' + target + ' (' + q(remote) + '). Tu cambio a ' + q(local) + ' solo seguirá en tu copia local.' };
+    : { tone: 'keep', text: 'Se queda ' + loDe(target) + ' (' + q(remote) + '). Tu cambio a ' + q(local) + ' solo seguirá en tu copia local.' };
   return { tone: 'send', text: 'En ' + target + ' pasará de ' + q(remote) + ' a ' + q(local) + '.' };
 }
 
@@ -83,18 +97,26 @@ export function explainReturnPlan(plan: RecoveryPlan, spec: AppSpec, records: Cr
     return { key: op.entity + ':' + op.localId, title: op.label };
   };
 
-  const summary: ReturnSummary = { operations: plan.operations.length, send: 0, same: 0, conflicts: 0, overwrite: 0, keep: 0, creates: 0 };
+  const summary: ReturnSummary = { operations: plan.operations.length, send: 0, same: 0, conflicts: 0, overwrite: 0, keep: 0, creates: 0, done: 0, skipped: 0, uncertain: 0 };
   const groups = new Map<string, ReturnGroup>();
   for (const op of plan.operations) {
     const definition = entityOf(op.entity);
-    const fields = op.fields.map(field => {
-      const spec = definition?.fields.find(f => f.key === field.field);
-      const values = { base: formatValue(spec, field.base, nameOf), local: formatValue(spec, field.local, nameOf), remote: formatValue(spec, field.remote, nameOf) };
-      const { tone, text } = explainField(op.kind, field, values, target);
-      if (tone === 'conflict') summary.conflicts++; else if (tone === 'create') summary.creates++; else summary[tone]++;
-      return { field: field.field, label: field.label, tone, text, ...values };
-    });
-    const relations = op.references.filter(ref => ref.id).map(ref => {
+    // Un alta con ID remoto ya está creada: solo pueden faltar sus relaciones.
+    const created = op.kind === 'create' && !!op.remoteId;
+    const fields = op.fields
+      // En un alta, un campo vacío no dice nada («se creará con vacío»): no se explica.
+      .filter(field => !(op.kind === 'create' && (field.local === null || field.local === undefined || field.local === '')))
+      .map(field => {
+        const spec = definition?.fields.find(f => f.key === field.field);
+        const values = { base: formatValue(spec, field.base, nameOf), local: formatValue(spec, field.local, nameOf), remote: formatValue(spec, field.remote, nameOf) };
+        const { tone, text } = explainField(op.kind, field, values, target, op.status, created);
+        if (tone === 'conflict') summary.conflicts++; else if (tone !== 'create') summary[tone]++;
+        return { field: field.field, label: field.label, tone, text, ...values };
+      });
+    // R3 (revisión 454): solo lo pendiente o fallido promete altas y relaciones. Incierto, en envío u omitido piden comprobar.
+    const open = op.status === 'pending' || op.status === 'failed';
+    if (op.kind === 'create' && !created && open) summary.creates++;
+    const relations = !open ? [] : op.references.filter(ref => ref.id).map(ref => {
       const field = definition?.fields.find(f => f.key === ref.field);
       return 'Se enlazará con ' + (nameOf(ref.entity, ref.id!) ?? 'un registro que ya no está en la copia') + (field ? ' (' + field.label.toLowerCase() + ')' : '') + '.';
     });

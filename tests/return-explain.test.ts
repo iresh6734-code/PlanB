@@ -116,3 +116,57 @@ test('agrupa por la empresa del registro antes que por la de su persona, y sin e
   assert.equal(explained.target, 'HubSpot');
   assert.deepEqual(explained.groups.map(g => g.title), ['Norte Digital', 'Leo Paz'], 'la oportunidad va con su empresa (no la de Lucía); la tarea, con su persona sin empresa');
 });
+
+test('R2 · tras aplicar con el motor real, lo verificado ya no se promete en futuro ni cuenta como pendiente (revisión 430 F1)', async t => {
+  const store = seeded(t);
+  const lucia = store.records('contacts').find(r => r.values.company_id === 'company-1')!;
+  store.saveRecord('contacts', { ...lucia.values, phone: '600 333 444' }, lucia.id);
+  store.saveRecord('contacts', { firstname: 'Nora', lastname: 'Gil', email: 'nora@ejemplo.es' });
+  const recovery = new Recovery(store), remote = simulatedRemote(store);
+  const plan = await recovery.preview(remote);
+  const before = explainReturnPlan(plan, store.spec!, store.records());
+  assert.equal(before.summary.send, 1); assert.equal(before.summary.creates, 1, 'una persona nueva = un registro por crear');
+  assert.ok(before.groups.flatMap(g => g.operations).find(op => op.kind === 'create')!.fields.every(f => f.local !== 'vacío'), 'sin frases para campos vacíos del alta');
+  recovery.approve(plan.id);
+  const done = await recovery.apply(plan.id, remote);
+  assert.equal(done.status, 'complete');
+  const after = explainReturnPlan(done, store.spec!, store.records());
+  assert.deepEqual([after.summary.send, after.summary.creates, after.summary.conflicts], [0, 0, 0], 'nada queda por enviar');
+  assert.ok(after.summary.done >= 2);
+  const phone = after.groups.flatMap(g => g.operations).find(op => op.kind === 'update')!.fields.find(f => f.field === 'phone')!;
+  assert.equal(phone.tone, 'done'); assert.match(phone.text, /^Ya está en el CRM de prueba: «600 333 444», enviado y verificado\.$/);
+  assert.doesNotMatch(JSON.stringify(after), /pasará de|Se creará/, 'nada en futuro');
+});
+
+test('R2 · omitido, incierto, alta ya creada y «lo del CRM de prueba»', () => {
+  const field = { field: 'phone', label: 'Teléfono', base: 'A', local: 'B', remote: 'C', conflict: true, decision: 'remote' as const };
+  const v = { base: 'A', local: 'B', remote: 'C' };
+  assert.equal(explainField('update', field, v, 'el CRM de prueba').text, 'Se queda lo del CRM de prueba («C»). Tu cambio a «B» solo seguirá en tu copia local.');
+  assert.equal(explainField('update', field, v, 'HubSpot').text.startsWith('Se queda lo de HubSpot'), true);
+  assert.equal(explainField('update', { ...field, decision: 'local' }, v, 'HubSpot', 'skipped').tone, 'skipped');
+  assert.match(explainField('update', { ...field, decision: 'local' }, v, 'HubSpot', 'uncertain').text, /No se sabe si «B» llegó a HubSpot/);
+  const created = explainField('create', { ...field, base: null, conflict: false, decision: 'local' }, v, 'HubSpot', 'pending', true);
+  assert.equal(created.tone, 'done'); assert.match(created.text, /Ya se creó en HubSpot.*solo faltan sus relaciones/);
+});
+
+test('R3 · un alta con la respuesta perdida no promete crearse ni enlazarse; al resolverse dice lo que pasó (revisión 454)', () => {
+  const spec = makeDemoSpec(makeFixture());
+  const records: CrmRecord[] = [{ entity: 'companies', id: 'company-1', values: { name: 'Estudio Arce' } }];
+  const create = (status: 'pending' | 'sending' | 'uncertain' | 'skipped' | 'applied' | 'failed', remoteId: string | null = null) => ({ id: 'op-1', entity: 'contacts' as const, localId: 'local-1', remoteId, kind: 'create' as const, label: 'Nora', remoteVersion: null, status, error: null,
+    fields: [{ field: 'firstname', label: 'Nombre', base: null, local: 'Nora', remote: null, conflict: false, decision: 'local' as const }],
+    references: [{ field: 'company_id', entity: 'companies' as const, id: 'company-1' }] });
+  const planWith = (op: ReturnType<typeof create>) => ({ id: 'p', accountId: 'a', createdAt: new Date().toISOString(), revision: 'r', status: 'partial' as const, source: 'simulation' as const, warning: '', approvedAt: null, operations: [op] });
+  const explain = (op: ReturnType<typeof create>) => { const e = explainReturnPlan(planWith(op), spec, records); return { creates: e.summary.creates, op: e.groups[0].operations[0] }; };
+  for (const status of ['uncertain', 'sending', 'skipped'] as const) {
+    const { creates, op } = explain(create(status));
+    assert.equal(creates, 0, status + ': no cuenta un registro por crear');
+    assert.deepEqual(op.relations, [], status + ': no promete «Se enlazará»');
+    assert.doesNotMatch(op.fields.map(f => f.text).join(' '), /Se creará/, status);
+  }
+  assert.match(explain(create('uncertain')).op.fields[0].text, /No se sabe si «Nora» llegó/);
+  // Pendiente o fallida sí promete; resuelta como creada, solo faltan relaciones; verificada, ya está.
+  assert.equal(explain(create('pending')).creates, 1); assert.equal(explain(create('failed')).creates, 1);
+  const relationsLeft = explain(create('pending', 'remoto-9'));
+  assert.equal(relationsLeft.creates, 0); assert.match(relationsLeft.op.fields[0].text, /Ya se creó/); assert.deepEqual(relationsLeft.op.relations, ['Se enlazará con Estudio Arce (empresa).']);
+  assert.match(explain(create('applied', 'remoto-9')).op.fields[0].text, /^Ya está en el CRM de prueba/);
+});

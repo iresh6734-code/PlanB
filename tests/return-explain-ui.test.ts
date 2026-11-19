@@ -43,3 +43,26 @@ test('ChangesView usa la explicación, con decisiones en palabras y la vista ant
   assert.ok(view.includes("decide(op,field,'Usar local','Conservar remoto')"), 'la vista anterior sigue mientras carga');
   assert.ok(view.includes("planId:plan!.id,decisions:[{operationId:op.id,field:field.field,decision:e.target.value}]"), 'la decisión sigue yendo a la misma ruta');
 });
+
+// R2 · Revisión 430 F2: con un plan nuevo, la pantalla nunca pinta la explicación del anterior.
+import { explanationFor } from '../src/app-shell/useReturnExplanation.js';
+import { explainReturnPlan } from '../shared/return-explain.js';
+test('R2 · la explicación guardada solo vale para su plan y su especificación (reemplazo, decisión y entrega tardía)', () => {
+  const planA = plan([op('contacts', 'contact-1')]), planB = plan([op('contacts', 'contact-2')]);
+  const stored = { key: planKey(planA), spec, explanation: explainReturnPlan(planA, spec, []) };
+  assert.ok(explanationFor(stored, planKey(planA), spec), 'mismo plan y misma especificación: se usa');
+  assert.equal(explanationFor(stored, planKey(planB), spec), null, 'plan B con su lectura pendiente: respaldo, nunca los grupos de A');
+  assert.equal(explanationFor(stored, planKey(planA), structuredClone(spec)), null, 'otra especificación: respaldo');
+  const decided = structuredClone(planA); decided.operations[0].fields = [{ field: 'phone', label: 'Teléfono', base: '1', local: '2', remote: '3', conflict: true, decision: 'local' }];
+  assert.equal(explanationFor(stored, planKey(decided), spec), null, 'una decisión dentro de la misma operación cambia la clave');
+  assert.equal(explanationFor(null, planKey(planA), spec), null);
+  assert.equal(explanationFor(stored, '', spec), null, 'sin plan, nada');
+});
+
+test('R2 · ChangesView no confía en que la operación exista y cuenta lo verificado y lo incierto', () => {
+  const view = fs.readFileSync('src/ChangesView.tsx', 'utf8');
+  assert.ok(view.includes('const op=plan.operations.find(o=>o.id===item.id);if(!op)return null;'), 'guarda ante una operación ausente');
+  assert.ok(view.includes('explained.summary.done') && view.includes('explained.summary.uncertain') && view.includes('explained.summary.creates?'));
+  const hook = fs.readFileSync('src/app-shell/useReturnExplanation.ts', 'utf8');
+  assert.ok(hook.includes('return explanationFor(stored, key, spec);'), 'el hook devuelve solo la explicación de lo que se pinta');
+});

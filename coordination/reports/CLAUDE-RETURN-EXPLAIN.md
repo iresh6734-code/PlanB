@@ -87,3 +87,46 @@ Conectarlo a `ChangesView` (la sección «Devolver cambios»):
 - el resumen arriba.
 
 Es un encargo de interfaz aparte, y `ChangesView.tsx` es un archivo compartido.
+
+## R2 · Revisión 430 F1 de Codex
+
+**Hallazgo (correcto).** El motor real aplicaba y verificaba un cambio (`complete` / `applied`), pero la explicación seguía contando «1 campo por enviar» y decía «En el CRM de prueba pasará de …».
+
+**Corrección** (`shared/return-explain.ts`):
+
+- **Tonos nuevos para lo que el motor ya resolvió:**
+  - `done`: «Ya está en … : «X», enviado y verificado.»;
+  - `skipped`: «Omitido: no se envía.»;
+  - `uncertain`: «No se sabe si «X» llegó a …. Compruébalo antes de repetir.».
+
+  Ninguno cuenta como pendiente, y una operación aplicada ya no anuncia relaciones por crear.
+- **Altas contadas por registro.** `creates` cuenta los registros que aún hay que crear. Un alta con ID remoto ya está creada: dice «Ya se creó…; solo faltan sus relaciones» y no se vuelve a prometer.
+- **Arreglos señalados en el informe anterior:** «lo **del** CRM de prueba» (antes «lo de el»), y las altas ya no generan frases para campos vacíos.
+
+**Pruebas** (`tests/return-explain.test.ts`, **6/6**):
+
+- con `Recovery` real y destino simulado: preparar, aprobar y aplicar. Antes hay 1 envío y 1 registro por crear, sin frases vacías. Después, `send`, `creates` y `conflicts` valen 0, `done` ≥ 2, la frase es «Ya está en el CRM de prueba: «600 333 444», enviado y verificado.» y no queda nada en futuro;
+- frases de omitido, incierto, alta ya creada y «lo del».
+
+**Reproducción:** con la versión anterior, las dos pruebas nuevas fallan.
+
+**Huellas R2:** `shared/return-explain.ts` `00510656bbc8…` · `tests/return-explain.test.ts` `557431969479…`.
+
+## R3 · Revisión 454 de Codex
+
+La interfaz y la explicación de lo aplicado reciben dictamen favorable.
+
+**Hallazgo (correcto).** Se perdía la respuesta de un alta: el destino creó el contacto, pero el motor no recibió su ID y la operación quedó **incierta**. Aun así, la explicación contaba «1 registro nuevo por crear» y prometía «Se enlazará con Estudio Arce», dos mensajes incompatibles con la comprobación pendiente.
+
+**Corrección** (`shared/return-explain.ts`). Solo una operación **pendiente o fallida** cuenta altas por crear y anuncia relaciones. Si está incierta, en envío u omitida, no promete nada; los campos dicen «No se sabe si … llegó» u «Omitido».
+
+Cuando el caso incierto se resuelve:
+
+- si queda creada, pero pendiente de relaciones, dice «Ya se creó…; solo faltan sus relaciones» y lista las relaciones;
+- si queda verificada, dice «Ya está en…».
+
+**Pruebas** (**7/7**): un caso nuevo cubre incierto, en envío y omitido (sin altas por crear, sin relaciones, sin «Se creará»), pendiente y fallida (sí cuentan), creada pendiente de relaciones y verificada.
+
+**Reproducción:** con la regla de R2, la prueba nueva falla.
+
+**Huellas R3:** `shared/return-explain.ts` `a33622f741ce…` · `tests/return-explain.test.ts` `ff690ab66f4b…`.

@@ -1,8 +1,16 @@
 ﻿# Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 a V7 hechas. Oleada 3: H2, H3, H4, H5 y H6 hechas; H1 aplazada (requiere e2e). Continuidad: C1 a C5 hechas. Negocio: M1 a M6 hechas. Datos: D1, D2 y D3 hechas. Rendimiento: P3 hecha. Super plan 2: T1, E1, E2, E5, E6, R4, F5, R1, R2, F7, F6, F1 y F2 hechas; E3 y E4 aplazadas por las reglas.
+Última revisión: **19/11/2026**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 a V7 hechas. Oleada 3: H2, H3, H4, H5 y H6 hechas; H1 aplazada (requiere e2e). Continuidad: C1 a C5 hechas. Negocio: M1 a M6 hechas. Datos: D1, D2 y D3 hechas. Rendimiento: P3 hecha. Super plan 2: T1, E1, E2, E5, E6, R4, F5, R1, R2, F7, F6, F1, F2, R5, R6 y N1 hechas; E3 y E4 aplazadas por las reglas.
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
+
+## Super plan 2 · Bloque 6 (R5 + R6 + N1) · 19/11/2026
+
+- **R5 · Sello de continuidad**: `src/app-shell/continuity-seal.ts` (niveles, criterios, meses con copia el 80 % de los días y un simulacro superado, racha y referencia `PB-XXXX-XXXX`), `ContinuitySeal.tsx` (`SealBadge` en JSX, `SealCard` en Continuidad › Estado y `HomeSeal` perezoso en Inicio) y bloque en `monthlyReportHtml`. Desviación: la referencia es un FNV-1a propio de lo evaluado y no la huella del pasaporte, que se calcula dentro de `ContinuityHub`.
+- **R6 · Parte de la mañana**: `morning-brief.ts` (clave `planb:brief:seen` con solo la fecha) y `MorningBrief.tsx`, que lee `/v2/changes` solo cuando está abierto.
+- **N1 · Puertas Pro suaves**: `shared/plans.ts` (nuevas funciones `incident-file`, `continuity-seal` y `pipeline-analytics`; `TRIAL_DAYS`, `trialState`, `effectivePlan` y `featureAccess`), `app-shell/plan-access.ts` (licencia comprobada con import dinámico y prueba en `planb.trial`) y `ProBadge.tsx`. La insignia de F4 se pondrá cuando exista F4.
+- `HomeSeal` y `MorningBrief` se cargan con `quiet()`. Estilos al final de `faro.css` y `license-panel.css`, con tokens, claro y oscuro.
+- Pruebas: `continuity-seal`, `monthly-report`, `morning-brief` y `license`, más la batería de regresión. Build y presupuesto correctos (`app` 532,7 kB).
 
 ## Super plan 2 · Bloque 5 (F7 + F6 + F1 + F2) · 19/11/2026
 

@@ -31,3 +31,11 @@ html body .lp-error { margin: 0; padding: 8px 10px; border: 1px solid var(--dang
 html body .lp-ok { margin: 0; font-size: var(--fs-sm); color: var(--success); }
 @media (max-width: 860px) { html body .lp-grid { grid-template-columns: 1fr; } }
 @media (max-width: 600px) { html body .lp-current { grid-template-columns: auto 1fr; } html body .lp-current .button { grid-column: 1 / -1; justify-self: start; } }
+
+/* N1 · Prueba de Pro (14 días, solo la fecha de inicio en este navegador). */
+html body .lp-trial { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; margin-top: 12px; padding: 14px 16px; border: 1px dashed var(--border-strong); border-radius: var(--r-lg); background: var(--bg-subtle); }
+html body .lp-trial > svg { color: var(--primary); align-self: start; margin-top: 2px; }
+html body .lp-trial[data-status="active"] { border-style: solid; border-color: var(--info-border); background: var(--info-bg); }
+html body .lp-trial[data-status="ended"] > svg { color: var(--text-3); }
+html body .lp-trial p { margin: 0; }
+@media (max-width: 600px) { html body .lp-trial { grid-template-columns: auto 1fr; } html body .lp-trial .button { grid-column: 1 / -1; justify-self: start; } }

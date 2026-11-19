@@ -1,5 +1,6 @@
 import type { ContinuityStatus } from '../../shared/operations.js';
 import { buildCopyTimeline, captureAutomation, type CopyTimeline as Timeline, type DayState, type EventKind, type TimelineDay } from './copy-timeline.js';
+import { ProBadge } from './ProBadge.js';
 
 const weekday = new Intl.DateTimeFormat('es-ES', { weekday: 'narrow' });
 const dayLong = new Intl.DateTimeFormat('es-ES', { weekday: 'long', day: 'numeric', month: 'short' });
@@ -46,7 +47,7 @@ export function CopyTimeline({ status, now = new Date(), onOpenStatus }: { statu
       <div>
         <h2 id="gx-ctl-title">Cronología de la copia</h2>
         <p className="gx-ctl-auto" data-active={automation.active && !automation.failed ? 'true' : 'false'}>
-          <span aria-hidden="true" />{automation.failed ? 'Capturas programadas · la última captura no se completó' : automation.active ? 'Capturas automáticas activas · una por hora' : 'Capturas automáticas detenidas'}
+          <span aria-hidden="true" />{automation.failed ? 'Capturas programadas · la última captura no se completó' : automation.active ? 'Capturas automáticas activas · una por hora' : 'Capturas automáticas detenidas'}<ProBadge feature="scheduled-captures" />
           {(!automation.active || automation.failed) && onOpenStatus && !status.runtime ? <button type="button" className="text-button" onClick={onOpenStatus}>Revisar en Estado</button> : null}
         </p>
         <p className="helper">{sentence(timeline)}</p>

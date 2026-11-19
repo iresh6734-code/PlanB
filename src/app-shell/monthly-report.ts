@@ -72,8 +72,9 @@ export function formatHours(hours: number) {
 const escape = (value: string) => value.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]!);
 const gapText = (stats: MonthStats) => stats.longestGapHours === null ? '—' : formatHours(stats.longestGapHours) + (stats.longestGap ? ' (desde el ' + stamp.format(new Date(stats.longestGap.from)) + (stats.longestGap.to ? '' : ', sigue abierto') + ')' : '');
 
-/** Página autónoma (sin scripts ni recursos externos), lista para imprimir o guardar en PDF. */
-export function monthlyReportHtml(report: MonthlyReport, version: string): string {
+/** Página autónoma (sin scripts ni recursos externos), lista para imprimir o guardar en PDF. `seal` es el bloque HTML del
+ *  sello de continuidad (R5), ya escapado por `sealHtml`; sin él el informe sale como antes. */
+export function monthlyReportHtml(report: MonthlyReport, version: string, seal = ''): string {
   const { current: a, previous: b } = report;
   const rows: [string, string, string][] = [
     ['Días con copia', a.daysCovered + ' de ' + a.daysInScope, b.daysCovered + ' de ' + b.daysInScope],
@@ -88,9 +89,12 @@ export function monthlyReportHtml(report: MonthlyReport, version: string): strin
     + 'h1{font:600 26px/1.2 Georgia,"Sitka Heading",serif;margin:0 0 4px}h2{font-size:14px;margin:26px 0 8px;text-transform:uppercase;letter-spacing:.06em;color:#5b5447}'
     + '.meta{color:#5b5447;font-size:13px;margin:0 0 18px}.lede{font-size:17px;margin:0 0 6px}.ok{color:#2f6b3a}.warn{color:#8a5300}.missing{color:#5b5447}'
     + 'table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}th,td{text-align:left;padding:9px 8px;border-top:1px solid #e3dccb}thead th{font-size:12px;color:#5b5447;text-transform:uppercase;letter-spacing:.04em}'
-    + 'ul{margin:0;padding-left:20px;font-size:14px;line-height:1.6}footer{margin-top:30px;font-size:12px;color:#5b5447}@media print{body{background:#fff}main{padding:0}}</style></head><body><main>'
+    + 'ul{margin:0;padding-left:20px;font-size:14px;line-height:1.6}footer{margin-top:30px;font-size:12px;color:#5b5447}'
+    + '.seal{display:flex;gap:18px;align-items:flex-start;margin:18px 0 6px;padding:14px 16px;border:1px solid #e3dccb;border-radius:6px}.seal-badge{flex:none}.seal-head{margin:0 0 6px;font-size:15px}'
+    + '.seal-list{list-style:none;padding:0;font-size:13px;line-height:1.7}.seal-list .unmet{color:#5b5447}.seal-list span{color:#5b5447}.seal-months,.seal-note{margin:6px 0 0;font-size:12px;color:#5b5447}'
+    + '@media print{body{background:#fff}main{padding:0}.seal{break-inside:avoid}}</style></head><body><main>'
     + '<h1>Informe de continuidad · ' + escape(a.label) + '</h1><p class="meta">Plan B v' + escape(version) + ' · generado el ' + escape(stamp.format(new Date(report.generatedAt))) + ' (hora de Madrid)</p>'
-    + '<p class="lede ' + report.verdict + '">' + escape(report.headline) + '</p>'
+    + '<p class="lede ' + report.verdict + '">' + escape(report.headline) + '</p>' + seal
     + '<h2>Este mes frente al anterior</h2><table><thead><tr><th scope="col">Indicador</th><th scope="col">' + escape(a.label) + (a.partial ? ' (en curso)' : '') + '</th><th scope="col">' + escape(b.label) + '</th></tr></thead><tbody>'
     + rows.map(([label, now, before]) => '<tr><th scope="row">' + escape(label) + '</th><td>' + escape(now) + '</td><td>' + escape(before) + '</td></tr>').join('') + '</tbody></table>'
     + '<h2>A tener en cuenta</h2>' + (report.notes.length ? '<ul>' + report.notes.map(note => '<li>' + escape(note) + '</li>').join('') + '</ul>' : '<p class="meta">Nada que destacar.</p>')

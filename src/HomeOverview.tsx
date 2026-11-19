@@ -16,7 +16,7 @@ import { continuityAlerts, type AlertTarget } from './app-shell/continuity-alert
 import { readinessFor } from './app-shell/continuity-insights.js';
 import { FirstRun, FirstRunStrip, passportSeen } from './app-shell/FirstRun.js';
 import { anyDrillPassed, firstRunPlan } from './app-shell/first-run.js';
-import { CoolingCard, PipelineCard } from './app-shell/lazy-pages.js';
+import { CoolingCard, HomeSeal, MorningBrief, PipelineCard } from './app-shell/lazy-pages.js';
 import { captureRecordCount, describeCapture, workspaceCopy } from './app-shell/workspace-copy.js';
 
 /** INICIO («Operaciones claras», 11/11/2026). Solo LEE: estado de la copia, tareas de Hoy y Radar. No captura, no decide ni escribe nada; cada acción abre la página que ya la hace.
@@ -161,6 +161,7 @@ export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, 
 
     {firstRun ? <FirstRun plan={firstSteps} {...firstActions} /> : <>
     {!state.runtime && status ? <FirstRunStrip plan={firstSteps} {...firstActions} /> : null}
+    {!state.runtime && snapshot ? <MorningBrief tasks={ops ? ops.tasks : null} tasksNote={opsError || 'Leyendo tus tareas…'} capturedAt={snapshot.capturedAt} stale={stale} steps={advice} spec={state.spec} title={snapshot.name} revision={(snapshot.capturedAt ?? '') + ':' + (state.changes ?? 0)} onOpenToday={onOpenToday} onOpenChanges={onOpenChanges} /> : null}
     {!state.runtime ? <>
     <section className="fx-line" aria-labelledby="fx-line-title">
       <div className="fx-line-head">
@@ -232,6 +233,7 @@ export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, 
               <span className="oc-verdict-steps" role="img" aria-label={verdict.progress}>{verdict.steps.map((stepDone, index) => <i key={index} data-done={stepDone ? 'true' : undefined}/>)}</span>
               <span><strong>{verdict.title}</strong> · {verdict.progress} · {verdict.next}</span>
             </p> : null}
+            {verdict && status && !state.runtime ? <HomeSeal status={status} steps={verdict.steps} onOpen={onOpenAlert ? () => onOpenAlert('estado') : onOpenContinuity} /> : null}
             {copyAlerts.length ? <ul className="oc-copy-alerts" aria-label="Avisos de la copia">{copyAlerts.map(alert => <li key={alert.id} data-tone={alert.tone}><span><strong>{alert.title}</strong> {alert.detail}</span>{onOpenAlert ? <button type="button" className="oc-link" aria-label={alert.action.label + ': ' + alert.title} onClick={() => onOpenAlert(alert.action.target)}>{alert.action.label}</button> : null}</li>)}</ul> : null}
             <div className="oc-row-actions"><button type="button" className="button primary" onClick={onOpenContinuity}>{stale || !snapshot ? 'Ir a Continuidad' : 'Ver estado'}</button>{changes > 0 ? <button type="button" className="button secondary" onClick={onOpenChanges}>Revisar cambios</button> : null}</div>
           </div>

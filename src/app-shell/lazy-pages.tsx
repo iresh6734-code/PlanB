@@ -41,3 +41,5 @@ export const RecordTimeline = quiet(() => import('./RecordTimeline.js').then(m =
 export const PipelineCard = quiet(() => import('./PipelineCard.js').then(m => m.PipelineCard), 'Oportunidades');
 export const CoolingCard = quiet(() => import('./CoolingCard.js').then(m => m.CoolingCard), 'Clientes que se enfrían');
 export const PipelineStats = quiet(() => import('./PipelineStats.js').then(m => m.PipelineStats), 'Analítica del proceso');
+export const HomeSeal = quiet(() => import('./ContinuitySeal.js').then(m => m.HomeSeal), 'Sello de continuidad');
+export const MorningBrief = quiet(() => import('./MorningBrief.js').then(m => m.MorningBrief), 'Parte de la mañana');

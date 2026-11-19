@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { checkLicense, issueLicense, planAllows, toBase64Url, type LicensePayload } from '../shared/license.js';
-import { PLAN_OFFERS, PRICE_PENDING, planHighlights } from '../shared/plans.js';
+import { effectivePlan, featureAccess, FEATURES, PLAN_OFFERS, PRICE_PENDING, planHighlights, TRIAL_DAYS, trialState } from '../shared/plans.js';
 
 const NOW = new Date('2026-11-19T12:00:00Z');
 const payload = (over: Partial<LicensePayload> = {}): LicensePayload => ({ v: 1, id: 'lic-0001', plan: 'pro', holder: 'Ensayo S. L.', seats: 3, issuedAt: '2026-11-01T00:00:00Z', expiresAt: '2027-11-01T00:00:00Z', ...over });
@@ -52,4 +52,36 @@ test('la tarifa de la landing sale de los mismos planes que la licencia y no inv
   assert.deepEqual(planHighlights('personal'), ['Copias manuales y trabajo sin conexión', 'Simulacros de caída']);
   assert.ok(planHighlights('pro').includes('Pasaporte de continuidad') && !planHighlights('pro').includes('Simulacros de caída'));
   assert.deepEqual(planHighlights('team'), ['Espacio de equipo']);
+});
+
+test('prueba de Pro: 14 días desde que empieza, una sola vez, y nunca se alarga con el reloj', () => {
+  assert.equal(TRIAL_DAYS, 14);
+  assert.deepEqual(trialState(null, NOW), { status: 'available', startedAt: null, endsAt: null, daysLeft: null });
+  assert.equal(trialState('no es una fecha', NOW).status, 'available');
+  const day1 = trialState('2026-11-19T12:00:00.000Z', NOW);
+  assert.equal(day1.status, 'active'); assert.equal(day1.daysLeft, 14); assert.equal(day1.endsAt, '2026-12-03T12:00:00.000Z');
+  assert.equal(trialState('2026-11-05T13:00:00.000Z', NOW).daysLeft, 1);
+  const ended = trialState('2026-11-01T00:00:00.000Z', NOW);
+  assert.equal(ended.status, 'ended'); assert.equal(ended.daysLeft, 0);
+  const future = trialState('2027-01-01T00:00:00.000Z', NOW);
+  assert.equal(future.daysLeft, 14, 'un inicio en el futuro cuenta desde hoy');
+  assert.equal(future.startedAt, NOW.toISOString());
+});
+
+test('puertas suaves: la prueba eleva Personal a Pro, la licencia nunca baja y nada se bloquea', () => {
+  const active = trialState('2026-11-15T00:00:00.000Z', NOW), none = trialState(null, NOW), ended = trialState('2026-10-01T00:00:00.000Z', NOW);
+  assert.equal(effectivePlan('personal', active), 'pro');
+  assert.equal(effectivePlan('personal', ended), 'personal');
+  assert.equal(effectivePlan('team', none), 'team');
+  const viaPlan = featureAccess('continuity-seal', 'pro', none);
+  assert.equal(viaPlan.via, 'plan'); assert.equal(viaPlan.included, true); assert.equal(viaPlan.badge, 'Pro');
+  const viaTrial = featureAccess('pipeline-analytics', 'personal', active);
+  assert.equal(viaTrial.via, 'trial'); assert.match(viaTrial.hint, /prueba de Pro \(quedan 10 días\)/);
+  const outside = featureAccess('incident-file', 'personal', ended);
+  assert.equal(outside.included, false); assert.equal(outside.via, 'none');
+  assert.match(outside.hint, /Puedes seguir usándolo; Plan B nunca bloquea tus datos, la exportación ni la recuperación\./);
+  assert.equal(featureAccess('team-space', 'personal', active).badge, 'Equipo');
+  assert.equal(featureAccess('team-space', 'personal', active).included, false, 'la prueba es de Pro, no de Equipo');
+  for (const id of ['incident-file', 'continuity-seal', 'pipeline-analytics', 'scheduled-captures'] as const) assert.ok(FEATURES.some(item => item.id === id && item.plans.join() === 'pro,team'), id);
+  assert.ok(planHighlights('pro').includes('Sello de continuidad'));
 });

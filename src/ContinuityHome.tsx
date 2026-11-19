@@ -20,6 +20,9 @@ import { TabList, tabPanelProps } from './TabList.js';
 import { CopyTimeline } from './app-shell/CopyTimeline.js';
 import { buildContinuityReport, reportHtml } from './app-shell/continuity-report.js';
 import { monthlyReport, monthlyReportHtml } from './app-shell/monthly-report.js';
+import { continuitySeal, sealHtml } from './app-shell/continuity-seal.js';
+import { SealCard } from './app-shell/ContinuitySeal.js';
+import { ProBadge } from './app-shell/ProBadge.js';
 import { captureAutomation } from './app-shell/copy-timeline.js';
 import { pollWhileVisible, useReadHealth } from './app-shell/poll.js';
 import { captureRecordCount, describeCapture, workspaceCopy } from './app-shell/workspace-copy.js';
@@ -71,7 +74,7 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
   // Parte de continuidad: se genera en el navegador con el estado ya leído y se descarga; no envía nada a ningún sitio.
   const saveHtml=(html:string,name:string)=>{const url=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));const anchor=document.createElement('a');anchor.href=url;anchor.download=name;anchor.click();setTimeout(()=>URL.revokeObjectURL(url),10_000);};
   const shareReport=()=>{if(!status)return;saveHtml(reportHtml(buildContinuityReport(status,new Date(),APP_VERSION)),'plan-b-parte-continuidad-'+new Date().toISOString().slice(0,10)+'.html');};
-  const shareMonthly=()=>{if(!status)return;const report=monthlyReport(status,new Date());saveHtml(monthlyReportHtml(report,APP_VERSION),'plan-b-informe-'+report.current.month+'.html');};
+  const shareMonthly=()=>{if(!status)return;const report=monthlyReport(status,new Date());saveHtml(monthlyReportHtml(report,APP_VERSION,seal?sealHtml(seal):''),'plan-b-informe-'+report.current.month+'.html');};
   const run=async(fn:()=>Promise<unknown>)=>{setBusy(true);setError('');try{await fn();await load();await refresh();}catch(f){setError((f as Error).message);}finally{setBusy(false);}};
   const active=status?.jobs.find(j=>['queued','running'].includes(j.status));
   const latest=status?.captures[0],summary=status?.latestCapture;
@@ -96,6 +99,7 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
   const insightContext={hubspotConfigured:!!state.hubspotConfigured,drill:diagnosis?.status??null,reportId:diagnosis?.reportId??null};
   const now=new Date();
   const readiness=status&&!state.runtime?continuityReadiness(status,insightContext,now):null;
+  const seal=status&&readiness?continuitySeal(status,{done:readiness.done,total:readiness.total,missing:readiness.steps.filter(item=>!item.done).map(item=>item.label)},now):null;
   const vitals=status?copyVitals(status,insightContext,now):null;
   const outage=status?outageForecast(status,insightContext,now):null;
   const hours=status?.captures.length?hourlyCaptures(status.captures,now):null;
@@ -131,7 +135,7 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
           {!contingency&&lastIncident?<p className="ct-contingency-last">Último incidente: {describeCapture(lastIncident.startedAt).date??clockTime(lastIncident.startedAt)} · {durationText(lastIncident.startedAt,lastIncident.endedAt)}</p>:null}
           {incidentNote?<p className="ct-contingency-note" role="status">{incidentNote}</p>:null}</div>
         <div className="ct-contingency-actions">{contingency?null:<button type="button" className="button primary ct-contingency-start" onClick={()=>startContingency(new Date())}><Siren size={15}/>Activar modo contingencia</button>}
-          {!contingency&&lastIncident?<><button type="button" className="button secondary" disabled={incidentBusy} onClick={()=>saveIncident('html')}><FileDown size={15}/>Expediente</button><button type="button" className="text-button" disabled={incidentBusy} onClick={()=>saveIncident('json')}>JSON con huella</button></>:null}</div>
+          {!contingency&&lastIncident?<><button type="button" className="button secondary" disabled={incidentBusy} onClick={()=>saveIncident('html')}><FileDown size={15}/>Expediente<ProBadge feature="incident-file" decorative/></button><button type="button" className="text-button" disabled={incidentBusy} onClick={()=>saveIncident('json')}>JSON con huella</button></>:null}</div>
       </section>:null}
       {readiness?<section className="ct-ready" data-level={readiness.level} aria-labelledby="ct-ready-title">
         <div className="ct-ready-verdict"><h2 id="ct-ready-title">{readiness.title}</h2>
@@ -140,6 +144,7 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
         <div className="ct-ready-next"><p>{readiness.next.detail}</p>
           {readiness.next.id!=='none'?<button type="button" className="button secondary" disabled={nextDisabled(readiness.next.id)} onClick={()=>runNext(readiness.next.id)}>{readiness.next.label}<ArrowRight size={15}/></button>:<span className="ct-ready-clear"><CheckCircle2 size={15}/>Nada pendiente</span>}</div>
       </section>:null}
+      {seal?<SealCard seal={seal}/>:null}
       {vitals?<dl className="ct-vitals" aria-label="Constantes de la copia">{vitals.map(vital=><div key={vital.id} data-tone={vital.tone}><dt>{vital.label}</dt><dd className="ct-vital-value">{vital.value}</dd><dd className="ct-vital-note">{vital.note}</dd></div>)}</dl>:null}
       <div className="ct-main">
     <section className={'continuity-summary '+(status?.stale?'needs-attention':'')}>

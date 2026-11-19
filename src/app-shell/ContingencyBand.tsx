@@ -3,6 +3,7 @@ import { ArrowRight, Check, Copy, FileDown, Siren, X } from 'lucide-react';
 import { markStep, type Contingency, type ContingencyStepId, type IncidentWindow } from './contingency.js';
 import { clockTime, durationText, elapsedLabel, FIRST_STEPS, teamMessage } from './contingency-text.js';
 import { describeCapture } from './workspace-copy.js';
+import { ProBadge } from './ProBadge.js';
 
 /** R1 · Banda del modo contingencia: reloj desde el inicio, los «primeros 15 minutos» y el cierre con su expediente (R2). */
 export function ContingencyBand({ active, closed, copyAt, onOpenContinuity, onOpenToday, onEnd, onDismiss, onDownload }: {
@@ -60,7 +61,7 @@ export function ContingencyBand({ active, closed, copyAt, onOpenContinuity, onOp
       <button type="button" className="icon-button cg-dismiss" aria-label="Cerrar el aviso de contingencia" onClick={onDismiss}><X size={16} /></button>
     </div>
     <div className="cg-end">
-      <button type="button" className="button primary" disabled={busy} onClick={() => save('html')}><FileDown size={15} aria-hidden="true" />Expediente para imprimir</button>
+      <button type="button" className="button primary" disabled={busy} onClick={() => save('html')}><FileDown size={15} aria-hidden="true" />Expediente para imprimir<ProBadge feature="incident-file" decorative /></button>
       <button type="button" className="button secondary" disabled={busy} onClick={() => save('json')}>JSON con huella</button>
       {note ? <p className="cg-note" role="status">{note}</p> : null}
     </div>

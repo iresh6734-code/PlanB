@@ -7,7 +7,8 @@ import { downloadCsv, toCsv } from './csv.js';
 import { madridDay } from '../task-display.js';
 import { closeStatus, dueStatus, euros, stageKind } from './deal-insights.js';
 import { addSavedView, describeView, readSavedViews, sameView, smartViews, writeSavedViews, type SavedView } from './saved-views.js';
-import { RECORD_PAGE_SIZE } from './useRecordList.js';
+import { RECORD_PAGE_SIZE, type RecordListView } from './useRecordList.js';
+import { formatRecordSort } from '../../shared/record-order.js';
 import { InlineSelect } from './InlineSelect.js';
 
 const singular: Record<EntityName, string> = { contacts: 'Nuevo cliente', companies: 'Nueva empresa', deals: 'Nueva oportunidad', tasks: 'Nueva tarea' };
@@ -28,6 +29,10 @@ type Props = {
   saveField: (record: CrmRecord, key: string, value: string | null) => Promise<string | null>;
   /** El último guardado aún se puede deshacer (lo decide App, que caduca la opción a los pocos segundos). */
   canUndo?: boolean; onUndo?: () => void;
+  /** Con esto, el orden y el filtro rápido los resuelve el servidor sobre todos los registros (V1); sin ello, solo la página. */
+  setServerView?: (view: RecordListView) => void;
+  /** Recuento por opción del filtro rápido sobre toda la búsqueda, cuando lo da el servidor. */
+  facets?: Record<string, number> | null;
 };
 type View = { sort: { key: string; dir: 1 | -1 } | null; pick: string | null; smart: string | null };
 // Vista recordada por tipo de registro en este navegador: solo el orden y el filtro rápido, nunca datos.
@@ -35,8 +40,9 @@ const readView = (entity: EntityName): View => { try { const value = JSON.parse(
 const writeView = (entity: EntityName, view: View) => { try { localStorage.setItem('planb:view:' + entity, JSON.stringify(view)); } catch { /* sin almacenamiento: la vista no se recuerda */ } };
 
 /** Clientes, Empresas, Oportunidades y Tareas: cabecera-barra, tabla ordenable o tablero por etapas, y barra de estado.
- *  Solo presenta lo que App ya cargó; el orden reordena los registros de la página, no pide nada nuevo. */
-export function RecordsPage({ state, spec, entity, entityName, rows, records, total, offset, setOffset, query, setQuery, pipeline, setPipeline, selected, setSelected, recordsLoading, recordsError, onRetry, busy, date, viewCoverage, toggleServices, moveDeal, saveField, newWith, canUndo = false, onUndo }: Props) {
+ *  Con `setServerView`, el orden y el filtro rápido llegan a todos los registros; las vistas inteligentes miran la página. */
+export function RecordsPage({ state, spec, entity, entityName, rows, records, total, offset, setOffset, query, setQuery, pipeline, setPipeline, selected, setSelected, recordsLoading, recordsError, onRetry, busy, date, viewCoverage, toggleServices, moveDeal, saveField, newWith, canUndo = false, onUndo, setServerView, facets }: Props) {
+  const server = !!setServerView;
   const [sort, setSort] = useState<{ key: string; dir: 1 | -1 } | null>(() => readView(entityName).sort);
   // Al cambiar de tipo de registro se recupera la vista recordada de ese tipo (la página no se desmonta).
   useEffect(() => { const view = readView(entityName); setSort(view.sort); setPick(view.pick); setSmart(view.smart); setSaved(readSavedViews(entityName)); setNaming(null); setMoveNote(null); }, [entityName]);
@@ -56,6 +62,12 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
     setMoveNote(problem ? { tone: 'error', text: '«' + recordName(record, spec) + '»: ' + field.label.toLowerCase() + ' no cambió. ' + problem } : { tone: 'ok', text: '«' + recordName(record, spec) + '»: ' + field.label.toLowerCase() + ' → ' + label + '. Guardado en tu copia local.', undo: true });
   };
   const pickField = entityName === 'deals' ? undefined : entity.columns.map(key => entity.fields.find(field => field.key === key)).find(field => field?.type === 'enum' && field.options.length > 1 && field.options.length <= 6);
+  // Lleva el orden y el filtro rápido al servidor. Solo campos de este tipo de registro: justo al cambiar de tipo, el
+  // estado aún puede traer la vista del anterior durante un render.
+  const serverSort = sort && entity.fields.some(field => field.key === sort.key) ? formatRecordSort(sort) : '';
+  const serverPick = pick && pickField?.options.some(option => option.id === pick) ? pick : null;
+  useEffect(() => { setServerView?.({ sort: serverSort, filters: serverPick && pickField ? { [pickField.key]: serverPick } : {}, facet: pickField?.key ?? '' }); }, [setServerView, serverSort, serverPick, pickField?.key]);
+  const choosePick = (next: string | null) => { setPick(next); if (server) setOffset(0); };
   // Tablero: arrastrar entre etapas o Alt + flechas con la tarjeta enfocada.
   const [dragId, setDragId] = useState<string | null>(null), [overStage, setOverStage] = useState<string | null>(null), [moving, setMoving] = useState<string | null>(null);
   const [moveNote, setMoveNote] = useState<{ tone: 'ok' | 'error'; text: string; undo?: boolean } | null>(null);
@@ -89,13 +101,13 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
   const smarts = smartViews(entityName, entity, spec), activeSmart = smarts.find(view => view.id === smart);
   const smartContext = { today, looksDone };
   const filtered = activeSmart ? rows.filter(record => activeSmart.test(record, smartContext)) : rows;
-  const sortField = sort ? entity.fields.find(field => field.key === sort.key) : undefined;
+  const sortField = sort && !server ? entity.fields.find(field => field.key === sort.key) : undefined;
   const shown = sort && sortField ? [...filtered].sort((a, b) => {
     const x = a.values[sortField.key], y = b.values[sortField.key], nx = Number(x), ny = Number(y);
     const numeric = x != null && y != null && x !== '' && y !== '' && !Number.isNaN(nx) && !Number.isNaN(ny);
     return sort.dir * (numeric ? nx - ny : displayValue(x, sortField, records, spec).localeCompare(displayValue(y, sortField, records, spec), 'es', { numeric: true, sensitivity: 'base' }));
   }) : filtered;
-  const visible = pick && pickField ? shown.filter(record => String(record.values[pickField.key] ?? '') === pick) : shown;
+  const visible = pick && pickField && !server ? shown.filter(record => String(record.values[pickField.key] ?? '') === pick) : shown;
   // Exportar la vista: lo que se ve en la tabla (búsqueda, filtro y orden aplicados), con los valores tal como se muestran.
   const exportView = () => {
     const columns = entity.columns.map(key => entity.fields.find(field => field.key === key)!).filter(Boolean);
@@ -128,8 +140,10 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
     setSaved(next);
     setMoveNote({ tone: 'ok', text: 'Vista «' + view.name + '» borrada.' });
   };
-  // Lo que filtra en el navegador (vista inteligente o filtro rápido) solo ve la página cargada: se dice cuando hay más.
-  const pageOnly = (!!activeSmart || (!!pick && !!pickField)) && total > rows.length;
+  // Lo que filtra en el navegador (vista inteligente, o el filtro rápido sin servidor) solo ve la página cargada: se dice cuando hay más.
+  const pageOnly = (!!activeSmart || (!!pick && !!pickField && !server)) && total > rows.length;
+  const pickActive = !!pick && !!pickField, filterActive = pickActive || !!activeSmart;
+  const pickCount = (id: string) => server ? facets?.[id] : rows.filter(record => String(record.values[pickField?.key ?? ''] ?? '') === id).length;
   const dealsSum = filtered.reduce((sum, record) => sum + (Number(record.values[amountKey]) || 0), 0);
   // Tarjeta: fecha prevista de cierre (si el modelo la tiene) y las dos primeras referencias (empresa · cliente).
   const closeField = entityName === 'deals' ? entity.fields.find(field => field.type === 'date' && /cierre|close/i.test(field.key + ' ' + field.label)) : undefined;
@@ -138,8 +152,8 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
     <header className="page-header gx-records-head"><div><h1>{entity.label}</h1></div>
   <div className="table-toolbar"><label className="search-field"><Search size={15} /><input aria-label={'Buscar ' + entity.label.toLowerCase()} placeholder={'Buscar ' + entity.label.toLowerCase() + '…'} value={query} onChange={event => {setQuery(event.target.value);setOffset(0);}} /></label>
       {entityName==='deals'&&state.snapshot?.pipelines?.length?<select aria-label="Proceso comercial" value={pipeline} onChange={e=>{setPipeline(e.target.value);setOffset(0);}}><option value="">Todos los procesos</option>{state.snapshot.pipelines.map(p=><option key={p.id} value={p.id}>{p.label}</option>)}</select>:null}
-  {pickField && rows.length ? <div className="gx-picks" role="group" aria-label={'Filtrar por ' + pickField.label.toLowerCase()}><button type="button" aria-pressed={pick === null} onClick={() => setPick(null)}>Todo</button>{pickField.options.map(option => <button key={option.id} type="button" aria-pressed={pick === option.id} onClick={() => setPick(pick === option.id ? null : option.id)}>{option.label}<span>{rows.filter(record => String(record.values[pickField.key] ?? '') === option.id).length}</span></button>)}</div> : null}
-          <span className="muted">{pageOnly ? (entityName === 'deals' ? filtered : visible).length + ' de ' + rows.length + ' cargados (' + total + ' en total)' : <>{(pick && pickField) || activeSmart ? (entityName === 'deals' ? filtered : visible).length + ' de ' : ''}{total} {entity.label.toLowerCase()}</>}</span>{entityName==='deals'&&rows.length?<span className="muted gx-total"><strong>{euros(dealsSum)}</strong> en esta vista</span>:null}</div>
+  {pickField && (rows.length || (server && pick)) ? <div className="gx-picks" role="group" aria-label={'Filtrar por ' + pickField.label.toLowerCase()}><button type="button" aria-pressed={pick === null} onClick={() => choosePick(null)}>Todo</button>{pickField.options.map(option => { const count = pickCount(option.id); return <button key={option.id} type="button" aria-pressed={pick === option.id} onClick={() => choosePick(pick === option.id ? null : option.id)}>{option.label}{count === undefined ? null : <span>{count}</span>}</button>; })}</div> : null}
+          <span className="muted">{pageOnly ? (entityName === 'deals' ? filtered : visible).length + ' de ' + rows.length + ' cargados (' + total + ' en total)' : server && pickActive && !activeSmart ? total + ' ' + entity.label.toLowerCase() + ' con este filtro' : <>{filterActive ? (entityName === 'deals' ? filtered : visible).length + ' de ' : ''}{total} {entity.label.toLowerCase()}</>}</span>{entityName==='deals'&&rows.length?<span className="muted gx-total"><strong>{euros(dealsSum)}</strong> en esta vista</span>:null}</div>
   <div className="gx-head-actions"><button type="button" className="button secondary" disabled={recordsLoading || !rows.length} title={total > rows.length ? 'Exporta los ' + rows.length + ' registros de esta página, con la búsqueda y el filtro aplicados' : 'Exporta lo que ves, con la búsqueda y el filtro aplicados'} onClick={exportView}><Download size={15} />CSV</button>
     <button className="button primary" onClick={() => setSelected('new')}><Plus size={16} />{singular[entityName]}</button></div></header>
     {smarts.length || saved.length || !isDefault ? <div className="gx-views" role="group" aria-label="Vistas">
@@ -172,7 +186,7 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
           {closeField && kind === 'open' ? (() => { const status = closeStatus(record.values[closeField.key], today, kind); return <em className="deal-close" data-tone={status.tone}>{status.label}</em>; })() : null}<span className="card-edit">Abrir oportunidad <ArrowRight size={14} /></span></button>)}
         {!deals.length ? <p className="column-empty">Sin oportunidades</p> : null}</section>;
     })}</div>
-    : <div className="table-container"><table><thead><tr>{entity.columns.map(key => <th key={key} aria-sort={sort?.key===key?(sort.dir===1?'ascending':'descending'):'none'}><button type="button" className="gx-sort" title={total>rows.length?'Ordena los '+rows.length+' registros de esta página':'Ordenar por esta columna'} onClick={()=>setSort(current=>current?.key===key?(current.dir===1?{key,dir:-1}:null):{key,dir:1})}>{entity.fields.find(f => f.key === key)!.label}</button></th>)}<th><span className="sr-only">Editar</span></th></tr></thead>
+    : <div className="table-container"><table><thead><tr>{entity.columns.map(key => <th key={key} aria-sort={sort?.key===key?(sort.dir===1?'ascending':'descending'):'none'}><button type="button" className="gx-sort" title={server?'Ordenar todos los registros por esta columna':total>rows.length?'Ordena los '+rows.length+' registros de esta página':'Ordenar por esta columna'} onClick={()=>{setSort(current=>current?.key===key?(current.dir===1?{key,dir:-1}:null):{key,dir:1});if(server)setOffset(0);}}>{entity.fields.find(f => f.key === key)!.label}</button></th>)}<th><span className="sr-only">Editar</span></th></tr></thead>
   <tbody>{visible.map(record => <tr key={record.id} className={selected !== 'new' && selected?.id === record.id ? 'selected-row' : ''}>
         {entity.columns.map((key, index) => { const field = entity.fields.find(f => f.key === key)!; const value = displayValue(record.values[key], field, records, spec);
           return <td key={key} data-label={field.label}>{index === 0 ? <button className="record-link" onClick={() => setSelected(record)}>
@@ -182,7 +196,7 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
                 {field.required ? null : <option value="">—</option>}{!field.options.some(option => option.id === String(record.values[key] ?? '')) && record.values[key] ? <option value={String(record.values[key])}>{value}</option> : null}{field.options.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}</InlineSelect>
             : <span className={field.type === 'enum' ? 'enum-label' : field.type === 'date' && isPast(record, record.values[key]) ? 'gx-past' : ''} title={field.type === 'date' && isPast(record, record.values[key]) ? 'Fecha anterior a hoy' : undefined}>{value}</span>}{entityName === 'tasks' && key === dueKey && field.type === 'date' ? (() => { const hint = dueHint(record, record.values[key]); return hint ? <small className="gx-due-rel" data-tone={hint.tone}>{hint.text}</small> : null; })() : null}{entityName === 'tasks' && key === dueKey && field.type === 'date' && !field.readOnly && isPast(record, record.values[key]) ? <button type="button" className="gx-postpone" disabled={editing !== null} aria-label={'Pasar «' + recordName(record, spec) + '» a mañana'} onClick={() => void postpone(record)}>Mañana</button> : null}</td>; })}
         <td className="gx-row-open"><button className="icon-button" aria-label={'Editar ' + recordName(record, spec)} onClick={() => setSelected(record)}><ChevronRight size={18} /></button></td></tr>)}</tbody></table>
-      {recordsLoading?<Skeleton rows={8} label="Cargando registros…" />:recordsError?<ErrorState title="No se pudieron cargar los registros" onAction={onRetry}>Tus datos siguen en este ordenador. {onRetry?'Vuelve a intentarlo; si se repite, comprueba que Plan B sigue abierto.':'Vuelve a seleccionar la sección para intentarlo de nuevo.'}</ErrorState>:!visible.length && rows.length && ((pick && pickField) || activeSmart) ? <EmptyState icon={<Search size={22} />} title="Ningún registro con este filtro" action={<button type="button" className="button secondary" onClick={() => { setPick(null); setSmart(null); }}>Quitar filtros</button>}>{pageOnly ? 'El filtro mira los ' + rows.length + ' registros cargados; prueba en la página siguiente o busca por nombre.' : 'Los ' + rows.length + ' registros de la lista no cumplen el filtro elegido.'}</EmptyState>:!visible.length ? <EmptyState icon={<Search size={22} />} title={query ? 'Sin resultados' : 'Todavía no hay registros'} action={query ? <button type="button" className="button secondary" onClick={() => { setQuery(''); setOffset(0); }}>Quitar la búsqueda</button> : <button type="button" className="button primary" onClick={() => setSelected('new')}><Plus size={16} />{singular[entityName]}</button>}>{query ? 'Prueba con otro nombre, correo o empresa.' : 'Crea el primer registro para empezar.'}</EmptyState> : null}
+      {recordsLoading?<Skeleton rows={8} label="Cargando registros…" />:recordsError?<ErrorState title="No se pudieron cargar los registros" onAction={onRetry}>Tus datos siguen en este ordenador. {onRetry?'Vuelve a intentarlo; si se repite, comprueba que Plan B sigue abierto.':'Vuelve a seleccionar la sección para intentarlo de nuevo.'}</ErrorState>:!visible.length && filterActive && (rows.length || (server && pickActive)) ? <EmptyState icon={<Search size={22} />} title="Ningún registro con este filtro" action={<button type="button" className="button secondary" onClick={() => { choosePick(null); setSmart(null); }}>Quitar filtros</button>}>{pageOnly ? 'El filtro mira los ' + rows.length + ' registros cargados; prueba en la página siguiente o busca por nombre.' : server && !rows.length ? 'Ningún registro cumple el filtro elegido' + (query ? ' con esta búsqueda.' : '.') : 'Los ' + rows.length + ' registros de la lista no cumplen el filtro elegido.'}</EmptyState>:!visible.length ? <EmptyState icon={<Search size={22} />} title={query ? 'Sin resultados' : 'Todavía no hay registros'} action={query ? <button type="button" className="button secondary" onClick={() => { setQuery(''); setOffset(0); }}>Quitar la búsqueda</button> : <button type="button" className="button primary" onClick={() => setSelected('new')}><Plus size={16} />{singular[entityName]}</button>}>{query ? 'Prueba con otro nombre, correo o empresa.' : 'Crea el primer registro para empezar.'}</EmptyState> : null}
     </div>}
     <footer className="gx-statusbar"><div className="status-strip"><span className={'status-label ' + (state.disconnected ? 'independent' : '')}><span className="dot" />{state.disconnected ? 'Modo independiente' : 'Copia local activa'}</span>
   <span className="copy-date">Última copia · {date}</span><button className="text-button" onClick={viewCoverage}>Ver cobertura<ChevronRight size={14} /></button>

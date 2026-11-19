@@ -14,6 +14,7 @@ import { verifyManualRecovery } from './manual-recovery.js';
 import { APP_VERSION, RUNTIME_ZIP } from '../shared/version.js';
 import { rememberExport, confirmRecoveryCopy, bundleRevision } from './recovery-copy.js';
 import { registerCaptureComparison } from './capture-comparison.js';
+import { parseRecordSort } from '../shared/record-order.js';
 
 export interface ExternalServices { capture:CaptureImporter; remote:(token:string,accountId:string,spec:import('../shared/model.js').AppSpec,fetcher?:typeof fetch,readOnly?:boolean)=>Remote; inspect?:typeof inspectConnection; }
 export function registerV2(app:FastifyInstance,store:Store,root:string,runtime=false,external?:ExternalServices) {
@@ -36,8 +37,17 @@ export function registerV2(app:FastifyInstance,store:Store,root:string,runtime=f
   app.post('/api/v2/candidate/discard',async()=>{store.set('candidate',null);return {discarded:true};});
   app.get('/api/v2/records/:entity',async request=>{
     const params=z.object({entity:EntityNameSchema}).parse(request.params);
-    const query=z.object({q:z.string().max(200).default(''),offset:z.coerce.number().int().min(0).default(0),limit:z.coerce.number().int().min(1).max(100).default(50),pipeline:z.string().default('')}).parse(request.query);
-    return store.page(params.entity,query.q,query.offset,query.limit,query.pipeline);
+    const query=z.object({q:z.string().max(200).default(''),offset:z.coerce.number().int().min(0).default(0),limit:z.coerce.number().int().min(1).max(100).default(50),pipeline:z.string().default(''),
+      sort:z.string().max(110).refine(value=>!value||!!parseRecordSort(value),'Orden no válido: usa campo:asc o campo:desc.').default(''),facet:z.string().regex(/^[a-zA-Z][a-zA-Z0-9_]{0,99}$/).optional()}).parse(request.query);
+    // Filtros por campo: f.<campo>=<valor>, como mucho 8 y con valores cortos; el almacén comprueba que el campo exista.
+    const raw=request.query as Record<string,unknown>,filters:Record<string,string>={};
+    for(const [name,value] of Object.entries(raw))if(name.startsWith('f.')){
+      const key=name.slice(2);
+      if(!/^[a-zA-Z][a-zA-Z0-9_]{0,99}$/.test(key)||typeof value!=='string'||value.length>200)throw new AppError(422,'Filtro no válido: '+name.slice(0,60)+'.');
+      filters[key]=value;
+    }
+    if(Object.keys(filters).length>8)throw new AppError(422,'Demasiados filtros a la vez.');
+    return store.page(params.entity,query.q,query.offset,query.limit,query.pipeline,{sort:parseRecordSort(query.sort),filters,facet:query.facet});
   });
   app.get('/api/v2/records/:entity/:id',async request=>{
     const {entity,id}=z.object({entity:EntityNameSchema,id:z.string()}).parse(request.params);

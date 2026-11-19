@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { localKey, open, seal } from './crypto.js';
 import type { RecoveryPlan } from '../shared/operations.js';
 import {inspectPersistedRecoveryPlan,INVALID_RECOVERY_MESSAGE} from '../shared/recovery-integrity.js';
+import { facetCounts, orderRecords, recordLabel, type RecordSort } from '../shared/record-order.js';
 import {
   AppSpecSchema, BundleSchema, RecordSchema, SnapshotSchema, reconcile, validateRecord, validateSpec,
   type AppSpec, type Change, type ContinuityBundle, type CrmRecord, type CrmSnapshot,
@@ -470,21 +471,29 @@ export class Store {
       if (!recent && !daily && item.id !== protectedId && item.id !== this.get('sessionCapture','')) this.db.prepare('DELETE FROM captures WHERE id=?').run(item.id);
     }
   }
-  page(entity: EntityName, query = '', offset = 0, limit = 50, pipeline = '') {
+  /** Página de un tipo de registro. `view` ordena y filtra antes de paginar (V1): campos del modelo o error 422. */
+  page(entity: EntityName, query = '', offset = 0, limit = 50, pipeline = '', view: { sort?: RecordSort | null; filters?: Record<string, string>; facet?: string } = {}) {
     const normalize = (v: string) => v.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
     const all = this.records(), names = new Map(all.map(r => [r.entity+':'+r.id, Object.values(r.values).join(' ')]));
-    const fields = this.spec?.entities.find(e => e.id === entity)?.fields ?? [];
+    const spec = this.spec?.entities.find(e => e.id === entity), fields = spec?.fields ?? [];
+    const known = (key: string) => fields.find(field => field.key === key);
+    for (const key of [...Object.keys(view.filters ?? {}), ...(view.sort ? [view.sort.key] : []), ...(view.facet ? [view.facet] : [])])
+      if (!known(key)) throw new AppError(422, 'El campo «' + key + '» no existe en ' + (spec?.label ?? entity).toLowerCase() + '.');
     const needle = normalize(query);
-    const matching = all.filter(r => r.entity === entity && (!pipeline || r.values.pipeline === pipeline) && (!needle || normalize(Object.values(r.values).join(' ') + ' ' + fields.filter(f=>f.type==='reference').map(f=>names.get(f.referenceEntity+':'+r.values[f.key]) ?? '').join(' ')).includes(needle)));
-    const records = matching.slice(offset,offset+limit), related = new Map<string,CrmRecord>();
+    const searched = all.filter(r => r.entity === entity && (!pipeline || r.values.pipeline === pipeline) && (!needle || normalize(Object.values(r.values).join(' ') + ' ' + fields.filter(f=>f.type==='reference').map(f=>names.get(f.referenceEntity+':'+r.values[f.key]) ?? '').join(' ')).includes(needle)));
     const byKey = new Map<string,CrmRecord>();
     for (const r of all) if (!byKey.has(r.entity+':'+r.id)) byKey.set(r.entity+':'+r.id, r);
+    const entities = new Map((this.spec?.entities ?? []).map(item => [item.id, item]));
+    const nameOf = (target: EntityName, id: string) => { const item = byKey.get(target+':'+id); return item ? recordLabel(item, entities.get(target)) : undefined; };
+    const matching = spec ? orderRecords(searched, spec, view.filters ?? {}, view.sort ?? null, nameOf) : searched;
+    const facetField = view.facet ? known(view.facet) : undefined;
+    const records = matching.slice(offset,offset+limit), related = new Map<string,CrmRecord>();
     for (const record of records) for (const field of fields) if (field.type === 'reference' && record.values[field.key]) {
       const target = record.values[field.key]; // Igual que la búsqueda anterior: solo un ID de texto idéntico.
       const item = typeof target === 'string' ? byKey.get(field.referenceEntity+':'+target) : undefined;
       if (item) related.set(item.entity+':'+item.id,item);
     }
-    return { records, related: [...related.values()], total: matching.length, offset, limit };
+    return { records, related: [...related.values()], total: matching.length, offset, limit, ...(facetField ? { facets: facetCounts(searched, facetField) } : {}) };
   }
   usage() {
     const month = new Date().toISOString().slice(0, 7);

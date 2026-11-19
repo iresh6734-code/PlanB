@@ -21,7 +21,8 @@ const ErrorSchema = z.object({ error: z.string().min(1), details: z.unknown().op
 const Sha256 = z.string().regex(/^[a-f0-9]{64}$/);
 const PageSchema = z.object({
   records: z.array(RecordSchema), related: z.array(RecordSchema),
-  total: z.number().int().nonnegative(), offset: z.number().int().nonnegative(), limit: z.number().int().positive()
+  total: z.number().int().nonnegative(), offset: z.number().int().nonnegative(), limit: z.number().int().positive(),
+  facets: z.record(z.string(), z.number().int().nonnegative()).optional()
 }).strict();
 const ChangeSchema = z.object({
   id: z.number().int().positive(), at: z.iso.datetime(), entity: EntityNameSchema, recordId: z.string().min(1),
@@ -120,6 +121,26 @@ test('GET /api/v2/records/:entity: página con su contrato, límites y errores 4
   assert.deepEqual(past.records, []);
   for (const bad of ['/api/v2/records/contacts?limit=101', '/api/v2/records/contacts?limit=0', '/api/v2/records/contacts?offset=-1',
     '/api/v2/records/notes', '/api/v2/records/contacts?q=' + 'x'.repeat(201)])
+    parse(ErrorSchema, await server.inject({ url: bad }), 422);
+});
+
+test('V1 · GET /api/v2/records/:entity ordena y filtra todos los registros antes de paginar', async t => {
+  const { app: server, store } = await app(t);
+  const deals = store.records('deals'), amounts = deals.map(record => Number(record.values.amount)).filter(n => !Number.isNaN(n)).sort((a, b) => b - a);
+  const top = parse(PageSchema, await server.inject({ url: '/api/v2/records/deals?limit=1&sort=amount:desc' }));
+  assert.equal(Number(top.records[0].values.amount), amounts[0], 'el mayor importe de todos, no solo de la página');
+  const asc = parse(PageSchema, await server.inject({ url: '/api/v2/records/deals?limit=100&sort=amount:asc' })).records.map(record => record.values.amount);
+  const numbers = asc.filter(value => value !== null && value !== '' && value !== undefined).map(Number);
+  assert.deepEqual(numbers, [...numbers].sort((a, b) => a - b), 'de menor a mayor por valor');
+  assert.ok(asc.slice(numbers.length).every(value => value === null || value === '' || value === undefined), 'los vacíos al final');
+  const tasks = store.records('tasks'), pending = tasks.filter(record => record.values.status === 'pending').length;
+  const filtered = parse(PageSchema, await server.inject({ url: '/api/v2/records/tasks?limit=100&f.status=pending&facet=status' }));
+  assert.equal(filtered.total, pending);
+  assert.ok(filtered.records.every(record => record.values.status === 'pending'));
+  assert.equal(filtered.facets?.pending, pending);
+  assert.equal(filtered.facets?.completed, tasks.filter(record => record.values.status === 'completed').length, 'el recuento ignora el propio filtro');
+  for (const bad of ['/api/v2/records/tasks?sort=inventado:asc', '/api/v2/records/tasks?sort=status', '/api/v2/records/tasks?f.inventado=x',
+    '/api/v2/records/tasks?facet=inventado', '/api/v2/records/tasks?f.1x=a', '/api/v2/records/tasks?f.status=a&f.status=b'])
     parse(ErrorSchema, await server.inject({ url: bad }), 422);
 });
 

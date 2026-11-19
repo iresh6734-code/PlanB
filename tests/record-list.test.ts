@@ -2,12 +2,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { RECORD_PAGE_SIZE, recordListPath, searchDelay } from '../src/app-shell/useRecordList.js';
+import { RECORD_PAGE_SIZE, recordListPath, searchDelay, viewKey } from '../src/app-shell/useRecordList.js';
 
 test('la consulta conserva el formato de la API y codifica búsqueda y embudo', () => {
   assert.equal(recordListPath('contacts', '', 0, ''), '/v2/records/contacts?q=&offset=0&limit=50&pipeline=');
   assert.equal(recordListPath('deals', 'Ana & Cía', 50, 'canal/b'), '/v2/records/deals?q=Ana%20%26%20C%C3%ADa&offset=50&limit=50&pipeline=canal%2Fb');
   assert.equal(RECORD_PAGE_SIZE, 50);
+});
+
+test('V1 · la vista añade orden, recuento y filtros por campo, codificados', () => {
+  assert.equal(recordListPath('tasks', '', 0, '', 50, { sort: 'due_date:desc', facet: 'status', filters: { status: 'a&b' } }),
+    '/v2/records/tasks?q=&offset=0&limit=50&pipeline=&sort=due_date%3Adesc&facet=status&f.status=a%26b');
+  assert.equal(viewKey({ sort: '', facet: '', filters: { b: '2', a: '1' } }), viewKey({ sort: '', facet: '', filters: { a: '1', b: '2' } }));
 });
 
 test('la búsqueda espera un poco mientras se escribe y nada sin texto', () => {

@@ -1,8 +1,16 @@
 # Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026, 12:57, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada.
+Última revisión: **19/11/2026, 13:05, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 hecha.
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
+
+## Super plan V1 · Orden y filtro en el servidor · 19/11/2026, 13:05, Europe/Madrid
+
+Mismas normas. Validado con pruebas unitarias en modo prueba (`record-order`, `record-list`, `api-v2-contracts` con `app.inject`, sin puertos) y `npm run build`. **Sin revisión visual: «Ver en casa».**
+
+- `GET /api/v2/records/:entity` acepta `sort=campo:asc|desc`, `f.<campo>=valor` (hasta 8) y `facet=<campo>` (recuento por opción sobre la búsqueda, sin el propio filtro). Campo que no existe en el modelo → 422.
+- Lógica pura en `shared/record-order.ts`: vacíos siempre al final, números por valor, fechas por instante, listas por el orden de sus opciones, referencias por el nombre enlazado y texto en español con números naturales.
+- Cliente: `useRecordListState` guarda la vista (`view`, `setView`, `facets`); `RecordsPage` la envía con `setServerView`. Sin esa prop (arnés e2e) conserva el orden y filtro locales de antes. Las vistas inteligentes siguen mirando la página cargada.
 
 ## Oleada 1 del super plan · 19/11/2026, 12:57, Europe/Madrid
 

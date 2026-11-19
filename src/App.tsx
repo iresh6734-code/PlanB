@@ -50,7 +50,7 @@ export default function App() {
   const [state, setState] = useState<LocalAppState | null>(null);
   // Lista de registros (búsqueda, página, embudo, filas y relacionados): ver app-shell/useRecordList.ts.
   const list = useRecordListState();
-  const { records, setRecords, query, setQuery, offset, setOffset, pipeline, setPipeline, rows, total, loading: recordsLoading, error: recordsError } = list;
+  const { records, setRecords, query, setQuery, offset, setOffset, pipeline, setPipeline, rows, total, loading: recordsLoading, error: recordsError, setView: setServerView, facets } = list;
   // Dirección inicial (B1): /clientes/<id>, /continuidad/cambios… abre ese lugar; la raíz abre el apartado recordado.
   const [initialPlace] = useState(() => typeof location === 'undefined' ? null : placeOf(location.pathname));
   const [page, setPage] = useState<PageId>(() => initialPlace?.page ?? storedPage());
@@ -299,7 +299,7 @@ export default function App() {
       : !state.ready || !spec || !entity ? <section className="empty-state"><ShieldCheck size={36} /><h1>Revisa la preparación</h1><p>La captura y las reglas deben estar verificadas antes de editar.</p>
           <button className="button primary" onClick={() => openPreparation(2)}>Revisar aplicación</button></section>
       : <RecordsPage state={state} spec={spec} entity={entity} entityName={entityName} rows={rows} records={records} total={total} offset={offset} setOffset={setOffset}
-          query={query} setQuery={setQuery} pipeline={pipeline} setPipeline={setPipeline} selected={selected} setSelected={setSelected} recordsLoading={recordsLoading} recordsError={recordsError} onRetry={() => setDataRevision(r => r + 1)} busy={busy} date={date} moveDeal={moveDeal} newWith={values => { setPreset(values); setSelected('new'); }} saveField={saveField} canUndo={!!undoable} onUndo={() => void undoLast()}
+          query={query} setQuery={setQuery} pipeline={pipeline} setPipeline={setPipeline} selected={selected} setSelected={setSelected} recordsLoading={recordsLoading} recordsError={recordsError} onRetry={() => setDataRevision(r => r + 1)} busy={busy} date={date} moveDeal={moveDeal} newWith={values => { setPreset(values); setSelected('new'); }} saveField={saveField} canUndo={!!undoable} onUndo={() => void undoLast()} setServerView={setServerView} facets={facets}
           viewCoverage={() => void viewCoverage()} toggleServices={() => act(() => post('/disconnect', { disconnected: !state.disconnected }), state.disconnected ? 'Servicios habilitados para importar o generar.' : 'HubSpot e IA desconectados. Sigue trabajando con tus datos locales.')} />}
     </main>
     {globalSearch && state.ready && state.snapshot ? <WorkspaceSearch captureId={state.snapshot.id+':'+state.snapshot.capturedAt} expectedContext={state.workspaceSearchContext??null} localRevision={dataRevision} refreshWorkspace={refresh} close={() => setGlobalSearch(false)} openRecord={(record, related) => { setGlobalSearch(false); openEntity(record.entity); setRecords([record,...related]); setSelected(record); }}/>:null}

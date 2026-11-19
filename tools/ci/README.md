@@ -32,3 +32,23 @@ Cada entrada lleva `file`, `name` (nombre exacto de la prueba hoja, sin la durac
 - Las pruebas que comparten `tests/.tmp` con otros procesos pueden fallar si otro agente ejecuta pruebas a la vez. Conviene lanzar la CI con el equipo tranquilo.
 
 Encargo: `CLAUDE-CI-LOCAL`.
+
+## CI completa: pasos opcionales y un único informe
+
+`tools/ci/full.mjs` ejecuta la CI de arriba como paso base y añade pasos opcionales, **apagados por defecto**:
+
+```bash
+node tools/ci/full.mjs                         # igual que run.mjs
+node tools/ci/full.mjs --perf                  # + presupuestos de rendimiento (tools/perf/measure.ts --check, ~30 s)
+node tools/ci/full.mjs --mobile                # + autotest del escáner móvil (sin servidor; abre Chromium sin interfaz)
+node tools/ci/full.mjs --e2e [filtros…]        # + E2E aislados (tools/e2e/isolated.mjs; compila en tests/.tmp/e2e-build)
+node tools/ci/full.mjs --skip-types --tests "tests/store-*.test.ts" --perf --mobile
+```
+
+- **Opciones:** las de `run.mjs` (`--skip-api`, `--skip-types`, `--tests`, `--known`) se reenvían tal cual y se validan antes de ejecutar nada. Los filtros de Playwright van detrás de `--e2e` (archivos, `-g "nombre"`, `--project=…`) hasta la siguiente opción de la CI.
+- **Ejecución:** cada paso pedido se ejecuta aunque falle uno anterior, con el entorno acotado de `run.mjs` y un tope propio: rendimiento 20 min, móvil 15 min y E2E 180 min.
+- **Informe único:** `tests/.tmp/ci/<fecha>-completa/report.json` recoge, de cada paso, su estado (`correcto`, `con problemas`, `tiempo agotado` o `no ejecutado`), código, duración, últimas líneas de salida y registro (`<paso>.log`). Incluye además el `report.json` de la CI base.
+- **Códigos de salida:** 0 solo si todos los pasos ejecutados terminan bien; 1 si alguno falla; 2 si la línea de órdenes no es válida.
+- **Lo que no toca:** `full.mjs` no escribe en `dist/` ni `build/`, y no modifica los arneses que llama.
+
+Pruebas: `tests/ci-full.test.ts`, con la ejecución inyectada: no lanza navegadores ni compila. Encargo: `CLAUDE-CI-STEPS`.

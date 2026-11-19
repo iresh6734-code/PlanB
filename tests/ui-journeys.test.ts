@@ -594,6 +594,19 @@ test('FIX-020 Modal: dentro de una pantalla oculta o inerte Escape no lo cierra;
   h.unmount();
 });
 
+test('A2 Modal: con dos ventanas abiertas, Escape solo cierra la de arriba', () => {
+  const doc = fakeDocument(); let closed = 0;
+  const h = mount('components.tsx', 'Modal', modalMocks, { title: 'Debajo', children: null, close: () => closed++ });
+  h.render();
+  const panel = { closest: () => null }, other = {};
+  h.nodes().find(n => n.type === 'section')!.props.ref.current = panel;
+  let open: object[] = [panel, other];
+  (globalThis as any).document.querySelectorAll = (selector: string) => selector === '[role="dialog"]' ? open : [];
+  doc.press('Escape'); assert.equal(closed, 0, 'otra ventana está encima');
+  open = [other, panel]; doc.press('Escape'); assert.equal(closed, 1, 'esta es la de arriba');
+  h.unmount();
+});
+
 // ---------- R-18 y R-16 (CLAUDE-FIX-023) ----------
 test('R-18 la ficha muestra las fechas en la hora local del navegador, no en Madrid fija', async () => {
   const previous = process.env.TZ; process.env.TZ = 'Pacific/Auckland';

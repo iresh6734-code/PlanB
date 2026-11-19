@@ -21,8 +21,8 @@ export function Modal({ title, children, close, wide = false, side = false, conf
   closing.current = { close, confirmClose };
   const requestClose = () => { if (!closing.current.confirmClose || closing.current.confirmClose()) closing.current.close(); };
   useEffect(() => {
-    // Un modal dentro de una pantalla oculta o inerte (sesión bloqueada) no responde a Escape.
-    const key = (event: KeyboardEvent) => { if (event.key === 'Escape' && !dialog.current?.closest('[inert],[hidden]')) requestClose(); };
+    // Un modal dentro de una pantalla oculta o inerte (sesión bloqueada) no responde a Escape; con dos ventanas abiertas, solo la de arriba.
+    const key = (event: KeyboardEvent) => { if (event.key === 'Escape' && !dialog.current?.closest('[inert],[hidden]') && isTopDialog(dialog.current)) requestClose(); };
     document.addEventListener('keydown', key);
     // Primer botón de ESTA ventana (no de la primera del documento), y solo si un campo con autoFocus no tiene ya el foco.
     const timer = setTimeout(() => { if (!dialog.current?.contains(document.activeElement)) dialog.current?.querySelector<HTMLElement>('button')?.focus(); }, 0);
@@ -36,6 +36,11 @@ export function Modal({ title, children, close, wide = false, side = false, conf
   </div>;
 }
 const focusedElement = () => (typeof document === 'undefined' ? null : document.activeElement as HTMLElement | null);
+/** La ventana de encima es la última `[role="dialog"]` del documento (el mismo criterio que encierra el Tab). */
+export function isTopDialog(panel: Element | null) {
+  const open = [...document.querySelectorAll('[role="dialog"]')];
+  return !open.length || open.at(-1) === panel;
+}
 /** Foco inicial dentro de la ventana, Tab encerrado y, al cerrar, foco de vuelta a quien la abrió (`opener`, anotado al pintar). */
 function useDialogFocus(ref: { current: HTMLElement | null }, opener: HTMLElement | null) {
   // El retorno del foco a quien abrió se aplaza un ciclo y se cancela si la misma ventana vuelve a montar su efecto en ese

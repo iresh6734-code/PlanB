@@ -29,3 +29,12 @@ test('el menú lateral usa la regla y deja el grupo desplegado al ir a su primer
   assert.ok(sidebar.includes("headerPress(group, page, entityName) === 'toggle'"));
   assert.ok(sidebar.includes('(go(group.target), setOpen(previous => new Set([...previous, group.id])))'));
 });
+
+test('A4 el punto de preparación va junto a «Continuidad», con el tono del veredicto y oculto al lector', () => {
+  const sidebar = fs.readFileSync('src/app-shell/Sidebar.tsx', 'utf8');
+  assert.match(sidebar, /group\.id === 'continuity' && signals\.readiness/);
+  assert.match(sidebar, /className="gx-ready-dot" data-tone=\{signals\.readiness\.tone\} aria-hidden="true"/, 'no cambia el nombre accesible del botón');
+  const app = fs.readFileSync('src/App.tsx', 'utf8');
+  assert.match(app, /readiness: readinessDot/, 'App entrega el veredicto al menú');
+  assert.match(app, /readinessFor\(state, continuityStatus, new Date\(\)\)/, 'con el estado ya leído, sin otra lectura');
+});

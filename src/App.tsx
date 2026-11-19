@@ -33,6 +33,7 @@ import { HomeOverview } from './HomeOverview.js';
 import { GuidedDrill } from './app-shell/GuidedDrill.js';
 import { advanceDrill, startDrill, type DrillState, type DrillStepId } from './app-shell/guided-drill.js';
 import { continuityAlerts, type AlertTarget, type ContinuityAlert } from './app-shell/continuity-alerts.js';
+import { readinessFor } from './app-shell/continuity-insights.js';
 import type { ContinuityTab } from './ContinuityHome.js';
 import type { ContinuityStatus } from '../shared/operations.js';
 // Apartados que se descargan al visitarlos por primera vez (misma interfaz de uso que los originales).
@@ -64,7 +65,8 @@ export default function App() {
   const [signals, setSignals] = useState<{ overdue: number | null; atRisk: number | null }>({ overdue: null, atRisk: null });
   // Avisos de la copia para el menú: se calculan con el estado que Inicio o Continuidad ya han leído (sin otra lectura).
   const [copyAlerts, setCopyAlerts] = useState<ContinuityAlert[] | null>(null), [continuityTab, setContinuityTab] = useState<ContinuityTab | null>(null);
-  const receiveContinuity = useCallback((status: ContinuityStatus) => { const next = continuityAlerts(status, new Date()); setCopyAlerts(current => current && JSON.stringify(current) === JSON.stringify(next) ? current : next); }, []);
+  const [continuityStatus, setContinuityStatus] = useState<ContinuityStatus | null>(null);
+  const receiveContinuity = useCallback((status: ContinuityStatus) => { setContinuityStatus(status); const next = continuityAlerts(status, new Date()); setCopyAlerts(current => current && JSON.stringify(current) === JSON.stringify(next) ? current : next); }, []);
   const [help, setHelp] = useState(false);
   useEffect(() => { if (page !== 'continuity') setContinuityTab(null); }, [page]);
   const [commandsOpen, setCommandsOpen] = useState(false);
@@ -219,6 +221,7 @@ export default function App() {
   const focusWhenReady = (id: string, tries = 20) => { const node = document.getElementById(id); if (node) node.focus(); else if (tries > 0) setTimeout(() => focusWhenReady(id, tries - 1), 50); };
   const openAlert = (target: AlertTarget) => { setSelected(null); if (target === 'export') { setPage('export'); focusWhenReady('main-content'); return; } setContinuityTab(target); setPage('continuity'); focusWhenReady('ct-tab-' + target); };
   const copySignal = copyAlerts && copyAlerts.length ? { count: copyAlerts.length, tone: copyAlerts.some(alert => alert.tone === 'danger') ? 'danger' as const : 'warn' as const, titles: copyAlerts.map(alert => alert.title) } : null;
+  const readinessDot = readinessFor(state, continuityStatus, new Date());
   const pageLabel = page==='workspace'?(entity?.label??'Trabajar'):({home:'Inicio',today:'Hoy',changes:'Cambios',agents:'Propuestas',radar:'Laboratorio · Radar','date-check':'Laboratorio · Comprobar una fecha',continuity:'Continuidad','team-sync':'Copia de equipo',export:'Exportar',integrations:'Integraciones',prepare:'Preparación'} as Record<string,string>)[page]??'';
   // Mover una oportunidad de etapa desde el tablero: misma validación y mismo guardado que la ficha. Devuelve el motivo si no se puede.
   // Cambiar un campo desde la tabla o el tablero: misma validación y mismo guardado que la ficha. Devuelve el motivo si no se puede.
@@ -274,7 +277,7 @@ export default function App() {
   const date = describeCapture(state.snapshot?.capturedAt).date ?? '';
   return <TaskOutcomesHost refreshState={refresh} onOpenTask={openTaskFromOutcomes} onClosed={(summary,reason)=>{setLockedOutcomes(previous=>addLockSummary(previous,summary));if(summary.dispatched+summary.notDispatched>0)setLockFailed(reason==='lock-not-completed');}} controlRef={outcomesControl}><div className={'app-shell ' + (selected ? 'has-drawer' : '')}>
     <a className="skip-link" href="#main-content">Saltar al contenido</a>
-    <Sidebar state={state} page={page} entityName={entityName} selected={!!selected} signals={{ ...signals, copy: copySignal }} step={step} preparationOpen={preparationOpen}
+    <Sidebar state={state} page={page} entityName={entityName} selected={!!selected} signals={{ ...signals, copy: copySignal, readiness: readinessDot }} step={step} preparationOpen={preparationOpen}
       setPage={setPage} setSelected={setSelected} setPreparationOpen={setPreparationOpen} setGlobalSearch={setGlobalSearch} setModal={setModal}
       openEntity={openEntity} openPreparation={openPreparation} />
     <div className="mobile-brand"><Brand /><span className="badge">{state.snapshot?.source.isTestData===false?'Producción · lectura':'Datos de prueba'}</span></div>

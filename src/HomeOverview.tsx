@@ -13,6 +13,7 @@ import { loadLocalOperations } from './local-operations-client.js';
 import { loadCommitments, loadRadarCapability } from './commitment-radar-client.js';
 import { daysLate, dueLabel, splitTaskLabel, taskChip } from './task-display.js';
 import { continuityAlerts, type AlertTarget } from './app-shell/continuity-alerts.js';
+import { readinessFor } from './app-shell/continuity-insights.js';
 import { FirstRun } from './app-shell/FirstRun.js';
 import { PipelineCard } from './app-shell/PipelineCard.js';
 import { captureRecordCount, describeCapture, workspaceCopy } from './app-shell/workspace-copy.js';
@@ -68,6 +69,8 @@ export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, 
   const now = new Date();
   const snapshot = state.snapshot;
   const { activeId, activeReadiness, activeCaptureRecords, latest, latestIsDifferent } = workspaceCopy(state, status);
+  // El mismo veredicto que abre Continuidad (y el punto del menú).
+  const verdict = readinessFor(state, status, now);
   const copy = describeCapture(snapshot?.capturedAt, now.getTime());
   const stale = !!activeId && !state.runtime && copy.stale;
   const copyLabel = activeId ? 'Copia activa' : 'Captura importada';
@@ -218,6 +221,10 @@ export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, 
             {stale ? <p className="oc-muted">Capturada {copy.age}.</p> : null}
             {latestIsDifferent && latest ? <p className="oc-muted">Última captura guardada: {describeCapture(latest.capturedAt).date ?? 'fecha no disponible'} · {captureRecordCount(latest.records)}.</p> : null}
             {activeReadiness?.status === 'passed' || latestIsDifferent ? <p className="oc-muted">{activeProof}</p> : null}
+            {verdict ? <p className="oc-verdict" data-tone={verdict.tone}>
+              <span className="oc-verdict-steps" role="img" aria-label={verdict.progress}>{verdict.steps.map((stepDone, index) => <i key={index} data-done={stepDone ? 'true' : undefined}/>)}</span>
+              <span><strong>{verdict.title}</strong> · {verdict.progress} · {verdict.next}</span>
+            </p> : null}
             {copyAlerts.length ? <ul className="oc-copy-alerts" aria-label="Avisos de la copia">{copyAlerts.map(alert => <li key={alert.id} data-tone={alert.tone}><span><strong>{alert.title}</strong> {alert.detail}</span>{onOpenAlert ? <button type="button" className="oc-link" aria-label={alert.action.label + ': ' + alert.title} onClick={() => onOpenAlert(alert.action.target)}>{alert.action.label}</button> : null}</li>)}</ul> : null}
             <div className="oc-row-actions"><button type="button" className="button primary" onClick={onOpenContinuity}>{stale || !snapshot ? 'Ir a Continuidad' : 'Ver estado'}</button>{changes > 0 ? <button type="button" className="button secondary" onClick={onOpenChanges}>Revisar cambios</button> : null}</div>
           </div>

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { Job } from '../shared/operations.js';
-import { captureLedger, continuityReadiness, copyVitals, formatAge, formatBytes, hourlyCaptures, jobStats, outageForecast, type InsightContext, type InsightSource } from '../src/app-shell/continuity-insights.js';
+import { captureLedger, continuityReadiness, copyVitals, formatAge, formatBytes, hourlyCaptures, jobStats, outageForecast, readinessFor, readinessSignal, type InsightContext, type InsightSource } from '../src/app-shell/continuity-insights.js';
 
 const NOW = new Date(2026, 10, 19, 12, 30);
 const at = (hoursAgo: number) => new Date(NOW.getTime() - hoursAgo * 3_600_000).toISOString();
@@ -27,6 +27,23 @@ test('preparación: el orden del siguiente paso sigue el riesgo (prueba fallida,
   const session = continuityReadiness(source({ stale: true, ageMinutes: 300, session: { id: 's', captureId: 'c1', startedAt: at(1) } }), done, NOW);
   assert.equal(session.next.id, 'none', 'durante una sesión la copia envejece a propósito: no se propone capturar');
   assert.equal(continuityReadiness(source({ stale: true, ageMinutes: 26 * 60 }), done, NOW).level, 'risk');
+});
+
+test('A4 veredicto resumido: tono por nivel, pasos y siguiente acción; Inicio y el menú usan el simulacro de la última captura', () => {
+  const ready = readinessSignal(continuityReadiness(source(), done, NOW));
+  assert.deepEqual([ready.tone, ready.progress, ready.next], ['ok', '5 de 5 pasos', 'Nada pendiente']); assert.deepEqual(ready.steps, [true, true, true, true, true]);
+  const untested = readinessSignal(continuityReadiness(source(), { ...done, drill: 'untested' }, NOW));
+  assert.deepEqual([untested.tone, untested.title, untested.next], ['warn', 'Tu Plan B está casi listo', 'Siguiente: probar esta copia']);
+  assert.equal(readinessSignal(continuityReadiness(source(), { ...done, drill: 'failed' }, NOW)).tone, 'danger');
+  assert.equal(readinessSignal(continuityReadiness(source({ captures: [], latestCapture: null, ageMinutes: null }), done, NOW)).tone, 'neutral');
+
+  const state = { snapshot: null, ready: false, hubspotConfigured: true, runtime: undefined } as any;
+  const status = (readiness: any) => ({ ...source(), readiness }) as any;
+  assert.equal(readinessFor(state, status({ captureId: 'c1', status: 'passed', reportId: 'r' }), NOW)!.level, 'ready');
+  assert.equal(readinessFor(state, status({ captureId: 'otra', status: 'passed', reportId: 'r' }), NOW)!.level, 'almost', 'una prueba de otra captura no acredita la última');
+  assert.equal(readinessFor({ ...state, hubspotConfigured: false }, status({ captureId: 'c1', status: 'passed' }), NOW)!.progress, '4 de 5 pasos');
+  assert.equal(readinessFor(state, null, NOW), null, 'sin estado leído no hay veredicto');
+  assert.equal(readinessFor({ ...state, runtime: { id: 'x' } }, status(null), NOW), null, 'en una copia restaurada no se muestra');
 });
 
 test('preparación: exportada pero sin confirmar pide confirmar; de otra revisión pide exportar', () => {

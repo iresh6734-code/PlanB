@@ -1,4 +1,6 @@
+import type { AppState } from '../../shared/model.js';
 import type { ContinuityStatus, DrillReadiness, Job } from '../../shared/operations.js';
+import { workspaceCopy } from './workspace-copy.js';
 
 /** Lecturas derivadas de `/v2/continuity` para la portada de Continuidad. Todo es puro y local: no pide nada a ningún
  *  servidor ni inventa estados; si un dato falta, lo dice. */
@@ -85,6 +87,24 @@ function nextAction(status: InsightSource, context: InsightContext, recoveryDone
 
 export type Tone = 'ok' | 'warn' | 'danger' | 'neutral';
 export interface Vital { id: string; label: string; value: string; note: string; tone: Tone }
+
+/** Veredicto de preparación resumido para fuera de Continuidad (línea en Inicio y punto del menú). */
+export interface ReadinessSignal { level: ReadinessLevel; tone: Tone; title: string; progress: string; next: string; steps: boolean[] }
+const LEVEL_TONE: Record<ReadinessLevel, Tone> = { ready: 'ok', almost: 'warn', risk: 'danger', start: 'neutral' };
+export function readinessSignal(readiness: Readiness): ReadinessSignal {
+  return {
+    level: readiness.level, tone: LEVEL_TONE[readiness.level], title: readiness.title,
+    progress: readiness.done + ' de ' + readiness.total + ' pasos',
+    next: readiness.next.id === 'none' ? 'Nada pendiente' : 'Siguiente: ' + readiness.next.label.charAt(0).toLowerCase() + readiness.next.label.slice(1),
+    steps: readiness.steps.map(step => step.done),
+  };
+}
+/** Mismo contexto que usa la portada de Continuidad: simulacro de la última captura y conexión configurada. Sin copia restaurada. */
+export function readinessFor(state: Pick<AppState, 'snapshot' | 'ready' | 'hubspotConfigured' | 'runtime'>, status: ContinuityStatus | null, now: Date): ReadinessSignal | null {
+  if (!status || state.runtime) return null;
+  const diagnosis = workspaceCopy(state, status).latestReadiness;
+  return readinessSignal(continuityReadiness(status, { hubspotConfigured: !!state.hubspotConfigured, drill: diagnosis?.status ?? null, reportId: diagnosis?.reportId ?? null }, now));
+}
 
 export function copyVitals(status: InsightSource, context: InsightContext, now: Date): Vital[] {
   const age = ageOf(status, now), summary = status.latestCapture;

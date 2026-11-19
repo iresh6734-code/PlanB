@@ -18,7 +18,7 @@
 .commercial-mail-envelope dt{color:var(--muted);flex:0 0 45px}
 .commercial-mail-envelope dd{margin:0;color:var(--ink);overflow-wrap:anywhere}
 /* Match the email renderer, independently of the surrounding app's font and colors. */
-.commercial-mail-content{font:15px/1.65 Arial,Helvetica,sans-serif;color:#24374c;background:#fff;overflow-wrap:anywhere}
+.commercial-mail-content{font:15px/1.65 Arial,Helvetica,sans-serif;color:#24374c;background:#fff;color-scheme:light;overflow-wrap:anywhere}
 .commercial-mail-content table{min-width:0!important;table-layout:fixed;white-space:normal;text-align:left}
 .commercial-mail-content td{white-space:normal;text-align:left;height:auto;font-size:inherit;line-height:inherit;color:inherit;vertical-align:top;border:0;background:transparent}
 .commercial-mail-content tr:hover{background:transparent}

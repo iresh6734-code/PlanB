@@ -1,8 +1,18 @@
 # Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026, 12:55, Europe/Madrid**. Super plan por oleadas en `docs/super-plan.md` (solo documentación).
+Última revisión: **19/11/2026, 12:57, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada.
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
+
+## Oleada 1 del super plan · 19/11/2026, 12:57, Europe/Madrid
+
+Mismas normas: sin DPAPI/PowerShell de cifrado, sin Playwright, sin servidores, sin datos reales y sin navegador. Validado con pruebas unitarias en modo prueba y `npm run build`. **Sin revisión visual: «Ver en casa».**
+
+- **A1 hecha:** modo oscuro del espacio de equipo con tokens. Guardia en `tests/team-dark-mode.test.ts`. La vista previa del correo comercial sigue blanca a propósito (`color-scheme: light`).
+- **A2 hecha:** todas las ventanas del equipo ya usaban `Modal`. Escape cierra solo la ventana de arriba (`isTopDialog`) y el foco entra en el campo.
+- **A3 aplazada:** los tres `confirm()` reales (`CommercialWorkspace`, `CustomerDossier`, `TeamApp`) dependen de e2e con diálogo nativo (`v6.spec.ts`), y `Modal.confirmClose` es síncrono. Se harán en una sesión con e2e en casa. `DateCheck` y `OperationalRehearsal` no usan `confirm()`.
+- **A4 hecha:** `readinessFor` da el mismo veredicto que Continuidad a la ficha de la copia de Inicio (línea con cinco marcas) y al punto junto a «Continuidad» en el menú.
+- **Siguiente:** V1, orden y filtro en el servidor.
 
 ## Super plan · 19/11/2026, 12:55, Europe/Madrid
 

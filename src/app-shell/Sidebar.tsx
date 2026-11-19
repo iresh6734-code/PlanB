@@ -6,9 +6,10 @@ import { Brand } from '../components.js';
 import { PreparationNavigation } from '../PreparationNavigation.js';
 import { groupOfPage, headerPress, itemActive, navigationGroups, type GroupId, type NavGroup, type NavItem, type NavTarget } from './navigation.js';
 import type { PageId } from './session.js';
+import type { ReadinessSignal } from './continuity-insights.js';
 
 type Toggle = (update: (open: boolean) => boolean) => void;
-type Signals = { overdue: number | null; atRisk: number | null; copy?: { count: number; tone: 'danger' | 'warn'; titles: string[] } | null };
+type Signals = { overdue: number | null; atRisk: number | null; copy?: { count: number; tone: 'danger' | 'warn'; titles: string[] } | null; readiness?: ReadinessSignal | null };
 type Props = {
   state: AppState; page: PageId; entityName: EntityName;
   /** Hay una ficha abierta: la búsqueda global se desactiva. */ selected: boolean;
@@ -43,6 +44,10 @@ export function Sidebar({ state, page, entityName, selected, signals, step, prep
     if (badge === 'atRisk' && signals.atRisk) return <span className="gx-badge" data-tone="danger" aria-hidden="true" title={signals.atRisk + (signals.atRisk === 1 ? ' compromiso en riesgo' : ' compromisos en riesgo')}>{signals.atRisk}</span>;
     return null;
   };
+  // Punto de preparación junto a «Continuidad»: el mismo veredicto que Inicio. Oculto al lector (ya lo lee en Inicio) para no cambiar el nombre del botón.
+  const readinessDot = (group: NavGroup) => group.id === 'continuity' && signals.readiness
+    ? <span className="gx-ready-dot" data-tone={signals.readiness.tone} aria-hidden="true" title={signals.readiness.title + ' · ' + signals.readiness.progress} />
+    : null;
   const go = (target: NavTarget) => {
     if (target.kind === 'entity') openEntity(target.entity);
     else if (target.kind === 'settings') setModal('settings');
@@ -62,7 +67,7 @@ export function Sidebar({ state, page, entityName, selected, signals, step, prep
       : (go(group.target), setOpen(previous => new Set([...previous, group.id])));
     return <>
       <button type="button" className={'nav-item work-toggle ' + (active ? 'active' : '')} aria-expanded={expanded} aria-controls={id} disabled={disabled(group)} onClick={press}>
-        <Icon size={19} /><span>{group.label}</span>{!expanded ? badgeOf(group.badge) : null}<ChevronDown size={15} aria-hidden="true" className={expanded ? 'expanded' : ''} />
+        <Icon size={19} /><span>{group.label}</span>{readinessDot(group)}{!expanded ? badgeOf(group.badge) : null}<ChevronDown size={15} aria-hidden="true" className={expanded ? 'expanded' : ''} />
       </button>
       <div id={id} className={'work-disclosure ' + (expanded ? 'is-open' : '')} aria-hidden={!expanded} inert={!expanded}><div>
         <nav className="work-subnav" aria-label={group.label}>

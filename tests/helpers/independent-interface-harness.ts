@@ -103,6 +103,7 @@ export class View {
       const inst = this.current!, [slots, i] = slot(); const prior: Effect | undefined = slots[i];
       if (!prior || !deps || deps.length !== prior.deps?.length || deps.some((d, n) => !Object.is(d, prior.deps![n]))) inst.queued.push({ index: i, run, deps });
     };
+    const subscribeEffect = effect();
     return {
       useState: (init: any) => {
         const inst = this.current!, [slots, i] = slot();
@@ -120,6 +121,14 @@ export class View {
       useMemo: (fn: () => any, deps: unknown[]) => { const [slots, i] = slot(); const prior = slots[i]; if (prior && deps.length === prior.deps.length && deps.every((d, n) => Object.is(d, prior.deps[n]))) return prior.value; const value = fn(); slots[i] = { value, deps }; return value; },
       useCallback: (fn: any, deps: unknown[]) => { const [slots, i] = slot(); const prior = slots[i]; if (prior && deps.every((d, n) => Object.is(d, prior.deps[n]))) return prior.fn; slots[i] = { fn, deps }; return fn; },
       useEffect: effect(), useLayoutEffect: effect(),
+      // Lee la instantánea en cada render y se suscribe tras montar; un cambio de la tienda vuelve a pintar como un setState.
+      useSyncExternalStore: (subscribe: (onChange: () => void) => () => void, getSnapshot: () => any) => {
+        const inst = this.current!, [slots, i] = slot();
+        const box = slots[i] ?? (slots[i] = { value: undefined, read: getSnapshot });
+        box.read = getSnapshot; box.value = getSnapshot();
+        subscribeEffect(() => subscribe(() => { if (inst.dead || view.unmounted) return; if (!Object.is(box.read(), box.value)) view.schedule(); }), [subscribe]);
+        return box.value;
+      },
     };
   }
 

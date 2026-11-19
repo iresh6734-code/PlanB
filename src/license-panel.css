@@ -12,7 +12,7 @@ html body .lp-current-meta { margin-top: 4px; font-size: var(--fs-xs); color: va
 html body .lp-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr); gap: 18px; align-items: start; }
 html body .lp-plans { width: 100%; border: 1px solid var(--border); border-radius: var(--r-lg); border-collapse: separate; border-spacing: 0; background: var(--bg-surface); white-space: normal; overflow: hidden; }
 html body .lp-plans caption { padding: 0 0 8px; text-align: left; font-size: var(--fs-sm); font-weight: 650; color: var(--text-2); }
-html body .lp-plans th, html body .lp-plans td { width: auto; padding: 9px 12px; border: 0; border-top: 1px solid var(--rule); font-size: var(--fs-sm); text-align: center; vertical-align: middle; color: var(--text-1); }
+html body .lp-plans th, html body .lp-plans td { width: auto; height: auto; padding: 8px 12px; border: 0; border-top: 1px solid var(--rule); font-size: var(--fs-sm); text-align: center; vertical-align: middle; color: var(--text-1); }
 html body .lp-plans thead th { border-top: 0; font-size: var(--fs-xs); font-weight: 650; text-transform: uppercase; letter-spacing: .04em; color: var(--text-3); }
 html body .lp-plans thead th:first-child, html body .lp-plans tbody th { text-align: left; }
 html body .lp-plans tbody th { font-weight: 500; color: var(--text-2); }
@@ -20,7 +20,7 @@ html body .lp-plans [data-current="true"] { background: var(--bg-subtle); color:
 html body .lp-plans thead small { display: block; margin-top: 2px; font-size: var(--fs-xs); font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--success); }
 html body .lp-plans td svg { color: var(--success); vertical-align: middle; }
 html body .lp-plans td svg.lp-no { color: var(--text-3); }
-html body .lp-plans tr:hover { background: transparent; }
+html body .lp-plans tr:hover, html body .lp-plans tbody tr { background: transparent; }
 html body .lp-activate { display: grid; gap: 8px; padding: 14px 16px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--bg-surface); }
 html body .lp-activate h2 { margin: 0 0 2px; font-size: var(--fs-md); }
 html body .lp-activate label { font-size: var(--fs-sm); color: var(--text-2); }

@@ -113,7 +113,7 @@ export function FocusRun({ spec, saveField, createTask, onOpen, close, initialSc
       : current ? <>
           <div className="gx-focus-progress" role="progressbar" aria-label="Avance al despachar" aria-valuemin={0} aria-valuemax={list.length} aria-valuenow={index} aria-valuetext={index + ' de ' + list.length + ' revisadas'}><span style={{ width: (index / list.length * 100) + '%' }} /></div>
           <p className="gx-focus-count" aria-live="polite" aria-atomic="true">Tarea {index + 1} de {list.length}<span className="sr-only">: {recordName(current, spec)}. {late <= 0 ? 'Vence hoy' : 'Vencida hace ' + late + (late === 1 ? ' día' : ' días')}.</span></p>
-          <div className="gx-focus-card">
+          <div className="gx-focus-card" data-done={follow ? 'true' : undefined}>
             <p className="gx-focus-late" data-today={late <= 0 ? 'true' : undefined}>{late <= 0 ? 'Vence hoy' : 'Vencida hace ' + late + (late === 1 ? ' día' : ' días')}</p>
             <h3>{recordName(current, spec)}</h3>
             {details.length ? <dl>{details.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl> : null}

@@ -1,7 +1,7 @@
 /* Continuidad · capas de lectura (preparación, constantes, «Si HubSpot cae ahora», regla de 24 h, libro de capturas,
    fiabilidad). Solo tokens del cuaderno: el modo oscuro sale solo. Estados como sellos de 6–8 px, nunca franjas. */
 
-html body .ct-estado > .ct-ready, html body .ct-estado > .ct-vitals { grid-column: 1 / -1; }
+html body .ct-estado > .ct-ready, html body .ct-estado > .ct-vitals, html body .ct-estado > .ct-contingency, html body .ct-estado > .ct-seal { grid-column: 1 / -1; }
 html body .ct-operaciones { display: flex; flex-direction: column; gap: 12px; }
 html body .ct-operaciones > .ct-operations-route { margin: 0; }
 html body .ct-ready-count { font-variant-numeric: tabular-nums; font-weight: 650; color: var(--text-1); }

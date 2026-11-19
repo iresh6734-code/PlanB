@@ -48,6 +48,9 @@
 }
 @media (max-width: 1150px) { :root { --sidebar-width: 188px; --page-gutter: 16px; } }
 @media (max-width: 600px) { :root { --page-gutter: 12px; --control-h: 40px; --control-h-sm: 36px; --row-h: 44px; } }
+/* K4 · Densidad «cómoda» (html[data-density], Órdenes → Densidad): filas de 40 px y controles de 32 px.
+ * Solo por encima de 600 px: en móvil siguen mandando los objetivos táctiles de 40–44 px. */
+@media (min-width: 601px) { html[data-density="comfortable"] { --control-h: 32px; --control-h-sm: 28px; --row-h: 40px; } }
 
 /* Cuaderno de noche: el mismo cuaderno bajo una lámpara cálida. Papel tostado oscuro, tapas de cuero; la tinta se aclara. */
 html[data-theme="dark"] {
@@ -235,7 +238,7 @@ html body .gx-statusbar .status-label, html body .gx-statusbar .copy-date, html 
 html body .kanban { gap: 8px; }
 html body .kanban-column, html[data-theme="dark"] body .kanban-column { padding: 4px; gap: 4px; border: 0; border-radius: 0; background: transparent; border-right: 1px solid var(--border); }
 html body .kanban-column:last-child { border-right: 0; }
-html body .kanban-column h2 { padding: 4px 4px 4px; font-size: var(--fs-sm); color: var(--text-1); }
+html body .kanban-column h2 { min-height: 34px; padding: 4px 4px 4px; font-size: var(--fs-sm); color: var(--text-1); }
 html body .kanban-column h2 .dot { border-radius: 1px; }
 html body .kanban-column h2 small, html[data-theme="dark"] body .kanban-column h2 small { background: transparent; color: var(--text-3); font-size: var(--fs-xs); }
 html[data-theme="dark"] body .kanban-column[data-kind="won"], html body .kanban-column[data-kind="won"] { background: transparent; }
@@ -409,7 +412,8 @@ html[data-theme="dark"] body .oc-group.oc-group { background: var(--bg-subtle); 
 html body .oc-copy-alerts li { position: relative; padding: 8px 0 0 14px; }
 html body .oc-copy-alerts li::before { top: 15px; left: 2px; width: 6px; height: 6px; border-radius: 1px; }
 html body .oc-home-main-stack > * { flex: 0 0 auto; }
-html body .inline-empty { padding: 12px 16px; }
+html body .inline-empty { flex-wrap: wrap; gap: 10px 20px; padding: 12px 16px; }
+html body .inline-empty > div:first-child { flex: 1 1 220px; min-width: 0; }
 html body .page-header > .button-row { margin: 0; align-self: center; }
 html body .setup-checklist li, html body .ct-rail .setup-checklist li { border-color: var(--rule); }
 html body .ct-rail .setup-checklist li:first-child { border-top: 0; }
@@ -500,5 +504,14 @@ html body ::-webkit-scrollbar { width: 10px; height: 10px; }
 html body ::-webkit-scrollbar-track { background: transparent; }
 html body ::-webkit-scrollbar-thumb { border: 2px solid transparent; border-radius: 6px; background: var(--border-strong) padding-box; }
 html body ::-webkit-scrollbar-thumb:hover { background: var(--border-control) padding-box; }
+
+/* K2 · Gestos de cuaderno. Al marcar una tarea hecha en «Despachar», el título se tacha con la pluma de izquierda a derecha
+ * (180 ms); el sello de continuidad entra como un tampón (escala 1,08 → 1). Solo transform y opacity; sin movimiento si se pide. */
+html body .gx-focus-card[data-done] h3 { position: relative; width: fit-content; max-width: 100%; color: var(--text-3); }
+html body .gx-focus-card[data-done] h3::after { content: ""; position: absolute; left: -2px; right: -2px; top: 55%; height: 2px; border-radius: 1px; background: var(--pen); transform-origin: left center; animation: k2-strike 180ms ease-out both; }
+html body .ct-seal-mark .seal-badge { animation: k2-stamp 280ms cubic-bezier(.2, .8, .3, 1) both; }
+@keyframes k2-strike { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes k2-stamp { from { opacity: 0; transform: scale(1.08); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { html body .gx-focus-card[data-done] h3::after, html body .ct-seal-mark .seal-badge { animation: none; } }
 
 @media (prefers-reduced-motion: reduce) { html body *, html body *::before, html body *::after { transition-duration: 0ms !important; animation-duration: 0ms !important; } }

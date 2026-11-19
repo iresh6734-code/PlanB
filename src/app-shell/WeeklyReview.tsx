@@ -99,7 +99,7 @@ export function WeeklyReview({ spec, revision, title, saveField, createTask, onO
         </div>
         {note ? <p className="wr-note" data-tone={note.tone}>{note.text}</p> : null}
         <div className="wr-grid">
-          <article className="oc-card wr-card" aria-labelledby="wr-postponed">
+          <article className="oc-card wr-card" data-wide={review.postponed.length ? 'true' : undefined} aria-labelledby="wr-postponed">
             <div className="oc-card-head"><h2 id="wr-postponed">Pospuestas más de {POSTPONE_LIMIT} veces <span className="oc-count">{review.postponed.length}</span></h2></div>
             <p className="wr-hint">Si siempre se aplaza, decide: hazla hoy, ciérrala o cámbiala por algo que sí vayas a hacer.</p>
             {review.postponed.length ? <ul className="oc-task-list wr-list">{list('postponed', review.postponed).map(item => <li key={item.record.id}>
@@ -110,7 +110,7 @@ export function WeeklyReview({ spec, revision, title, saveField, createTask, onO
             </li>)}</ul> : <p className="oc-empty-line ui-empty ui-empty-ok">Ninguna tarea se ha aplazado más de {POSTPONE_LIMIT} veces.</p>}
             {showMore('postponed', review.postponed.length)}
           </article>
-          <article className="oc-card wr-card" aria-labelledby="wr-overdue">
+          <article className="oc-card wr-card" data-wide={review.overdue.length ? 'true' : undefined} aria-labelledby="wr-overdue">
             <div className="oc-card-head"><h2 id="wr-overdue">Vencidas <span className="oc-count">{review.overdue.length}</span></h2></div>
             {review.overdue.length ? <ul className="oc-task-list wr-list">{list('overdue', review.overdue).map(item => <li key={item.record.id}>
               <span className="oc-chip" data-tone="danger">{item.late === 1 ? '1 día' : item.late + ' días'}</span>
@@ -122,7 +122,7 @@ export function WeeklyReview({ spec, revision, title, saveField, createTask, onO
             </li>)}</ul> : <p className="oc-empty-line ui-empty ui-empty-ok">No hay tareas vencidas{review.postponed.some(item => item.late) ? ' aparte de las pospuestas' : ''}.</p>}
             {showMore('overdue', review.overdue.length)}
           </article>
-          {spec.entities.some(entity => entity.id === 'deals') ? <article className="oc-card wr-card" aria-labelledby="wr-nonext">
+          {spec.entities.some(entity => entity.id === 'deals') ? <article className="oc-card wr-card" data-wide={review.noNext?.length ? 'true' : undefined} aria-labelledby="wr-nonext">
             <div className="oc-card-head"><h2 id="wr-nonext">Oportunidades sin próximo paso {review.noNext ? <span className="oc-count">{review.noNext.length}</span> : null}</h2></div>
             {review.noNext === null ? <p className="wr-hint">No se puede saber: {spec.entities.find(entity => entity.id === 'tasks')?.fields.some(field => field.type === 'reference' && field.referenceEntity === 'deals') ? 'no se pudieron leer todas las tareas de la copia.' : 'las tareas de esta copia no se enlazan con oportunidades.'}</p>
               : review.noNext.length ? <>

@@ -31,7 +31,7 @@ import { endContingency, startContingency, type IncidentWindow } from './app-she
 import { useContingency } from './app-shell/useContingency.js';
 import { MobileNav } from './app-shell/MobileNav.js';
 import type { Command } from './app-shell/commands.js';
-import { toggleTheme } from './app-shell/theme.js';
+import { currentDensity, toggleDensity, toggleTheme } from './app-shell/theme.js';
 import { LocalOperations, type OpenTaskRequest } from './LocalOperations.js';
 import { OutcomesLockNotice, TaskOutcomesHost, TaskOutcomesSurface, addLockSummary, type TaskOutcomesControl } from './TaskOutcomesHost.js';
 import { WorkspaceSearch } from './WorkspaceSearch.js';
@@ -307,6 +307,7 @@ export default function App() {
     ...(undoable ? [{ id: 'undo', label: 'Deshacer el último guardado', group: 'Acción', run: () => void undoLast() }] : []),
     { id: 'lock', label: 'Proteger o bloquear Plan B', group: 'Acción', run: () => void protect() },
     { id: 'theme', label: typeof document !== 'undefined' && document.documentElement?.dataset?.theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro', group: 'Acción', run: toggleTheme },
+    { id: 'density', label: currentDensity() === 'comfortable' ? 'Densidad compacta (filas de 32 px)' : 'Densidad cómoda (filas de 40 px)', group: 'Acción', run: toggleDensity },
     { id: 'help', label: 'Ver los atajos de teclado', group: 'Acción', hint: '?', run: () => setHelp(true) }
   ];
   // Registros para la paleta: hasta 4 por tipo, de la copia local, en el orden de la búsqueda del servidor.

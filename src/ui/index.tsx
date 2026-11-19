@@ -29,6 +29,20 @@ export function EmptyState({ icon, title, children, action }: { icon?: ReactNode
   return <div className="ui-empty">{icon ? <span className="ui-empty-icon" aria-hidden="true">{icon}</span> : null}<h3>{title}</h3>{children ? <p>{children}</p> : null}{action ? <div className="ui-empty-action">{action}</div> : null}</div>;
 }
 
+/** K3 · Ilustración de trazo para estados vacíos: una hoja de cuaderno con lupa (búsqueda sin resultados) o con lápiz (todavía vacío).
+ *  Solo `currentColor`, sin rellenos: hereda el tono del tema. Se pasa como `icon` de EmptyState. */
+export function EmptyArt({ kind = 'blank' }: { kind?: 'blank' | 'search' }) {
+  return <svg className="ui-empty-art" data-kind={kind} width="76" height="60" viewBox="0 0 76 60" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+    <path d="M14 6h34l10 10v38H14z" />
+    <path d="M48 6v10h10" />
+    <path d="M21 22h22M21 29h28M21 36h18" opacity=".55" />
+    <path d="M14 6v48" strokeDasharray="2 3" opacity=".4" />
+    {kind === 'search'
+      ? <><circle cx="54" cy="41" r="8" /><path d="m60 47 7 7" strokeWidth="2.5" /></>
+      : <><path d="m50 51 14-14 4 4-14 14-5 1z" /><path d="m61 40 4 4" /></>}
+  </svg>;
+}
+
 /** Marcador de carga con forma de filas. Marca la zona como ocupada (aria-busy) y deja el texto legible; no usa role=status
  *  para no competir con el aviso (toast) de la App, que es el único estado que se anuncia. Las barras son decorativas. */
 export function Skeleton({ rows = 6, label = 'Cargando…' }: { rows?: number; label?: string }) {

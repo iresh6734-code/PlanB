@@ -117,7 +117,8 @@
 
 .clab-measures, .clab-checks, .clab-limits, .clab-tasks, .clab-exposure { list-style: none; margin: 0; padding: 0; }
 .clab-measures { display: grid; gap: 0; border: 1px solid var(--c-line); border-radius: 8px; overflow: hidden; }
-.clab-measures li { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr) minmax(0, 1.4fr) 150px; gap: 4px 16px; align-items: center; padding: 10px 12px; min-height: 48px; }
+.clab-measures li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 16px; align-items: center; padding: 10px 12px; min-height: 48px; }
+.clab-measures li .clab-tag { justify-self: end; }
 .clab-measures li + li { border-top: 1px solid var(--c-line); }
 .clab-m-label { font-weight: 600; }
 .clab-m-value { font-variant-numeric: tabular-nums; font-size: 14px; font-weight: 600; }

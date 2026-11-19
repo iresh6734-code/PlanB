@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import type { AppSpec, CrmRecord } from '../../shared/model.js';
 import { api } from '../api.js';
 import { displayValue, recordName } from '../components.js';
 import { ErrorState, InlineConfirm, Skeleton } from '../ui/index.js';
+import { madridDay } from '../task-display.js';
+import { accountHealth } from './account-health.js';
 import { loadRelated, type RelatedGroup } from './related.js';
 import { recordListPath } from './useRecordList.js';
 
@@ -42,8 +44,16 @@ export function RelatedPanel({ spec, record, dirty, onOpen }: { spec: AppSpec; r
       .slice(0, 2).map(field => displayValue(target.values[field!.key], field!, [], spec)).filter(Boolean).join(' · ');
   };
   if (groups && !groups.length) return null;
+  const health = groups && (entity === 'companies' || entity === 'contacts') ? accountHealth(spec, record, groups, madridDay(new Date())) : null;
+  const filled = health ? { good: 3, watch: 2, risk: 1 }[health.level] : 0;
   return <section className="gx-related" aria-labelledby="gx-related-title">
     <h3 id="gx-related-title">Relacionado</h3>
+    {health ? <div className="gx-health" data-level={health.level}>
+      <p className="gx-health-head"><span className="gx-health-meter" aria-hidden="true">{[1, 2, 3].map(n => <i key={n} data-on={n <= filled ? 'true' : undefined} />)}</span>
+        <strong>{health.headline}</strong></p>
+      {health.reasons.length ? <ul>{health.reasons.map(item => <li key={item.text} data-tone={item.tone}>{item.text}</li>)}</ul> : null}
+      {health.partial ? <p className="gx-related-note">Valorada con los registros revisados; puede haber más.</p> : null}
+    </div> : null}
     {pending && dirty ? <InlineConfirm id="gx-related-leave" question={<>Esta ficha tiene cambios sin guardar que se perderán. ¿Abrir «{recordName(pending, spec)}» de todos modos?</>} confirmLabel="Abrir sin guardar" onConfirm={() => { const target = pending; setPending(null); onOpen(target); }} onCancel={() => setPending(null)} /> : null}
     {error ? <ErrorState title="No se pudieron leer las relaciones" onAction={() => setAttempt(value => value + 1)}>{error}</ErrorState> : !groups ? <Skeleton rows={3} label="Leyendo lo relacionado…" /> : groups.map(group => <div key={group.entity + ':' + group.fieldKey} className="gx-related-group">
       <h4>{group.label}<span>{group.records.length}</span>{groups.filter(other => other.entity === group.entity).length > 1 ? <small>como {group.fieldLabel.toLowerCase()}</small> : null}</h4>

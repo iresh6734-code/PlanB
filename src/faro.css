@@ -1138,6 +1138,22 @@ html body .fx-line-head > div:first-child { flex: 1 1 260px; }
 .gx-related-group li button:hover strong { color: var(--primary-text); }
 .gx-related-group li span { flex: none; font-size: var(--fs-xs); color: var(--text-3); font-variant-numeric: tabular-nums; }
 .gx-related-note { margin: 2px 0 0; font-size: var(--fs-xs); color: var(--text-3); }
+/* Ficha · salud de la cuenta (super plan V6): frase, trazo de tres niveles y cada motivo a la vista. */
+.gx-health { display: grid; gap: 6px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--bg-surface); }
+.gx-health[data-level="risk"] { border-color: color-mix(in srgb, var(--danger) 35%, var(--border)); }
+.gx-health[data-level="watch"] { border-color: var(--warning-border, var(--border)); }
+.gx-health-head { display: flex; align-items: center; gap: 10px; margin: 0; font-size: var(--fs-sm); color: var(--text-1); }
+.gx-health-head strong { font-weight: 600; }
+.gx-health-meter { display: inline-flex; gap: 2px; flex: none; }
+.gx-health-meter i { display: block; width: 10px; height: 6px; border-radius: 2px; background: var(--border); }
+.gx-health[data-level="good"] .gx-health-meter i[data-on] { background: var(--success); }
+.gx-health[data-level="watch"] .gx-health-meter i[data-on] { background: var(--warning); }
+.gx-health[data-level="risk"] .gx-health-meter i[data-on] { background: var(--danger); }
+.gx-health ul { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; font-size: var(--fs-xs); color: var(--text-2); }
+.gx-health li { display: flex; align-items: baseline; gap: 7px; }
+.gx-health li::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 999px; background: var(--success); transform: translateY(-1px); }
+.gx-health li[data-tone="watch"]::before { background: var(--warning); }
+.gx-health li[data-tone="risk"]::before { background: var(--danger); }
 .gx-related .ui-skeleton { padding: 0; }
 
 html body .gx-topbar .gx-cmd { display: inline-grid; place-items: center; }
@@ -2035,6 +2051,17 @@ html body .rs-chip[data-tone="soon"] { background: var(--warning-bg); border-col
 html body .rs-chip[data-tone="won"] { background: var(--success-bg); border-color: var(--success-border); color: var(--success); }
 html body .record-summary[data-entity="tasks"] .rs-row .button { min-height: 34px; gap: 6px; }
 html body .rs-meta { margin: 0; font-size: var(--fs-sm); color: var(--text-2); }
+/* Ficha · plantillas de seguimiento (super plan H6). */
+html body .rs-templates { border-top: 1px solid var(--border); padding-top: 8px; }
+html body .rs-templates > summary { cursor: pointer; font-size: var(--fs-sm); font-weight: 600; color: var(--text-2); }
+html body .rs-templates[open] > summary { margin-bottom: 8px; }
+html body .rs-templates > * + * { margin-top: 8px; }
+html body .rs-tpl-pick, html body .rs-tpl-edit label { display: grid; gap: 4px; font-size: var(--fs-sm); color: var(--text-2); }
+html body .rs-tpl-edit { display: grid; gap: 8px; }
+html body .rs-tpl-edit textarea { resize: vertical; min-height: 110px; font: inherit; }
+html body .rs-tpl-preview { margin-bottom: 0; padding: 10px 12px; max-height: 220px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: var(--fs-sm); line-height: 1.5; color: var(--text-1); background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--r-md); }
+html body .rs-tpl-hint { margin-bottom: 0; font-size: var(--fs-xs); color: var(--text-3); }
+html body .rs-tpl-error { margin-bottom: 0; font-size: var(--fs-sm); color: var(--danger); }
 html body .record-summary[data-done="true"] { border-color: var(--success-border); }
 html[data-theme="dark"] body .record-summary { background: #182a2e; border-color: #2b4448; }
 html[data-theme="dark"] body .rs-avatar { background: #12343a; color: #6fd6c8; }

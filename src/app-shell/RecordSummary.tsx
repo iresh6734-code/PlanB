@@ -4,6 +4,7 @@ import type { AppState, CrmRecord, EntityName, FieldValue } from '../../shared/m
 import { displayValue } from '../components.js';
 import { madridDay } from '../task-display.js';
 import { dueStatus, initials } from './deal-insights.js';
+import { FollowUpTemplates } from './FollowUpTemplates.js';
 export { taskPreset } from './task-preset.js';
 
 type Spec = NonNullable<AppState['spec']>;
@@ -47,6 +48,12 @@ export function RecordSummary({ entityName, spec, values, set, records, disabled
   const email = text(emailField?.key), phone = text(phoneField?.key), web = text(webField?.key);
   const name = entityName === 'contacts' ? [text(entity.displayField), text('lastname')].filter(Boolean).join(' ') : text(entity.displayField);
   const href = web ? (/^https?:\/\//i.test(web) ? web : 'https://' + web) : '';
+  const companyRef = entityName === 'contacts' ? entity.fields.find(field => field.type === 'reference' && field.referenceEntity === 'companies') : undefined;
+  const companyShown = companyRef ? displayValue(values[companyRef.key] ?? undefined, companyRef, records, spec) : '';
+  const company = entityName === 'companies' ? text(entity.displayField)
+    : companyShown && companyShown !== '—' && companyShown !== 'Relación no disponible' ? companyShown : text(entity.fields.find(field => field.type === 'text' && /company|empresa/i.test(field.key))?.key);
+  const [y, m, d] = madridDay(new Date()).split('-');
+  const templateContext = { nombre: entityName === 'contacts' ? text(entity.displayField) : '', empresa: company, correo: email, telefono: phone, hoy: d + '/' + m + '/' + y };
   const copy = async () => { try { await navigator.clipboard.writeText(email); setCopied(true); setTimeout(() => setCopied(false), 1800); } catch { /* sin portapapeles: no pasa nada */ } };
   return <section className="record-summary" data-entity={entityName} aria-label={entityName === 'contacts' ? 'Resumen del cliente' : 'Resumen de la empresa'}>
     <div className="rs-row">
@@ -66,6 +73,7 @@ export function RecordSummary({ entityName, spec, values, set, records, disabled
       <NewTaskButton onNewTask={onNewTask} blocked={newTaskBlocked} />
       <NewTaskButton onNewTask={onNewDeal} blocked={newDealBlocked} label="Nueva oportunidad" />
     </div> : null}
+    <FollowUpTemplates context={templateContext} />
     <span className="sr-only" role="status">{copied ? 'Dirección copiada' : ''}</span>
   </section>;
 }

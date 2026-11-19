@@ -1,8 +1,12 @@
 ﻿# Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026, 18:30, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 a V7 hechas. Oleada 3: H2, H3, H4, H5 y H6 hechas; H1 aplazada (requiere e2e). Continuidad: C2, C3, C4 y C5 hechas. Negocio: M1 a M6 hechas. Datos: D1, D2 y D3 hechas. Rendimiento: P3 hecha.
+Última revisión: **19/11/2026, 19:00, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 a V7 hechas. Oleada 3: H2, H3, H4, H5 y H6 hechas; H1 aplazada (requiere e2e). Continuidad: C1 a C5 hechas. Negocio: M1 a M6 hechas. Datos: D1, D2 y D3 hechas. Rendimiento: P3 hecha.
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
+
+## Super plan C1 · Asistente de devolución por pasos · 19/11/2026, 19:00, Europe/Madrid
+
+En Cambios, la devolución revisada deja de ser un `<details>` plegado: es una sección fija con cinco pasos (Revisar, Conflictos, Diferencia final, Enviar o hacerlo a mano, Justificante), una barra de avance y una frase de estado. `src/app-shell/return-steps.ts` (`returnSteps`, `returnProgress`) lo deduce del plan guardado; los campos sin decisión se cuentan con la misma regla que bloquea «Aprobar plan revisado». Con la integridad bloqueada, todos los pasos quedan en pausa y no hay botones activos. Al completar, «Descargar justificante» baja el registro de cambios local (`/export/changes`). Decisiones, aprobación y envío no cambian. Pruebas: `tests/return-steps.test.ts` y las de integridad de la devolución siguen en verde. Ver en casa.
 
 ## Super plan M4 · Primer uso en 10 minutos · 19/11/2026, 18:30, Europe/Madrid
 

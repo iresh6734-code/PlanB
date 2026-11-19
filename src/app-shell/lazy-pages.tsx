@@ -46,3 +46,4 @@ export const HomeSeal = quiet(() => import('./ContinuitySeal.js').then(m => m.Ho
 export const MorningBrief = quiet(() => import('./MorningBrief.js').then(m => m.MorningBrief), 'Parte de la mañana');
 export const SequencePicker = quiet(() => import('./SequencePicker.js').then(m => m.SequencePicker), 'Secuencia de seguimiento');
 export const QuickActivity = quiet(() => import('./QuickActivity.js').then(m => m.QuickActivity), 'Registrar actividad');
+export const WhatsNew = quiet(() => import('./WhatsNew.js').then(m => m.WhatsNew), 'Novedades');

@@ -1,5 +1,6 @@
 import { useId, useState } from 'react';
 import { BASIS_LABEL, CURRENCY_LABEL, SOURCE_LABEL, contextLabel, passportFingerprint, passportToHtml, passportToJson, when, type Claim, type Passport, type PassportAction, type Section } from '../shared/continuity-passport.js';
+import { readBrand } from './app-shell/brand-store.js';
 import './continuity-passport.css';
 
 // Pasaporte de continuidad (unidad 214): presentación de un `Passport` ya construido. No llama a la red, no captura, no envía ni exporta por sí solo:
@@ -37,7 +38,7 @@ export function ContinuityPassport({ passport, onAction, onDownload = saveFile }
   const titleId = useId(), [notice, setNotice] = useState('');
   const download = (kind: 'html' | 'json' | 'both') => {
     const day = passport.generatedAt.slice(0, 10) || 'sin-fecha';
-    if (kind !== 'json') onDownload({ name: 'pasaporte-continuidad-' + day + '.html', type: 'text/html', text: passportToHtml(passport) });
+    if (kind !== 'json') onDownload({ name: 'pasaporte-continuidad-' + day + '.html', type: 'text/html', text: passportToHtml(passport, readBrand()) });
     if (kind !== 'html') onDownload({ name: 'pasaporte-continuidad-' + day + '.json', type: 'application/json', text: passportToJson(passport) });
     setNotice(kind === 'both' ? 'Se prepararon el HTML y el JSON en tu equipo. No se envió nada a ningún sitio.' : 'Se preparó el fichero ' + kind.toUpperCase() + ' en tu equipo. No se envió a ningún sitio.');
   };

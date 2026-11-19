@@ -1,0 +1,17 @@
+/* N5 · Novedades: botón de la barra con punto de aviso y una lista breve debajo. Solo tokens del tema. */
+html body .gx-topbar .gx-news { position: relative; display: inline-flex; }
+html body .gx-topbar .gx-news-button { position: relative; }
+html body .gx-topbar .gx-news-button[aria-expanded="true"] { background: var(--bg-hover); color: var(--text-1); }
+.gx-news-dot { position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 0 2px var(--bg-surface); }
+.gx-news-pop { position: absolute; top: calc(100% + 8px); right: -4px; z-index: 60; width: min(360px, calc(100vw - 24px)); max-height: min(70vh, 520px); overflow: auto; padding: 4px 0; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--bg-surface); box-shadow: var(--shadow-pop); color: var(--text-1); text-align: left; white-space: normal; }
+.gx-news-pop header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 10px 14px 8px; border-bottom: 1px solid var(--rule); }
+.gx-news-pop h2 { margin: 0; font-size: var(--fs-md); font-weight: 700; }
+.gx-news-pop header span { color: var(--text-3); font-size: var(--fs-xs); white-space: nowrap; }
+.gx-news-pop ul { margin: 0; padding: 4px; list-style: none; }
+.gx-news-pop li > button, .gx-news-pop li > div { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; width: 100%; padding: 8px 10px; border: 0; border-radius: var(--r-md); background: transparent; color: inherit; font: inherit; text-align: left; }
+.gx-news-pop li > button { cursor: pointer; }
+.gx-news-pop li > button:hover, .gx-news-pop li > button:focus-visible { background: var(--bg-subtle); }
+.gx-news-pop strong { grid-column: 1; font-size: var(--fs-sm); font-weight: 650; }
+.gx-news-pop li span { grid-column: 1; color: var(--text-2); font-size: var(--fs-xs); line-height: var(--lh-body); }
+.gx-news-pop li svg { grid-column: 2; grid-row: 1 / span 2; align-self: center; color: var(--text-3); }
+.gx-news-pop li > button:hover svg { color: var(--primary); }

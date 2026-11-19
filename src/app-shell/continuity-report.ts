@@ -1,4 +1,5 @@
 import type { ContinuityStatus } from '../../shared/operations.js';
+import { BRAND_CSS, brandHtml, type ReportBrand } from '../../shared/report-brand.js';
 import { captureAutomation, buildCopyTimeline } from './copy-timeline.js';
 import { continuityAlerts } from './continuity-alerts.js';
 
@@ -61,8 +62,8 @@ export function buildContinuityReport(status: Source, now: Date, version: string
 const escape = (value: string) => value.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]!);
 const VERDICT: Record<Verdict, [string, string]> = { ok: ['✓', 'Demostrado'], warn: ['!', 'Con reservas'], missing: ['—', 'Pendiente'] };
 
-/** HTML autónomo: estilos en línea, sin scripts ni recursos externos; se imprime bien en A4. */
-export function reportHtml(report: ContinuityReport): string {
+/** HTML autónomo: estilos en línea, sin scripts ni recursos externos; se imprime bien en A4. `brand` (N2) añade el logotipo y el nombre de la empresa arriba. */
+export function reportHtml(report: ContinuityReport, brand: ReportBrand | null = null): string {
   const row = (item: ReportItem) => '<tr class="' + item.verdict + '"><th scope="row">' + escape(item.label) + '</th><td><span class="mark" aria-hidden="true">' + VERDICT[item.verdict][0] + '</span><strong>' + VERDICT[item.verdict][1] + '</strong></td><td>' + escape(item.text) + '</td></tr>';
   const win = report.window;
   return '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Plan B · Parte de continuidad</title><style>'
@@ -71,7 +72,7 @@ export function reportHtml(report: ContinuityReport): string {
     + '.meta{color:#4b5d60;font-size:13px;margin:0 0 20px}table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;vertical-align:top;padding:10px 8px;border-top:1px solid #dfe5e3}'
     + 'th{width:32%;font-weight:600}td:nth-child(2){width:18%;white-space:nowrap}.mark{display:inline-block;width:18px;font-weight:700}.ok .mark,.ok strong{color:#0d6b63}.warn .mark,.warn strong{color:#8a5300}.missing .mark,.missing strong{color:#5b6669}'
     + 'ul{margin:0;padding-left:20px;font-size:14px;line-height:1.6}.figures{display:flex;gap:28px;flex-wrap:wrap;font-size:14px}.figures b{display:block;font-size:22px}footer{margin-top:32px;font-size:12px;color:#5b6669}'
-    + '@media print{body{background:#fff}main{padding:0}}</style></head><body><main>'
+    + '@media print{body{background:#fff}main{padding:0}}' + BRAND_CSS + '</style></head><body><main>' + brandHtml(brand)
     + '<h1>Parte de continuidad</h1><p class="meta">Plan B v' + escape(report.version) + ' · generado el ' + escape(madrid.format(new Date(report.generatedAt))) + ' (hora de Madrid)' + (report.source ? ' · origen: ' + escape(report.source) : '') + '</p>'
     + '<h2>Qué está demostrado</h2><table><tbody>' + report.items.map(row).join('') + '</tbody></table>'
     + (report.counts ? '<h2>Contenido de la copia</h2><div class="figures">' + report.counts.map(item => '<span><b>' + item.value + '</b>' + escape(item.label) + '</span>').join('') + '</div>' : '')

@@ -32,6 +32,10 @@ import { useContingency, useLastIncident } from './app-shell/useContingency.js';
 import { downloadIncident } from './app-shell/incident-download.js';
 import { captureLedger, continuityReadiness, copyVitals, drillCalendar, DRILL_EVERY_DAYS, DRILL_SOON_DAYS, formatBytes, hourlyCaptures, jobStats, outageForecast, type LedgerFilter, type NextActionId, type StepId } from './app-shell/continuity-insights.js';
 import './continuity-home-hub.css';
+import { DowntimeCard } from './app-shell/DowntimeCard.js';
+import { BrandPicker } from './app-shell/BrandPicker.js';
+import { readBrand } from './app-shell/brand-store.js';
+import { coveredHours, formatHours } from '../shared/downtime-cost.js';
 import './continuity-insights.css';
 import './continuity-evidence.css';
 const LEDGER_FILTERS:readonly {id:LedgerFilter;label:string}[]=[{id:'all',label:'Todas'},{id:'today',label:'Hoy'},{id:'week',label:'7 días'},{id:'shrink',label:'Más pequeñas'}];
@@ -73,8 +77,8 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
   useEffect(()=>{if(connectRequest)void api<{configured:boolean}>('/v2/auth/status').then(g=>g.configured?setConnection(true):protect()).catch(f=>setError(f.message));},[connectRequest]);
   // Parte de continuidad: se genera en el navegador con el estado ya leído y se descarga; no envía nada a ningún sitio.
   const saveHtml=(html:string,name:string)=>{const url=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));const anchor=document.createElement('a');anchor.href=url;anchor.download=name;anchor.click();setTimeout(()=>URL.revokeObjectURL(url),10_000);};
-  const shareReport=()=>{if(!status)return;saveHtml(reportHtml(buildContinuityReport(status,new Date(),APP_VERSION)),'plan-b-parte-continuidad-'+new Date().toISOString().slice(0,10)+'.html');};
-  const shareMonthly=()=>{if(!status)return;const report=monthlyReport(status,new Date());saveHtml(monthlyReportHtml(report,APP_VERSION,seal?sealHtml(seal):''),'plan-b-informe-'+report.current.month+'.html');};
+  const shareReport=()=>{if(!status)return;saveHtml(reportHtml(buildContinuityReport(status,new Date(),APP_VERSION),readBrand()),'plan-b-parte-continuidad-'+new Date().toISOString().slice(0,10)+'.html');};
+  const shareMonthly=()=>{if(!status)return;const report=monthlyReport(status,new Date());saveHtml(monthlyReportHtml(report,APP_VERSION,seal?sealHtml(seal):'',readBrand()),'plan-b-informe-'+report.current.month+'.html');};
   const run=async(fn:()=>Promise<unknown>)=>{setBusy(true);setError('');try{await fn();await load();await refresh();}catch(f){setError((f as Error).message);}finally{setBusy(false);}};
   const active=status?.jobs.find(j=>['queued','running'].includes(j.status));
   const latest=status?.captures[0],summary=status?.latestCapture;
@@ -103,6 +107,7 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
   const vitals=status?copyVitals(status,insightContext,now):null;
   const outage=status?outageForecast(status,insightContext,now):null;
   const hours=status?.captures.length?hourlyCaptures(status.captures,now):null;
+  const fresh=status?.captures.length?coveredHours(status.captures,new Date(now.getTime()-86_400_000),now):null;
   const ledger=status?captureLedger(status.captures,now,ledgerFilter):null;
   const stats=status?jobStats(status.jobs):null;
   const calendar=status&&!state.runtime?drillCalendar(status,now):null;
@@ -122,7 +127,7 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
   let ledgerBudget=ledgerAll?Infinity:LEDGER_PAGE;
   const ledgerDays=(ledger?.days??[]).map(day=>{const entries=day.entries.slice(0,Math.max(0,ledgerBudget));ledgerBudget-=entries.length;return {...day,entries};}).filter(day=>day.entries.length);
   const ledgerHidden=(ledger?.shown??0)-ledgerDays.reduce((sum,day)=>sum+day.entries.length,0);
-  return <section className="continuity-home"><header className="page-header"><div><h1>Continuidad</h1><p className="page-subtitle">Una copia utilizable y la prueba que lo demuestra.</p></div><div className="ct-head-side"><div className="ct-head-actions"><button type="button" className="button secondary" disabled={!status} aria-describedby="ct-share-help" onClick={shareReport}><Download size={15}/>Parte para compartir</button><button type="button" className="button secondary" disabled={!status} aria-describedby="ct-share-help" onClick={shareMonthly}><CalendarRange size={15}/>Informe del mes</button></div><p id="ct-share-help" className="ct-share-help">Para enviar o imprimir, sin nombres de clientes ni identificadores.</p></div></header>
+  return <section className="continuity-home"><header className="page-header"><div><h1>Continuidad</h1><p className="page-subtitle">Una copia utilizable y la prueba que lo demuestra.</p></div><div className="ct-head-side"><div className="ct-head-actions"><button type="button" className="button secondary" disabled={!status} aria-describedby="ct-share-help" onClick={shareReport}><Download size={15}/>Parte para compartir</button><button type="button" className="button secondary" disabled={!status} aria-describedby="ct-share-help" onClick={shareMonthly}><CalendarRange size={15}/>Informe del mes</button><BrandPicker/></div><p id="ct-share-help" className="ct-share-help">Para enviar o imprimir, sin nombres de clientes ni identificadores.</p></div></header>
     {error?<p className="error-box" role="alert">{error}</p>:null}
     {readHealth.note&&!error?<p className="helper read-stale" role="status">{readHealth.note}</p>:null}
     {status?.recoveryIntegrity?.state==='invalid'?<p className="error-box" role="alert">{INVALID_RECOVERY_MESSAGE}</p>:null}
@@ -158,6 +163,7 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
     {outage?<article className="ct-outage" data-tone={outage.tone} aria-labelledby="ct-outage-title"><div className="section-heading"><h2 id="ct-outage-title">Si HubSpot cae ahora</h2><Unplug size={19}/></div>
       <p className="ct-outage-verdict">{outage.headline}</p>
       <ul>{outage.lines.map(line=><li key={line.id} data-tone={line.tone}>{line.text}</li>)}</ul>
+      <DowntimeCard spec={state.ready?state.spec:null} revision={(state.snapshot?.capturedAt??'')+':'+(state.changes??0)}/>
     </article>:null}
     {summary?<details className="capture-details ct-content"><summary>Ver contenido de esta copia</summary><div className="capture-details-body">
       <p><strong>{summary.name}</strong><span>{summary.source==='hubspot'?'HubSpot · Portal '+summary.accountId:'Conjunto de ensayo local'}</span></p>
@@ -216,7 +222,7 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
       {status?<CopyTimeline status={status} onOpenStatus={()=>{setTab('estado');requestAnimationFrame(()=>document.getElementById('ct-tab-estado')?.focus());}}/>:null}
       {hours?<section className="ct-hours" aria-labelledby="ct-hours-title"><div className="section-heading"><h2 id="ct-hours-title">Últimas 24 horas</h2><span className="ct-hours-count"><span className="ct-ready-count">{hours.covered} de 24</span> horas con captura</span></div>
         <ol className="ct-hours-ruler" aria-hidden="true">{hours.slots.map(slot=><li key={slot.at.getTime()} data-count={Math.min(slot.count,3)} data-current={slot.current?'true':undefined} title={hourLabel.format(slot.at)+' · '+(slot.count?slot.count+(slot.count===1?' captura':' capturas'):'sin captura')}><span>{slot.at.getHours()%6===0?String(slot.at.getHours()).padStart(2,'0')+' h':''}</span></li>)}</ol>
-        <p className="helper">{automation?.active?'Con las capturas automáticas activas, cada hora con el PC encendido debería tener su marca.':'Las capturas automáticas no están activas: los huecos son esperables.'}</p>
+        <p className="helper">{fresh?'La copia estuvo al día '+formatHours(fresh.hours)+' de las últimas 24 ('+Math.round(fresh.ratio*100)+' %). ':''}{automation?.active?'Con las capturas automáticas activas, cada hora con el PC encendido debería tener su marca.':'Las capturas automáticas no están activas: los huecos son esperables.'}</p>
       </section>:null}
       <section className="history-section"><div className="section-heading"><h2>Historial de capturas</h2><div className="button-row"><button className="text-button" onClick={()=>setRestore(true)}>Restaurar archivo</button><button className="text-button" onClick={protect}><LockKeyhole size={15}/>{status?.protected?'Protección configurada':'Proteger acceso local'}</button></div></div>
       {status?.captures.length&&ledger?<>

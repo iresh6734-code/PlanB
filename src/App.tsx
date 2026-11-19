@@ -42,7 +42,7 @@ import { readinessFor } from './app-shell/continuity-insights.js';
 import type { ContinuityTab } from './ContinuityHome.js';
 import type { ContinuityStatus } from '../shared/operations.js';
 // Apartados que se descargan al visitarlos por primera vez (misma interfaz de uso que los originales).
-import { Agenda, ChangesView, ContingencyBand, ContinuityHome, CsvImport, DateCheck, DecisionReview, FocusRun, GuidedDrill, LicensePanel, LocalIntegrations, OperationalRehearsal, OutageLab, PortableExport, Preparation, QuickActivity, RadarHost, RecordTimeline, SequencePicker, Settings, ShortcutsHelp, TeamSync, WeeklyReview } from './app-shell/lazy-pages.js';
+import { Agenda, ChangesView, ContingencyBand, ContinuityHome, CsvImport, DateCheck, DecisionReview, FocusRun, GuidedDrill, LicensePanel, LocalIntegrations, OperationalRehearsal, OutageLab, PortableExport, Preparation, QuickActivity, RadarHost, RecordTimeline, SequencePicker, Settings, ShortcutsHelp, TeamSync, WeeklyReview, WhatsNew } from './app-shell/lazy-pages.js';
 import type { WorkspaceSearchContext } from '../shared/workspace-search.js';
 
 type LocalAppState = AppState & { workspaceSearchContext?: WorkspaceSearchContext | null };
@@ -344,6 +344,7 @@ export default function App() {
       openEntity={openEntity} openPreparation={openPreparation} />
     <div className="mobile-brand"><Brand /><span className="badge">{state.snapshot?.source.isTestData===false?'Producción · lectura':'Datos de prueba'}</span></div>
     <main id="main-content" className="main-content" tabIndex={-1}><TopBar state={state} pageLabel={pageLabel} teamOrigin={teamOrigin} openContinuity={() => { setPage('continuity'); setSelected(null); }} openChanges={state.ready ? () => { setPage('changes'); setSelected(null); } : undefined} openHelp={() => setHelp(true)}     openCommands={() => setCommandsOpen(true)} onProtect={() => void protect()} onContingency={canContingency && !contingency ? beginContingency : undefined}
+      news={<WhatsNew onOpen={next => { setPage(next); setSelected(null); }} />}
       reminder={<DueReminder active={auth === 'open' && !!state.ready} spec={state.spec} revision={dataRevision + ':' + (state.changes ?? 0)} onOpen={record => { openEntity('tasks'); setRecords([record]); setSelected(record); }} />} />
           {canContingency && (contingency || closedIncident) ? <ContingencyBand active={contingency} closed={closedIncident} copyAt={state.snapshot?.capturedAt} onOpenContinuity={() => { setPage('continuity'); setSelected(null); }} onOpenToday={() => { setPage('today'); setSelected(null); }} onEnd={finishContingency} onDismiss={() => setClosedIncident(null)} onDownload={(window, format) => import('./app-shell/incident-download.js').then(module => module.downloadIncident(window, format, entityLabels))} /> : null}
       {error ? <div role="alert" className="global-error"><span>{error}</span><button className="icon-button" aria-label="Cerrar aviso" onClick={() => setError('')}><X size={18} /></button></div> : null}

@@ -49,6 +49,41 @@ html body .ct-outage li::before { content: ""; position: absolute; left: 2px; to
 html body .ct-outage li[data-tone="warn"]::before { background: var(--seal-warn); }
 html body .ct-outage li[data-tone="danger"]::before { background: var(--seal); }
 
+/* N3 · «¿Cuánto costaría parar?»: tres cifras propias y el resultado en una fila de cifras tabulares. */
+html body .ct-cost { margin-top: 8px; border-top: 1px solid var(--rule); }
+html body .ct-cost > summary { display: flex; align-items: center; gap: 6px; padding: 8px 0 2px; font-size: var(--fs-sm); font-weight: 600; color: var(--text-1); cursor: pointer; }
+html body .ct-cost > summary svg { flex: none; color: var(--text-3); }
+html body .ct-cost-body { display: grid; gap: 8px; padding-top: 6px; }
+html body .ct-cost-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+html body .ct-cost-fields label { display: grid; gap: 3px; min-width: 0; font-size: var(--fs-xs); color: var(--text-3); }
+html body .ct-cost-fields input { width: 100%; min-width: 0; padding: 5px 8px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--bg-surface); font: inherit; font-size: var(--fs-sm); color: var(--text-1); font-variant-numeric: tabular-nums; }
+html body .ct-cost-fields input:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+html body .ct-cost-result { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 1px; margin: 0; border: 1px solid var(--rule); border-radius: var(--r-md); background: var(--rule); overflow: hidden; }
+html body .ct-cost-result > div { display: grid; gap: 2px; padding: 7px 10px; background: var(--bg-subtle); }
+html body .ct-cost-result dt { font-size: var(--fs-xs); color: var(--text-3); }
+html body .ct-cost-result dd { display: flex; align-items: baseline; gap: 6px; margin: 0; font-size: var(--fs-md); font-weight: 650; color: var(--text-1); font-variant-numeric: tabular-nums; }
+html body .ct-cost-result dd small { font-size: var(--fs-xs); font-weight: 500; color: var(--text-2); }
+html body .ct-cost .helper { margin: 0; }
+
+/* N2 · «Tu marca»: un botón más de la cabecera que abre una ficha pequeña bajo él. */
+html body .ct-brand { position: relative; }
+html body .ct-brand > summary { list-style: none; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+html body .ct-brand > summary::-webkit-details-marker { display: none; }
+html body .ct-brand[open] > summary { background: var(--bg-hover); }
+html body .ct-brand-thumb { display: block; width: auto; max-width: 40px; height: 16px; object-fit: contain; }
+html body .ct-brand-pop { position: absolute; top: calc(100% + 6px); right: 0; z-index: 30; display: grid; gap: 8px; width: min(320px, calc(100vw - 32px)); padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--bg-surface); box-shadow: var(--shadow-pop); text-align: left; white-space: normal; }
+html body .ct-brand-lede { margin: 0; font-size: var(--fs-xs); line-height: var(--lh-body); color: var(--text-2); }
+html body .ct-brand-name { display: grid; gap: 3px; font-size: var(--fs-xs); color: var(--text-3); }
+html body .ct-brand-name input { width: 100%; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--bg-surface); font: inherit; font-size: var(--fs-sm); color: var(--text-1); }
+html body .ct-brand-name input:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+html body .ct-brand-logo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-height: 48px; padding: 6px 8px; border: 1px dashed var(--border); border-radius: var(--r-md); background: var(--bg-subtle); }
+html body .ct-brand-logo img { display: block; max-width: 120px; max-height: 36px; object-fit: contain; }
+html body .ct-brand-logo > span { font-size: var(--fs-xs); color: var(--text-3); }
+html body .ct-brand-pop > small { font-size: var(--fs-xs); color: var(--text-3); }
+html body .ct-brand-problem { margin: 0; font-size: var(--fs-xs); color: var(--danger); }
+html body .ct-brand-clear { justify-self: start; }
+@media (max-width: 600px) { html body .ct-brand-pop { right: auto; left: 0; } }
+
 /* Calendario de simulacros (C5): treinta días como una regla; la muesca marca la última semana. */
 html body .ct-verify .ct-cal { display: grid; gap: 4px; margin: 10px 0 12px; padding: 10px 12px; border: 1px solid var(--rule); border-radius: var(--r-md); background: var(--bg-subtle); }
 html body .ct-verify .ct-cal p { margin: 0; }

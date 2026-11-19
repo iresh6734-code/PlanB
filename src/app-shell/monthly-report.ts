@@ -1,4 +1,5 @@
 import type { ContinuityStatus } from '../../shared/operations.js';
+import { BRAND_CSS, brandHtml, type ReportBrand } from '../../shared/report-brand.js';
 
 /** Informe mensual de continuidad (super plan M3): el mes en curso frente al anterior, calculado en local con lo que
  *  `/v2/continuity` conserva. Solo cifras y fechas: ni clientes, ni identificadores de captura o de cuenta. */
@@ -73,8 +74,8 @@ const escape = (value: string) => value.replace(/[&<>"']/g, character => ({ '&':
 const gapText = (stats: MonthStats) => stats.longestGapHours === null ? '—' : formatHours(stats.longestGapHours) + (stats.longestGap ? ' (desde el ' + stamp.format(new Date(stats.longestGap.from)) + (stats.longestGap.to ? '' : ', sigue abierto') + ')' : '');
 
 /** Página autónoma (sin scripts ni recursos externos), lista para imprimir o guardar en PDF. `seal` es el bloque HTML del
- *  sello de continuidad (R5), ya escapado por `sealHtml`; sin él el informe sale como antes. */
-export function monthlyReportHtml(report: MonthlyReport, version: string, seal = ''): string {
+ *  sello de continuidad (R5), ya escapado por `sealHtml`; sin él el informe sale como antes. `brand` (N2) añade la marca arriba. */
+export function monthlyReportHtml(report: MonthlyReport, version: string, seal = '', brand: ReportBrand | null = null): string {
   const { current: a, previous: b } = report;
   const rows: [string, string, string][] = [
     ['Días con copia', a.daysCovered + ' de ' + a.daysInScope, b.daysCovered + ' de ' + b.daysInScope],
@@ -92,7 +93,7 @@ export function monthlyReportHtml(report: MonthlyReport, version: string, seal =
     + 'ul{margin:0;padding-left:20px;font-size:14px;line-height:1.6}footer{margin-top:30px;font-size:12px;color:#5b5447}'
     + '.seal{display:flex;gap:18px;align-items:flex-start;margin:18px 0 6px;padding:14px 16px;border:1px solid #e3dccb;border-radius:6px}.seal-badge{flex:none}.seal-head{margin:0 0 6px;font-size:15px}'
     + '.seal-list{list-style:none;padding:0;font-size:13px;line-height:1.7}.seal-list .unmet{color:#5b5447}.seal-list span{color:#5b5447}.seal-months,.seal-note{margin:6px 0 0;font-size:12px;color:#5b5447}'
-    + '@media print{body{background:#fff}main{padding:0}.seal{break-inside:avoid}}</style></head><body><main>'
+    + '@media print{body{background:#fff}main{padding:0}.seal{break-inside:avoid}}' + BRAND_CSS + '</style></head><body><main>' + brandHtml(brand)
     + '<h1>Informe de continuidad · ' + escape(a.label) + '</h1><p class="meta">Plan B v' + escape(version) + ' · generado el ' + escape(stamp.format(new Date(report.generatedAt))) + ' (hora de Madrid)</p>'
     + '<p class="lede ' + report.verdict + '">' + escape(report.headline) + '</p>' + seal
     + '<h2>Este mes frente al anterior</h2><table><thead><tr><th scope="col">Indicador</th><th scope="col">' + escape(a.label) + (a.partial ? ' (en curso)' : '') + '</th><th scope="col">' + escape(b.label) + '</th></tr></thead><tbody>'

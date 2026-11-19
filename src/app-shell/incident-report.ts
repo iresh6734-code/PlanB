@@ -1,6 +1,7 @@
 import type { Change } from '../../shared/model.js';
 import { changedFields } from '../../shared/change-history.js';
 import { sha256Hex } from '../../shared/sha256.js';
+import { BRAND_CSS, brandHtml, type ReportBrand } from '../../shared/report-brand.js';
 import type { IncidentWindow } from './contingency.js';
 import { clockTime, durationText } from './contingency-text.js';
 
@@ -96,8 +97,8 @@ const escape = (value: string) => value.replace(/[&<>"']/g, character => ({ '&':
 const when = (value: string) => stamp.format(new Date(value));
 const RETURN_TEXT: Record<ReturnState, string> = { none: 'Sin cambios que devolver', pending: 'Pendiente de devolver', partial: 'Devolución a medias', returned: 'Todo marcado como devuelto' };
 
-/** Página autónoma (sin scripts ni recursos externos), lista para imprimir o guardar en PDF. */
-export function incidentReportHtml(report: IncidentReport, digest: string): string {
+/** Página autónoma (sin scripts ni recursos externos), lista para imprimir o guardar en PDF. `brand` (N2) añade la marca arriba. */
+export function incidentReportHtml(report: IncidentReport, digest: string, brand: ReportBrand | null = null): string {
   const peak = Math.max(1, ...report.hours.map(hour => hour.created + hour.updated));
   const metric = (label: string, value: string) => '<div class="m"><span>' + escape(label) + '</span><strong>' + escape(value) + '</strong></div>';
   const timeline = report.hours.map(hour => {
@@ -113,7 +114,7 @@ export function incidentReportHtml(report: IncidentReport, digest: string): stri
     + '.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}.m{border:1px solid #e3dccb;border-radius:10px;padding:10px 12px}.m span{display:block;font-size:12px;color:#5b5447}.m strong{font-size:20px;font-variant-numeric:tabular-nums}'
     + 'table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}th,td{text-align:left;padding:7px 8px;border-top:1px solid #e3dccb;vertical-align:top}thead th{font-size:12px;color:#5b5447;text-transform:uppercase;letter-spacing:.04em}'
     + '.bar{width:55%}.bar i{display:block;height:10px;min-width:2px;border-radius:5px;background:#9b2c1f}.f{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:#5b5447}'
-    + 'ul{margin:0;padding-left:20px;font-size:14px;line-height:1.6}code{font-family:ui-monospace,Consolas,monospace;font-size:12px;word-break:break-all}footer{margin-top:30px;font-size:12px;color:#5b5447}@media print{body{background:#fff}main{padding:0}}</style></head><body><main>'
+    + 'ul{margin:0;padding-left:20px;font-size:14px;line-height:1.6}code{font-family:ui-monospace,Consolas,monospace;font-size:12px;word-break:break-all}footer{margin-top:30px;font-size:12px;color:#5b5447}@media print{body{background:#fff}main{padding:0}}' + BRAND_CSS + '</style></head><body><main>' + brandHtml(brand)
     + '<p class="seal">Expediente de incidente</p><h1>HubSpot sin respuesta · ' + escape(when(report.startedAt)) + '</h1>'
     + '<p class="meta">De ' + escape(clockTime(report.startedAt)) + ' a ' + escape(clockTime(report.endedAt)) + ' (hora de Madrid) · Plan B v' + escape(report.version) + ' · generado el ' + escape(when(report.generatedAt)) + '</p>'
     + '<p class="lede">' + escape(incidentHeadline(report)) + '</p>'
@@ -127,7 +128,7 @@ export function incidentReportHtml(report: IncidentReport, digest: string): stri
 }
 
 /** Ambos ficheros del expediente, con la misma huella en los dos. */
-export function incidentFiles(report: IncidentReport): { html: string; json: string; digest: string } {
+export function incidentFiles(report: IncidentReport, brand: ReportBrand | null = null): { html: string; json: string; digest: string } {
   const digest = sha256Hex(JSON.stringify(report));
-  return { html: incidentReportHtml(report, digest), json: incidentReportJson(report), digest };
+  return { html: incidentReportHtml(report, digest, brand), json: incidentReportJson(report), digest };
 }

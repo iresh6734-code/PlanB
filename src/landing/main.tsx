@@ -2,6 +2,7 @@ import { StrictMode, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ArrowDown, ArrowRight, ArrowUpRight, Check, Database, FlaskConical, Unplug } from 'lucide-react';
 import { PLAN_OFFERS, planHighlights } from '../../shared/plans.js';
+import { downtimeCost, formatEuros, formatHours } from '../../shared/downtime-cost.js';
 import './story.css';
 
 const phases = ['online', 'cut', 'local'] as const;
@@ -367,6 +368,109 @@ function Pricing() {
   );
 }
 
+const costSliders = [
+  { id: 'sellers', label: 'Personas que venden', min: 1, max: 50, step: 1, show: (value: number) => String(value) },
+  { id: 'hours', label: 'Horas sin CRM', min: 1, max: 24, step: 1, show: (value: number) => value + ' h' },
+  { id: 'hourlyCost', label: 'Coste de una hora de trabajo', min: 10, max: 150, step: 5, show: formatEuros },
+  { id: 'deals', label: 'Cierres previstos esas horas', min: 0, max: 20, step: 1, show: (value: number) => String(value) },
+  { id: 'dealAmount', label: 'Importe medio de un cierre', min: 0, max: 50000, step: 500, show: formatEuros },
+] as const;
+type CostKey = typeof costSliders[number]['id'];
+
+const outageSteps = [
+  ['09:12', 'HubSpot no responde.', 'Las fichas, las oportunidades y las tareas del día dejan de abrirse.'],
+  ['09:13', 'Abres tu copia.', 'La última captura está en este ordenador: clientes, empresas, oportunidades y tareas.'],
+  ['09:15', 'El equipo sigue.', 'Se llama, se avanza una etapa, se completa una tarea. Cada cambio queda para revisarlo al volver.'],
+] as const;
+
+/** K9 · Cuánto cuesta una mañana sin CRM: la cuenta se hace aquí mismo, con las cifras del visitante, y no sale de la página. */
+function OutageCost() {
+  const [values, setValues] = useState<Record<CostKey, number>>({ sellers: 5, hours: 4, hourlyCost: 35, deals: 2, dealAmount: 3000 });
+  const cost = downtimeCost(values);
+  return (
+    <section className="outage-cost" id="apagon" aria-labelledby="outage-title" tabIndex={-1}>
+      <div className="wrap section-inner">
+        <div className="pricing-intro cost-intro">
+          <p className="panel-kicker">Cuenta rápida</p>
+          <h2 id="outage-title">Una mañana sin CRM <em>también cuesta.</em></h2>
+          <p className="pricing-promise">Pon tus cifras. La cuenta se hace en esta página: no se guarda ni se envía a ningún sitio.</p>
+        </div>
+        <div className="cost-sheet">
+          <div className="cost-inputs">
+            {costSliders.map(slider => (
+              <label className="cost-slider" key={slider.id}>
+                <span className="cost-slider-head"><span>{slider.label}</span><output>{slider.show(values[slider.id])}</output></span>
+                <input type="range" min={slider.min} max={slider.max} step={slider.step} value={values[slider.id]} onChange={event => { const value = Number(event.currentTarget.value); setValues(current => ({ ...current, [slider.id]: value })); }} />
+              </label>
+            ))}
+          </div>
+          <div className="cost-result" aria-live="polite">
+            <p className="cost-label">Trabajo parado</p>
+            <p className="cost-figure"><strong>{formatEuros(cost.teamCost)}</strong><small>{formatHours(cost.teamHours)} de equipo sin su cartera</small></p>
+            <p className="cost-label">En juego esas horas</p>
+            <p className="cost-figure cost-stake"><strong>{formatEuros(cost.atStake)}</strong><small>{cost.deals === 1 ? '1 cierre' : cost.deals + ' cierres'} sin poder abrir la ficha</small></p>
+            <p className="cost-note">Orientativo. Con Plan B, ese tiempo se trabaja sobre la copia local.</p>
+          </div>
+        </div>
+        <ol className="outage-strip" aria-label="Así es una caída con Plan B (ejemplo)">
+          {outageSteps.map(([time, title, text]) => <li key={time}><time>{time}</time><strong>{title}</strong><span>{text}</span></li>)}
+        </ol>
+      </div>
+    </section>
+  );
+}
+
+const questions = [
+  ['¿Dónde se guardan mis datos?', 'En tu ordenador, cifrados. Plan B no tiene un servidor al que se envíen las fichas de tus clientes.'],
+  ['¿Cada cuánto se actualiza la copia?', 'Con las capturas programadas, una vez por hora mientras el ordenador está encendido y conectado. Si la copia pasa de 75 minutos, Plan B lo avisa.'],
+  ['¿Cómo sé que la copia sirve de verdad?', '«Probar mi Plan B» abre esa copia en un entorno aislado y comprueba que se puede buscar, editar, completar una tarea y reiniciar. La prueba acredita esa copia concreta, no las siguientes.'],
+  ['¿Qué pasa cuando HubSpot vuelve?', 'Revisas cambio a cambio qué devolver. Si la conexión es de solo lectura, Plan B prepara una lista imprimible para aplicarlos a mano y después lo comprueba.'],
+  ['¿Plan B envía correos o hace llamadas?', 'No. Abre tu programa de correo o el teléfono, y las plantillas se copian para que las pegues tú.'],
+  ['¿Y si no renuevo la licencia?', 'La licencia se comprueba sin conexión y tiene 14 días de margen. Sin ella, Plan B sigue funcionando en Personal: nunca se bloquean tus datos.'],
+] as const;
+
+function Questions() {
+  return (
+    <section className="faq" id="preguntas" aria-labelledby="faq-title" tabIndex={-1}>
+      <div className="wrap section-inner faq-layout">
+        <div className="faq-intro">
+          <p className="panel-kicker">Preguntas</p>
+          <h2 id="faq-title">Lo que se pregunta <em>antes.</em></h2>
+        </div>
+        <div className="coverage-list faq-list">
+          {questions.map(([question, answer]) => (
+            <details name="faq" key={question}>
+              <summary><span><strong>{question}</strong></span><span className="disclosure-mark" aria-hidden="true" /></summary>
+              <p>{answer}</p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+const privacyItems = [
+  ['Las fichas de tus clientes', 'Se quedan cifradas en este ordenador. No se envían a ningún servidor de Plan B.'],
+  ['Tus correos y llamadas', 'Plan B no envía nada: abre tu correo o el teléfono, y las plantillas se copian.'],
+  ['Lo que compartes', 'El parte, el informe y el pasaporte no llevan nombres de clientes ni identificadores.'],
+  ['Tu licencia', 'Se comprueba sin conexión. Sin ella, Plan B sigue en Personal y tus datos nunca se bloquean.'],
+] as const;
+
+function Privacy() {
+  return (
+    <section className="privacy" id="privacidad" aria-labelledby="privacy-title" tabIndex={-1}>
+      <div className="wrap section-inner">
+        <p className="panel-kicker">Privacidad</p>
+        <h2 id="privacy-title">Lo que nunca sale <em>de tu ordenador.</em></h2>
+        <ul className="privacy-list">
+          {privacyItems.map(([title, text], index) => <li key={title}><span className="privacy-index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span><strong>{title}</strong><p>{text}</p></li>)}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
 function Recovery({ changes }: { changes: Change[] }) {
   return (
     <div className="return-scene">
@@ -414,7 +518,7 @@ function ContinuityStory() {
 
     const header = document.querySelector<HTMLElement>('.site-header');
     const firstPanel = document.getElementById('simulador');
-    const lastPanel = document.getElementById('precios') ?? document.getElementById('alcance');
+    const lastPanel = document.getElementById('preguntas') ?? document.getElementById('precios') ?? document.getElementById('alcance');
     if (!header || !firstPanel || !lastPanel) return;
     let frame = 0;
     const updateTone = () => {
@@ -440,7 +544,7 @@ function ContinuityStory() {
     setChanges((current) => current.includes(change) ? current.filter((item) => item !== change) : [...current, change]);
   }
 
-  return <><Simulation changes={changes} onChange={toggleChange} /><Coverage /><Pricing /><Recovery changes={changes} /></>;
+  return <><Simulation changes={changes} onChange={toggleChange} /><Coverage /><OutageCost /><Pricing /><Questions /><Privacy /><Recovery changes={changes} /></>;
 }
 
 createRoot(document.getElementById('continuity-story')!).render(<StrictMode><ContinuityStory /></StrictMode>);

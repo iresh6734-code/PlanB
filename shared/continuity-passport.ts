@@ -1,6 +1,7 @@
 import type { ContinuityEvidenceApiResponse } from './continuity-evidence-api.js';
 import type { ReadCheckApiState } from './hubspot-read-check-api.js';
 import { sha256Hex } from './sha256.js';
+import { BRAND_CSS, brandCsp, brandHtml, type ReportBrand } from './report-brand.js';
 
 // PASAPORTE DE CONTINUIDAD (unidad 214). Modelo puro: transforma ENTRADAS EXPLÍCITAS en una hoja corta de afirmaciones trazables.
 // No lee la red, no captura, no envía y no exporta por sí solo. Cada afirmación lleva su base, su alcance, su origen y su instante:
@@ -252,8 +253,9 @@ export function passportTally(passport: Passport): PassportTally {
   };
 }
 const esc = (text: string) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-/** HTML autocontenido para enseñar a un auditor: escapa todo el contenido, sin scripts, sin recursos externos y con CSP restrictiva. */
-export function passportToHtml(passport: Passport): string {
+/** HTML autocontenido para enseñar a un auditor: escapa todo el contenido, sin scripts, sin recursos externos y con CSP restrictiva.
+ *  `brand` (N2) pone el logotipo y el nombre de la empresa arriba; solo entonces la CSP admite imágenes embebidas (`data:`). */
+export function passportToHtml(passport: Passport, brand: ReportBrand | null = null): string {
   const e = passportExport(passport), tally = passportTally(passport), print = passportFingerprint(passport);
   const badge = (basis: Basis, currency: Currency) => '<span class="b ' + esc(basis) + '">' + esc(BASIS_LABEL[basis]) + '</span>' + (CURRENCY_LABEL[currency] && currency !== 'current' ? '<span class="k ' + esc(currency) + '">' + esc(CURRENCY_LABEL[currency]) + '</span>' : '');
   const claim = (c: typeof e.sections[number]['claims'][number]) => '<li>' + badge(c.basis, c.currency) + ' ' + esc(c.text) + '<small>' + esc(c.scope) + (c.at ? ' · ' + esc(when(c.at)) : '') + ' · ' + esc(SOURCE_LABEL[c.source]) + (c.context ? ' · ' + esc(c.context) : '') + '</small></li>';
@@ -268,9 +270,9 @@ export function passportToHtml(passport: Passport): string {
     + '.b.observed{color:#17684a}.b.declared{color:#2c4fb8}.b.unverified{color:#80510a}.b.not-applicable{color:#5b6670}.k{color:#5b6670}.k.expired{color:#9b2c1f}'
     + '.n{border:1px solid #c9d3e0;background:#f3f6fa;padding:.55rem .7rem;border-radius:3px;margin:.8rem 0}'
     + 'code{font:.82rem ui-monospace,Consolas,monospace;word-spacing:.35rem;overflow-wrap:anywhere}.sign{display:grid;grid-template-columns:1fr 1fr;gap:1.4rem 2rem;margin-top:.8rem}.sign div{border-bottom:1px solid #14202b;height:2.2rem;font-size:.75rem;color:#4a5765}'
-    + 'footer{margin-top:1.8rem;font-size:.75rem;color:#4a5765}@media print{body{margin:0;max-width:none}section,li,tr{break-inside:avoid}h2{break-after:avoid}}';
-  return '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pasaporte de continuidad</title><style>' + css + '</style></head><body>'
-    + '<h1>Pasaporte de continuidad</h1><p class="meta">Formato ' + esc(e.format) + ' · generado ' + esc(when(e.generatedAt)) + (e.identity.installId ? ' · instalación ' + esc(e.identity.installId) : '')
+    + 'footer{margin-top:1.8rem;font-size:.75rem;color:#4a5765}@media print{body{margin:0;max-width:none}section,li,tr{break-inside:avoid}h2{break-after:avoid}}' + BRAND_CSS;
+  return '<!doctype html><html lang="es"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'' + brandCsp(brand) + '"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pasaporte de continuidad</title><style>' + css + '</style></head><body>'
+    + brandHtml(brand) + '<h1>Pasaporte de continuidad</h1><p class="meta">Formato ' + esc(e.format) + ' · generado ' + esc(when(e.generatedAt)) + (e.identity.installId ? ' · instalación ' + esc(e.identity.installId) : '')
     + (e.identity.copy.captureId ? ' · copia ' + esc(shortId(e.identity.copy.captureId) ?? '') + ' del ' + esc(when(e.identity.copy.capturedAt)) + (e.identity.copy.testData ? ' · datos de ensayo' : '') : ' · sin copia activa identificada') + '</p>'
     + '<p class="lede">' + esc(e.notice) + '</p>'
     + '<h2>Resumen para auditoría</h2><div class="tally"><span><b>' + tally.observed + '</b>observados</span><span><b>' + tally.declared + '</b>declarados</span><span><b>' + tally.unverified + '</b>sin comprobar</span>' + (tally.expired ? '<span><b>' + tally.expired + '</b>caducados</span>' : '') + '<span><b>' + tally.total + '</b>datos en total</span></div>'

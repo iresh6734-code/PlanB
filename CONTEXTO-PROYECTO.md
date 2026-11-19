@@ -1,8 +1,14 @@
-# Plan B · Contexto y continuidad del proyecto
+﻿# Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026, 13:47, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1, V2, V3 y V5 hechas. Oleada 3: H2 y H4 hechas; H1 aplazada (requiere e2e). Continuidad: C5 hecha.
+Última revisión: **19/11/2026, 13:52, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1, V2, V3 y V5 hechas. Oleada 3: H2 y H4 hechas; H1 aplazada (requiere e2e). Continuidad: C5 hecha. Negocio: M3 hecha.
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
+
+## Super plan M3 · Informe del mes · 19/11/2026, 13:52, Europe/Madrid
+
+- `app-shell/monthly-report.ts` (puro): `monthStats`, `monthlyReport` (mes en curso frente al anterior, veredicto, titular y notas) y `monthlyReportHtml` (página autónoma, sin scripts ni identificadores). Meses cortados en hora de Madrid; el mayor hueco incluye los que tocan el mes y, en el mes en curso, el abierto hasta ahora. Las capturas cuentan el máximo entre las conservadas y los trabajos completados.
+- `ContinuityHome.tsx`: botón «Informe del mes» junto a «Parte para compartir» (`.ct-head-actions` en `faro.css`); ambos comparten `saveHtml`.
+- Pruebas: `tests/monthly-report.test.ts` (3); build correcto. Sin revisión visual: ver en casa.
 
 ## Super plan C5 · Calendario de simulacros · 19/11/2026, 13:47, Europe/Madrid
 

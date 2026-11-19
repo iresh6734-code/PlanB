@@ -1,4 +1,4 @@
-# Super plan de Plan B
+﻿# Super plan de Plan B
 
 Preparado el 19/11/2026 sobre la rama `planb-v0.3-local` (commit `460beaa`). Se ha hecho leyendo el código, sin servidores, sin navegador y sin datos reales. Recoge lo pendiente de [plan-mejoras.md](plan-mejoras.md), lo que dejó a medias la auditoría del espacio de equipo ([CLAUDE-TEAM-AUDIT](../coordination/reports/CLAUDE-TEAM-AUDIT.md)) y funciones nuevas pensadas para que Plan B se pueda vender.
 
@@ -122,7 +122,7 @@ Ninguna de estas tareas conecta con servicios de pago ni envía datos. Todo func
 |---|---|---|---|---|---|
 | M1 | **Planes y licencia sin conexión.** Planes Personal (gratis, un usuario, copias manuales), Pro (capturas programadas, pasaporte, previsión, cambio en bloque) y Equipo (espacio de equipo). La licencia es un archivo firmado con Ed25519 que se verifica en local con `node:crypto` (sin DPAPI y sin red). Sin licencia, todo sigue funcionando en Personal; nunca se bloquean los datos del usuario. | `shared/license.ts` nuevo, `Settings.tsx` | `tests/license.test.ts` con claves de prueba generadas en la propia prueba | M, SRV+UI | Pendiente |
 | M2 | **Pasaporte de continuidad como entregable**: HTML imprimible con antigüedad, recuentos, simulacros, devoluciones y huellas, pensado para enseñar a un auditor (continuidad de negocio). Sin datos de clientes, solo cifras. | `ContinuityPassport.tsx`, `continuity-report.ts` | `continuity-report` ampliado | M, UI | Pendiente |
-| M3 | **Informe mensual de continuidad**: resumen del mes (capturas, fallos, simulacros, tiempo máximo sin copia) generado en local. | `app-shell/monthly-report.ts` nuevo | `tests/monthly-report.test.ts` | M, UI | Pendiente |
+| M3 | **Informe mensual de continuidad**: resumen del mes (capturas, fallos, simulacros, tiempo máximo sin copia) generado en local. | `app-shell/monthly-report.ts` nuevo | `tests/monthly-report.test.ts` | M, UI | Hecha: botón «Informe del mes» en la cabecera de Continuidad; página HTML autónoma con el mes en curso frente al anterior (días con copia, capturas, fallos, simulacros, mayor hueco), cortado en hora de Madrid. Ver en casa. |
 | M4 | **Primer uso en 10 minutos**: `FirstRun.tsx` guía conectar → primera captura → primer simulacro → pasaporte, con progreso y la franja de preparación como hilo conductor. | `FirstRun.tsx`, `continuity-insights.ts` | Prueba pura de los pasos | M, UI, Ver en casa | Pendiente |
 | M5 | **Página de precios en la landing** (`src/landing`): tres planes, qué incluye cada uno y la promesa de «tus datos nunca salen de tu ordenador». Precios a decidir por el usuario. | `src/landing/main.tsx` | `ui-copy.test.ts` | S–M, UI, Ver en casa | Pendiente |
 | M6 | **Ficha comercial al día**: actualizar `FICHA-COMERCIAL.md` con lo construido desde octubre y separar lo comprobado de lo pendiente. | `FICHA-COMERCIAL.md` | — | S, DOC | Pendiente |

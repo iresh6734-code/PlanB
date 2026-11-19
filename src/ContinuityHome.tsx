@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, CalendarClock, CheckCircle2, Clock3, Database, Download, LockKeyhole, Play, RefreshCw, ShieldCheck, Unplug } from 'lucide-react';
+import { ArrowRight, CalendarClock, CalendarRange, CheckCircle2, Clock3, Database, Download, LockKeyhole, Play, RefreshCw, ShieldCheck, Unplug } from 'lucide-react';
 import type { AppState } from '../shared/model.js';
 import type { ContinuityStatus } from '../shared/operations.js';
 import { api, post, download } from './api.js';
@@ -17,6 +17,7 @@ import type { WorkSummaryResult } from './work-summary-client.js';
 import { TabList, tabPanelProps } from './TabList.js';
 import { CopyTimeline } from './app-shell/CopyTimeline.js';
 import { buildContinuityReport, reportHtml } from './app-shell/continuity-report.js';
+import { monthlyReport, monthlyReportHtml } from './app-shell/monthly-report.js';
 import { captureAutomation } from './app-shell/copy-timeline.js';
 import { pollWhileVisible, useReadHealth } from './app-shell/poll.js';
 import { captureRecordCount, describeCapture, workspaceCopy } from './app-shell/workspace-copy.js';
@@ -57,7 +58,9 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
   useEffect(()=>{void load().catch(f=>setError((f as Error).message));return pollWhileVisible(()=>void load().catch(readHealth.fail),2500);},[]);
   useEffect(()=>{if(connectRequest)void api<{configured:boolean}>('/v2/auth/status').then(g=>g.configured?setConnection(true):protect()).catch(f=>setError(f.message));},[connectRequest]);
   // Parte de continuidad: se genera en el navegador con el estado ya leído y se descarga; no envía nada a ningún sitio.
-  const shareReport=()=>{if(!status)return;const html=reportHtml(buildContinuityReport(status,new Date(),APP_VERSION));const url=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));const anchor=document.createElement('a');anchor.href=url;anchor.download='plan-b-parte-continuidad-'+new Date().toISOString().slice(0,10)+'.html';anchor.click();setTimeout(()=>URL.revokeObjectURL(url),10_000);};
+  const saveHtml=(html:string,name:string)=>{const url=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));const anchor=document.createElement('a');anchor.href=url;anchor.download=name;anchor.click();setTimeout(()=>URL.revokeObjectURL(url),10_000);};
+  const shareReport=()=>{if(!status)return;saveHtml(reportHtml(buildContinuityReport(status,new Date(),APP_VERSION)),'plan-b-parte-continuidad-'+new Date().toISOString().slice(0,10)+'.html');};
+  const shareMonthly=()=>{if(!status)return;const report=monthlyReport(status,new Date());saveHtml(monthlyReportHtml(report,APP_VERSION),'plan-b-informe-'+report.current.month+'.html');};
   const run=async(fn:()=>Promise<unknown>)=>{setBusy(true);setError('');try{await fn();await load();await refresh();}catch(f){setError((f as Error).message);}finally{setBusy(false);}};
   const active=status?.jobs.find(j=>['queued','running'].includes(j.status));
   const latest=status?.captures[0],summary=status?.latestCapture;
@@ -101,7 +104,7 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
   let ledgerBudget=ledgerAll?Infinity:LEDGER_PAGE;
   const ledgerDays=(ledger?.days??[]).map(day=>{const entries=day.entries.slice(0,Math.max(0,ledgerBudget));ledgerBudget-=entries.length;return {...day,entries};}).filter(day=>day.entries.length);
   const ledgerHidden=(ledger?.shown??0)-ledgerDays.reduce((sum,day)=>sum+day.entries.length,0);
-  return <section className="continuity-home"><header className="page-header"><div><h1>Continuidad</h1><p className="page-subtitle">Una copia utilizable y la prueba que lo demuestra.</p></div><div className="ct-head-side"><button type="button" className="button secondary" disabled={!status} aria-describedby="ct-share-help" onClick={shareReport}><Download size={15}/>Parte para compartir</button><p id="ct-share-help" className="ct-share-help">Página para enviar o imprimir: qué está demostrado y qué no, sin nombres de clientes ni identificadores.</p></div></header>
+  return <section className="continuity-home"><header className="page-header"><div><h1>Continuidad</h1><p className="page-subtitle">Una copia utilizable y la prueba que lo demuestra.</p></div><div className="ct-head-side"><div className="ct-head-actions"><button type="button" className="button secondary" disabled={!status} aria-describedby="ct-share-help" onClick={shareReport}><Download size={15}/>Parte para compartir</button><button type="button" className="button secondary" disabled={!status} aria-describedby="ct-share-help" onClick={shareMonthly}><CalendarRange size={15}/>Informe del mes</button></div><p id="ct-share-help" className="ct-share-help">Páginas para enviar o imprimir: qué está demostrado y cómo fue el mes frente al anterior, sin nombres de clientes ni identificadores.</p></div></header>
     {error?<p className="error-box" role="alert">{error}</p>:null}
     {readHealth.note&&!error?<p className="helper read-stale" role="status">{readHealth.note}</p>:null}
     {status?.recoveryIntegrity?.state==='invalid'?<p className="error-box" role="alert">{INVALID_RECOVERY_MESSAGE}</p>:null}

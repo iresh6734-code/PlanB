@@ -1694,8 +1694,9 @@ html body .ui-loading.ui-loading-sm::after { height: 10px; margin-top: 10px; bac
 @media (prefers-reduced-motion: reduce) { html body .ui-loading::before, html body .ui-loading::after { animation: none; } }
 /* Cabecera de Continuidad: versión y «Parte para compartir» juntos a la derecha. */
 html body .continuity-home > .page-header .ct-head-side { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+html body .continuity-home > .page-header .ct-head-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
 html body .continuity-home > .page-header .ct-share-help { margin: 0; max-width: 34ch; color: var(--text-3); font-size: var(--fs-xs, 12px); line-height: 1.4; text-align: right; }
-@media (max-width: 600px) { html body .continuity-home > .page-header .ct-head-side { align-items: flex-start; } html body .continuity-home > .page-header .ct-share-help { text-align: left; } }
+@media (max-width: 600px) { html body .continuity-home > .page-header .ct-head-side { align-items: flex-start; } html body .continuity-home > .page-header .ct-head-actions { justify-content: flex-start; } html body .continuity-home > .page-header .ct-share-help { text-align: left; } }
 /* ---- Estado vacío común (Faro 2 · estados): mismo texto, dos tonos. Neutro: «no hay datos» (marco discontinuo y círculo vacío).
    «Todo en orden» (`ui-empty-ok`): fondo de éxito y ✓. Solo CSS sobre el mismo elemento; no cambia textos, roles ni estructura. ---- */
 html body p.ui-empty.ui-empty { display: flex; align-items: center; gap: 10px; margin: 0; padding: 12px 14px; border: 1px dashed var(--border-strong); border-radius: var(--r-lg); background: transparent; color: var(--text-2); font-size: var(--fs-sm); line-height: 1.45; }

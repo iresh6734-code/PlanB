@@ -1,8 +1,12 @@
 ﻿# Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026, 17:30, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 a V7 hechas. Oleada 3: H2, H3, H4, H5 y H6 hechas; H1 aplazada (requiere e2e). Continuidad: C2, C3, C4 y C5 hechas. Negocio: M1, M2, M3 y M6 hechas. Datos: D1, D2 y D3 hechas. Rendimiento: P3 hecha.
+Última revisión: **19/11/2026, 18:00, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 a V7 hechas. Oleada 3: H2, H3, H4, H5 y H6 hechas; H1 aplazada (requiere e2e). Continuidad: C2, C3, C4 y C5 hechas. Negocio: M1, M2, M3, M5 y M6 hechas. Datos: D1, D2 y D3 hechas. Rendimiento: P3 hecha.
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
+
+## Super plan M5 · Precios en la landing · 19/11/2026, 18:00, Europe/Madrid
+
+La landing (`src/landing/main.tsx`) tiene una sección «Precios» entre «Qué puedes recuperar» y la recuperación: tres columnas (Personal gratis, Pro destacado en tinta de noche, Equipo), qué añade cada plan sobre el anterior y la promesa «tus datos nunca salen de tu ordenador». Los planes y funciones se movieron de `shared/license.ts` a `shared/plans.ts` (sin dependencias, para no cargar zod en la landing); la licencia los reexporta. Precios: `PRICE_PENDING` («Precio a decidir») hasta que el usuario los fije. Enlaces reales: «Empezar gratis» → `/inicio` y «Ver plan y licencia» → `/ajustes/plan`. Sin tablas (la e2e de la landing lo exige). Ver en casa.
 
 ## Super plan C3 · Qué falta entre dos copias · 19/11/2026, 17:30, Europe/Madrid
 

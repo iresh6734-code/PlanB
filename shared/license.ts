@@ -3,6 +3,8 @@
 // WebCrypto, disponible igual en el navegador y en Node. Sin licencia válida todo funciona en el plan Personal y nunca se
 // bloquean los datos de la persona: el plan solo decide funciones de pago futuras.
 import { z } from 'zod';
+import { PLAN_LABEL, type PlanId } from './plans.js';
+export { FEATURES, PLAN_LABEL, planAllows, type FeatureId, type PlanId } from './plans.js';
 
 export const LICENSE_PREFIX = 'PLANB1';
 /** Clave pública del emisor (32 bytes en base64url). Vacía hasta que se genere el par de claves de venta
@@ -10,21 +12,6 @@ export const LICENSE_PREFIX = 'PLANB1';
 export const LICENSE_PUBLIC_KEY = '';
 /** Días que una licencia caducada sigue valiendo para renovar sin cortes. */
 export const LICENSE_GRACE_DAYS = 14;
-
-export type PlanId = 'personal' | 'pro' | 'team';
-export type FeatureId = 'manual-copies' | 'drills' | 'scheduled-captures' | 'passport' | 'forecast' | 'monthly-report' | 'bulk-edit' | 'team-space';
-export const PLAN_LABEL: Record<PlanId, string> = { personal: 'Personal', pro: 'Pro', team: 'Equipo' };
-export const FEATURES: { id: FeatureId; label: string; plans: PlanId[] }[] = [
-  { id: 'manual-copies', label: 'Copias manuales y trabajo sin conexión', plans: ['personal', 'pro', 'team'] },
-  { id: 'drills', label: 'Simulacros de caída', plans: ['personal', 'pro', 'team'] },
-  { id: 'scheduled-captures', label: 'Capturas programadas cada hora', plans: ['pro', 'team'] },
-  { id: 'passport', label: 'Pasaporte de continuidad', plans: ['pro', 'team'] },
-  { id: 'forecast', label: 'Previsión «si el CRM cae ahora»', plans: ['pro', 'team'] },
-  { id: 'monthly-report', label: 'Informe mensual', plans: ['pro', 'team'] },
-  { id: 'bulk-edit', label: 'Cambio en bloque', plans: ['pro', 'team'] },
-  { id: 'team-space', label: 'Espacio de equipo', plans: ['team'] },
-];
-export const planAllows = (plan: PlanId, feature: FeatureId) => FEATURES.find(item => item.id === feature)?.plans.includes(plan) ?? false;
 
 const iso = z.string().refine(value => !Number.isNaN(Date.parse(value)), 'fecha no válida');
 export const LicensePayloadSchema = z.object({

@@ -1,6 +1,7 @@
 import { StrictMode, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ArrowDown, ArrowRight, ArrowUpRight, Check, Database, FlaskConical, Unplug } from 'lucide-react';
+import { PLAN_OFFERS, planHighlights } from '../../shared/plans.js';
 import './story.css';
 
 const phases = ['online', 'cut', 'local'] as const;
@@ -337,6 +338,35 @@ function Coverage() {
   );
 }
 
+function Pricing() {
+  return (
+    <section className="pricing" id="precios" aria-labelledby="pricing-title" tabIndex={-1}>
+      <div className="wrap section-inner">
+        <div className="pricing-intro">
+          <p className="panel-kicker">Planes</p>
+          <h2 id="pricing-title">Tu copia, <em>tu plan.</em></h2>
+          <p className="pricing-promise">Tus datos nunca salen de tu ordenador. La licencia se comprueba sin conexión y, sin ella, Plan B sigue funcionando en Personal: nunca se bloquean tus datos.</p>
+        </div>
+        <ol className="pricing-plans" aria-label="Planes de Plan B">
+          {PLAN_OFFERS.map((offer, index) => {
+            const previous = PLAN_OFFERS[index - 1];
+            return (
+              <li key={offer.id} className="pricing-plan" data-featured={offer.featured ? 'true' : undefined} aria-labelledby={'plan-' + offer.id}>
+                <h3 id={'plan-' + offer.id}>{offer.label}</h3>
+                <p className="pricing-audience">{offer.audience}</p>
+                <p className="pricing-price"><strong>{offer.price}</strong><small>{offer.note}</small></p>
+                <p className="pricing-from">{previous ? 'Todo lo de ' + previous.label + ', y además:' : 'Incluye:'}</p>
+                <ul>{planHighlights(offer.id).map(label => <li key={label}><Check size={15} aria-hidden="true" />{label}</li>)}</ul>
+                <a className="text-action" href={offer.id === 'personal' ? '/inicio' : '/ajustes/plan'}>{offer.id === 'personal' ? 'Empezar gratis' : 'Ver plan y licencia'} <ArrowUpRight size={16} aria-hidden="true" /></a>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+    </section>
+  );
+}
+
 function Recovery({ changes }: { changes: Change[] }) {
   return (
     <div className="return-scene">
@@ -384,7 +414,7 @@ function ContinuityStory() {
 
     const header = document.querySelector<HTMLElement>('.site-header');
     const firstPanel = document.getElementById('simulador');
-    const lastPanel = document.getElementById('alcance');
+    const lastPanel = document.getElementById('precios') ?? document.getElementById('alcance');
     if (!header || !firstPanel || !lastPanel) return;
     let frame = 0;
     const updateTone = () => {
@@ -410,7 +440,7 @@ function ContinuityStory() {
     setChanges((current) => current.includes(change) ? current.filter((item) => item !== change) : [...current, change]);
   }
 
-  return <><Simulation changes={changes} onChange={toggleChange} /><Coverage /><Recovery changes={changes} /></>;
+  return <><Simulation changes={changes} onChange={toggleChange} /><Coverage /><Pricing /><Recovery changes={changes} /></>;
 }
 
 createRoot(document.getElementById('continuity-story')!).render(<StrictMode><ContinuityStory /></StrictMode>);

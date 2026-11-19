@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { checkLicense, issueLicense, planAllows, toBase64Url, type LicensePayload } from '../shared/license.js';
+import { PLAN_OFFERS, PRICE_PENDING, planHighlights } from '../shared/plans.js';
 
 const NOW = new Date('2026-11-19T12:00:00Z');
 const payload = (over: Partial<LicensePayload> = {}): LicensePayload => ({ v: 1, id: 'lic-0001', plan: 'pro', holder: 'Ensayo S. L.', seats: 3, issuedAt: '2026-11-01T00:00:00Z', expiresAt: '2027-11-01T00:00:00Z', ...over });
@@ -42,4 +43,13 @@ test('licencia: manipulada, de otro emisor, mal formada o sin clave configurada 
 test('planes: Personal conserva lo básico; Equipo incluye todo lo de Pro', () => {
   assert.equal(planAllows('personal', 'drills'), true); assert.equal(planAllows('personal', 'scheduled-captures'), false);
   assert.equal(planAllows('pro', 'team-space'), false); assert.equal(planAllows('team', 'bulk-edit'), true);
+});
+
+test('la tarifa de la landing sale de los mismos planes que la licencia y no inventa precios', () => {
+  assert.deepEqual(PLAN_OFFERS.map(offer => offer.id), ['personal', 'pro', 'team']);
+  assert.equal(PLAN_OFFERS[0].price, 'Gratis');
+  assert.ok(PLAN_OFFERS.slice(1).every(offer => offer.price === PRICE_PENDING));
+  assert.deepEqual(planHighlights('personal'), ['Copias manuales y trabajo sin conexión', 'Simulacros de caída']);
+  assert.ok(planHighlights('pro').includes('Pasaporte de continuidad') && !planHighlights('pro').includes('Simulacros de caída'));
+  assert.deepEqual(planHighlights('team'), ['Espacio de equipo']);
 });

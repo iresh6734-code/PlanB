@@ -5,6 +5,7 @@ import path from 'node:path';
 import ts from 'typescript';
 import type {Change,EntityName} from '../shared/model.js';
 import {ApiError} from '../src/api.js';
+import * as checklist from '../src/app-shell/recovery-checklist.js';
 const source=path.resolve(process.env.PLANB_MANUAL_SRC??'src/ManualRecovery.tsx');
 const change=(id=1,entity:EntityName='contacts',recordId='local1',operation:'create'|'update'='create'):Change=>({id,entity,recordId,operation,at:'2026-10-30T12:00:00Z',before:operation==='create'?null:{id:recordId,entity,values:{name:'Before'}},after:{id:recordId,entity,values:{name:'After'}}});
 const approval='He revisado y aplicado manualmente';
@@ -13,7 +14,7 @@ function mount(initial:Change[]=[change()],refresh:()=>Promise<void>=async()=>{}
  let cursor=0,tree:any,writes=0,props={changes:initial,revision:'revision-A',pending:initial.length,refresh};
  const hooks={useState(init:any){const i=cursor++;if(!(i in slots))slots[i]=typeof init==='function'?init():init;return [slots[i],(v:any)=>{writes++;slots[i]=typeof v==='function'?v(slots[i]):v;}];},useRef(init:any){const i=cursor++;return slots[i]??(slots[i]={current:init});},useEffect(run:()=>void|(()=>void),deps?:unknown[]){const i=cursor++,old=slots[i];if(!old||!deps||deps.some((v,n)=>!Object.is(v,old.deps?.[n])))effects.push(()=>{old?.cleanup?.();slots[i]={deps,cleanup:run()};});}};
  const jsx=(type:any,props:any)=>({type,props}),transport=(body:any,signal?:AbortSignal)=>new Promise((resolve,reject)=>requests.push({body,signal,resolve,reject}));
- const imports=(name:string):any=>{if(name==='react')return hooks;if(name==='react/jsx-runtime')return {jsx,jsxs:jsx,Fragment:Symbol.for('fragment')};if(name.endsWith('.css'))return {};if(name.endsWith('api.js'))return {ApiError,post:(_url:string,body:any)=>transport(body),api:(_url:string,init:RequestInit)=>transport(JSON.parse(String(init.body)),init.signal??undefined)};throw Error(name);};
+ const imports=(name:string):any=>{if(name==='react')return hooks;if(name==='react/jsx-runtime')return {jsx,jsxs:jsx,Fragment:Symbol.for('fragment')};if(name.endsWith('.css'))return {};if(name.endsWith('recovery-checklist.js'))return checklist;if(name.endsWith('api.js'))return {ApiError,post:(_url:string,body:any)=>transport(body),api:(_url:string,init:RequestInit)=>transport(JSON.parse(String(init.body)),init.signal??undefined)};throw Error(name);};
  const mod={exports:{} as any},code=ts.transpileModule(fs.readFileSync(source,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText;new Function('require','exports','module',code)(imports,mod.exports,mod);
  const walk=(n:any):any[]=>Array.isArray(n)?n.flatMap(walk):n?.props?[n,...walk(n.props.children)]:[],flat=(n:any):string=>Array.isArray(n)?n.map(flat).join(''):typeof n==='string'||typeof n==='number'?String(n):n?.props?flat(n.props.children):'';
  const render=()=>{cursor=0;tree=mod.exports.ManualRecovery(props);effects.splice(0).forEach(run=>run());};

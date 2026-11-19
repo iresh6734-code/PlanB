@@ -1,8 +1,14 @@
 ﻿# Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026, 14:02, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1, V2, V3 y V5 hechas. Oleada 3: H2 y H4 hechas; H1 aplazada (requiere e2e). Continuidad: C5 hecha. Negocio: M1 y M3 hechas.
+Última revisión: **19/11/2026, 14:10, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1, V2, V3 y V5 hechas. Oleada 3: H2 y H4 hechas; H1 aplazada (requiere e2e). Continuidad: C2 y C5 hechas. Negocio: M1 y M3 hechas.
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
+
+## Super plan C2 · Lista imprimible de recuperación manual · 19/11/2026, 14:10, Europe/Madrid
+
+- `src/app-shell/recovery-checklist.ts` (puro): `recoveryChecklist(changes)` agrupa por entidad e id, toma el `before` de la primera operación y el `after` de la última, lista solo los campos distintos (en altas, los no vacíos) y numera los pasos en orden `APPLY_ORDER` (empresas, contactos, negocios, tareas; altas antes que cambios). `recoveryChecklistHtml` escapa todo y recorta valores a 240 caracteres.
+- `ManualRecovery.tsx` muestra el resumen y el botón de descarga; no usa iconos ni la versión porque el arnés de `manual-recovery-ui.test.ts` solo resuelve una lista cerrada de imports (se le añadió el módulo de la lista).
+- La lista no marca nada como devuelto y lleva el aviso de datos de clientes. Sin revisión visual: ver en casa.
 
 ## Super plan M1 · Planes y licencia · 19/11/2026, 14:02, Europe/Madrid
 

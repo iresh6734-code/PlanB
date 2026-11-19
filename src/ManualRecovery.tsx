@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Change, EntityName } from '../shared/model.js';
 import { api, ApiError } from './api.js';
+import { recoveryChecklist, recoveryChecklistHtml } from './app-shell/recovery-checklist.js';
 import './manual-recovery.css';
 
 type Check = {entity:EntityName;localId:string;passed:boolean;reason:string};
@@ -73,11 +74,23 @@ export function ManualRecovery({changes,revision,pending,refresh,integrityBlocke
     const request={key,controller:new AbortController()};flight.current=request;setBusy(key);
     try{await updateLocal(()=>current()&&flight.current===request);}finally{if(current()&&flight.current===request){flight.current=null;setBusy(null);}}
   };
+  const checklist=recoveryChecklist(changes);
+  const printChecklist=()=>{
+    if(!changes.length)return;
+    const url=URL.createObjectURL(new Blob([recoveryChecklistHtml(checklist,revision,new Date())],{type:'text/html;charset=utf-8'}));
+    const anchor=document.createElement('a');anchor.href=url;anchor.download='plan-b-lista-recuperacion-'+new Date().toISOString().slice(0,10)+'.html';anchor.click();
+    setTimeout(()=>URL.revokeObjectURL(url),10_000);
+  };
   return <section className="return-section manual-recovery" aria-label="Comprobación manual">
     <h2>Recuperación manual verificada</h2>
     <p>Esta copia procede de un portal real. Su conexión solo admite lectura. Exporta los cambios, revísalos con la agencia y aplícalos manualmente en HubSpot. Plan B comprobará después los valores y relaciones.</p>
     <p className="helper">Exportar no marca cambios como devueltos. Aplica el estado final del historial y coordina la comprobación sin ediciones simultáneas.</p>
     <p className="manual-recovery-context">{pending} operaciones pendientes · {new Set(changes.map(c=>identity(c.entity,c.recordId))).size} registros por comprobar</p>
+    {changes.length?<div className="manual-recovery-checklist">
+      <p>Lista para aplicar a mano: {checklist.creates} {checklist.creates===1?'alta':'altas'} y {checklist.updates} {checklist.updates===1?'cambio':'cambios'}, {checklist.fields} {checklist.fields===1?'campo':'campos'}, en orden de empresas a tareas, con casillas y hueco para el ID remoto.</p>
+      <button type="button" className="button secondary" onClick={printChecklist}>Descargar lista imprimible</button>
+      <p className="helper">Contiene datos de clientes: no la envíes por correo y destrúyela al terminar.</p>
+    </div>:null}
     {integrityBlocked?<p className="helper">El estado guardado necesita revisión antes de otra comprobación. Una confirmación anterior se conserva para su revisión; puedes reintentar solo la lectura local.</p>:null}
     {created.map(c=><label className="field" key={identity(c.entity,c.recordId)}><span>ID remoto para el alta {c.entity} · {c.recordId}</span><input inputMode="numeric" pattern="(?:0|[1-9][0-9]*)" maxLength={100} disabled={integrityBlocked||inFlight||!!shown?.passed} value={mapping[identity(c.entity,c.recordId)]??''} onChange={e=>{if(!current()||!allowed.current||flight.current||acknowledged.current.has(key))return;const value=e.target.value;setApproved(null);setMapping(m=>({...m,[identity(c.entity,c.recordId)]:value}));}}/></label>)}
     {pending>0&&!shown?.passed?<>

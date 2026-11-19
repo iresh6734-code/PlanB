@@ -21,7 +21,7 @@ export type NavContext = {
 export const labVisible = (context: Pick<NavContext, 'testData'>) => context.testData;
 
 /** Apartados que pertenecen al Laboratorio. */
-export const LAB_PAGES: readonly PageId[] = ['radar', 'date-check'];
+export const LAB_PAGES: readonly PageId[] = ['radar', 'date-check', 'outage-lab'];
 
 /** Grupos visibles, en orden. Como máximo cinco más el Laboratorio. */
 export function navigationGroups(context: NavContext): NavGroup[] {
@@ -53,6 +53,8 @@ export function navigationGroups(context: NavContext): NavGroup[] {
   if (labVisible(context)) groups.push({ id: 'lab', label: 'Laboratorio', target: { kind: 'page', page: 'radar' }, badge: 'atRisk', needsReady: true, items: [
     { id: 'radar', label: 'Radar', target: { kind: 'page', page: 'radar' }, badge: 'atRisk', needsReady: true },
     { id: 'date-check', label: 'Comprobar una fecha', target: { kind: 'page', page: 'date-check' }, needsReady: true },
+    // Solo casos ficticios en el navegador: no necesita copia activa.
+    { id: 'outage-lab', label: '¿Y si cae…?', target: { kind: 'page', page: 'outage-lab' } },
   ] });
   return groups;
 }
@@ -65,7 +67,7 @@ export function groupOfPage(page: PageId): GroupId {
     case 'workspace': return 'clients';
     case 'continuity': case 'changes': case 'export': case 'team-sync': return 'continuity';
     case 'integrations': case 'prepare': case 'plan': return 'settings';
-    case 'radar': case 'date-check': return 'lab';
+    case 'radar': case 'date-check': case 'outage-lab': return 'lab';
   }
 }
 

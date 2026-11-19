@@ -6,12 +6,10 @@ import path from 'node:path';
 // Built screens that nothing mounts yet. The list can only shrink: each entry names the
 // super-plan-2 task that mounts it or removes it (docs/super-plan-2.md, Oleada 1).
 const KNOWN_ORPHANS: Record<string, string> = {
-  'src/ContinuityEvidence.tsx': 'E2: unir con Evidencia e impacto o retirar',
-  'src/ContinuityLab.tsx': 'E1: Laboratorio de caídas con datos de prueba',
-  'src/RescueCapsule.tsx': 'E4: Kit de Relevo en el Laboratorio',
-  'src/RescueRoom.tsx': 'E4: Modo Rescate en el Laboratorio',
-  'src/SourceReadingHistory.tsx': 'E3: historial de lecturas en Integraciones',
-  'src/SourceStatusRow.tsx': 'E3: estado de las fuentes en Integraciones',
+  'src/RescueCapsule.tsx': 'E4 aplazada: necesita el servidor aparte del Modo Rescate (scripts/demo-rescue-room.ts)',
+  'src/RescueRoom.tsx': 'E4 aplazada: necesita el servidor aparte del Modo Rescate (scripts/demo-rescue-room.ts)',
+  'src/SourceReadingHistory.tsx': 'E3 aplazada: el diario de lecturas solo se llena leyendo proveedores externos',
+  'src/SourceStatusRow.tsx': 'E3 aplazada: falta la ruta de estado y requiere lecturas de proveedores externos',
 };
 
 const ROOT = path.resolve('.');

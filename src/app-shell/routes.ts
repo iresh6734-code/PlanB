@@ -11,7 +11,7 @@ const PAGE_PATH: Record<Exclude<PageId, 'workspace'>, string> = {
   home: '/inicio', today: '/hoy', week: '/hoy/semana', agents: '/hoy/propuestas',
   continuity: '/continuidad', changes: '/continuidad/cambios', export: '/continuidad/exportar', 'team-sync': '/continuidad/equipo',
   integrations: '/ajustes/integraciones', prepare: '/ajustes/preparacion', plan: '/ajustes/plan',
-  radar: '/laboratorio/radar', 'date-check': '/laboratorio/fecha',
+  radar: '/laboratorio/radar', 'date-check': '/laboratorio/fecha', 'outage-lab': '/laboratorio/caidas',
 };
 
 /** Dirección de un lugar. Los registros llevan su ID codificado; una ficha nueva no tiene dirección propia. */

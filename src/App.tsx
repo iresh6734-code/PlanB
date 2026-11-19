@@ -41,7 +41,7 @@ import { readinessFor } from './app-shell/continuity-insights.js';
 import type { ContinuityTab } from './ContinuityHome.js';
 import type { ContinuityStatus } from '../shared/operations.js';
 // Apartados que se descargan al visitarlos por primera vez (misma interfaz de uso que los originales).
-import { ChangesView, ContinuityHome, CsvImport, DateCheck, DecisionReview, FocusRun, LicensePanel, LocalIntegrations, OperationalRehearsal, PortableExport, Preparation, RadarHost, Settings, TeamSync, WeeklyReview } from './app-shell/lazy-pages.js';
+import { ChangesView, ContinuityHome, CsvImport, DateCheck, DecisionReview, FocusRun, LicensePanel, LocalIntegrations, OperationalRehearsal, OutageLab, PortableExport, Preparation, RadarHost, Settings, TeamSync, WeeklyReview } from './app-shell/lazy-pages.js';
 import type { WorkspaceSearchContext } from '../shared/workspace-search.js';
 
 type LocalAppState = AppState & { workspaceSearchContext?: WorkspaceSearchContext | null };
@@ -228,7 +228,7 @@ export default function App() {
   const openAlert = (target: AlertTarget) => { setSelected(null); if (target === 'export') { setPage('export'); focusWhenReady('main-content'); return; } setContinuityTab(target); setPage('continuity'); focusWhenReady('ct-tab-' + target); };
   const copySignal = copyAlerts && copyAlerts.length ? { count: copyAlerts.length, tone: copyAlerts.some(alert => alert.tone === 'danger') ? 'danger' as const : 'warn' as const, titles: copyAlerts.map(alert => alert.title) } : null;
   const readinessDot = readinessFor(state, continuityStatus, new Date());
-  const pageLabel = page==='workspace'?(entity?.label??'Trabajar'):({home:'Inicio',today:'Hoy',week:'Revisión semanal',changes:'Cambios',agents:'Propuestas',radar:'Laboratorio · Radar','date-check':'Laboratorio · Comprobar una fecha',continuity:'Continuidad','team-sync':'Copia de equipo',export:'Exportar',integrations:'Integraciones',prepare:'Preparación',plan:'Plan y licencia'} as Record<string,string>)[page]??'';
+  const pageLabel = page==='workspace'?(entity?.label??'Trabajar'):({home:'Inicio',today:'Hoy',week:'Revisión semanal',changes:'Cambios',agents:'Propuestas',radar:'Laboratorio · Radar','date-check':'Laboratorio · Comprobar una fecha','outage-lab':'Laboratorio · ¿Y si cae…?',continuity:'Continuidad','team-sync':'Copia de equipo',export:'Exportar',integrations:'Integraciones',prepare:'Preparación',plan:'Plan y licencia'} as Record<string,string>)[page]??'';
   // Mover una oportunidad de etapa desde el tablero: misma validación y mismo guardado que la ficha. Devuelve el motivo si no se puede.
   // Cambiar un campo desde la tabla o el tablero: misma validación y mismo guardado que la ficha. Devuelve el motivo si no se puede.
   // Escribir un campo con la validación de la ficha, sin refrescar: lo usan el guardado suelto y el cambio en bloque.
@@ -281,6 +281,7 @@ export default function App() {
     ...(state.ready ? [{ id: 'changes', label: 'Ir a Cambios', group: 'Ir a', hint: 'G M', run: goTo('changes') }] : []),
     ...(!state.runtime ? [{ id: 'agents', label: 'Ir a Propuestas', group: 'Ir a', run: goTo('agents') }] : []),
     ...(state.ready && lab ? [{ id: 'radar', label: 'Laboratorio: Radar de compromisos', group: 'Ir a', hint: 'G R', run: () => { setRehearseFromToday(null); goTo('radar')(); } }, { id: 'date-check', label: 'Laboratorio: Comprobar una fecha', group: 'Ir a', hint: 'G F', run: goTo('date-check') }] : []),
+    ...(lab ? [{ id: 'outage-lab', label: 'Laboratorio: ¿Y si cae…? (caídas ficticias)', group: 'Ir a', run: goTo('outage-lab') }] : []),
     { id: 'continuity', label: 'Ir a Continuidad', group: 'Ir a', hint: 'G N', run: goTo('continuity') },
     ...(!state.runtime ? [{ id: 'team-sync', label: 'Ir a Copia de equipo', group: 'Ir a', run: goTo('team-sync') }, { id: 'integrations', label: 'Ir a Integraciones', group: 'Ir a', run: goTo('integrations') }, { id: 'plan', label: 'Ir a Plan y licencia', group: 'Ir a', run: goTo('plan') }] : []),
     ...(state.ready ? [{ id: 'export', label: 'Ir a Exportar', group: 'Ir a', hint: 'G X', run: goTo('export') }] : []),
@@ -323,6 +324,7 @@ export default function App() {
       :page==='team-sync'?<TeamSync/>
       :page==='plan'?<LicensePanel/>
       :page==='date-check'?<div className="gx-datecheck"><h1 className="sr-only">Comprobar una fecha</h1><DateCheck contextRevision={state.workspaceSearchContext?.contextRevision??null} onContextStale={()=>void refresh()}/><div className="gx-datecheck-side"><DecisionReview contextRevision={state.workspaceSearchContext?.contextRevision??null} onContextStale={()=>void refresh()}/></div></div>
+      :page==='outage-lab'?<OutageLab/>
       :page==='radar'?(rehearseFromToday?<OperationalRehearsal contextRevision={state.workspaceSearchContext?.contextRevision??null} commitmentId={rehearseFromToday} onContextStale={()=>void refresh()} onClose={()=>setRehearseFromToday(null)}/>:<RadarHost contextRevision={state.workspaceSearchContext?.contextRevision??null} refresh={()=>void refresh()}/>)
       :page==='changes'?<ChangesView runtime={state.runtime} production={state.snapshot?.source.isTestData===false} spec={state.spec}/>
       :page==='export'?<PortableExport/>

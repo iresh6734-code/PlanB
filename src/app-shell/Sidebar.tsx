@@ -23,7 +23,7 @@ type Props = {
 const GROUP_ICON: Record<GroupId, ComponentType<{ size?: number }>> = { home: Home, today: CalendarDays, clients: Users, continuity: ShieldCheck, settings: SlidersHorizontal, lab: FlaskConical };
 const ITEM_ICON: Record<string, ComponentType<{ size?: number }>> = {
   today: CalendarDays, agents: Inbox, contacts: Users, companies: Building2, deals: GitBranch, tasks: ListTodo,
-  continuity: ShieldCheck, changes: GitBranch, export: Download, 'team-sync': Building2, integrations: PlugZap, provider: Settings2, radar: Radar, 'date-check': CalendarCheck, plan: BadgeCheck,
+  continuity: ShieldCheck, changes: GitBranch, export: Download, 'team-sync': Building2, integrations: PlugZap, provider: Settings2, radar: Radar, 'date-check': CalendarCheck, 'outage-lab': FlaskConical, plan: BadgeCheck,
 };
 
 /**

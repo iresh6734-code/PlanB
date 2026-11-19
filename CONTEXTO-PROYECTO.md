@@ -1,8 +1,15 @@
 ﻿# Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026, 16:40, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 a V7 hechas. Oleada 3: H2, H3, H4, H5 y H6 hechas; H1 aplazada (requiere e2e). Continuidad: C1 a C5 hechas. Negocio: M1 a M6 hechas. Datos: D1, D2 y D3 hechas. Rendimiento: P3 hecha. Super plan 2: T1, E5 y E6 hechas.
+Última revisión: **19/11/2026**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 a V7 hechas. Oleada 3: H2, H3, H4, H5 y H6 hechas; H1 aplazada (requiere e2e). Continuidad: C1 a C5 hechas. Negocio: M1 a M6 hechas. Datos: D1, D2 y D3 hechas. Rendimiento: P3 hecha. Super plan 2: T1, E1, E2, E5 y E6 hechas; E3 y E4 aplazadas por las reglas.
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
+
+## Super plan 2 · Bloque 2 (E1–E4) · 19/11/2026
+
+- **E1:** página «¿Y si cae…?» en el Laboratorio (`src/OutageLab.tsx`, ruta `/laboratorio/caidas`), solo con datos de prueba y sin copia activa; usa los casos ficticios de `buildSyntheticCases`.
+- **E2:** bloque plegable «Escenarios de caída» en Continuidad → Evidencia e impacto, que carga `ContinuityEvidence` solo al abrirlo.
+- **E3 y E4, aplazadas:** E3 necesita una ruta de estado que no existe y lecturas de proveedores externos (red); E4 arranca un servidor aparte para el Modo Rescate. Ambas, en la Jornada en casa.
+- `independent-continuity-lab.test.ts` ya fallaba antes (dos `notEqual` del propio test); no se tocó.
 
 ## Super plan 2 · Bloque 1 (T1, E5, E6) · 19/11/2026, 16:40, Europe/Madrid
 

@@ -45,9 +45,18 @@ test('cada apartado de la App pertenece a un grupo, y el grupo existe cuando el 
 test('un apartado recordado que ya no existe en esta copia vuelve a Inicio', () => {
   assert.equal(fallbackPage('radar', ctx({ testData: false })), 'home');
   assert.equal(fallbackPage('date-check', ctx({ testData: false })), 'home');
+  assert.equal(fallbackPage('outage-lab', ctx({ testData: false })), 'home');
   assert.equal(fallbackPage('radar', ctx()), null);
   assert.equal(fallbackPage('today', ctx({ runtime: true })), 'home');
   assert.equal(fallbackPage('changes', ctx({ runtime: true })), null);
+});
+
+test('E1: «¿Y si cae…?» vive en el Laboratorio y no necesita copia activa', () => {
+  const lab = navigationGroups(ctx({ ready: false })).find(g => g.id === 'lab')!;
+  const item = lab.items.find(i => i.id === 'outage-lab')!;
+  assert.deepEqual(item.target, { kind: 'page', page: 'outage-lab' });
+  assert.notEqual(item.needsReady, true, 'solo usa casos ficticios');
+  assert.equal(groupOfPage('outage-lab'), 'lab');
 });
 
 test('una entrada de registros solo está activa con su tipo abierto', () => {

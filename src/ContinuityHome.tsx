@@ -12,6 +12,7 @@ import { APP_VERSION } from '../shared/version.js';
 import { CopyInspection } from './CopyInspection.js';
 import {INVALID_RECOVERY_MESSAGE} from '../shared/recovery-integrity.js';
 import { ContinuityHub } from './ContinuityHub.js';
+import { ContinuityEvidence } from './app-shell/lazy-pages.js';
 import { WorkSummary } from './WorkSummary.js';
 import { toWorkSource } from '../shared/work-summary.js';
 import type { WorkSummaryResult } from './work-summary-client.js';
@@ -25,6 +26,7 @@ import { captureRecordCount, describeCapture, workspaceCopy } from './app-shell/
 import { captureLedger, continuityReadiness, copyVitals, drillCalendar, DRILL_EVERY_DAYS, DRILL_SOON_DAYS, formatBytes, hourlyCaptures, jobStats, outageForecast, type LedgerFilter, type NextActionId, type StepId } from './app-shell/continuity-insights.js';
 import './continuity-home-hub.css';
 import './continuity-insights.css';
+import './continuity-evidence.css';
 const LEDGER_FILTERS:readonly {id:LedgerFilter;label:string}[]=[{id:'all',label:'Todas'},{id:'today',label:'Hoy'},{id:'week',label:'7 días'},{id:'shrink',label:'Más pequeñas'}];
 const LEDGER_PAGE=12;
 const hourLabel=new Intl.DateTimeFormat('es-ES',{hour:'2-digit',minute:'2-digit'});
@@ -34,7 +36,7 @@ const CONTINUITY_TABS=[{id:'estado',label:'Estado'},{id:'evidencia',label:'Evide
 export interface ContinuityHubLinks { onOpenToday?: () => void; onOpenIntegrations?: () => void }
 export function ContinuityHome({state,workspaceContextRevision,refresh,work,prepare,protect,exportCopy,connectRequest=0,onOpenToday,onOpenIntegrations,returnedFrom=null,drillNote=null,onReturnHandled,initialTab='estado',onStatus,onGuidedDrill}:{state:AppState;workspaceContextRevision?:string|null;refresh:()=>Promise<AppState>;work:()=>void;prepare:()=>void;protect:()=>void;exportCopy:()=>void;connectRequest?:number;returnedFrom?:'integrations'|'drill'|null;drillNote?:string|null;onReturnHandled?:()=>void;initialTab?:ContinuityTab;onStatus?:(status:ContinuityStatus)=>void;onGuidedDrill?:()=>void}&ContinuityHubLinks) {
   const [status,setStatus]=useState<ContinuityStatus|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[connection,setConnection]=useState(false),[restore,setRestore]=useState(false);
-  const [tab,setTab]=useState<ContinuityTab>(initialTab);
+  const [tab,setTab]=useState<ContinuityTab>(initialTab),[scenariosOpen,setScenariosOpen]=useState(false);
   const [file,setFile]=useState(''),[password,setPassword]=useState(''),[replace,setReplace]=useState(false);
   const [ledgerFilter,setLedgerFilter]=useState<LedgerFilter>('all'),[ledgerAll,setLedgerAll]=useState(false);
   const [comparePreset,setComparePreset]=useState<ComparePreset|null>(null);
@@ -183,6 +185,10 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
       {returnNote==='integrations'?<p className="chub-return" role="status" data-testid="return-note">Has vuelto de Integraciones. Lo guardado allí se lee de nuevo aquí; no se ha pedido nada al proveedor.</p>:returnNote==='drill'&&drillNote?<p className="chub-return" role="status" data-testid="drill-note">{drillNote}</p>:null}
       {canReadWork?<WorkSummary key={workOwner+':'+(expectedWorkPin??'none')} expectedContext={expectedWorkPin} identityKey={workOwner} onOpenToday={onOpenToday} onSummary={receiveWork}/>:<p className="helper" role="status" data-testid="work-summary-awaiting-context">El resumen del trabajo espera una referencia autorizada de la copia. No se acredita ningún recuento mientras tanto.</p>}
       <ContinuityHub key={workspaceContextRevision??'unavailable'} workspaceContextRevision={workspaceContextRevision} navigate={hubNavigate} connectionKey={status?.connection?'portal:'+status.connection.accountId:null} evidenceLink="#/continuidad" extra={{work:workSource}} onCopyContext={receiveCopyContext}/>
+    </details>
+    <details className="chub-block ct-scenarios" data-testid="continuity-scenarios-block" onToggle={event=>setScenariosOpen(event.currentTarget.open)}><summary>¿Y si la caída dura más? Escenarios de 8 horas a 7 días</summary>
+      <p className="helper">Elige caída del CRM o pérdida del equipo y cuánto dura: verás qué tareas vencerían en ese tiempo y qué falta demostrar. Solo se lee tu copia al pulsar «Consultar evidencia».</p>
+      {scenariosOpen?<ContinuityEvidence active={tab==='evidencia'}/>:null}
     </details>
     </div>
     <div className="ct-panel ct-copias" {...tabPanelProps('ct','copias')} hidden={tab!=='copias'}>

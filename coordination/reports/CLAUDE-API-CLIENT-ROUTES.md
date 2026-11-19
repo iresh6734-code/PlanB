@@ -49,3 +49,48 @@ El archivo de la prueba se escribió **antes** de registrar el encargo en el tab
 
 - `tests/api-client-routes.test.ts` (nuevo).
 - Este informe.
+
+## R2 · Revisión 433 de Codex
+
+**Hallazgos (correctos).** El detector por expresiones regulares fallaba en tres casos:
+
+1. no extraía una importación y una llamada con comillas dobles;
+2. con `'/v2/records/' + entity + '/' + id + '/ruta-inventada'`, comprobaba solo el prefijo y aprobaba;
+3. una concatenación partida en varias líneas dejaba el primer literal como ruta completa.
+
+**Corrección** (`tests/api-client-routes.test.ts`, solo la prueba). El detector lee cada archivo con el **árbol sintáctico de TypeScript** (`typescript`, ya instalado), así que reconoce cualquier comilla, plantillas y concatenaciones en cualquier número de líneas.
+
+- **Qué se mira:**
+  - las llamadas a `api`, `post` y `download` importados de `src/api.ts`, con cualquier comilla y con alias;
+  - toda expresión de texto que empiece por `/api/`.
+- **Cómo se reconstruye la dirección.** Entera, con trozos fijos y huecos de variable, y sin la consulta. Debe encajar **completa** en el patrón de alguna ruta documentada, incluidos los trozos fijos que van después de una variable:
+  - cada variable se prueba como uno o dos segmentos;
+  - y al revés, una variable puede valer por trozos fijos de la ruta, como `'auth/' + (configurada ? 'login' : 'setup')`.
+- **Direcciones que empiezan por una variable:** se marcan **indeterminadas** y se listan en la salida de la prueba (`t.diagnostic`), en lugar de aprobarse en silencio.
+
+**Pruebas** (**5/5**):
+
+- los tres casos de la revisión: la ruta inventada con comillas dobles se extrae y se rechaza; el sufijo inventado se rechaza; la versión en varias líneas es una sola dirección;
+- control positivo de la concatenación documentada (`/api/v2/records/:entity/:id`);
+- marca de indeterminada;
+- las formas anteriores;
+- con el código actual, ninguna llamada a ruta sin documentar.
+
+**Huella R2:** `tests/api-client-routes.test.ts` `a72a4a2cf95c…`.
+
+## R3 · Revisión 455 de Codex
+
+**Hallazgo (correcto).** Una condición con ramas literales, como `'/v2/auth/' + (setup ? 'setup' : 'login')`, se convertía en un comodín. Si se cambiaba una rama por una ruta inexistente, bastaba la otra para aprobar el conjunto.
+
+**Corrección** (`tests/api-client-routes.test.ts`). `alternatives()` reconstruye **todas** las direcciones posibles. Una condición cuyas ramas son textos, en concatenaciones o en plantillas, da una dirección por rama, y cada una se comprueba por separado. Lo que no se puede resolver sin ejecutar sigue siendo un hueco de variable. Hay un tope de 16 combinaciones; si se supera, queda como hueco.
+
+**Pruebas** (**5/5**):
+
+- se conservan los tres casos de 433 y el control positivo;
+- nuevo: con `setup ? 'setup' : 'ruta-ausente-455'`, la rama válida pasa y la ausente falla;
+- las dos direcciones documentadas (`setup` y `login`, en plantilla) siguen pasando;
+- el código actual no tiene ninguna llamada sin documentar.
+
+Con R2, la llamada producía una única dirección con hueco y la rama ausente pasaba.
+
+**Huella R3:** `tests/api-client-routes.test.ts` `1296fc0addd0…`.

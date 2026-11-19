@@ -1,6 +1,6 @@
 import type { AppSpec, CrmRecord, FieldValue } from '../../shared/model.js';
 import { doneOption } from './focus.js';
-import { linkedPreset } from './task-preset.js';
+import { canLogActivity, linkedPreset } from './task-preset.js';
 
 export type ActivityKind = 'call' | 'meeting' | 'email' | 'note' | 'task';
 export type ParsedActivity = { kind: ActivityKind; subject: string; day: string; time: string | null; done: boolean; dated: boolean };
@@ -112,10 +112,7 @@ export function activitySubject(activity: ParsedActivity, name: string): string 
   return subject.length > SUBJECT_MAX ? subject.slice(0, SUBJECT_MAX - 1).trimEnd() + '…' : subject;
 }
 
-/** True si se puede registrar actividad desde esta ficha: hay tareas y un único enlace directo de la tarea a su entidad. */
-export function canLogActivity(spec: AppSpec, record: CrmRecord): boolean {
-  return record.entity !== 'tasks' && !!linkedPreset(spec, 'tasks', record);
-}
+export { canLogActivity };
 
 /** Valores de la tarea que registra la actividad: enlazada a la ficha, con asunto, fecha y estado (hecha o abierta).
  *  El texto completo de una nota va también al campo `notes` si existe. Null si no se puede crear con seguridad. */

@@ -7,7 +7,7 @@ import type { Locator, Page } from '@playwright/test';
 
 /** Apartado → [grupo, nombre del apartado en el menú]. */
 const SECTIONS: Record<string, [string, string]> = {
-  'Tareas de hoy': ['Hoy', 'Tareas de hoy'], 'Revisión semanal': ['Hoy', 'Revisión semanal'], Propuestas: ['Hoy', 'Propuestas'],
+  'Tareas de hoy': ['Hoy', 'Tareas de hoy'], 'Revisión semanal': ['Hoy', 'Revisión semanal'], Agenda: ['Hoy', 'Agenda'], Propuestas: ['Hoy', 'Propuestas'],
   Clientes: ['Clientes', 'Clientes'], Empresas: ['Clientes', 'Empresas'], Oportunidades: ['Clientes', 'Oportunidades'], Tareas: ['Clientes', 'Tareas'],
   Estado: ['Continuidad', 'Estado'], Cambios: ['Continuidad', 'Cambios'], Exportar: ['Continuidad', 'Exportar'], 'Copia de equipo': ['Continuidad', 'Copia de equipo'],
   Integraciones: ['Ajustes', 'Integraciones'], 'Proveedor de IA': ['Ajustes', 'Proveedor de IA'], Preparación: ['Ajustes', 'Preparación'],
@@ -26,7 +26,7 @@ export const menuItem = (page: Page, section: string): Locator => {
 
 /** Orden de la paleta (Ctrl J o «Más» en el móvil) que abre cada apartado. */
 const COMMANDS: Record<string, string> = {
-  'Tareas de hoy': 'Ir a Hoy', 'Revisión semanal': 'Ir a Revisión semanal', Propuestas: 'Ir a Propuestas', Clientes: 'Ir a Clientes', Empresas: 'Ir a Empresas', Oportunidades: 'Ir a Oportunidades', Tareas: 'Ir a Tareas',
+  'Tareas de hoy': 'Ir a Hoy', 'Revisión semanal': 'Ir a Revisión semanal', Agenda: 'Ir a Agenda', Propuestas: 'Ir a Propuestas', Clientes: 'Ir a Clientes', Empresas: 'Ir a Empresas', Oportunidades: 'Ir a Oportunidades', Tareas: 'Ir a Tareas',
   Estado: 'Ir a Continuidad', Cambios: 'Ir a Cambios', Exportar: 'Ir a Exportar', 'Copia de equipo': 'Ir a Copia de equipo',
   Integraciones: 'Ir a Integraciones', 'Proveedor de IA': 'Proveedor de IA', Preparación: 'Ir a Preparación',
   Radar: 'Laboratorio: Radar de compromisos', 'Comprobar una fecha': 'Laboratorio: Comprobar una fecha',
@@ -62,7 +62,7 @@ export const lockButton = (page: Page): Locator => page.locator('.gx-topbar').ge
 
 /** Direcciones de cada apartado (src/app-shell/routes.ts), para recorrer vistas en el móvil sin depender del menú. */
 export const sectionPath: Record<string, string> = {
-  Inicio: '/inicio', Hoy: '/hoy', 'Revisión semanal': '/hoy/semana', Propuestas: '/hoy/propuestas', Clientes: '/clientes', Empresas: '/empresas', Oportunidades: '/oportunidades', Tareas: '/tareas',
+  Inicio: '/inicio', Hoy: '/hoy', 'Revisión semanal': '/hoy/semana', Agenda: '/hoy/agenda', Propuestas: '/hoy/propuestas', Clientes: '/clientes', Empresas: '/empresas', Oportunidades: '/oportunidades', Tareas: '/tareas',
   Continuidad: '/continuidad', Cambios: '/continuidad/cambios', Exportar: '/continuidad/exportar', 'Copia de equipo': '/continuidad/equipo',
   Integraciones: '/ajustes/integraciones', Preparación: '/ajustes/preparacion',
 };

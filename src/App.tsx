@@ -19,8 +19,7 @@ import { RelatedPanel } from './app-shell/RelatedPanel.js';
 import { DealSummary } from './app-shell/DealSummary.js';
 import { RecordSummary } from './app-shell/RecordSummary.js';
 import { linkedPreset, taskPreset } from './app-shell/task-preset.js';
-import { QuickActivity } from './app-shell/QuickActivity.js';
-import { canLogActivity } from './app-shell/quick-activity.js';
+import { canLogActivity } from './app-shell/task-preset.js';
 import { CommandPalette, type PaletteAsk } from './app-shell/CommandPalette.js';
 import type { ListPage } from './app-shell/pager.js';
 import { useRecordShortcuts } from './app-shell/useRecordShortcuts.js';
@@ -43,7 +42,7 @@ import { readinessFor } from './app-shell/continuity-insights.js';
 import type { ContinuityTab } from './ContinuityHome.js';
 import type { ContinuityStatus } from '../shared/operations.js';
 // Apartados que se descargan al visitarlos por primera vez (misma interfaz de uso que los originales).
-import { ChangesView, ContingencyBand, ContinuityHome, CsvImport, DateCheck, DecisionReview, FocusRun, GuidedDrill, LicensePanel, LocalIntegrations, OperationalRehearsal, OutageLab, PortableExport, Preparation, RadarHost, RecordTimeline, Settings, ShortcutsHelp, TeamSync, WeeklyReview } from './app-shell/lazy-pages.js';
+import { Agenda, ChangesView, ContingencyBand, ContinuityHome, CsvImport, DateCheck, DecisionReview, FocusRun, GuidedDrill, LicensePanel, LocalIntegrations, OperationalRehearsal, OutageLab, PortableExport, Preparation, QuickActivity, RadarHost, RecordTimeline, SequencePicker, Settings, ShortcutsHelp, TeamSync, WeeklyReview } from './app-shell/lazy-pages.js';
 import type { WorkspaceSearchContext } from '../shared/workspace-search.js';
 
 type LocalAppState = AppState & { workspaceSearchContext?: WorkspaceSearchContext | null };
@@ -238,7 +237,7 @@ export default function App() {
   const openAlert = (target: AlertTarget) => { setSelected(null); if (target === 'export') { setPage('export'); focusWhenReady('main-content'); return; } setContinuityTab(target); setPage('continuity'); focusWhenReady('ct-tab-' + target); };
   const copySignal = copyAlerts && copyAlerts.length ? { count: copyAlerts.length, tone: copyAlerts.some(alert => alert.tone === 'danger') ? 'danger' as const : 'warn' as const, titles: copyAlerts.map(alert => alert.title) } : null;
   const readinessDot = readinessFor(state, continuityStatus, new Date());
-  const pageLabel = page==='workspace'?(entity?.label??'Trabajar'):({home:'Inicio',today:'Hoy',week:'Revisión semanal',changes:'Cambios',agents:'Propuestas',radar:'Laboratorio · Radar','date-check':'Laboratorio · Comprobar una fecha','outage-lab':'Laboratorio · ¿Y si cae…?',continuity:'Continuidad','team-sync':'Copia de equipo',export:'Exportar',integrations:'Integraciones',prepare:'Preparación',plan:'Plan y licencia'} as Record<string,string>)[page]??'';
+  const pageLabel = page==='workspace'?(entity?.label??'Trabajar'):({home:'Inicio',today:'Hoy',week:'Revisión semanal',agenda:'Agenda',changes:'Cambios',agents:'Propuestas',radar:'Laboratorio · Radar','date-check':'Laboratorio · Comprobar una fecha','outage-lab':'Laboratorio · ¿Y si cae…?',continuity:'Continuidad','team-sync':'Copia de equipo',export:'Exportar',integrations:'Integraciones',prepare:'Preparación',plan:'Plan y licencia'} as Record<string,string>)[page]??'';
   // Mover una oportunidad de etapa desde el tablero: misma validación y mismo guardado que la ficha. Devuelve el motivo si no se puede.
   // Cambiar un campo desde la tabla o el tablero: misma validación y mismo guardado que la ficha. Devuelve el motivo si no se puede.
   // Escribir un campo con la validación de la ficha, sin refrescar: lo usan el guardado suelto y el cambio en bloque.
@@ -286,7 +285,7 @@ export default function App() {
   const commandList: Command[] = [
     { id: 'home', label: 'Ir a Inicio', group: 'Ir a', hint: 'G I', run: goTo('home') },
     ...(!state.runtime ? [{ id: 'today', label: 'Ir a Hoy', group: 'Ir a', hint: 'G H', run: goTo('today') }] : []),
-        ...(!state.runtime && state.ready && spec ? [{ id: 'week', label: 'Ir a Revisión semanal', group: 'Ir a', run: goTo('week') }] : []),
+        ...(!state.runtime && state.ready && spec ? [{ id: 'week', label: 'Ir a Revisión semanal', group: 'Ir a', run: goTo('week') }, { id: 'agenda', label: 'Ir a Agenda', group: 'Ir a', run: goTo('agenda') }] : []),
     ...(state.ready && spec ? spec.entities.map(item => ({ id: 'open-' + item.id, label: 'Ir a ' + item.label, group: 'Ir a', run: () => openEntity(item.id) })) : []),
     ...(state.ready ? [{ id: 'changes', label: 'Ir a Cambios', group: 'Ir a', hint: 'G M', run: goTo('changes') }] : []),
     ...(!state.runtime ? [{ id: 'agents', label: 'Ir a Propuestas', group: 'Ir a', run: goTo('agents') }] : []),
@@ -362,6 +361,7 @@ export default function App() {
       :page==='changes'?<ChangesView runtime={state.runtime} production={state.snapshot?.source.isTestData===false} spec={state.spec}/>
       :page==='export'?<PortableExport/>
       :page==='week'&&state.ready&&spec?<WeeklyReview spec={spec} revision={(state.snapshot?.capturedAt??'')+':'+(state.changes??0)} title={state.snapshot?.name??'Plan B'} saveField={saveField} createTask={createTask} onOpenRecord={record=>{openEntity(record.entity);setRecords([record]);setSelected(record);}}/>
+      :page==='agenda'&&state.ready&&spec?<Agenda spec={spec} revision={(state.snapshot?.capturedAt??'')+':'+(state.changes??0)} saveField={saveField} onOpenRecord={record=>{openEntity(record.entity);setRecords([record]);setSelected(record);}}/>
       :page === 'prepare' ? <Preparation state={state.candidate?{...state,...state.candidate,lastError:state.candidate.error}:state} step={step} setStep={setStep} refresh={refresh}
         openWorkspace={() => setPage('workspace')} configure={() => setModal('settings')} onConnect={()=>{setPage('continuity');setConnectRequest(n=>n+1);}} onError={setError} />
       : !state.ready || !spec || !entity ? <section className="empty-state"><ShieldCheck size={36} /><h1>Revisa la preparación</h1><p>La captura y las reglas deben estar verificadas antes de editar.</p>
@@ -379,7 +379,7 @@ export default function App() {
         const onNewDeal = newDeal && clean ? () => { openEntity('deals'); setPreset(newDeal); setSelected('new'); } : undefined;
         if (selected === 'new' && entityName !== 'deals') return null;
         return entityName === 'deals' ? <DealSummary spec={spec} values={values} set={set} records={records} disabled={saving} onNewTask={onNewTask} newTaskBlocked={!!newTask && !onNewTask} /> : <RecordSummary entityName={entityName} spec={spec} values={values} set={set} records={records} disabled={saving} onNewTask={onNewTask} newTaskBlocked={!!newTask && !onNewTask} onNewDeal={onNewDeal} newDealBlocked={!!newDeal && !onNewDeal} />; }}
-      extra={selected === 'new' ? undefined : dirty => <><RelatedPanel spec={spec} record={selected} dirty={dirty} onOpen={record => { openEntity(record.entity); setRecords([record]); setSelected(record); }} />{canLogActivity(spec, selected) ? <QuickActivity key={selected.entity + ':' + selected.id} spec={spec} record={selected} name={recordName(selected, spec)} createTask={createTask} /> : null}<RecordTimeline spec={spec} record={selected} records={records} /></>}
+      extra={selected === 'new' ? undefined : dirty => <><RelatedPanel spec={spec} record={selected} dirty={dirty} onOpen={record => { openEntity(record.entity); setRecords([record]); setSelected(record); }} />{canLogActivity(spec, selected) ? <><QuickActivity key={selected.entity + ':' + selected.id} spec={spec} record={selected} name={recordName(selected, spec)} createTask={createTask} /><SequencePicker key={'seq:' + selected.entity + ':' + selected.id} spec={spec} record={selected} name={recordName(selected, spec)} createTask={createTask} /></> : null}<RecordTimeline spec={spec} record={selected} records={records} /></>}
       close={() => { setSelected(null); setPreset(null); }} saved={async (_record, change) => { const target = selected !== 'new' && change ? { changeId: change.id, at: change.at, copy: change.copy } : null; await refresh(); setSelected(null); setPreset(null); setUndoable(target); setNotice('Guardado en tu copia local.'); }} /></> : null}
     {notice ? <div className="toast" role="status"><CheckCircle2 size={19} />{notice}{undoable ? <button type="button" className="toast-action" onClick={() => void undoLast()}>Deshacer</button> : null}</div> : null}
     {modal === 'settings' ? <Settings state={state} close={() => setModal(null)} done={async () => { await refresh(); setNotice('Proveedor guardado.'); }} /> : null}

@@ -30,6 +30,7 @@ export const OutageLab = deferred(() => import('../OutageLab.js').then(m => m.Ou
 export const DecisionReview = deferred(() => import('../DecisionReview.js').then(m => m.DecisionReview), 'Abriendo las decisiones…');
 export const Settings = deferred(() => import('../Settings.js').then(m => m.Settings), 'Abriendo los ajustes…');
 export const WeeklyReview = deferred(() => import('./WeeklyReview.js').then(m => m.WeeklyReview), 'Abriendo la revisión semanal…');
+export const Agenda = deferred(() => import('./Agenda.js').then(m => m.Agenda), 'Abriendo la agenda…');
 // Diálogos que solo se abren a petición: fuera del JS inicial.
 export const CsvImport = deferred(() => import('../CsvImport.js').then(m => m.CsvImport), 'Abriendo la importación…');
 export const FocusRun = deferred(() => import('./FocusRun.js').then(m => m.FocusRun), 'Abriendo la cola de foco…');
@@ -43,3 +44,5 @@ export const CoolingCard = quiet(() => import('./CoolingCard.js').then(m => m.Co
 export const PipelineStats = quiet(() => import('./PipelineStats.js').then(m => m.PipelineStats), 'Analítica del proceso');
 export const HomeSeal = quiet(() => import('./ContinuitySeal.js').then(m => m.HomeSeal), 'Sello de continuidad');
 export const MorningBrief = quiet(() => import('./MorningBrief.js').then(m => m.MorningBrief), 'Parte de la mañana');
+export const SequencePicker = quiet(() => import('./SequencePicker.js').then(m => m.SequencePicker), 'Secuencia de seguimiento');
+export const QuickActivity = quiet(() => import('./QuickActivity.js').then(m => m.QuickActivity), 'Registrar actividad');

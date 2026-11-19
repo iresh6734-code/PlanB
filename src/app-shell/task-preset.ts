@@ -25,6 +25,8 @@ export function linkedPreset(spec: Spec, target: EntityName, record: CrmRecord):
   return preset;
 }
 export const taskPreset = (spec: Spec, record: CrmRecord) => linkedPreset(spec, 'tasks', record);
+/** True si se puede registrar actividad desde esta ficha: hay tareas y un único enlace directo de la tarea a su entidad. */
+export const canLogActivity = (spec: Spec, record: CrmRecord) => record.entity !== 'tasks' && !!linkedPreset(spec, 'tasks', record);
 
 const FOLLOW_PREFIX = 'Seguimiento: ';
 const addDays = (day: string, days: number) => new Date(Date.parse(day + 'T12:00:00Z') + days * 86_400_000).toISOString().slice(0, 10);

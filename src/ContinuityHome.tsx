@@ -6,7 +6,8 @@ import { api, post, download } from './api.js';
 import { Modal, Spinner } from './components.js';
 import { ConnectionDialog } from './ConnectionDialog.js';
 import { StatusTag } from './WorkspaceUI.js';
-import { ContinuityOperations } from './ContinuityOperations.js';
+import { ContinuityOperations, type ComparePreset } from './ContinuityOperations.js';
+import { previousCapture } from './app-shell/copy-diff.js';
 import { APP_VERSION } from '../shared/version.js';
 import { CopyInspection } from './CopyInspection.js';
 import {INVALID_RECOVERY_MESSAGE} from '../shared/recovery-integrity.js';
@@ -36,6 +37,7 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
   const [tab,setTab]=useState<ContinuityTab>(initialTab);
   const [file,setFile]=useState(''),[password,setPassword]=useState(''),[replace,setReplace]=useState(false);
   const [ledgerFilter,setLedgerFilter]=useState<LedgerFilter>('all'),[ledgerAll,setLedgerAll]=useState(false);
+  const [comparePreset,setComparePreset]=useState<ComparePreset|null>(null);
   // Cada lectura se entrega también a la App (avisos del menú); la referencia evita usar una función antigua desde el temporizador.
   const statusOut=useRef(onStatus);statusOut.current=onStatus;
   const readHealth=useReadHealth();
@@ -75,7 +77,10 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
     captures={status.captures}
     activeCaptureId={activeId}
     refreshContext={refresh}
+    comparePreset={comparePreset}
   /> : null;
+  // «Ver qué falta»: compara una captura más pequeña con la anterior en Operaciones › Qué cambió (solo lectura).
+  const compareWithPrevious=(id:string)=>{const previous=status?previousCapture(status.captures,id):null;if(!previous)return;setComparePreset({from:previous.id,to:id,nonce:Date.now()});setTab('operaciones');requestAnimationFrame(()=>{const details=document.querySelector<HTMLDetailsElement>('.ct-operations-details');if(details)details.open=true;document.querySelector('.continuity-operations')?.scrollIntoView({block:'start'});});};
   const report=status?.reports.find(r=>r.id===diagnosis?.reportId && r.captureId===diagnosis?.captureId);
   const readinessLabel=diagnosis?({empty:'Necesitas una captura',blocked:'Prepara los datos del simulacro',untested:'Esta copia todavía no se ha probado',passed:'Simulacro superado',failed:'Hay procesos por revisar',expired:'Repite el simulacro de esta copia'})[diagnosis.status]:'';
   const production=status?.connection?.mode==='production_readonly'||state.snapshot?.source.isTestData===false;
@@ -191,7 +196,7 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
         <div className="ct-ledger-tools"><div className="ct-chips" role="group" aria-label="Filtrar capturas">{LEDGER_FILTERS.map(option=><button key={option.id} type="button" className="ct-chip" aria-pressed={ledgerFilter===option.id} onClick={()=>{setLedgerFilter(option.id);setLedgerAll(false);}}>{option.label}{option.id==='shrink'&&ledger.shrinks?<b>{ledger.shrinks}</b>:null}</button>)}</div>
           <p className="ct-ledger-sum">{ledger.total} {ledger.total===1?'captura':'capturas'} · {formatBytes(status.captures.reduce((sum,item)=>sum+item.bytes,0))} · media {formatBytes(ledger.averageBytes)}</p></div>
         {ledgerDays.length?<div className="history-list ct-ledger">{ledgerDays.map(day=><section key={day.key} className="ct-ledger-day" aria-label={day.label}><h3><span>{day.label}</span><small>{day.entries.length} · {formatBytes(day.bytes)}</small></h3>
-          {day.entries.map(item=><div key={item.id} className="ct-ledger-row" data-shrink={item.shrink?'true':undefined}><Database size={16}/><div><strong>{hourLabel.format(new Date(item.at))}</strong><small>{(item.bytes/1024).toFixed(0)} KB · Captura conciliada</small>{item.delta!==null&&item.delta!==0?<small className="ct-ledger-delta" data-dir={item.delta>0?'up':'down'}>{(item.delta>0?'+':'−')+formatBytes(Math.abs(item.delta))}{item.shrink?' · más pequeña que la anterior: revisa el alcance':''}</small>:null}</div>
+          {day.entries.map(item=><div key={item.id} className="ct-ledger-row" data-shrink={item.shrink?'true':undefined}><Database size={16}/><div><strong>{hourLabel.format(new Date(item.at))}</strong><small>{(item.bytes/1024).toFixed(0)} KB · Captura conciliada</small>{item.delta!==null&&item.delta!==0?<small className="ct-ledger-delta" data-dir={item.delta>0?'up':'down'}>{(item.delta>0?'+':'−')+formatBytes(Math.abs(item.delta))}{item.shrink?' · más pequeña que la anterior: revisa el alcance':''}</small>:null}{item.shrink?<button type="button" className="text-button ct-ledger-diff" onClick={()=>compareWithPrevious(item.id)}>Ver qué falta</button>:null}</div>
             <button className="text-button" disabled={busy||!!active||status.pendingChanges>0||!!status.session&&status.session.captureId!==item.id} onClick={()=>status.session?.captureId===item.id?work():run(async()=>{await post('/v2/session/begin',{captureId:item.id});work();})}>{status.session?.captureId===item.id?'Abrir trabajo':'Abrir copia'}<ArrowRight size={15}/></button></div>)}</section>)}</div>:<p className="muted ui-empty">Ninguna captura coincide con este filtro.</p>}
         {ledgerHidden>0?<button type="button" className="text-button ct-ledger-more" onClick={()=>setLedgerAll(true)}>Mostrar {ledgerHidden} {ledgerHidden===1?'captura más':'capturas más'}</button>:null}
       </>:<p className="muted ui-empty">Todavía no hay capturas verificadas.</p>}

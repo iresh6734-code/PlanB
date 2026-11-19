@@ -133,3 +133,4 @@ html body .ct-rel-fail { grid-column: 1 / -1; font-size: var(--fs-xs); color: va
   html body .ct-ledger-row > .text-button { grid-column: 2; justify-self: start; }
 }
 @media (prefers-reduced-motion: reduce) { html body .ct-ready-meter li, html body .ct-chip, html body .ct-ledger-row { transition: none; } }
+html body .ct-ledger-diff { font-size: var(--fs-xs); min-height: 0; padding: 0; }

@@ -6,6 +6,7 @@ import { api } from './api.js';
 import { Spinner } from './components.js';
 import { TabList, tabPanelProps } from './TabList.js';
 import { StatusTag } from './WorkspaceUI.js';
+import { diffBar, diffDigest } from './app-shell/copy-diff.js';
 import './continuity-operations.css';
 
 // Solo consulta: este bloque nunca escribe. Radar sobre la copia activa; comparador sobre capturas guardadas.
@@ -15,6 +16,8 @@ type CompareResponse = CaptureComparison & { from: Described; to: Described };
 type Failure = { status: number; message: string; stale?: boolean; contextChanged?: boolean };
 type QueryState<T> = { key: string | null; phase: 'idle' | 'loading' | 'ok' | 'error'; data?: T; error?: Failure };
 export type CaptureOption = { id: string; at: string; bytes: number };
+/** Par de capturas pedido desde fuera (p. ej. «Ver qué falta» en el historial); `nonce` permite repetir la misma petición. */
+export type ComparePreset = { from: string; to: string; nonce: number };
 
 const PAGE = 25;
 const ENTITY: Record<string, string> = { contacts: 'Clientes', companies: 'Empresas', deals: 'Oportunidades', tasks: 'Tareas' };
@@ -150,9 +153,14 @@ function RadarResult({ data, horizon }: { data: RadarResponse; horizon: number }
 
 type Request = { from: string; to: string; offset: number; content?: { from: string; to: string } };
 
-export function ComparePanel({ captures }: { captures: CaptureOption[] }) {
+export function ComparePanel({ captures, preset = null }: { captures: CaptureOption[]; preset?: ComparePreset | null }) {
   const [from, setFrom] = useState(''), [to, setTo] = useState(''), [req, setReq] = useState<Request | null>(null);
   const moved = useRef(false), heading = useRef<HTMLHeadingElement | null>(null);
+  useEffect(() => {
+    if (!preset) return;
+    setFrom(preset.from); setTo(preset.to); moved.current = true;
+    setReq({ from: preset.from, to: preset.to, offset: 0 });
+  }, [preset?.nonce]);
   const compareButton = useRef<HTMLButtonElement | null>(null);
   const known = new Map(captures.map(item => [item.id, item]));
   const missing = [from, to].filter(id => id && !known.has(id));
@@ -218,6 +226,7 @@ function CompareResult({ data, headingRef, page }: { data: CompareResponse; head
     <h4 ref={node => { headingRef.current = node; }} tabIndex={-1}>Resultado de la comparación</h4>
     <div className="co-sides">{side('Primera captura', data.from)}{side('Segunda captura', data.to)}</div>
     {!data.chronological ? <p className="helper">La primera captura es posterior a la segunda: es una comparación inversa, tal como la elegiste.</p> : null}
+    <DiffDigestView counts={r.counts} />
     <div className="co-scroll" tabIndex={0} role="region" aria-label="Recuentos por entidad"><table className="co-table"><thead><tr><th scope="col">Entidad</th><th scope="col">Añadidos</th><th scope="col">Ausentes</th><th scope="col">Modificados</th><th scope="col">Sin cambios</th></tr></thead>
       <tbody>{entities.map(id => <tr key={id}><th scope="row">{entityLabel(id)}</th><td>{count(r.counts[id as keyof typeof r.counts].added)}</td><td>{count(r.counts[id as keyof typeof r.counts].absent)}</td><td>{count(r.counts[id as keyof typeof r.counts].changed)}</td><td>{count(r.counts[id as keyof typeof r.counts].unchanged)}</td></tr>)}</tbody></table></div>
     <p className="helper">«Ausente» significa que no figura en la segunda captura; no prueba que se borrara en HubSpot.</p>
@@ -240,8 +249,28 @@ function CompareResult({ data, headingRef, page }: { data: CompareResponse; head
   </div>;
 }
 
-export function ContinuityOperations({ captures, activeCaptureId, refreshContext }: { captures: CaptureOption[]; activeCaptureId: string | null; refreshContext: () => Promise<unknown> }) {
+const signed = (value: number) => (value > 0 ? '+' : value < 0 ? '−' : '±') + Math.abs(value).toLocaleString('es-ES');
+
+/** Lectura de un vistazo: cuántos había y cuántos hay por objeto, con la parte ausente a la vista. */
+function DiffDigestView({ counts }: { counts: CaptureComparison['records']['counts'] }) {
+  const digest = diffDigest(counts, entityLabel), scale = Math.max(1, ...digest.rows.map(row => Math.max(row.before, row.after)));
+  return <section className="co-digest" data-alert={digest.alert ? 'true' : undefined} aria-label="Resumen por objeto">
+    <p className="co-digest-headline" role={digest.alert ? 'status' : undefined}>{digest.headline}</p>
+    <ul className="co-digest-rows">{digest.rows.map(row => {
+      const bar = diffBar(row, scale);
+      return <li key={row.entity} data-alert={row.alert ? 'true' : undefined}>
+        <strong>{row.label}</strong>
+        <span className="co-digest-bar" aria-hidden="true"><i data-part="unchanged" style={{ width: bar.unchanged + '%' }} /><i data-part="changed" style={{ width: bar.changed + '%' }} /><i data-part="added" style={{ width: bar.added + '%' }} /><i data-part="absent" style={{ width: bar.absent + '%' }} /></span>
+        <span className="co-digest-figure">{count(row.before)} → {count(row.after)} <small data-dir={row.net < 0 ? 'down' : row.net > 0 ? 'up' : undefined}>{signed(row.net)}</small>{row.alert && row.ratio !== null ? <small className="co-digest-loss">falta el {Math.round(row.ratio * 100)} %</small> : null}</span>
+      </li>;
+    })}</ul>
+    <ul className="co-digest-legend" aria-label="Leyenda"><li data-part="unchanged">Sin cambios</li><li data-part="changed">Modificados</li><li data-part="added">Añadidos</li><li data-part="absent">Ausentes</li></ul>
+  </section>;
+}
+
+export function ContinuityOperations({ captures, activeCaptureId, refreshContext, comparePreset = null }: { captures: CaptureOption[]; activeCaptureId: string | null; refreshContext: () => Promise<unknown>; comparePreset?: ComparePreset | null }) {
   const [open, setOpen] = useState(true), [tab, setTab] = useState<'radar' | 'compare'>('radar'), [locked, setLocked] = useState(false);
+  useEffect(() => { if (comparePreset) { setOpen(true); setTab('compare'); } }, [comparePreset?.nonce]);
   useEffect(() => { const lock = () => setLocked(true); window.addEventListener('planb:locked', lock); return () => window.removeEventListener('planb:locked', lock); }, []);
   const tabs = [{ id: 'radar' as const, label: 'Qué atender' }, { id: 'compare' as const, label: 'Qué cambió' }];
   return <section className="continuity-operations" aria-labelledby="continuity-operations-title">
@@ -250,7 +279,7 @@ export function ContinuityOperations({ captures, activeCaptureId, refreshContext
     {open && !locked ? <div id="continuity-operations-body">
       <TabList label="Operaciones de la copia" prefix="co" tabs={tabs} value={tab} onChange={setTab} />
       <div {...tabPanelProps('co', 'radar')} hidden={tab !== 'radar'}><RadarPanel activeCaptureId={activeCaptureId} refreshContext={refreshContext} /></div>
-      <div {...tabPanelProps('co', 'compare')} hidden={tab !== 'compare'}><ComparePanel captures={captures} /></div>
+      <div {...tabPanelProps('co', 'compare')} hidden={tab !== 'compare'}><ComparePanel captures={captures} preset={comparePreset} /></div>
     </div> : null}
     {locked ? <p className="warning-text" role="alert">Desbloquea tu copia local para continuar.</p> : null}
   </section>;

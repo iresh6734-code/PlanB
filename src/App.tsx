@@ -22,6 +22,8 @@ import { DealSummary } from './app-shell/DealSummary.js';
 import { RecordSummary } from './app-shell/RecordSummary.js';
 import { linkedPreset, taskPreset } from './app-shell/task-preset.js';
 import { RecordTimeline } from './app-shell/RecordTimeline.js';
+import { QuickActivity } from './app-shell/QuickActivity.js';
+import { canLogActivity } from './app-shell/quick-activity.js';
 import { CommandPalette } from './app-shell/CommandPalette.js';
 import { FocusRun, type FocusScope } from './app-shell/FocusRun.js';
 import { DueReminder } from './app-shell/DueReminder.js';
@@ -342,7 +344,7 @@ export default function App() {
         const onNewDeal = newDeal && clean ? () => { openEntity('deals'); setPreset(newDeal); setSelected('new'); } : undefined;
         if (selected === 'new' && entityName !== 'deals') return null;
         return entityName === 'deals' ? <DealSummary spec={spec} values={values} set={set} records={records} disabled={saving} onNewTask={onNewTask} newTaskBlocked={!!newTask && !onNewTask} /> : <RecordSummary entityName={entityName} spec={spec} values={values} set={set} records={records} disabled={saving} onNewTask={onNewTask} newTaskBlocked={!!newTask && !onNewTask} onNewDeal={onNewDeal} newDealBlocked={!!newDeal && !onNewDeal} />; }}
-      extra={selected === 'new' ? undefined : dirty => <><RelatedPanel spec={spec} record={selected} dirty={dirty} onOpen={record => { openEntity(record.entity); setRecords([record]); setSelected(record); }} /><RecordTimeline spec={spec} record={selected} records={records} /></>}
+      extra={selected === 'new' ? undefined : dirty => <><RelatedPanel spec={spec} record={selected} dirty={dirty} onOpen={record => { openEntity(record.entity); setRecords([record]); setSelected(record); }} />{canLogActivity(spec, selected) ? <QuickActivity key={selected.entity + ':' + selected.id} spec={spec} record={selected} name={recordName(selected, spec)} createTask={createTask} /> : null}<RecordTimeline spec={spec} record={selected} records={records} /></>}
       close={() => { setSelected(null); setPreset(null); }} saved={async (_record, change) => { const target = selected !== 'new' && change ? { changeId: change.id, at: change.at, copy: change.copy } : null; await refresh(); setSelected(null); setPreset(null); setUndoable(target); setNotice('Guardado en tu copia local.'); }} /></> : null}
     {notice ? <div className="toast" role="status"><CheckCircle2 size={19} />{notice}{undoable ? <button type="button" className="toast-action" onClick={() => void undoLast()}>Deshacer</button> : null}</div> : null}
     {modal === 'settings' ? <Settings state={state} close={() => setModal(null)} done={async () => { await refresh(); setNotice('Proveedor guardado.'); }} /> : null}

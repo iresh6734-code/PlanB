@@ -1,8 +1,12 @@
 ﻿# Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026, 16:00, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 a V6 hechas. Oleada 3: H2, H3, H4, H5 y H6 hechas; H1 aplazada (requiere e2e). Continuidad: C2 y C5 hechas. Negocio: M1, M2, M3 y M6 hechas. Datos: D1, D2 y D3 hechas. Rendimiento: P3 hecha.
+Última revisión: **19/11/2026, 16:30, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 a V7 hechas. Oleada 3: H2, H3, H4, H5 y H6 hechas; H1 aplazada (requiere e2e). Continuidad: C2 y C5 hechas. Negocio: M1, M2, M3 y M6 hechas. Datos: D1, D2 y D3 hechas. Rendimiento: P3 hecha.
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
+
+## Super plan V7 · Registrar actividad · 19/11/2026, 16:30, Europe/Madrid
+
+La ficha de contactos y oportunidades (también al abrirla desde el tablero) tiene «Registrar actividad»: una línea con Intro crea una tarea enlazada a la ficha con `createTask`. Analizador puro en `src/app-shell/quick-activity.ts`: `parseActivity` entiende hoy, mañana (no «por la mañana»), pasado mañana, días de la semana (el mismo día es la semana siguiente), «en N días/semanas», 3/1, 3/1/27 y «15 de diciembre» (sin año: el próximo), y horas 10:00, 10h30, «a las 9»; detecta llamada, reunión, correo, nota o tarea. «Llamé…», «hecho: …» y «nota: …» quedan como hechas hoy; con fecha futura siguen pendientes. Una fecha imposible no se inventa. `activityTask` usa `linkedPreset`, el estado hecho de `doneOption` o el primero abierto, la hora al final del asunto y el texto de la nota en `notes`. La vista previa (`describeActivity`) dice tipo, día, hora y estado antes de guardar. UI en `src/app-shell/QuickActivity.tsx`, estilos `.qa*` en `faro.css`. Pruebas: `tests/quick-activity.test.ts`. La tarjeta del tablero no lleva campo propio: abre la ficha. Sin verificación visual en este equipo.
 
 ## Super plan H3 · Revisión semanal · 19/11/2026, 16:00, Europe/Madrid
 

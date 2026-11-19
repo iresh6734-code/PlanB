@@ -16,7 +16,7 @@ import { continuityAlerts, type AlertTarget } from './app-shell/continuity-alert
 import { readinessFor } from './app-shell/continuity-insights.js';
 import { FirstRun, FirstRunStrip, passportSeen } from './app-shell/FirstRun.js';
 import { anyDrillPassed, firstRunPlan } from './app-shell/first-run.js';
-import { PipelineCard } from './app-shell/PipelineCard.js';
+import { CoolingCard, PipelineCard } from './app-shell/lazy-pages.js';
 import { captureRecordCount, describeCapture, workspaceCopy } from './app-shell/workspace-copy.js';
 
 /** INICIO («Operaciones claras», 11/11/2026). Solo LEE: estado de la copia, tareas de Hoy y Radar. No captura, no decide ni escribe nada; cada acción abre la página que ya la hace.
@@ -216,6 +216,7 @@ export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, 
             </li>; })}</ul>}
       </article> : null}
       {!state.runtime && state.spec ? <PipelineCard spec={state.spec} revision={(snapshot?.capturedAt ?? '') + ':' + (state.changes ?? 0)} onOpenRecord={onOpenRecord} onOpenDeals={onOpenDeals} /> : null}
+      {!state.runtime && state.spec ? <CoolingCard spec={state.spec} revision={(snapshot?.capturedAt ?? '') + ':' + (state.changes ?? 0)} onOpenRecord={onOpenRecord} /> : null}
 
       </div>
       <div className="oc-home-side">

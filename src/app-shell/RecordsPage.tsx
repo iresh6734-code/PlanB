@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowRight, Bookmark, ChevronRight, Database, Download, PlugZap, Plus, Search, Sparkles, Unplug, X } from 'lucide-react';
+import { ArrowRight, Bookmark, ChartColumn, ChevronRight, Database, Download, PlugZap, Plus, Search, Sparkles, Unplug, X } from 'lucide-react';
 import type { AppState, CrmRecord, EntityName } from '../../shared/model.js';
 import { displayValue, recordName } from '../components.js';
 import { EmptyState, ErrorState, Skeleton } from '../ui/index.js';
@@ -13,6 +13,7 @@ import { formatRecordSort } from '../../shared/record-order.js';
 import { InlineSelect } from './InlineSelect.js';
 import { BulkBar } from './BulkBar.js';
 import { bulkFields, type BulkItem, type BulkResult } from './bulk-edit.js';
+import { PipelineStats } from './lazy-pages.js';
 
 const singular: Record<EntityName, string> = { contacts: 'Nuevo cliente', companies: 'Nueva empresa', deals: 'Nueva oportunidad', tasks: 'Nueva tarea' };
 type Spec = NonNullable<AppState['spec']>;
@@ -70,6 +71,8 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
   const [saved, setSaved] = useState<SavedView[]>(() => readSavedViews(entityName)), [naming, setNaming] = useState<string | null>(null);
   useEffect(() => { writeView(entityName, { sort, pick, smart }); }, [entityName, sort, pick, smart]);
   const [editing, setEditing] = useState<string | null>(null);
+  // F1: la analítica del proceso solo se carga (y lee el diario) cuando se abre.
+  const [analytics, setAnalytics] = useState(false);
   const change = async (record: CrmRecord, key: string, value: string) => {
     const field = entity.fields.find(item => item.key === key); if (!field || String(record.values[key] ?? '') === value) return;
     setEditing(record.id + ':' + key); setMoveNote(null);
@@ -186,8 +189,9 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
       {entityName==='deals'&&state.snapshot?.pipelines?.length?<select aria-label="Proceso comercial" value={pipeline} onChange={e=>{setPipeline(e.target.value);setOffset(0);}}><option value="">Todos los procesos</option>{state.snapshot.pipelines.map(p=><option key={p.id} value={p.id}>{p.label}</option>)}</select>:null}
   {pickField && (rows.length || (server && pick)) ? <div className="gx-picks" role="group" aria-label={'Filtrar por ' + pickField.label.toLowerCase()}><button type="button" aria-pressed={pick === null} onClick={() => choosePick(null)}>Todo</button>{pickField.options.map(option => { const count = pickCount(option.id); return <button key={option.id} type="button" aria-pressed={pick === option.id} onClick={() => choosePick(pick === option.id ? null : option.id)}>{option.label}{count === undefined ? null : <span>{count}</span>}</button>; })}</div> : null}
           <span className="muted">{pageOnly ? (entityName === 'deals' ? filtered : visible).length + ' de ' + loaded.length + ' cargados (' + total + ' en total)' : server && pickActive && !activeSmart ? total + ' ' + entity.label.toLowerCase() + ' con este filtro' : <>{filterActive ? (entityName === 'deals' ? filtered : visible).length + ' de ' : ''}{total} {entity.label.toLowerCase()}</>}</span>{entityName==='deals'&&loaded.length?<span className="muted gx-total" title={partial ? 'Suma de las ' + loaded.length + ' oportunidades cargadas' : 'Suma de todo el proceso con la búsqueda y la vista aplicadas'}><strong>{euros(dealsSum)}</strong> {partial ? 'en lo cargado' : 'en esta vista'}</span>:null}</div>
-  <div className="gx-head-actions"><button type="button" className="button secondary" disabled={recordsLoading || !loaded.length} title={partial ? 'Exporta los ' + loaded.length + ' registros cargados, con la búsqueda y el filtro aplicados' : 'Exporta lo que ves, con la búsqueda y el filtro aplicados'} onClick={exportView}><Download size={15} />CSV</button>
+  <div className="gx-head-actions">{entityName === 'deals' ? <button type="button" className="button secondary" aria-pressed={analytics} aria-controls={analytics ? 'gx-stats-panel' : undefined} title="Tasa de cierre, ciclo y conversión por etapa con tu copia local" onClick={() => setAnalytics(value => !value)}><ChartColumn size={15} />Analítica</button> : null}<button type="button" className="button secondary" disabled={recordsLoading || !loaded.length} title={partial ? 'Exporta los ' + loaded.length + ' registros cargados, con la búsqueda y el filtro aplicados' : 'Exporta lo que ves, con la búsqueda y el filtro aplicados'} onClick={exportView}><Download size={15} />CSV</button>
     <button className="button primary" onClick={() => setSelected('new')}><Plus size={16} />{singular[entityName]}</button></div></header>
+    {entityName === 'deals' && analytics ? <div id="gx-stats-panel"><PipelineStats spec={spec} revision={(state.snapshot?.capturedAt ?? '') + ':' + (state.changes ?? 0)} /></div> : null}
     {smarts.length || saved.length || !isDefault ? <div className="gx-views" role="group" aria-label="Vistas">
       {smarts.map(view => { const count = loaded.filter(record => view.test(record, smartContext)).length; return <button key={view.id} type="button" className="gx-view" data-kind="smart" aria-pressed={smart === view.id} title={view.hint + (partial ? ' · en los registros cargados' : '')} onClick={() => setSmart(smart === view.id ? null : view.id)}><Sparkles size={13} aria-hidden="true" />{view.label}<span>{count}</span></button>; })}
       {saved.map(view => <span key={view.id} className="gx-view-saved"><button type="button" className="gx-view" data-kind="saved" aria-pressed={sameView(view, current)} title={describeView(view, labels)} onClick={() => applyView(view)}><Bookmark size={13} aria-hidden="true" />{view.name}</button><button type="button" className="gx-view-remove" aria-label={'Borrar la vista «' + view.name + '»'} title="Borrar esta vista" onClick={() => removeView(view)}><X size={12} aria-hidden="true" /></button></span>)}

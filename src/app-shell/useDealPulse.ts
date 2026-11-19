@@ -12,7 +12,7 @@ import { recordListPath } from './useRecordList.js';
  * (hasta 1000) solo con Oportunidades abierta. Si no pudo leerlas todas, devuelve null: mejor no ofrecer la vista que
  * decir «sin próximo paso» de una oportunidad cuya tarea quedó sin leer.
  */
-export function useDealPulse({ active, spec, revision }: { active: boolean; spec: AppState['spec'] | null | undefined; revision: number }): Map<string, DealPulse> | null {
+export function useDealPulse({ active, spec, revision }: { active: boolean; spec: AppState['spec'] | null | undefined; revision: number | string }): Map<string, DealPulse> | null {
   const [pulse, setPulse] = useState<Map<string, DealPulse> | null>(null);
   const link = spec ? dealTaskField(spec) : null;
   useEffect(() => {

@@ -34,7 +34,7 @@ test('las vistas inteligentes solo existen si la especificación tiene el campo'
 test('oportunidades: cierre pasado, cierran esta semana y sin fecha, solo si siguen abiertas', () => {
   const dealSpec = { roles: { stage: 'dealstage', amount: 'amount', pipeline: null, dueDate: 'due_date', taskStatus: 'status' }, stages: [{ id: 'qualified', label: 'Cualificada', color: '#000000' }, { id: 'closedwon', label: 'Ganada', color: '#000000' }] } as never;
   const views = smartViews('deals', entity([field('closedate', 'date', 'Fecha de cierre'), field('dealstage', 'enum')]), dealSpec);
-  assert.deepEqual(views.map(view => view.id), ['close-late', 'close-week', 'no-close']);
+  assert.deepEqual(views.map(view => view.id), ['close-late', 'close-week', 'no-close', 'at-risk']);
   assert.equal(pick(views, 'close-late').test(record({ dealstage: 'qualified', closedate: '2026-11-12' }), context), true);
   assert.equal(pick(views, 'close-late').test(record({ dealstage: 'closedwon', closedate: '2026-11-12' }), context), false, 'una ganada no está atrasada');
   assert.equal(pick(views, 'close-week').test(record({ dealstage: 'qualified', closedate: '2026-11-13' }), context), true);
@@ -47,8 +47,8 @@ test('oportunidades: cierre pasado, cierran esta semana y sin fecha, solo si sig
 test('V5 · «Sin próximo paso» y «Paradas»: solo con tareas enlazables, solo abiertas y solo con el pulso leído', () => {
   const linked = { roles: { stage: 'dealstage' }, stages: [{ id: 'qualified', label: 'Cualificada', color: '#000000' }, { id: 'closedwon', label: 'Ganada', color: '#000000' }],
     entities: [{ id: 'tasks', fields: [{ key: 'planb_deal_id', type: 'reference', referenceEntity: 'deals' }] }] } as never;
-  assert.deepEqual(smartViews('deals', entity([field('dealstage', 'enum')]), linked).map(view => [view.id, view.needs]), [['no-next', 'pulse'], ['stalled', 'pulse']]);
-  assert.deepEqual(smartViews('deals', entity([field('dealstage', 'enum')]), { ...(linked as object), entities: [] } as never), []);
+  assert.deepEqual(smartViews('deals', entity([field('dealstage', 'enum')]), linked).map(view => [view.id, view.needs]), [['no-next', 'pulse'], ['stalled', 'pulse'], ['at-risk', undefined]]);
+  assert.deepEqual(smartViews('deals', entity([field('dealstage', 'enum')]), { ...(linked as object), entities: [] } as never).map(view => view.id), ['at-risk']);
   const views = smartViews('deals', entity([field('dealstage', 'enum')]), linked);
   const deal = (id: string, stage: string) => ({ id, entity: 'deals', values: { dealstage: stage } }) as never;
   const pulse = new Map([['old', { open: 1, undated: 0, next: '2026-10-01', last: '2026-10-01' }], ['busy', { open: 1, undated: 0, next: '2026-11-20', last: '2026-11-20' }]]);

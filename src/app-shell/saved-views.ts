@@ -1,6 +1,7 @@
 import type { AppState, CrmRecord, EntityName } from '../../shared/model.js';
 import { dueDay } from '../task-display.js';
 import { dealSignal, IDLE_DAYS, stageKind, type DealPulse } from './deal-insights.js';
+import { dealRiskReasons, riskBase } from './deal-risk.js';
 
 /** Vistas de las listas de registros.
  *  · Inteligentes: preguntas frecuentes ya resueltas («Vencidas», «Más de 3.000 €», «Sin correo»…), según los campos que la
@@ -55,6 +56,11 @@ export function smartViews(entityName: EntityName, entity: Entity, spec: Spec): 
       const signal = (record: CrmRecord, context: SmartContext) => context.pulse && open(record) ? dealSignal(context.pulse.get(record.id), context.today) : null;
       views.push({ id: 'no-next', label: 'Sin próximo paso', hint: 'Abiertas sin ninguna tarea pendiente enlazada', needs: 'pulse', test: (record, context) => !!signal(record, context)?.noNext });
       views.push({ id: 'stalled', label: 'Paradas ' + IDLE_DAYS + ' días', hint: 'Abiertas cuya tarea más reciente es de hace más de ' + IDLE_DAYS + ' días; los cambios de etapa o importe no cuentan', needs: 'pulse', test: (record, context) => signal(record, context)?.idleDays != null });
+    }
+    // F7: todos los motivos juntos. Sin las tareas leídas, solo cuentan el cierre vencido y lo que pide la etapa.
+    if (has(stageKey)) {
+      const base = { ...riskBase(spec), closeKey: close?.key ?? null };
+      views.push({ id: 'at-risk', label: 'En riesgo', hint: 'Abiertas con algún motivo a la vista: cierre vencido, falta lo que pide su etapa, sin próximo paso o paradas', test: (record, context) => dealRiskReasons(record, { ...base, today: context.today, pulse: context.pulse }).length > 0 });
     }
   }
   if (entityName === 'contacts' || entityName === 'companies') {

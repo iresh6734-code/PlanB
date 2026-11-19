@@ -38,3 +38,6 @@ export const ContingencyBand = quiet(() => import('./ContingencyBand.js').then(m
 export const GuidedDrill = quiet(() => import('./GuidedDrill.js').then(m => m.GuidedDrill), 'Práctica guiada');
 export const ShortcutsHelp = quiet(() => import('./ShortcutsHelp.js').then(m => m.ShortcutsHelp), 'Atajos de teclado');
 export const RecordTimeline = quiet(() => import('./RecordTimeline.js').then(m => m.RecordTimeline), 'Historial de la ficha');
+export const PipelineCard = quiet(() => import('./PipelineCard.js').then(m => m.PipelineCard), 'Oportunidades');
+export const CoolingCard = quiet(() => import('./CoolingCard.js').then(m => m.CoolingCard), 'Clientes que se enfrían');
+export const PipelineStats = quiet(() => import('./PipelineStats.js').then(m => m.PipelineStats), 'Analítica del proceso');

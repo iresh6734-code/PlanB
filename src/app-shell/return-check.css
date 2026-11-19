@@ -1,0 +1,25 @@
+/* T6 «Comprobar la devolución»: relectura compacta tras devolver. Solo tokens. */
+.return-check { display: grid; gap: 10px; margin-top: 16px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--bg-subtle); }
+.return-check-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+.return-check-head > div { flex: 1 1 280px; min-width: 0; }
+.return-check-head h3 { margin: 0; font-size: var(--fs-sm); font-weight: 650; color: var(--text-1); }
+.return-check-head p { margin: 2px 0 0; font-size: var(--fs-xs); line-height: var(--lh-body); }
+.return-check-head .button { flex: none; gap: 6px; }
+.return-check-result { display: grid; gap: 8px; }
+.return-check-line { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; margin: 0; padding: 7px 10px; border: 1px solid var(--success-border); border-left-width: 3px; border-radius: var(--r-sm); background: var(--success-bg); font-size: var(--fs-sm); color: var(--success); }
+.return-check-line[data-tone="warn"] { border-color: var(--warning-border); background: var(--warning-bg); color: var(--warning); }
+.return-check-line time { font-size: var(--fs-xs); color: var(--text-3); font-variant-numeric: tabular-nums; }
+.return-check-list { display: grid; margin: 0; padding: 0; list-style: none; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--bg-surface); }
+.return-check-list > li { display: grid; grid-template-columns: minmax(140px, 30%) minmax(0, 1fr); gap: 4px 12px; padding: 8px 10px; font-size: var(--fs-sm); }
+.return-check-list > li + li { border-top: 1px solid var(--rule); }
+.return-check-name { display: grid; min-width: 0; }
+.return-check-name strong { overflow-wrap: anywhere; color: var(--text-1); }
+.return-check-name small { font-size: var(--fs-xs); font-weight: 600; color: var(--warning); }
+.return-check-list > li[data-state="missing"] .return-check-name small { color: var(--danger); }
+.return-check-list p, .return-check-list ul { margin: 0; font-size: var(--fs-xs); line-height: var(--lh-body); color: var(--text-2); overflow-wrap: anywhere; }
+.return-check-list ul { padding: 0; list-style: none; display: grid; gap: 2px; }
+.return-check-list ul strong { color: var(--text-1); }
+.return-check-result > .helper { margin: 0; font-size: var(--fs-xs); }
+@media (max-width: 560px) {
+  .return-check-list > li { grid-template-columns: minmax(0, 1fr); }
+}

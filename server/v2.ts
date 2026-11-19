@@ -137,6 +137,10 @@ export function registerV2(app:FastifyInstance,store:Store,root:string,runtime=f
     const body=z.object({planId:z.string(),operationId:z.string(),remoteId:z.string().min(1),simulation:z.boolean().default(false),token:z.string().max(4096).optional()}).strict().parse(request.body);
     return recovery.resolveUncertain(body.planId,body.operationId,body.remoteId,remote(body));
   });
+  app.post('/api/v2/return/check',async request=>{
+    const body=z.object({planId:z.string(),simulation:z.boolean().default(false),token:z.string().max(4096).optional()}).strict().parse(request.body);
+    return recovery.check(body.planId,remote(body));
+  });
   }
   app.post('/api/v2/export/encrypted',async(request,reply)=>{
     const {password,revision}=z.object({password:z.string().min(12).max(200),revision:z.string().optional()}).strict().parse(request.body);

@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import type { CrmRecord, EntityName, FieldValue } from '../shared/model.js';
 import { validateRecord, RecoveryPlanSchema } from '../shared/model.js';
 import type { RecoveryOperation, RecoveryPlan } from '../shared/operations.js';
+import { checkReturn } from '../shared/return-check.js';
 import { Store, AppError } from './store.js';
 export interface Remote {
   source:'hubspot'|'simulation'; accountId:string;
@@ -180,6 +181,15 @@ export class Recovery {
     op.remoteId=remoteId;op.status=pendingRelations?'pending':'applied';op.error=pendingRelations?'Registro verificado. Revisa y aprueba únicamente las relaciones pendientes.':null;
     const mapping=this.store.get<Record<string,string>>('remoteMapping:'+remote.source,{});mapping[op.entity+':'+op.localId]=remoteId;
     plan.status='partial';this.save(plan,{key:'remoteMapping:'+remote.source,value:mapping});return plan;
+  }
+  /** T6: relee en el destino lo ya verificado y dice si sigue igual. Solo lee: no guarda el plan ni toca la copia. */
+  async check(planId:string,remote:Remote){
+    const plan=this.require(planId);
+    if(plan.source!==remote.source||plan.accountId!==remote.accountId)throw new AppError(409,'Comprueba con el mismo destino que usó la devolución.');
+    if(plan.status==='applying'||this.store.get('returnBusy',false))throw new AppError(409,'Espera a que termine la devolución en curso.');
+    if(!plan.operations.some(op=>op.status==='applied'&&op.remoteId))throw new AppError(409,'Este plan aún no tiene nada enviado que comprobar.');
+    await this.checkedRemote(()=>remote.verify());
+    return checkReturn(plan,(entity,id)=>this.checkedRemote(()=>remote.read(entity,id)),new Date().toISOString());
   }
 }
 export function simulatedRemote(store:Store):Remote {

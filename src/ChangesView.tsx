@@ -13,6 +13,7 @@ import { SalesWorkspace } from './SalesWorkspace.js';
 import { ChangeHistory } from './ChangeHistory.js';
 import { useContingency } from './app-shell/useContingency.js';
 import { clockTime } from './app-shell/contingency-text.js';
+import { ReturnCheckPanel } from './app-shell/ReturnCheckPanel.js';
 export function ChangesView({runtime,production=false,spec=null}:{runtime:boolean;production?:boolean;spec?:AppState['spec']|null}) {
   const [changes,setChanges]=useState<Change[]>([]),[plan,setPlan]=useState<RecoveryPlan|null>(null),[simulation,setSimulation]=useState(true);
   const [busy,setBusy]=useState(false),[error,setError]=useState(''),[reviewed,setReviewed]=useState(false),[token,setToken]=useState('');
@@ -83,6 +84,7 @@ export function ChangesView({runtime,production=false,spec=null}:{runtime:boolea
           <button className="button primary" disabled={busy||blocked||!reviewed||plan.source!==(simulation?'simulation':'hubspot')||plan.operations.some(o=>o.fields.some(f=>f.decision===null)||['sending','uncertain'].includes(o.status))} onClick={()=>run(()=>post('/v2/return/approve',{planId:plan.id,reviewedWorkflows:true}),true)}>Aprobar plan revisado</button></>:null}
         {plan.status==='approved'?<button className="button primary" disabled={busy||blocked||plan.source!==(simulation?'simulation':'hubspot')} onClick={()=>run(()=>post('/v2/return/apply',{...destinations,planId:plan.id,approved:true}),true)}>{plan.source==='simulation'?'Ejecutar devolución simulada':'Aplicar a HubSpot de prueba'}</button>:null}
         {plan.status==='complete'?<><p className="success-label"><CheckCircle2 size={18}/>{plan.source==='simulation'?'Prueba completada. Los cambios locales siguen pendientes de devolución real.':'Los valores enviados se han leído y verificado en HubSpot.'}</p><div className="button-row return-receipt"><button type="button" className="button secondary" disabled={busy||blocked} onClick={()=>run(()=>download('/export/changes','plan-b-justificante-devolucion.json'))}><Download size={16}/>Descargar justificante</button><span className="helper">El registro de cambios guardado en este ordenador, con lo que se devolvió.</span></div></>:null}
+        {['complete','partial'].includes(plan.status)&&plan.operations.some(o=>o.status==='applied'&&o.remoteId)?<ReturnCheckPanel planId={plan.id} source={plan.source} destinations={destinations} disabled={busy||blocked}/>:null}
       </div>:null}
     </section>:<p className="info-box">Exporta los cambios y abre la devolución en el generador con la agencia. Este paquete no contiene conectores externos.</p>}
     <ChangeHistory changes={changes} watermark={watermark} spec={spec}/>

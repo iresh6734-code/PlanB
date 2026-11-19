@@ -1,8 +1,12 @@
 ﻿# Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 a V7 hechas. Oleada 3: H2, H3, H4, H5 y H6 hechas; H1 aplazada (requiere e2e). Continuidad: C1 a C5 hechas. Negocio: M1 a M6 hechas. Datos: D1, D2 y D3 hechas. Rendimiento: P3 hecha. Super plan 2: T1, T5, E1, E2, E5, E6, R4, F5, R1, R2, F7, F6, F1, F2, R5, R6, N1, K6, K1, K2, K3, K4, K5, K7, K8, K10, F3, F4, K9, N2, N3, N4, N5, R3 y F8 hechas; E3 y E4 aplazadas por las reglas.
+Última revisión: **19/11/2026**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 a V7 hechas. Oleada 3: H2, H3, H4, H5 y H6 hechas; H1 aplazada (requiere e2e). Continuidad: C1 a C5 hechas. Negocio: M1 a M6 hechas. Datos: D1, D2 y D3 hechas. Rendimiento: P3 hecha. Super plan 2: T1, T5, E1, E2, E5, E6, R4, F5, R1, R2, F7, F6, F1, F2, R5, R6, N1, K6, K1, K2, K3, K4, K5, K7, K8, K10, F3, F4, K9, N2, N3, N4, N5, R3, F8 y T6 hechas; E3 y E4 aplazadas por las reglas.
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
+
+## Super plan 2 · Bloque 8, octava parte (T6) · 19/11/2026
+
+- **T6 · Comprobar la devolución**: `shared/return-check.ts` compara, de forma pura, lo enviado en cada operación aplicada (solo los campos decididos en local) con lo que el destino devuelve al releer; como mucho 200 registros por comprobación. `Recovery.check` en `server/recovery.ts` exige el mismo origen y cuenta que el plan, rechaza con 409 si hay una devolución en curso o nada enviado, verifica el destino y relee con las comprobaciones de integridad de siempre; no guarda nada. Ruta `POST /api/v2/return/check` (zod estricto, en `server/v2.ts`). En el cliente, `src/app-shell/return-check-client.ts` valida la respuesta a mano y redacta el resumen, y `ReturnCheckPanel.tsx` (con `return-check.css`, solo tokens) se muestra en `ChangesView.tsx` cuando el plan está completo o parcial con algo enviado. Pruebas en `tests/return-check.test.ts`: motor con destino simulado (igual, cambiado y desaparecido, sin escrituras), rechazos, la ruta con `app.inject` y el analizador del cliente.
 
 ## Super plan 2 · Bloque 8, séptima parte (T5) · 19/11/2026
 

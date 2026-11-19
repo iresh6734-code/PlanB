@@ -16,3 +16,13 @@ Ambos reutilizan la comprobación de versión usada por el estado y la búsqueda
 - 66/66 en las suites focales de Continuidad, respuesta, comparador, frontend de operaciones y estado. TypeScript sin errores.
 
 Los registros antes y después están en «tests/.tmp/consistency464-before.log» y «tests/.tmp/consistency464-after.log». Se probó con Fastify y SQLite, con inyección HTTP local. El piloto instalado queda fuera del ensayo.
+
+## Corrección pedida (19/11/2026, 12:40)
+
+Hecha por Copilot con autorización de la usuaria, en lugar de Codex.
+
+El radar acepta ahora un `contextRevision` opcional, de 64 hexadecimales y no repetible (si no, 422). La comprobación usa la identidad del espacio que ya expone `/api/v2/state` (`workspaceSearchIdentity`), después de verificar que hay una copia activa. Si la revisión no coincide, responde 409 con `details.code = RESPONSE_QUEUE_CONTEXT_CHANGED`, sin `items` ni `source`. La respuesta incluye siempre `source.contextRevision` y la `revision` se calcula igual que antes.
+
+Los controles de versión SQLite de 464 no cambian: se lee la versión antes que la copia y se comprueba después. El GET sin parámetro mantiene el contrato anterior.
+
+Evidencia: 464, 466 y 468 dan 26/26. Las suites de la cola de respuesta y la revisión independiente de continuidad dan 54/54. Todo se ejecutó con inyección HTTP y SQLite en memoria, sin servidor ni navegador.

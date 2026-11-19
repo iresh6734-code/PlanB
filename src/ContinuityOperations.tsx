@@ -9,10 +9,10 @@ import { StatusTag } from './WorkspaceUI.js';
 import './continuity-operations.css';
 
 // Solo consulta: este bloque nunca escribe. Radar sobre la copia activa; comparador sobre capturas guardadas.
-type RadarResponse = ResponseQueue & { source: { view: string; captureId: string; snapshotId: string; accountId: string; capturedAt: string; isTestData: boolean; revision: string } };
+type RadarResponse = ResponseQueue & { source: { view: string; captureId: string; snapshotId: string; accountId: string; capturedAt: string; isTestData: boolean; revision: string; contextRevision?: string | null } };
 type Described = { captureId: string; name: string; accountId: string; capturedAt: string; isTestData: boolean; contentHash: string };
 type CompareResponse = CaptureComparison & { from: Described; to: Described };
-type Failure = { status: number; message: string; stale?: boolean };
+type Failure = { status: number; message: string; stale?: boolean; contextChanged?: boolean };
 type QueryState<T> = { key: string | null; phase: 'idle' | 'loading' | 'ok' | 'error'; data?: T; error?: Failure };
 export type CaptureOption = { id: string; at: string; bytes: number };
 
@@ -35,6 +35,8 @@ function failure(error: unknown, scope: 'radar' | 'compare'): Failure {
   if (status === 404 && scope === 'compare' && /No se encontró la captura/.test(text)) return { status, message: 'Una de las capturas elegidas ya no existe en el historial. No se ha sustituido por otra: elige de nuevo.' };
   if (status === 404) return { status, message: 'Esta versión instalada de Plan B no incluye esta consulta. Actualiza Plan B para usarla; no se muestra un resultado de sustitución.' };
   if (status === 401) return { status, message: 'Desbloquea tu copia local para continuar.' };
+  const code = (error as { details?: { code?: unknown } })?.details?.code;
+  if (status === 409 && scope === 'radar' && code === 'RESPONSE_QUEUE_CONTEXT_CHANGED') return { status, message: text || 'La copia activa cambió. Actualiza el contexto.', contextChanged: true };
   if (status === 409) return { status, message: text || (scope === 'compare' ? 'Las capturas no son comparables.' : 'No hay una copia activa.') };
   if (status === 422) return { status, message: text || 'La consulta no es válida.' };
   return { status, message: text || 'No se pudo completar la consulta.' };
@@ -87,23 +89,36 @@ function dueText(item: ResponseQueueItem) {
 const HORIZONS = [8, 24, 72, 168];
 const LIMITS = [25, 50, 100];
 
-export function RadarPanel({ activeCaptureId, refreshContext }: { activeCaptureId: string | null; refreshContext: () => Promise<unknown> }) {
+/**
+ * Sin `workspaceContextRevision` el radar consulta como siempre. Con la prop (string o null) queda anclado a la identidad del
+ * espacio: null no consulta, y una copia sustituida con el mismo ID y fecha se rechaza en el servidor (409) y aquí (468).
+ */
+export function RadarPanel({ activeCaptureId, refreshContext, workspaceContextRevision }: { activeCaptureId: string | null; refreshContext: () => Promise<unknown>; workspaceContextRevision?: string | null }) {
   const [horizon, setHorizon] = useState(24), [limit, setLimit] = useState(50), [refreshing, setRefreshing] = useState(false);
-  const key = activeCaptureId ? activeCaptureId + '|' + horizon + '|' + limit : null;
-  const expected = useRef(activeCaptureId); expected.current = activeCaptureId;
-  const { state, retry } = useQuery<RadarResponse>(key, signal => api<RadarResponse>('/v2/continuity/response-queue?horizonHours=' + horizon + '&limit=' + limit, { signal }),
-    data => data.source?.captureId === expected.current ? null : 'La respuesta pertenece a otra captura activa y se ha descartado. Actualiza el contexto para volver a consultar.', 'radar');
-  const update = async () => { setRefreshing(true); try { await refreshContext(); } catch { /* el padre muestra su propio error */ } finally { setRefreshing(false); retry(); } };
+  const anchored = workspaceContextRevision !== undefined, unverified = anchored && !workspaceContextRevision;
+  const key = activeCaptureId && !unverified ? activeCaptureId + '|' + (workspaceContextRevision ?? '') + '|' + horizon + '|' + limit : null;
+  const expected = useRef({ captureId: activeCaptureId, revision: workspaceContextRevision }); expected.current = { captureId: activeCaptureId, revision: workspaceContextRevision };
+  const path = '/v2/continuity/response-queue?horizonHours=' + horizon + '&limit=' + limit + (workspaceContextRevision ? '&contextRevision=' + encodeURIComponent(workspaceContextRevision) : '');
+  const { state, retry } = useQuery<RadarResponse>(key, signal => api<RadarResponse>(path, { signal }), data => {
+    if (data.source?.captureId !== expected.current.captureId) return 'La respuesta pertenece a otra captura activa y se ha descartado. Actualiza el contexto para volver a consultar.';
+    if (anchored && data.source.contextRevision !== expected.current.revision) return 'La respuesta pertenece a otra copia activa y se ha descartado. Actualiza el contexto para volver a consultar.';
+    return null;
+  }, 'radar');
+  // Un contexto caducado no se reintenta: la nueva revisión llega del padre y cambia la clave de la consulta.
+  const contextConflict = state.phase === 'error' && (!!state.error!.contextChanged || anchored && !!state.error!.stale);
+  const update = async () => { setRefreshing(true); try { await refreshContext(); } catch { /* el padre muestra su propio error */ } finally { setRefreshing(false); if (!anchored) retry(); } };
   const data = state.phase === 'ok' ? state.data! : null;
+  const refreshButton = <button type="button" className="button secondary" disabled={refreshing} onClick={() => void update()}>Actualizar contexto</button>;
   return <div className="co-panel">
     <div className="co-controls">
       <label className="field"><span>Horizonte</span><select aria-label="Horizonte" value={horizon} onChange={event => setHorizon(Number(event.target.value))}>{HORIZONS.map(hours => <option key={hours} value={hours}>{hours === 168 ? '7 días (168 h)' : hours + ' horas'}</option>)}</select></label>
       <label className="field"><span>Tareas visibles</span><select aria-label="Tareas visibles" value={limit} onChange={event => setLimit(Number(event.target.value))}>{LIMITS.map(n => <option key={n} value={n}>{n}</option>)}</select></label>
-      <button type="button" className="button secondary" disabled={!activeCaptureId || state.phase === 'loading'} onClick={retry}>Actualizar radar</button>
+      <button type="button" className="button secondary" disabled={!activeCaptureId || unverified || contextConflict || state.phase === 'loading'} onClick={retry}>Actualizar radar</button>
     </div>
     {!activeCaptureId ? <p className="helper">No hay una copia activa. Usa «Continuar trabajando» o «Preparar aplicación» en esta página; el radar no inventa un resultado.</p> : null}
+    {activeCaptureId && unverified ? <div className="error-box co-error" role="alert"><p>No se pudo verificar la identidad de la copia activa. Actualiza el contexto antes de consultar el radar.</p><div className="button-row">{refreshButton}</div></div> : null}
     {activeCaptureId && state.phase === 'loading' ? <Spinner text="Calculando el radar…" /> : null}
-    {state.phase === 'error' ? <QueryError error={state.error!} onRetry={retry}>{state.error!.stale ? <button type="button" className="button secondary" disabled={refreshing} onClick={() => void update()}>Actualizar contexto</button> : null}</QueryError> : null}
+    {state.phase === 'error' ? <QueryError error={state.error!} onRetry={contextConflict ? undefined : retry}>{state.error!.stale || state.error!.contextChanged ? refreshButton : null}</QueryError> : null}
     {data ? <RadarResult data={data} horizon={horizon} /> : null}
   </div>;
 }

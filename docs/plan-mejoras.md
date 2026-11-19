@@ -21,6 +21,10 @@ Análisis del 19/11/2026 sobre la rama `planb-v0.3-local`. Se ha hecho leyendo e
 | Una sola regla de «vencida»: Hoy y «Despachar vencidas» usan el mismo día de Madrid, también cuando la fecha incluye hora. | `task-display.ts` (`dueDay`), `app-shell/focus.ts` |
 | «Despachar vencidas» permite posponer al próximo lunes, además de a mañana (tecla L). | `FocusRun.tsx`, `focus.ts` (`nextMonday`) |
 | Continuidad y Cambios dejan de consultar el estado cada 2,5 s mientras la pestaña está oculta, y lo leen al momento al volver a ella. | `app-shell/poll.ts`, `ContinuityHome.tsx`, `ChangesView.tsx` |
+| (1) Los avisos de éxito del desplegable de la tabla, de mover en el tablero y de «Mañana» llevan un botón «Deshacer» (mismo deshacer de 8 s que el aviso global). | `RecordsPage.tsx`, `App.tsx` |
+| (5) El desplegable de la tabla guarda al elegir con el ratón, pero con el teclado las flechas y las letras solo recorren: Intro o salir del campo guarda, Escape lo revierte. Se marca con borde discontinuo mientras está pendiente. | `app-shell/InlineSelect.tsx` |
+| (17) «N cambios» es un botón propio en la barra superior que abre Cambios (sin la palabra en móvil), y el menú móvil muestra el número en «Continuidad». | `TopBar.tsx`, `MobileNav.tsx`, `cuaderno.css` |
+| (20) Si falla una lectura periódica de Continuidad, aparece «No se pudo actualizar. Lo que ves es la lectura de hace X», que desaparece al recuperarse. Cambios ya mostraba su error. `/v6/workspace` sigue en silencio a propósito: solo activa un acceso opcional y un 404 es normal sin espacio de equipo. | `app-shell/poll.ts` (`useReadHealth`, `staleReadNote`), `ContinuityHome.tsx` |
 
 ## Mejoras de lo que ya existe
 

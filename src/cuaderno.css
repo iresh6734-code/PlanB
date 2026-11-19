@@ -136,6 +136,9 @@ html body .gx-topbar .gx-copy .dot { width: 8px; height: 8px; border-radius: 1px
 html body .gx-topbar .gx-copy.independent .dot, html body .gx-topbar .gx-copy[data-stale="true"] .dot { background: var(--warning-border); }
 html body .gx-topbar .gx-copy[data-stale="true"], html[data-theme="dark"] body .gx-topbar .gx-copy[data-stale="true"] { background: var(--warning-bg); color: var(--warning); border-color: transparent; }
 html body .gx-topbar .gx-copy b { padding-left: 8px; border-left: 1px solid var(--border); color: var(--primary-text); font-weight: 600; }
+html body .gx-topbar .gx-changes { display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg-surface); color: var(--primary-text); font: inherit; font-size: var(--fs-sm); font-weight: 600; font-variant-numeric: tabular-nums; cursor: pointer; white-space: nowrap; }
+html body .gx-topbar .gx-changes:hover { border-color: var(--border-control); }
+html body .gx-topbar .gx-changes:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 html body .gx-topbar .gx-mode { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border: 1px dashed var(--pencil); border-radius: var(--r-sm); color: var(--text-2); font-size: var(--fs-xs); font-weight: 600; white-space: nowrap; }
 html body .gx-topbar .gx-mode[data-mode="production"] { border-style: solid; border-color: var(--warning-border); background: var(--warning-bg); color: var(--warning); }
 html body .gx-topbar .gx-team-link { font-size: var(--fs-sm); }
@@ -372,6 +375,9 @@ html body .gx-mnav [aria-current="page"], html body .gx-mnav .active { color: va
   html body .main-content { border-left: 0; }
   html body .gx-topbar .gx-copy { display: inline-flex; max-width: 52vw; overflow: hidden; text-overflow: ellipsis; }
   html body .gx-topbar .gx-copy b, html body .gx-topbar .gx-mode { display: none; }
+  html body .gx-topbar .gx-changes { padding: 0 8px; }
+  html body .gx-topbar .gx-changes .gx-changes-word { display: none; }
+  html body .gx-mnav-item i[data-tone="info"] { background: var(--primary); color: var(--text-on-primary, #fff); }
   html body .oc-home-grid { grid-template-columns: minmax(0, 1fr); }
   html body .fx-next { grid-template-columns: minmax(0, 1fr); gap: 4px; }
   html body .fx-next .button { grid-column: 1; grid-row: auto; justify-self: start; margin-top: 8px; }

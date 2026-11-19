@@ -1,8 +1,25 @@
 # Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026, 11:47, Europe/Madrid**. Análisis completo de mejoras (`docs/plan-mejoras.md`) y primeras mejoras de uso: órdenes recientes, filtros vacíos, una sola regla de vencida, posponer al lunes y sondeo en pausa con la pestaña oculta.
+Última revisión: **19/11/2026, 12:01, Europe/Madrid**. Mejoras 1, 5, 17 y 20 del plan, y cierre de las tareas 464, 466 y 468 del tablón.
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
+
+## Propuestas 1, 5, 17 y 20 y tablón · 19/11/2026, 12:01, Europe/Madrid
+
+El usuario autorizó hacer las propuestas y retomar lo pendiente del tablón, con las mismas normas anti-alertas: sin DPAPI/PowerShell, sin Playwright, sin servidores y sin datos.
+
+- **Tablón (`coordination/board.json`):**
+  - 464, 466 y 468 tenían 4 pruebas en rojo por el radar anclado a `contextRevision` sin terminar.
+  - Servidor (`server/response-queue.ts`): parámetro opcional `contextRevision`; si no coincide con la copia activa, responde 409 `RESPONSE_QUEUE_CONTEXT_CHANGED`. `source.contextRevision` va siempre en la respuesta.
+  - Cliente (`ContinuityOperations.tsx`, `RadarPanel`): `workspaceContextRevision` opcional. Sin identidad no consulta; descarta respuestas de otra copia; ante el 409 ofrece «Actualizar contexto» y no «Reintentar consulta». Sigue sin montarse en `ContinuityHome` (reserva de montaje de Codex en Grafito).
+  - Las tres tareas están entregadas en `review` a nombre de `codex`, con nota de que lo hizo Copilot con autorización del usuario. Informes en `coordination/reports/` (464 y 466 con corrección, 468 nuevo). **Las revisa Codex; no aceptarlas uno mismo.**
+  - `CLAUDE-TEAM-AUDIT-R` queda `blocked`: sus pruebas puras pasan (4/4), pero la pasada `run-r.mjs` necesita servidores y navegador, que el usuario no permite ahora.
+- **Mejoras:** detalle en la tabla «Hecho» de [docs/plan-mejoras.md](docs/plan-mejoras.md): Deshacer en avisos (1), `InlineSelect` (5), cambios en la barra superior y el menú móvil (17), y aviso de lectura caducada en Continuidad (20).
+- **Validación:**
+  - 115 pruebas unitarias en modo prueba, más `design-tokens` y `ui-states`; todas verdes. Pruebas nuevas: `inline-select` y `staleReadNote` en `poll`.
+  - `npm run build` correcto.
+  - Sin comprobación visual ni e2e, por las normas del usuario.
+- **Siguiente:** seguir el orden del plan (6 `confirm()` → Modal, 22 «Parte para compartir», 7 vista «Sin próximo paso»…).
 
 ## Plan de mejoras y primeras entregas · 19/11/2026, 11:47, Europe/Madrid
 

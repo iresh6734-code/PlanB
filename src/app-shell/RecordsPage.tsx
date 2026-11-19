@@ -8,6 +8,7 @@ import { madridDay } from '../task-display.js';
 import { closeStatus, dueStatus, euros, stageKind } from './deal-insights.js';
 import { addSavedView, describeView, readSavedViews, sameView, smartViews, writeSavedViews, type SavedView } from './saved-views.js';
 import { RECORD_PAGE_SIZE } from './useRecordList.js';
+import { InlineSelect } from './InlineSelect.js';
 
 const singular: Record<EntityName, string> = { contacts: 'Nuevo cliente', companies: 'Nueva empresa', deals: 'Nueva oportunidad', tasks: 'Nueva tarea' };
 type Spec = NonNullable<AppState['spec']>;
@@ -25,6 +26,8 @@ type Props = {
   newWith?: (values: Record<string, string>) => void;
   /** Cambia un campo de lista desde la tabla, con la validación y el guardado de la ficha. */
   saveField: (record: CrmRecord, key: string, value: string | null) => Promise<string | null>;
+  /** El último guardado aún se puede deshacer (lo decide App, que caduca la opción a los pocos segundos). */
+  canUndo?: boolean; onUndo?: () => void;
 };
 type View = { sort: { key: string; dir: 1 | -1 } | null; pick: string | null; smart: string | null };
 // Vista recordada por tipo de registro en este navegador: solo el orden y el filtro rápido, nunca datos.
@@ -33,7 +36,7 @@ const writeView = (entity: EntityName, view: View) => { try { localStorage.setIt
 
 /** Clientes, Empresas, Oportunidades y Tareas: cabecera-barra, tabla ordenable o tablero por etapas, y barra de estado.
  *  Solo presenta lo que App ya cargó; el orden reordena los registros de la página, no pide nada nuevo. */
-export function RecordsPage({ state, spec, entity, entityName, rows, records, total, offset, setOffset, query, setQuery, pipeline, setPipeline, selected, setSelected, recordsLoading, recordsError, onRetry, busy, date, viewCoverage, toggleServices, moveDeal, saveField, newWith }: Props) {
+export function RecordsPage({ state, spec, entity, entityName, rows, records, total, offset, setOffset, query, setQuery, pipeline, setPipeline, selected, setSelected, recordsLoading, recordsError, onRetry, busy, date, viewCoverage, toggleServices, moveDeal, saveField, newWith, canUndo = false, onUndo }: Props) {
   const [sort, setSort] = useState<{ key: string; dir: 1 | -1 } | null>(() => readView(entityName).sort);
   // Al cambiar de tipo de registro se recupera la vista recordada de ese tipo (la página no se desmonta).
   useEffect(() => { const view = readView(entityName); setSort(view.sort); setPick(view.pick); setSmart(view.smart); setSaved(readSavedViews(entityName)); setNaming(null); setMoveNote(null); }, [entityName]);
@@ -50,12 +53,12 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
     const problem = await saveField(record, key, value || null);
     setEditing(null);
     const label = field.options.find(option => option.id === value)?.label ?? 'vacío';
-    setMoveNote(problem ? { tone: 'error', text: '«' + recordName(record, spec) + '»: ' + field.label.toLowerCase() + ' no cambió. ' + problem } : { tone: 'ok', text: '«' + recordName(record, spec) + '»: ' + field.label.toLowerCase() + ' → ' + label + '. Guardado en tu copia local.' });
+    setMoveNote(problem ? { tone: 'error', text: '«' + recordName(record, spec) + '»: ' + field.label.toLowerCase() + ' no cambió. ' + problem } : { tone: 'ok', text: '«' + recordName(record, spec) + '»: ' + field.label.toLowerCase() + ' → ' + label + '. Guardado en tu copia local.', undo: true });
   };
   const pickField = entityName === 'deals' ? undefined : entity.columns.map(key => entity.fields.find(field => field.key === key)).find(field => field?.type === 'enum' && field.options.length > 1 && field.options.length <= 6);
   // Tablero: arrastrar entre etapas o Alt + flechas con la tarjeta enfocada.
   const [dragId, setDragId] = useState<string | null>(null), [overStage, setOverStage] = useState<string | null>(null), [moving, setMoving] = useState<string | null>(null);
-  const [moveNote, setMoveNote] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
+  const [moveNote, setMoveNote] = useState<{ tone: 'ok' | 'error'; text: string; undo?: boolean } | null>(null);
   const stageKey = spec.roles?.stage ?? 'dealstage', amountKey = spec.roles?.amount ?? 'amount';
   const stages = spec.stages.filter(stage => !pipeline || !stage.pipelineId || stage.pipelineId === pipeline);
   const move = async (record: CrmRecord, stageId: string) => {
@@ -64,7 +67,7 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
     setMoving(record.id); setMoveNote(null);
     const problem = await moveDeal(record, stageId);
     setMoving(null);
-    setMoveNote(problem ? { tone: 'error', text: '«' + recordName(record, spec) + '» no se movió a ' + target.label + ': ' + problem } : { tone: 'ok', text: '«' + recordName(record, spec) + '» pasó a ' + target.label + '. Guardado en tu copia local.' });
+    setMoveNote(problem ? { tone: 'error', text: '«' + recordName(record, spec) + '» no se movió a ' + target.label + ': ' + problem } : { tone: 'ok', text: '«' + recordName(record, spec) + '» pasó a ' + target.label + '. Guardado en tu copia local.', undo: true });
   };
   const today = madridDay(new Date());
   // Una fecha pasada solo se resalta si la tarea no parece cerrada. «Cerrada» se deduce del NOMBRE de la opción de estado
@@ -78,7 +81,7 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
     setEditing(record.id + ':' + dueKey); setMoveNote(null);
     const problem = await saveField(record, dueKey, tomorrow);
     setEditing(null);
-    setMoveNote(problem ? { tone: 'error', text: '«' + recordName(record, spec) + '» no cambió de fecha. ' + problem } : { tone: 'ok', text: '«' + recordName(record, spec) + '» pasa a mañana. Guardado en tu copia local.' });
+    setMoveNote(problem ? { tone: 'error', text: '«' + recordName(record, spec) + '» no cambió de fecha. ' + problem } : { tone: 'ok', text: '«' + recordName(record, spec) + '» pasa a mañana. Guardado en tu copia local.', undo: true });
   };
   // Tareas abiertas: a la fecha límite se le añade cuándo vence en palabras («hace 3 días», «hoy», «mañana», «en 5 días»).
   const dueHint = (record: CrmRecord, value: unknown) => { if (looksDone(record)) return null; const status = dueStatus(value, today, false); if (status.tone !== 'late' && status.tone !== 'soon') return null; return { tone: status.tone, text: status.label.replace(/ · .*$/, '').replace(/^Venció /, '').replace(/^Vence /, '') }; };
@@ -149,7 +152,7 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
       : <button type="button" className="gx-view-add" disabled={isDefault} title={isDefault ? 'Busca, filtra u ordena y guárdalo con un nombre' : 'Guardar ' + describeView(current, labels)} onClick={() => setNaming('')}><Plus size={13} aria-hidden="true" />Guardar vista</button>}
       {pageOnly ? <span className="gx-views-note">Filtra los {rows.length} registros cargados; la búsqueda llega a todos.</span> : null}
     </div> : null}
-    {moveNote ? <p className="gx-move-note" data-tone={moveNote.tone} role={moveNote.tone === 'error' ? 'alert' : 'status'}>{moveNote.text}<button type="button" className="icon-button" aria-label="Cerrar aviso" onClick={() => setMoveNote(null)}>×</button></p> : null}
+    {moveNote ? <p className="gx-move-note" data-tone={moveNote.tone} role={moveNote.tone === 'error' ? 'alert' : 'status'}>{moveNote.text}{moveNote.undo && canUndo && onUndo ? <button type="button" className="gx-move-undo" onClick={() => { setMoveNote(null); onUndo(); }}>Deshacer</button> : null}<button type="button" className="icon-button" aria-label="Cerrar aviso" onClick={() => setMoveNote(null)}>×</button></p> : null}
     {entityName === 'deals' ? <div className="kanban" aria-label="Tablero de oportunidades">{stages.map((stage, stageIndex) => {
       const deals = filtered.filter(r => r.values[stageKey] === stage.id);
       const kind = stageKind(stage), stageSum = deals.reduce((sum, record) => sum + (Number(record.values[amountKey]) || 0), 0);
@@ -175,8 +178,8 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
           return <td key={key} data-label={field.label}>{index === 0 ? <button className="record-link" onClick={() => setSelected(record)}>
             {entityName === 'contacts' ? <span className="avatar">{String(record.values.firstname || '?')[0]}{String(record.values.lastname || '')[0]}</span> : null}
             {entityName === 'contacts' && key === entity.displayField ? recordName(record, spec) : value}</button>
-            : field.type === 'enum' && !field.readOnly && field.options.length ? <select className="gx-inline" aria-label={'Cambiar ' + field.label.toLowerCase() + ' de ' + recordName(record, spec)} title={'Cambiar ' + field.label.toLowerCase()} value={String(record.values[key] ?? '')} disabled={editing !== null} data-saving={editing === record.id + ':' + key ? 'true' : undefined} onChange={event => void change(record, key, event.target.value)}>
-                {field.required ? null : <option value="">—</option>}{!field.options.some(option => option.id === String(record.values[key] ?? '')) && record.values[key] ? <option value={String(record.values[key])}>{value}</option> : null}{field.options.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}</select>
+            : field.type === 'enum' && !field.readOnly && field.options.length ? <InlineSelect className="gx-inline" aria-label={'Cambiar ' + field.label.toLowerCase() + ' de ' + recordName(record, spec)} title={'Cambiar ' + field.label.toLowerCase() + ' (con el teclado, confirma con Intro)'} value={String(record.values[key] ?? '')} disabled={editing !== null} data-saving={editing === record.id + ':' + key ? 'true' : undefined} onCommit={next => void change(record, key, next)}>
+                {field.required ? null : <option value="">—</option>}{!field.options.some(option => option.id === String(record.values[key] ?? '')) && record.values[key] ? <option value={String(record.values[key])}>{value}</option> : null}{field.options.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}</InlineSelect>
             : <span className={field.type === 'enum' ? 'enum-label' : field.type === 'date' && isPast(record, record.values[key]) ? 'gx-past' : ''} title={field.type === 'date' && isPast(record, record.values[key]) ? 'Fecha anterior a hoy' : undefined}>{value}</span>}{entityName === 'tasks' && key === dueKey && field.type === 'date' ? (() => { const hint = dueHint(record, record.values[key]); return hint ? <small className="gx-due-rel" data-tone={hint.tone}>{hint.text}</small> : null; })() : null}{entityName === 'tasks' && key === dueKey && field.type === 'date' && !field.readOnly && isPast(record, record.values[key]) ? <button type="button" className="gx-postpone" disabled={editing !== null} aria-label={'Pasar «' + recordName(record, spec) + '» a mañana'} onClick={() => void postpone(record)}>Mañana</button> : null}</td>; })}
         <td className="gx-row-open"><button className="icon-button" aria-label={'Editar ' + recordName(record, spec)} onClick={() => setSelected(record)}><ChevronRight size={18} /></button></td></tr>)}</tbody></table>
       {recordsLoading?<Skeleton rows={8} label="Cargando registros…" />:recordsError?<ErrorState title="No se pudieron cargar los registros" onAction={onRetry}>Tus datos siguen en este ordenador. {onRetry?'Vuelve a intentarlo; si se repite, comprueba que Plan B sigue abierto.':'Vuelve a seleccionar la sección para intentarlo de nuevo.'}</ErrorState>:!visible.length && rows.length && ((pick && pickField) || activeSmart) ? <EmptyState icon={<Search size={22} />} title="Ningún registro con este filtro" action={<button type="button" className="button secondary" onClick={() => { setPick(null); setSmart(null); }}>Quitar filtros</button>}>{pageOnly ? 'El filtro mira los ' + rows.length + ' registros cargados; prueba en la página siguiente o busca por nombre.' : 'Los ' + rows.length + ' registros de la lista no cumplen el filtro elegido.'}</EmptyState>:!visible.length ? <EmptyState icon={<Search size={22} />} title={query ? 'Sin resultados' : 'Todavía no hay registros'} action={query ? <button type="button" className="button secondary" onClick={() => { setQuery(''); setOffset(0); }}>Quitar la búsqueda</button> : <button type="button" className="button primary" onClick={() => setSelected('new')}><Plus size={16} />{singular[entityName]}</button>}>{query ? 'Prueba con otro nombre, correo o empresa.' : 'Crea el primer registro para empezar.'}</EmptyState> : null}

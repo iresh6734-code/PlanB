@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { pollWhileVisible } from '../src/app-shell/poll.js';
+import { pollWhileVisible, staleReadNote } from '../src/app-shell/poll.js';
+
+test('staleReadNote: dice la antigüedad de lo que se ve, o que aún no hay lectura', () => {
+  assert.match(staleReadNote(null, 1000), /No se pudo leer el estado/);
+  assert.match(staleReadNote(0, 12_000), /hace 12 s;/);
+  assert.match(staleReadNote(0, 5 * 60_000 + 30_000), /hace 5 min;/);
+  assert.match(staleReadNote(0, 2 * 3_600_000), /hace 2 h;/);
+});
 
 test('pollWhileVisible: no lee con la pestaña oculta y lee al volver a ella', async () => {
   let hidden = false, listener: (() => void) | null = null, ticks = 0;

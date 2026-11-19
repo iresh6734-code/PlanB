@@ -1,7 +1,7 @@
 {
   "format": 1,
-  "revision": 3231,
-  "updatedAt": "2026-11-19T08:18:43.284Z",
+  "revision": 3235,
+  "updatedAt": "2026-11-19T10:56:42.133Z",
   "tasks": [
     {
       "id": "CODEX-001",
@@ -22455,7 +22455,7 @@
         "src/ContinuityOperations.tsx"
       ],
       "dependencies": [],
-      "status": "working",
+      "status": "review",
       "reserved": true,
       "baseline": {
         "server/response-queue.ts": "eb3d0d64b8da5f351f34a0ba2ff0412ec8bc878a43dda730cf50e0d9d1772465",
@@ -22463,8 +22463,13 @@
         "tests/continuity-read-consistency-464.test.ts": null,
         "coordination/reports/CODEX-CONTINUITY-READ-CONSISTENCY-464.md": null
       },
-      "submitted": null,
-      "note": "Extender el radar con un contexto esperado opcional y conservar los controles SQLite de 464; evidencia 468.",
+      "submitted": {
+        "server/response-queue.ts": "c36505e721acc171e72b56ed3f5784cf973d6c76640b0a867099e32638d907df",
+        "server/capture-comparison.ts": "63bbc64074731f827e94aaf44684ee514b4ab863a184dae2b4f1507d47fc223b",
+        "tests/continuity-read-consistency-464.test.ts": "b1d3be4a210cf5592204531f9402e56f9822e61e97b3b679c6adad33d7716ead",
+        "coordination/reports/CODEX-CONTINUITY-READ-CONSISTENCY-464.md": "0db8e4c806d2ea0452ea0d1868b34f91062c04a5d877184fa6577d602968ed55"
+      },
+      "note": "Corrección hecha por Copilot con autorización de la usuaria: contexto esperado opcional en el radar, los controles SQLite de 464 se conservan. Evidencia en 468: 26/26.",
       "createdAt": "2026-11-19T08:02:22.872Z"
     },
     {
@@ -22510,15 +22515,19 @@
         "src/ContinuityHome.tsx"
       ],
       "dependencies": [],
-      "status": "working",
+      "status": "review",
       "reserved": true,
       "baseline": {
         "src/ContinuityOperations.tsx": "7624dd4060de01f337bb74208aee7c80e9728c163622be6fd342c64dc9ca8790",
         "tests/continuity-operations.test.ts": "c060871f6d11e9f6518f2cf66e2567168825b4335c4d2ed78bf0492a8b01527e",
         "coordination/reports/CODEX-COMPARISON-PAGE-PROVENANCE-466.md": null
       },
-      "submitted": null,
-      "note": "Preparar el contrato para vincular el radar con el espacio. La reserva de montaje continúa en Grafito; evidencia 468.",
+      "submitted": {
+        "src/ContinuityOperations.tsx": "fae2dcc743aa95f623db0c145b572abec79736294bd034383d38d8f9bed0b920",
+        "tests/continuity-operations.test.ts": "f24b830bcc8ac333c61894b1f27c919c8c8882bb06eca39ea88f901a822f65e7",
+        "coordination/reports/CODEX-COMPARISON-PAGE-PROVENANCE-466.md": "d3e5d0a7ffaeca0442f804f9c72640d6b8e9608e1f564c76c494531752222fa4"
+      },
+      "note": "Corrección hecha por Copilot con autorización de la usuaria: RadarPanel con workspaceContextRevision opcional (anclado, nulo y conflicto 409). El montaje sigue en Grafito. 26/26. Sin nuevo recorrido en navegador por la norma de la usuaria.",
       "createdAt": "2026-11-19T08:10:07.138Z"
     },
     {
@@ -22578,7 +22587,7 @@
         "src/main.tsx"
       ],
       "dependencies": [],
-      "status": "working",
+      "status": "blocked",
       "reserved": true,
       "baseline": {
         "tools/team-audit/dialogs.mjs": null,
@@ -22590,7 +22599,7 @@
         "coordination/reports/CLAUDE-TEAM-AUDIT-R.md": null
       },
       "submitted": null,
-      "note": "",
+      "note": "En pausa por decisión de la usuaria (19/11): en este equipo no se lanzan servidores de prueba, navegadores ni Playwright. Las herramientas y pruebas puras están listas (4/4 en verde). Faltan los recorridos claro/oscuro y de ventanas con run-r.mjs y el informe. Retomar en un equipo donde se puedan ejecutar.",
       "createdAt": "2026-11-19T08:10:10.077Z"
     },
     {
@@ -22609,42 +22618,21 @@
         "server/workspace-search.ts"
       ],
       "dependencies": [],
-      "status": "working",
+      "status": "review",
       "reserved": true,
       "baseline": {
         "tests/response-queue-context-468.test.ts": null,
         "coordination/reports/CODEX-RESPONSE-QUEUE-CONTEXT-468.md": null
       },
-      "submitted": null,
-      "note": "",
+      "submitted": {
+        "tests/response-queue-context-468.test.ts": "0c159d7f14e8a751ed72c5d806c49fbb013a4cb2976f6ea6d8b959b6a6935e13",
+        "coordination/reports/CODEX-RESPONSE-QUEUE-CONTEXT-468.md": "bd71c50e0e3673b6fbda5c6a8bf0db6c4246fafe646b5ee0418e0adae0382035"
+      },
+      "note": "Copilot, con autorización de la usuaria: contextRevision opcional en el radar (409 RESPONSE_QUEUE_CONTEXT_CHANGED sin tareas), source.contextRevision y GET legado compatible. 26/26 con 464 y 466, 54/54 en las suites del radar. Sin servidor ni navegador.",
       "createdAt": "2026-11-19T08:18:42.892Z"
     }
   ],
   "events": [
-    {
-      "at": "2026-11-18T15:13:45.715Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-PIPELINE-CERTAINTY-442"
-    },
-    {
-      "at": "2026-11-18T15:14:46.946Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-18T15:14:47.581Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-18T15:17:00.549Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CODEX-RECORD-TIMELINE-443"
-    },
     {
       "at": "2026-11-18T15:17:00.739Z",
       "actor": "codex",
@@ -23820,6 +23808,30 @@
       "actor": "codex",
       "action": "revise",
       "task": "CODEX-COMPARISON-PAGE-PROVENANCE-466"
+    },
+    {
+      "at": "2026-11-19T10:56:27.562Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-RESPONSE-QUEUE-CONTEXT-468"
+    },
+    {
+      "at": "2026-11-19T10:56:27.669Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-CONTINUITY-READ-CONSISTENCY-464"
+    },
+    {
+      "at": "2026-11-19T10:56:27.761Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-COMPARISON-PAGE-PROVENANCE-466"
+    },
+    {
+      "at": "2026-11-19T10:56:42.133Z",
+      "actor": "claude",
+      "action": "block",
+      "task": "CLAUDE-TEAM-AUDIT-R"
     }
   ]
 }

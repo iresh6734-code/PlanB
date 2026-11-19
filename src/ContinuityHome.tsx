@@ -18,7 +18,7 @@ import { TabList, tabPanelProps } from './TabList.js';
 import { CopyTimeline } from './app-shell/CopyTimeline.js';
 import { buildContinuityReport, reportHtml } from './app-shell/continuity-report.js';
 import { captureAutomation } from './app-shell/copy-timeline.js';
-import { pollWhileVisible } from './app-shell/poll.js';
+import { pollWhileVisible, useReadHealth } from './app-shell/poll.js';
 import { captureRecordCount, describeCapture, workspaceCopy } from './app-shell/workspace-copy.js';
 import './continuity-home-hub.css';
 export type ContinuityTab='estado'|'evidencia'|'copias'|'operaciones';
@@ -31,7 +31,8 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
   const [file,setFile]=useState(''),[password,setPassword]=useState(''),[replace,setReplace]=useState(false);
   // Cada lectura se entrega también a la App (avisos del menú); la referencia evita usar una función antigua desde el temporizador.
   const statusOut=useRef(onStatus);statusOut.current=onStatus;
-  const load=()=>api<ContinuityStatus>('/v2/continuity').then(value=>{setStatus(value);statusOut.current?.(value);});
+  const readHealth=useReadHealth();
+  const load=()=>api<ContinuityStatus>('/v2/continuity').then(value=>{setStatus(value);statusOut.current?.(value);readHealth.ok();});
   // Remount the evidence consumer when the authorized App context changes, retiring its pending reads and visible results together.
   const hubRef=useRef<HTMLDetailsElement|null>(null),[returnNote,setReturnNote]=useState(false);
   const workOwner=JSON.stringify([workspaceContextRevision??null,state.ready,state.runtime]);
@@ -47,7 +48,7 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
   const workSource=workRead?.owner===workOwner&&workRead.result.kind==='read'?toWorkSource(workRead.result.summary):undefined;
   const hubNavigate=useMemo(()=>({'open-preparation':prepare,'open-export':exportCopy,'open-continuity':()=>{setTab('evidencia');requestAnimationFrame(()=>hubRef.current?.scrollIntoView({block:'start'}));},...(onOpenToday?{'open-today':onOpenToday}:{}),...(onOpenIntegrations?{'open-integrations':onOpenIntegrations}:{})}),[prepare,exportCopy,onOpenToday,onOpenIntegrations]);
   useEffect(()=>{if(!returnedFrom)return;setTab('evidencia');setReturnNote(true);const frame=requestAnimationFrame(()=>{const heading=hubRef.current?.querySelector<HTMLElement>('.cph > h2');if(heading){heading.tabIndex=-1;heading.focus();heading.scrollIntoView({block:'start'});}onReturnHandled?.();});return()=>cancelAnimationFrame(frame);},[returnedFrom]);
-  useEffect(()=>{void load().catch(f=>setError((f as Error).message));return pollWhileVisible(()=>void load().catch(()=>{}),2500);},[]);
+  useEffect(()=>{void load().catch(f=>setError((f as Error).message));return pollWhileVisible(()=>void load().catch(readHealth.fail),2500);},[]);
   useEffect(()=>{if(connectRequest)void api<{configured:boolean}>('/v2/auth/status').then(g=>g.configured?setConnection(true):protect()).catch(f=>setError(f.message));},[connectRequest]);
   // Parte de continuidad: se genera en el navegador con el estado ya leído y se descarga; no envía nada a ningún sitio.
   const shareReport=()=>{if(!status)return;const html=reportHtml(buildContinuityReport(status,new Date(),APP_VERSION));const url=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));const anchor=document.createElement('a');anchor.href=url;anchor.download='plan-b-parte-continuidad-'+new Date().toISOString().slice(0,10)+'.html';anchor.click();setTimeout(()=>URL.revokeObjectURL(url),10_000);};
@@ -71,6 +72,7 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
   const production=status?.connection?.mode==='production_readonly'||state.snapshot?.source.isTestData===false;
   return <section className="continuity-home"><header className="page-header"><div><h1>Continuidad</h1><p className="page-subtitle">Una copia utilizable y la prueba que lo demuestra.</p></div><div className="ct-head-side"><button type="button" className="button secondary" disabled={!status} title="Página para enviar o imprimir: qué está demostrado y qué no, sin nombres de clientes ni identificadores" onClick={shareReport}><Download size={15}/>Parte para compartir</button></div></header>
     {error?<p className="error-box" role="alert">{error}</p>:null}
+    {readHealth.note&&!error?<p className="helper read-stale" role="status">{readHealth.note}</p>:null}
     {status?.recoveryIntegrity?.state==='invalid'?<p className="error-box" role="alert">{INVALID_RECOVERY_MESSAGE}</p>:null}
     <TabList label="Secciones de Continuidad" prefix="ct" tabs={CONTINUITY_TABS} value={tab} onChange={setTab}/>
     <div className="ct-panel ct-estado" {...tabPanelProps('ct','estado')} hidden={tab!=='estado'}>

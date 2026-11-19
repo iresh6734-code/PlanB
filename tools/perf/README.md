@@ -15,6 +15,8 @@ node tools/perf/bundle.mjs --no-build --check          # mide la última compila
 NODE_ENV=test npx tsx --test tests/perf-budgets.test.ts
 ```
 
+`--check` solo puede aprobar una medida con exactamente los registros de `budgets.json` (10.000). Con `--records` distinto, la medida es **exploratoria**: se muestra, pero `--check` sale con código 1 y lo dice.
+
 `bundle.mjs` se niega a compilar en `dist/` o `build/` (las carpetas que sirve el piloto). La prueba del paquete se omite si no hay compilación de medida.
 
 ## Qué se mide

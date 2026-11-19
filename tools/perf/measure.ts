@@ -132,9 +132,17 @@ export async function measure(options: { records?: number; repeats?: number; dir
   return { records: total, repeats, at: new Date().toISOString(), node: process.version, timings, notes };
 }
 
-/** Medidas que superan su presupuesto (se compara la mediana). */
+/** Una medida solo se compara con los presupuestos si usa exactamente el tamaño de referencia (R2, revisión 445). */
+export const isReferenceSize = (result: PerfResult, budgets: Budgets = readBudgets()) => result.records === budgets.records;
+
+/**
+ * Medidas que superan su presupuesto (se compara la mediana). Una muestra con otro número de registros nunca aprueba:
+ * es exploratoria y devuelve ese motivo como fallo, aunque ningún tiempo supere su techo.
+ */
 export function overBudget(result: PerfResult, budgets: Budgets = readBudgets()): string[] {
   const failures: string[] = [];
+  if (!isReferenceSize(result, budgets))
+    failures.push('muestra exploratoria: ' + result.records + ' registros; los presupuestos exigen exactamente ' + budgets.records);
   for (const [name, limit] of Object.entries(budgets.timings)) {
     const sample = result.timings[name];
     if (!sample) failures.push(name + ': sin medida');
@@ -149,11 +157,12 @@ function arg(name: string, fallback: number) {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const result = await measure({ records: arg('--records', 10000), repeats: arg('--repeats', 7) });
-  if (process.argv.includes('--json')) console.log(JSON.stringify(result, null, 2));
+  const budgets = readBudgets();
+  const result = await measure({ records: arg('--records', budgets.records), repeats: arg('--repeats', 7) });
+  if (process.argv.includes('--json')) console.log(JSON.stringify({ ...result, reference: isReferenceSize(result, budgets) }, null, 2));
   else {
-    console.log('Plan B · rendimiento con ' + result.records + ' registros ficticios (' + result.repeats + ' repeticiones, Node ' + result.node + ')');
-    const budgets = readBudgets();
+    console.log('Plan B · rendimiento con ' + result.records + ' registros ficticios (' + result.repeats + ' repeticiones, Node ' + result.node + ')'
+      + (isReferenceSize(result, budgets) ? '' : ' · EXPLORATORIA: no se compara con los presupuestos de ' + budgets.records));
     for (const [name, sample] of Object.entries(result.timings))
       console.log('  ' + name.padEnd(17) + ' mediana ' + String(sample.median).padStart(7) + ' ms · p95 ' + String(sample.p95).padStart(7) + ' ms · presupuesto '
         + (budgets.timings[name] ?? '—') + ' ms  ' + (LABELS[name] ?? ''));
@@ -161,7 +170,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   }
   if (process.argv.includes('--check')) {
     const failures = overBudget(result);
-    if (failures.length) { console.error('Presupuestos superados:\n  ' + failures.join('\n  ')); process.exitCode = 1; }
+    if (failures.length) { console.error('Sin aprobado:\n  ' + failures.join('\n  ')); process.exitCode = 1; }
     else console.log('Todas las medidas dentro de presupuesto.');
   }
 }

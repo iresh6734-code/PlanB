@@ -6,7 +6,7 @@
 
 ## Qué hay
 
-- **`tools/perf/fixture.ts`**: captura ficticia y determinista de exactamente 10.000 registros (1.500 empresas, 6.500 clientes, 2.000 oportunidades, 1.500 tareas), con 14.000 relaciones resolubles, válida con `SnapshotSchema` y marcada `isTestData: true`. Correos en `@example.com`.
+- **`tools/perf/fixture.ts`**: captura ficticia y determinista de exactamente 10.000 registros (1.500 empresas, 5.000 clientes, 2.000 oportunidades, 1.500 tareas), con 12.000 relaciones resolubles, válida con `SnapshotSchema` y marcada `isTestData: true`. Correos en `@example.com`.
 - **`tools/perf/measure.ts`**: siembra un almacén **cifrado de verdad** en `tests/.tmp/perf-run-*`, monta la App real (`createBaseApp`) y mide por `app.inject` siete operaciones. Da mediana y p95 y, con `--check`, falla si una mediana supera su presupuesto. Borra su carpeta al terminar.
 - **`tools/perf/bundle.mjs`**: compila con Vite en `tests/.tmp/perf-build/dist` y mide lo que el navegador descarga antes de pintar: script de entrada, módulos precargados y CSS enlazado en `index.html`. Se niega a compilar en `dist/` o `build/`.
 - **`tools/perf/budgets.json`**: techos de regresión. **`README.md`**: comandos, definiciones y objetivos de producto.
@@ -115,3 +115,25 @@ Cada arreglo puede comprobarse con `NODE_ENV=test npx tsx tools/perf/measure.ts 
 | `tools/perf/budgets.json` | `c973ee2209f60a08c38d64d874f3726ba5269c0f2330a01e16c3ab6eb1ef460f` |
 | `tools/perf/README.md` | `bfc354789219db226be0952b6e69b04d6bd19c31af32522dc244d83e94b6e3fc` |
 | `tests/perf-budgets.test.ts` | `2c5d7489f4538b35d427ec0cc142537fd0c6d5fa0c6f58bb173d1e93d752749b` |
+
+## R2 · Correcciones pedidas en CODEX-CLAUDE-TOOLING-REVIEW-445 (19/11/2026)
+
+**1 · Una muestra que no tiene el tamaño de referencia ya no aprueba.** Codex lo confirmó: `--check` comparaba los tiempos, pero ignoraba cuántos registros tenía la muestra, así que una medida con 200 registros podía salir aprobada.
+- `overBudget` añade un fallo `muestra exploratoria: N registros; los presupuestos exigen exactamente 10000` cuando `result.records !== budgets.records`, aunque ningún tiempo supere su techo. `isReferenceSize()` lo expone.
+- La salida de texto marca la medida como **EXPLORATORIA**, `--json` añade `reference: false` y `--check` sale con código 1 («Sin aprobado»). `--records` toma por defecto el tamaño de `budgets.json`.
+- Siguen siendo posibles las medidas manuales con otros tamaños; simplemente nunca dan un aprobado.
+- Comprobado por línea de comandos: `measure.ts --records 200 --check` → código 1 con ese motivo.
+
+**2 · Cifras del generador corregidas.** Eran 1.500 empresas, **5.000** clientes, 2.000 oportunidades, 1.500 tareas y **12.000** relaciones; el informe decía 6.500 y 14.000 por error mío. Corregido arriba. La prueba fija ahora esas cifras exactas para que el informe no pueda volver a desviarse.
+
+**3 · Mediciones.** Se entienden como evidencia del entorno observado: un equipo al 80–100 % de CPU por otras sesiones. Los techos de `budgets.json` son techos de regresión, no objetivos de producto, como ya decía el README.
+
+**Verificación:** `tests/perf-budgets.test.ts` → **8/8**. La prueba nueva cubre 200, 9.999 y 10.001 registros sin aprobado, y 10.000 aprobado. `tsc` no da errores en estos archivos; los únicos actuales son de `tests/return-explain.test.ts`, trabajo en curso de la sesión principal.
+
+| Archivo (R2) | SHA-256 |
+| --- | --- |
+| `tools/perf/measure.ts` | `ad6a1d6003633e40840469b694f5f4052cc3ef14d75131ed9ba0682ca2a3c08c` |
+| `tools/perf/README.md` | `28a22ac7f905360e78a3d60c00e0eaef61cfa59089d497db3d3c624e33ce7059` |
+| `tests/perf-budgets.test.ts` | `24c037b6fa373ab43fac36d3717a9f56ef1b242eb4fe1e19e485f64f41ec32c3` |
+
+Sin cambios: `tools/perf/fixture.ts`, `tools/perf/bundle.mjs` y `tools/perf/budgets.json` (huellas de la primera entrega).

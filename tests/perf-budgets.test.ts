@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { SnapshotSchema, MAX_RECORDS } from '../shared/model.js';
 import { distribution, perfSnapshot } from '../tools/perf/fixture.js';
-import { measure, overBudget, readBudgets, type PerfResult } from '../tools/perf/measure.js';
+import { isReferenceSize, measure, overBudget, readBudgets, type PerfResult } from '../tools/perf/measure.js';
 
 interface BundleItem { file: string; kind: 'js' | 'css'; bytes: number; gzip: number }
 interface BundleModule {
@@ -29,6 +29,9 @@ test('la captura de medida tiene exactamente 10.000 registros ficticios, válido
   for (const link of snapshot.links) assert.ok(keys.has(link.toEntity + ':' + link.toId), 'relación resoluble ' + link.toId);
   assert.equal(snapshot.manifest.expectedLinks, snapshot.links.length);
   assert.deepEqual(snapshot.manifest.expectedCounts, distribution(MAX_RECORDS));
+  // Cifras que cita el informe (R2, revisión 445): fijadas aquí para que no vuelvan a desviarse.
+  assert.deepEqual(distribution(MAX_RECORDS), { companies: 1500, contacts: 5000, deals: 2000, tasks: 1500 });
+  assert.equal(snapshot.links.length, 12000);
   assert.ok(snapshot.records.every(record => !record.values.email || String(record.values.email).endsWith('@example.com')));
 });
 
@@ -49,6 +52,17 @@ test('la comparación con presupuestos detecta medidas por encima y medidas que 
   const result: PerfResult = { records: 10, repeats: 1, at: '', node: '', notes: [], timings: { a: sample(10), b: sample(31) } };
   const budgets = { records: 10, bundle: {}, timings: { a: 10, b: 30, c: 5 } };
   assert.deepEqual(overBudget(result, budgets), ['b: mediana 31 ms > presupuesto 30 ms', 'c: sin medida']);
+});
+
+test('una muestra con otro número de registros nunca aprueba, aunque todos sus tiempos queden por debajo (R2, revisión 445)', () => {
+  const sample = (median: number) => ({ median, p95: median, min: median, max: median, runs: 1 });
+  const budgets = { records: 10000, bundle: {}, timings: { a: 100, b: 100 } };
+  const fast = (records: number): PerfResult => ({ records, repeats: 1, at: '', node: '', notes: [], timings: { a: sample(1), b: sample(1) } });
+  assert.deepEqual(overBudget(fast(10000), budgets), []);
+  for (const records of [200, 9999, 10001])
+    assert.deepEqual(overBudget(fast(records), budgets), ['muestra exploratoria: ' + records + ' registros; los presupuestos exigen exactamente 10000']);
+  assert.equal(isReferenceSize(fast(200), budgets), false);
+  assert.equal(isReferenceSize(fast(10000), budgets), true);
 });
 
 test('con 10.000 registros, lista, ficha, búsqueda y guardado quedan dentro de presupuesto', { timeout: 300_000 }, async () => {

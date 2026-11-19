@@ -1,5 +1,7 @@
 # Plan de mejoras de Plan B
 
+> Plan siguiente, por oleadas y con las mismas normas: [super-plan.md](super-plan.md).
+
 Análisis del 19/11/2026 sobre la rama `planb-v0.3-local`. Se ha hecho leyendo el código, sin servidores, sin pruebas de navegador y sin datos reales. Las referencias a archivos y líneas corresponden a esa fecha.
 
 ## Normas para trabajar sin alertas corporativas

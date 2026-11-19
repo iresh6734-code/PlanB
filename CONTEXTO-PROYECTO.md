@@ -1,8 +1,12 @@
 # Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026, 12:45, Europe/Madrid**. Rediseño de Continuidad con capas de lectura derivadas del estado de la copia.
+Última revisión: **19/11/2026, 12:55, Europe/Madrid**. Super plan por oleadas en `docs/super-plan.md` (solo documentación).
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
+
+## Super plan · 19/11/2026, 12:55, Europe/Madrid
+
+`docs/super-plan.md` ordena el trabajo siguiente en siete oleadas: cerrar pendientes (incluida la auditoría estática del modo oscuro y de las ventanas del equipo), ventas, Hoy, continuidad, calidad de datos, base técnica y lo que permite cobrar. Cada tarea indica archivos, prueba segura, tamaño y estado. Empieza con las reglas y el protocolo de sesión; **la siguiente sesión empieza por la Oleada 1 (A1)**. Solo documentación, sin código ni pruebas.
 
 ## Continuidad con más capas · 19/11/2026, 12:45, Europe/Madrid
 

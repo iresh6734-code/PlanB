@@ -204,7 +204,7 @@ La identidad está decidida (ver [DESIGN.md](../DESIGN.md)). Esta oleada **la co
 | T2 | **`App.tsx` por porciones** (sustituye a P1).<br>Un gancho por commit: `useContinuityState`, `useNotices`, `useUndoStack` y `useNavigationState`. Cada paso compila y pasa las pruebas antes del siguiente. | `App.tsx`, `app-shell/use*.ts` | Pruebas de `app-shell` + build | 4 × S | Pendiente |
 | T3 | **`LocalTaskFocus.tsx` por porciones** (sustituye a P2).<br>Sacar a módulos puros la lógica de orden, agrupación y textos; el componente solo pinta. | `LocalTaskFocus.tsx`, módulos nuevos | Pruebas existentes + nuevas | M–L | Pendiente |
 | T4 | **`CommitmentRadar.tsx` y `ContinuityHome.tsx`**: lo mismo que T3. | esos archivos | Pruebas existentes | M cada uno | Pendiente |
-| T5 | **Vistas guardadas en la copia** (P4 heredada): solo nombres y filtros. | `saved-views.ts`, servidor | `app.inject` | S–M, SRV | Pendiente |
+| T5 | **Vistas guardadas en la copia** (P4 heredada): solo nombres y filtros. | `saved-views.ts`, servidor | `app.inject` | S–M, SRV | Hecha (19/11/2026) |
 | T6 | **Comprobar la devolución** (C6 heredada), solo con el proveedor falso. | `server/hubspot-read-check*.ts`, `ChangesView.tsx` | `app.inject` con proveedor falso | M, SRV | Pendiente |
 
 ## Oleada 6 · Negocio

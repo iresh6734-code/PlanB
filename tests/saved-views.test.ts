@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { addSavedView, describeView, readSavedViews, sameView, smartViews, writeSavedViews, MAX_SAVED, type SavedView } from '../src/app-shell/saved-views.js';
+import { addSavedView, describeView, readSavedViews, sameView, sanitizeSavedViews, smartViews, writeSavedViews, MAX_SAVED, type SavedView } from '../src/app-shell/saved-views.js';
+import { loadSavedViews, storeSavedViews, type ViewsIo } from '../src/app-shell/saved-views-sync.js';
 
 const field = (key: string, type: string, label = key) => ({ key, label, type, required: false, readOnly: false, options: [] }) as never;
 const entity = (fields: unknown[]) => ({ fields, columns: [], displayField: 'name' }) as never;
@@ -112,4 +113,50 @@ test('un almacenamiento ausente o inaccesible no confirma ninguna escritura', ()
     if (original) Object.defineProperty(globalThis, 'localStorage', original);
     else Reflect.deleteProperty(globalThis, 'localStorage');
   }
+});
+
+test('sanear: sin repetidos por id ni por nombre y sin textos vacíos que la copia rechazaría', () => {
+  const raw = [{ id: 'a', name: ' Norte ', query: ' x ', pick: '', smart: '' }, { id: 'b', name: 'NORTE', query: '' }, { id: 'a', name: 'Otra', query: '' }, { id: 'c', name: 'Sur', query: '', sort: { key: '', dir: 1 } }];
+  assert.deepEqual(sanitizeSavedViews(raw), [{ id: 'a', name: 'Norte', query: 'x', pick: null, sort: null, smart: null }, { id: 'c', name: 'Sur', query: '', pick: null, sort: null, smart: null }]);
+  assert.deepEqual(sanitizeSavedViews({ views: [] }), []);
+});
+
+function mirror(initial: Record<string, string> = {}) {
+  const items = new Map(Object.entries(initial));
+  return { items, getItem: (key: string) => items.get(key) ?? null, setItem: (key: string, value: string) => { items.set(key, value); } };
+}
+const one: SavedView = { id: 'a', name: 'Norte', query: 'norte', pick: null, sort: null, smart: null };
+
+test('cargar: la copia manda y este navegador guarda su reflejo', async () => {
+  const local = mirror({ 'planb:views:tasks': JSON.stringify([{ ...one, id: 'z', name: 'Vieja' }]) }), posted: unknown[] = [];
+  const io: ViewsIo = { get: async () => ({ views: [one], stored: true }), post: async (_path, body) => { posted.push(body); return body; } };
+  assert.deepEqual(await loadSavedViews('tasks', undefined, io, local), [one]);
+  assert.deepEqual(JSON.parse(local.items.get('planb:views:tasks')!), [one]);
+  assert.equal(posted.length, 0, 'si la copia ya tiene vistas no se sube nada');
+});
+
+test('cargar: una copia sin vistas recibe una sola vez las de este navegador', async () => {
+  const local = mirror({ 'planb:views:deals': JSON.stringify([one]) }), calls: string[] = [];
+  const io: ViewsIo = { get: async () => ({ views: [], stored: false }), post: async (path, body) => { calls.push(path); return { ...(body as object), stored: true }; } };
+  assert.deepEqual(await loadSavedViews('deals', undefined, io, local), [one]);
+  assert.deepEqual(calls, ['/v2/views/deals']);
+  const empty = mirror();
+  assert.deepEqual(await loadSavedViews('deals', undefined, io, empty), []);
+  assert.equal(calls.length, 1, 'sin vistas locales no se escribe en la copia');
+});
+
+test('cargar y guardar: si la copia no responde o responde raro, no se inventa nada', async () => {
+  const local = mirror({ 'planb:views:tasks': JSON.stringify([one]) });
+  const down: ViewsIo = { get: async () => { throw new Error('sin respuesta'); }, post: async () => { throw new Error('sin respuesta'); } };
+  assert.equal(await loadSavedViews('tasks', undefined, down, local), null);
+  assert.equal(await storeSavedViews('tasks', [], down, local), null);
+  assert.deepEqual(JSON.parse(local.items.get('planb:views:tasks')!), [one], 'el reflejo no cambia si la copia no guardó');
+  const odd: ViewsIo = { get: async () => ({ views: 'no' }), post: async () => ({ views: [one] }) };
+  assert.equal(await loadSavedViews('tasks', undefined, odd, local), null);
+  assert.equal(await storeSavedViews('tasks', [one], odd, local), null);
+  const controller = new AbortController(); controller.abort();
+  const fine: ViewsIo = { get: async () => ({ views: [one], stored: true }), post: async () => ({ views: [one], stored: true }) };
+  assert.equal(await loadSavedViews('tasks', controller.signal, fine, local), null, 'una lectura cancelada no pinta nada');
+  assert.deepEqual(await storeSavedViews('tasks', [], { ...fine, post: async () => ({ views: [], stored: true }) }, local), []);
+  assert.deepEqual(JSON.parse(local.items.get('planb:views:tasks')!), [], 'borrarlas en la copia también se refleja');
 });

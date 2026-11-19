@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowRight, Bookmark, ChartColumn, ChevronRight, Database, Download, PlugZap, Plus, Search, Sparkles, Unplug, X } from 'lucide-react';
 import type { AppState, CrmRecord, EntityName } from '../../shared/model.js';
 import { displayValue, recordName } from '../components.js';
@@ -7,6 +7,7 @@ import { downloadCsv, toCsv } from './csv.js';
 import { madridDay } from '../task-display.js';
 import { closeStatus, dealSignal, dueStatus, euros, stageKind, type DealPulse } from './deal-insights.js';
 import { addSavedView, describeView, readSavedViews, sameView, smartViews, writeSavedViews, type SavedView } from './saved-views.js';
+import { loadSavedViews, storeSavedViews } from './saved-views-sync.js';
 import { RECORD_PAGE_SIZE, type BoardRead, type RecordListView } from './useRecordList.js';
 import { pagedLabel } from './pager.js';
 import { formatRecordSort } from '../../shared/record-order.js';
@@ -67,9 +68,16 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
   useEffect(() => { const view = readView(entityName); setSort(view.sort); setPick(view.pick); setSmart(view.smart); setSaved(readSavedViews(entityName)); setNaming(null); setMoveNote(null); setExpanded(new Set()); }, [entityName]);
   // Filtro rápido por la primera columna de tipo lista (p. ej. el estado de las tareas). Filtra los registros ya cargados en la página.
   const [pick, setPick] = useState<string | null>(() => readView(entityName).pick);
-  // Vista inteligente activa y vistas guardadas por la persona (en este navegador).
+  // Vista inteligente activa y vistas guardadas por la persona (en la copia local, con un reflejo en este navegador).
   const [smart, setSmart] = useState<string | null>(() => readView(entityName).smart);
   const [saved, setSaved] = useState<SavedView[]>(() => readSavedViews(entityName)), [naming, setNaming] = useState<string | null>(null);
+  const [viewsBusy, setViewsBusy] = useState(false), viewsEntity = useRef(entityName);
+  viewsEntity.current = entityName;
+  useEffect(() => {
+    const controller = new AbortController();
+    void loadSavedViews(entityName, controller.signal).then(views => { if (views && !controller.signal.aborted) setSaved(views); });
+    return () => controller.abort();
+  }, [entityName]);
   useEffect(() => { writeView(entityName, { sort, pick, smart }); }, [entityName, sort, pick, smart]);
   const [editing, setEditing] = useState<string | null>(null);
   // F1: la analítica del proceso solo se carga (y lee el diario) cuando se abre.
@@ -155,26 +163,31 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
   const current = { query, pick, sort, smart };
   const isDefault = !query.trim() && !pick && !sort && !smart;
   const labels = { pick: (id: string) => pickField?.options.find(option => option.id === id)?.label, sort: (key: string) => entity.fields.find(field => field.key === key)?.label, smart: (id: string) => smarts.find(view => view.id === id)?.label };
-  const saveView = (name: string) => {
+  /** Guarda la lista en la copia; si la copia no responde, al menos en este navegador (y lo dice). */
+  const persistViews = async (next: SavedView[]): Promise<'copy' | 'browser' | null> => {
+    const target = entityName;
+    setViewsBusy(true);
+    try {
+      const stored = await storeSavedViews(target, next);
+      if (viewsEntity.current !== target) return null;
+      if (stored) { setSaved(stored); return 'copy'; }
+      if (!writeSavedViews(target, next)) return null;
+      setSaved(next); return 'browser';
+    } finally { setViewsBusy(false); }
+  };
+  const saveView = async (name: string) => {
     const next = addSavedView(saved, name, current, Date.now().toString(36) + Math.random().toString(36).slice(2, 7));
     if (next === saved) { setNaming(null); return; }
-    if (!writeSavedViews(entityName, next)) {
-      setMoveNote({ tone: 'error', text: 'No se pudo guardar esta vista en el navegador.' });
-      return;
-    }
-    setSaved(next);
+    const where = await persistViews(next);
+    if (!where) { setMoveNote({ tone: 'error', text: 'No se pudo guardar esta vista.' }); return; }
     setNaming(null);
-    setMoveNote({ tone: 'ok', text: 'Vista «' + next[0].name + '» guardada en este navegador.' });
+    setMoveNote({ tone: 'ok', text: 'Vista «' + next[0].name + '» guardada ' + (where === 'copy' ? 'en tu copia local.' : 'solo en este navegador: tu copia local no respondió.') });
   };
   const applyView = (view: SavedView) => { setQuery(view.query); setOffset(0); setPick(view.pick); setSort(view.sort); setSmart(smarts.some(item => item.id === view.smart) ? view.smart : null); setMoveNote(null); };
-  const removeView = (view: SavedView) => {
-    const next = saved.filter(item => item.id !== view.id);
-    if (!writeSavedViews(entityName, next)) {
-      setMoveNote({ tone: 'error', text: 'No se pudo borrar esta vista del navegador.' });
-      return;
-    }
-    setSaved(next);
-    setMoveNote({ tone: 'ok', text: 'Vista «' + view.name + '» borrada.' });
+  const removeView = async (view: SavedView) => {
+    const where = await persistViews(saved.filter(item => item.id !== view.id));
+    if (!where) { setMoveNote({ tone: 'error', text: 'No se pudo borrar esta vista.' }); return; }
+    setMoveNote({ tone: 'ok', text: 'Vista «' + view.name + '» borrada' + (where === 'copy' ? '.' : ' solo en este navegador: tu copia local no respondió.') });
   };
   // Lo que filtra en el navegador (vista inteligente, o el filtro rápido sin servidor) solo ve la página cargada: se dice cuando hay más.
   const pageOnly = (!!activeSmart || (!!pick && !!pickField && !server)) && partial;
@@ -195,10 +208,10 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
     {entityName === 'deals' && analytics ? <div id="gx-stats-panel"><PipelineStats spec={spec} revision={(state.snapshot?.capturedAt ?? '') + ':' + (state.changes ?? 0)} /></div> : null}
     {smarts.length || saved.length || !isDefault ? <div className="gx-views" role="group" aria-label="Vistas">
       {smarts.map(view => { const count = loaded.filter(record => view.test(record, smartContext)).length; return <button key={view.id} type="button" className="gx-view" data-kind="smart" aria-pressed={smart === view.id} title={view.hint + (partial ? ' · en los registros cargados' : '')} onClick={() => setSmart(smart === view.id ? null : view.id)}><Sparkles size={13} aria-hidden="true" />{view.label}<span>{count}</span></button>; })}
-      {saved.map(view => <span key={view.id} className="gx-view-saved"><button type="button" className="gx-view" data-kind="saved" aria-pressed={sameView(view, current)} title={describeView(view, labels)} onClick={() => applyView(view)}><Bookmark size={13} aria-hidden="true" />{view.name}</button><button type="button" className="gx-view-remove" aria-label={'Borrar la vista «' + view.name + '»'} title="Borrar esta vista" onClick={() => removeView(view)}><X size={12} aria-hidden="true" /></button></span>)}
-      {naming !== null ? <form className="gx-view-form" onSubmit={event => { event.preventDefault(); saveView(naming); }}>
+      {saved.map(view => <span key={view.id} className="gx-view-saved"><button type="button" className="gx-view" data-kind="saved" aria-pressed={sameView(view, current)} title={describeView(view, labels)} onClick={() => applyView(view)}><Bookmark size={13} aria-hidden="true" />{view.name}</button><button type="button" className="gx-view-remove" aria-label={'Borrar la vista «' + view.name + '»'} title="Borrar esta vista" disabled={viewsBusy} onClick={() => void removeView(view)}><X size={12} aria-hidden="true" /></button></span>)}
+      {naming !== null ? <form className="gx-view-form" onSubmit={event => { event.preventDefault(); if (!viewsBusy) void saveView(naming); }}>
         <input autoFocus aria-label="Nombre de la vista" placeholder="Nombre de la vista" maxLength={40} value={naming} onChange={event => setNaming(event.target.value)} onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); setNaming(null); } }} />
-        <button type="submit" className="button primary" disabled={!naming.trim()}>Guardar</button><button type="button" className="button secondary" onClick={() => setNaming(null)}>Cancelar</button>
+        <button type="submit" className="button primary" disabled={!naming.trim() || viewsBusy}>Guardar</button><button type="button" className="button secondary" onClick={() => setNaming(null)}>Cancelar</button>
         <small className="muted">{describeView(current, labels)}</small></form>
       : <button type="button" className="gx-view-add" disabled={isDefault} title={isDefault ? 'Busca, filtra u ordena y guárdalo con un nombre' : 'Guardar ' + describeView(current, labels)} onClick={() => setNaming('')}><Plus size={13} aria-hidden="true" />Guardar vista</button>}
       {pageOnly ? <span className="gx-views-note">Filtra los {loaded.length} registros cargados; la búsqueda llega a todos.</span> : null}

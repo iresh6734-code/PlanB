@@ -6,7 +6,8 @@ import { dealRiskReasons, riskBase } from './deal-risk.js';
 /** Vistas de las listas de registros.
  *  · Inteligentes: preguntas frecuentes ya resueltas («Vencidas», «Más de 3.000 €», «Sin correo»…), según los campos que la
  *    especificación tenga de verdad; si falta el campo, la vista no aparece.
- *  · Guardadas: búsqueda, filtro rápido, orden y vista inteligente con un nombre, en este navegador (nunca datos de registros).
+ *  · Guardadas: búsqueda, filtro rápido, orden y vista inteligente con un nombre, en la copia local (T5) con un reflejo en este
+ *    navegador (nunca datos de registros).
  *  Las dos filtran los registros ya cargados; la búsqueda guardada sí vuelve a pedir al servidor. */
 type Spec = NonNullable<AppState['spec']>;
 type Entity = Spec['entities'][number];
@@ -75,17 +76,33 @@ export function smartViews(entityName: EntityName, entity: Entity, spec: Spec): 
 const KEY = (entity: EntityName) => 'planb:views:' + entity;
 export const MAX_SAVED = 8;
 
-/** Lee las vistas guardadas descartando lo que no tenga la forma esperada (almacenamiento antiguo o manipulado). */
+/** Forma segura de una lista de vistas (almacenamiento antiguo o manipulado, o respuesta de la copia): descarta lo raro y lo repetido. */
+export function sanitizeSavedViews(raw: unknown): SavedView[] {
+  if (!Array.isArray(raw)) return [];
+  const ids = new Set<string>(), names = new Set<string>(), views: SavedView[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const { id, name, query, pick, sort, smart } = item as Record<string, unknown>;
+    if (typeof id !== 'string' || !id || id.length > 40 || typeof name !== 'string' || !name.trim() || typeof query !== 'string') continue;
+    const clean = name.trim().slice(0, 40), lower = clean.toLocaleLowerCase('es');
+    if (ids.has(id) || names.has(lower)) continue;
+    ids.add(id); names.add(lower);
+    const order = sort && typeof sort === 'object' ? sort as { key?: unknown; dir?: unknown } : null;
+    views.push({
+      id, name: clean, query: query.trim().slice(0, 160),
+      pick: typeof pick === 'string' && pick && pick.length <= 100 ? pick : null,
+      sort: order && typeof order.key === 'string' && order.key && order.key.length <= 100 && (order.dir === 1 || order.dir === -1) ? { key: order.key, dir: order.dir } : null,
+      smart: typeof smart === 'string' && smart && smart.length <= 40 ? smart : null,
+    });
+    if (views.length === MAX_SAVED) break;
+  }
+  return views;
+}
+/** Lee la copia de las vistas guardada en este navegador (la de verdad vive en la copia local; ver saved-views-sync.ts). */
 export function readSavedViews(entity: EntityName, storage?: Pick<Storage, 'getItem'> | null): SavedView[] {
   try {
     const store = storage === undefined ? globalThis.localStorage : storage;
-    const raw = JSON.parse(store?.getItem(KEY(entity)) ?? '[]');
-    if (!Array.isArray(raw)) return [];
-    return raw.filter(item => item && typeof item.id === 'string' && typeof item.name === 'string' && item.name.trim() && typeof item.query === 'string')
-      .map(item => ({ id: item.id, name: String(item.name).slice(0, 40), query: String(item.query).slice(0, 160), pick: typeof item.pick === 'string' ? item.pick : null,
-        sort: item.sort && typeof item.sort.key === 'string' && (item.sort.dir === 1 || item.sort.dir === -1) ? { key: item.sort.key, dir: item.sort.dir } : null,
-        smart: typeof item.smart === 'string' ? item.smart : null }))
-      .slice(0, MAX_SAVED);
+    return sanitizeSavedViews(JSON.parse(store?.getItem(KEY(entity)) ?? '[]'));
   } catch { return []; }
 }
 export function writeSavedViews(entity: EntityName, views: SavedView[], storage?: Pick<Storage, 'setItem'> | null): boolean {

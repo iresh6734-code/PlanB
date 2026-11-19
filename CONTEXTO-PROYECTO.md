@@ -1,8 +1,12 @@
 ﻿# Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 a V7 hechas. Oleada 3: H2, H3, H4, H5 y H6 hechas; H1 aplazada (requiere e2e). Continuidad: C1 a C5 hechas. Negocio: M1 a M6 hechas. Datos: D1, D2 y D3 hechas. Rendimiento: P3 hecha. Super plan 2: T1, E1, E2, E5, E6, R4, F5, R1, R2, F7, F6, F1, F2, R5, R6, N1, K6, K1, K2, K3, K4, K5, K7, K8, K10, F3, F4, K9, N2, N3, N4, N5, R3 y F8 hechas; E3 y E4 aplazadas por las reglas.
+Última revisión: **19/11/2026**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 a V7 hechas. Oleada 3: H2, H3, H4, H5 y H6 hechas; H1 aplazada (requiere e2e). Continuidad: C1 a C5 hechas. Negocio: M1 a M6 hechas. Datos: D1, D2 y D3 hechas. Rendimiento: P3 hecha. Super plan 2: T1, T5, E1, E2, E5, E6, R4, F5, R1, R2, F7, F6, F1, F2, R5, R6, N1, K6, K1, K2, K3, K4, K5, K7, K8, K10, F3, F4, K9, N2, N3, N4, N5, R3 y F8 hechas; E3 y E4 aplazadas por las reglas.
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
+
+## Super plan 2 · Bloque 8, séptima parte (T5) · 19/11/2026
+
+- **T5 · Vistas guardadas en la copia**: rutas `GET` y `POST /api/v2/views/:entidad` en `server/saved-views.ts` (registradas en `server/v2.ts`), con zod estricto: como mucho 8 vistas, nombre de 1 a 40 caracteres sin repetir (sin distinguir mayúsculas), búsqueda de hasta 160 y ningún campo de más. Se guardan en el meta de la copia (`savedViews`, por tipo de registro) y no tocan registros ni el diario de cambios. En el cliente, `sanitizeSavedViews` en `src/app-shell/saved-views.ts` sanea lo leído del navegador o de la copia, y `src/app-shell/saved-views-sync.ts` carga (con migración única desde el navegador), guarda y deja un reflejo local. `RecordsPage.tsx` espera a la copia antes de confirmar y bloquea dobles envíos. Pruebas en `tests/saved-views-api.test.ts` (`app.inject`, sin puerto) y `tests/saved-views.test.ts` (E/S falsa).
 
 ## Super plan 2 · Bloque 8, sexta parte (F8) · 19/11/2026
 

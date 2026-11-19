@@ -4,7 +4,7 @@ import { DRILL_STEPS, drillSummary, nextStep, type DrillState, type DrillStepId 
 
 /** Panel del ensayo guiado: acompaña a la persona mientras usa la App y marca solo los pasos que ya ha hecho.
  *  No navega por su cuenta salvo que se pulse «Ir»; no guarda nada. */
-export function GuidedDrill({ state, onGo, onClose, onRestart }: { state: DrillState; onGo: (step: DrillStepId) => void; onClose: () => void; onRestart: () => void }) {
+export function GuidedDrill({ state, onGo, onClose, onRestart, onPassport }: { state: DrillState; onGo: (step: DrillStepId) => void; onClose: () => void; onRestart: () => void; onPassport?: () => void }) {
   const [now, setNow] = useState(() => Date.now()), [collapsed, setCollapsed] = useState(false), [said, setSaid] = useState('');
   useEffect(() => { if (state.finishedAt !== null) return; const timer = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer); }, [state.finishedAt]);
   // Anuncia cada paso que se completa (una vez) para lectores de pantalla.
@@ -22,7 +22,7 @@ export function GuidedDrill({ state, onGo, onClose, onRestart }: { state: DrillS
     {collapsed ? null : summary.complete ? <div className="gx-drill-done">
       <p><Check size={16} aria-hidden="true" /> Has hecho los cinco gestos con tu copia en {summary.elapsed}.</p>
       <p className="helper">{summary.limit}</p>
-      <div className="gx-drill-actions"><button type="button" className="button secondary" onClick={onRestart}>Repetir</button><button type="button" className="button primary" onClick={onClose}>Cerrar</button></div>
+      <div className="gx-drill-actions"><button type="button" className="button secondary" onClick={onRestart}>Repetir</button>{onPassport ? <><button type="button" className="button secondary" onClick={onClose}>Cerrar</button><button type="button" className="button primary" onClick={onPassport}>Ver mi pasaporte</button></> : <button type="button" className="button primary" onClick={onClose}>Cerrar</button>}</div>
     </div> : <ol className="gx-drill-steps">
       {DRILL_STEPS.map(step => { const done = !!state.done[step.id], current = next?.id === step.id; return <li key={step.id} data-state={done ? 'done' : current ? 'current' : 'next'} aria-current={current ? 'step' : undefined}>
         <span className="gx-drill-mark" aria-hidden="true">{done ? <Check size={13} strokeWidth={3} /> : null}</span>

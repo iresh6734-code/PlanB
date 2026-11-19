@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { advanceDrill, drillSummary, nextStep, startDrill, DRILL_STEPS, type DrillSignal } from '../src/app-shell/guided-drill.js';
+import { advanceDrill, drillHandoffNote, drillSummary, nextStep, startDrill, DRILL_STEPS, type DrillSignal } from '../src/app-shell/guided-drill.js';
 
 const base: DrillSignal = { page: 'home', entity: 'contacts', query: '', searchOpen: false, recordOpen: null };
 const at = (seconds: number) => 1_000_000 + seconds * 1000;
@@ -48,4 +48,15 @@ test('resumen a medias: dice qué falta, cuánto va y qué no demuestra', () => 
   assert.equal(summary.lines[1], '· Encuentra a un cliente — sin hacer');
   assert.match(summary.limit, /Probar mi Plan B/);
   assert.equal(DRILL_STEPS.length, 5);
+});
+
+test('al terminar, la nota para el pasaporte dice el tiempo y lo que la práctica no demuestra', () => {
+  let state = startDrill(at(0));
+  assert.equal(drillHandoffNote(state, at(5)), null, 'a medias no hay traspaso');
+  for (const [signal, second] of [[{ ...base, page: 'workspace' }, 10], [{ ...base, page: 'workspace', query: 'lu' }, 20], [{ ...base, page: 'workspace', query: 'lu', recordOpen: 'contacts' }, 30], [{ ...base, page: 'today' }, 40], [{ ...base, page: 'export' }, 192]] as const)
+    state = advanceDrill(state, signal, at(second));
+  const note = drillHandoffNote(state, at(900));
+  assert.match(note ?? '', /^Práctica terminada: los 5 gestos en 3 min 12 s\./, 'cuenta hasta el final, no hasta ahora');
+  assert.match(note ?? '', /no que la copia se recupere/);
+  assert.match(note ?? '', /Probar mi Plan B/);
 });

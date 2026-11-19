@@ -36,7 +36,7 @@ import { WorkspaceSearch } from './WorkspaceSearch.js';
 import { RehearsalTodayEntry } from './RehearsalTodayEntry.js';
 import { HomeOverview } from './HomeOverview.js';
 import { GuidedDrill } from './app-shell/GuidedDrill.js';
-import { advanceDrill, startDrill, type DrillState, type DrillStepId } from './app-shell/guided-drill.js';
+import { advanceDrill, drillHandoffNote, startDrill, type DrillState, type DrillStepId } from './app-shell/guided-drill.js';
 import { continuityAlerts, type AlertTarget, type ContinuityAlert } from './app-shell/continuity-alerts.js';
 import { readinessFor } from './app-shell/continuity-insights.js';
 import type { ContinuityTab } from './ContinuityHome.js';
@@ -60,7 +60,7 @@ export default function App() {
   const [initialPlace] = useState(() => typeof location === 'undefined' ? null : placeOf(location.pathname));
   const [page, setPage] = useState<PageId>(() => initialPlace?.page ?? storedPage());
   const [rehearseFromToday, setRehearseFromToday] = useState<string | null>(null);
-  const [integrationsFrom, setIntegrationsFrom] = useState<'continuity' | null>(null), [returnedFrom, setReturnedFrom] = useState<'integrations' | null>(null);
+  const [integrationsFrom, setIntegrationsFrom] = useState<'continuity' | null>(null), [returnedFrom, setReturnedFrom] = useState<'integrations' | 'drill' | null>(null), [drillNote, setDrillNote] = useState<string | null>(null);
   useEffect(() => { if (page !== 'integrations') setIntegrationsFrom(null); }, [page]);
   const [entityName, setEntity] = useState<EntityName>(() => initialPlace?.entity ?? storedEntity());
   // Ficha pedida por la dirección (al cargar o con Atrás/Adelante): se abre cuando la copia está lista.
@@ -318,7 +318,7 @@ export default function App() {
       <OutcomesLockNotice summary={lockedOutcomes} failed={lockFailed} onRetry={()=>void protect()} onDismiss={()=>{setLockedOutcomes(null);setLockFailed(false);}}/>
       {!state.runtime?<TaskOutcomesSurface/>:null}
       {page==='home'?<HomeOverview state={state} onSignals={setSignals} onOpenDeals={() => openEntity('deals')} onOpenRecord={record => { openEntity(record.entity); setRecords([record]); setSelected(record); }}contextRevision={state.workspaceSearchContext?.contextRevision??null} onOpenToday={()=>{setPage('today');setSelected(null);}} onOpenTask={id=>openTaskFromOutcomes(id)} onOpenRadar={()=>{setRehearseFromToday(null);setPage('radar');setSelected(null);}} onRehearse={id=>{setRehearseFromToday(id);setPage('radar');setSelected(null);}} onOpenDateCheck={()=>{setPage('date-check');setSelected(null);}} onOpenContinuity={()=>{setPage('continuity');setSelected(null);}} onOpenChanges={()=>{setPage('changes');setSelected(null);}} onContinuityStatus={receiveContinuity} onOpenAlert={openAlert} onProtect={() => void protect()} onPrepare={() => openPreparation(0)} lab={lab}/>
-      :page==='continuity'?<ContinuityHome initialTab={continuityTab??'estado'} onStatus={receiveContinuity} onGuidedDrill={state.ready && !state.runtime ? startGuidedDrill : undefined} state={state} workspaceContextRevision={state.workspaceSearchContext?.contextRevision??null} refresh={refresh} work={()=>openEntity('contacts')} prepare={()=>openPreparation(0)} protect={()=>void protect()} exportCopy={()=>setPage('export')} connectRequest={connectRequest} onOpenToday={()=>{setPage('today');setSelected(null);}} onOpenIntegrations={()=>{setIntegrationsFrom('continuity');setPage('integrations');setSelected(null);}} returnedFrom={returnedFrom} onReturnHandled={()=>setReturnedFrom(null)}/>
+      :page==='continuity'?<ContinuityHome initialTab={continuityTab??'estado'} onStatus={receiveContinuity} onGuidedDrill={state.ready && !state.runtime ? startGuidedDrill : undefined} state={state} workspaceContextRevision={state.workspaceSearchContext?.contextRevision??null} refresh={refresh} work={()=>openEntity('contacts')} prepare={()=>openPreparation(0)} protect={()=>void protect()} exportCopy={()=>setPage('export')} connectRequest={connectRequest} onOpenToday={()=>{setPage('today');setSelected(null);}} onOpenIntegrations={()=>{setIntegrationsFrom('continuity');setPage('integrations');setSelected(null);}} returnedFrom={returnedFrom} drillNote={drillNote} onReturnHandled={()=>setReturnedFrom(null)}/>
       :page==='today'||page==='agents'?<>{page==='today'&&lab?<RehearsalTodayEntry contextRevision={state.workspaceSearchContext?.contextRevision??null} onOpen={id=>{setRehearseFromToday(id);setPage('radar');setSelected(null);}} onOpenRadar={()=>{setRehearseFromToday(null);setPage('radar');setSelected(null);}}/>:null}<LocalOperations key={page} view={page} onDispatch={state.ready && spec ? () => setFocusOpen('overdue') : undefined} onOpenTasks={()=>openEntity('tasks')} onOpenDeals={()=>openEntity('deals')} onOpenProposals={()=>setPage('changes')} onPrepare={()=>openPreparation(0)} onRecordSaved={refresh} openTaskRequest={taskRequest} onOpenTaskHandled={()=>setTaskRequest(null)}/></>
         :page==='integrations'?<>{integrationsFrom?<p className="back-link"><button type="button" className="text-button" onClick={()=>{setIntegrationsFrom(null);setPage('continuity');setSelected(null);setReturnedFrom('integrations');}}>← Volver a Continuidad</button></p>:null}<LocalIntegrations onConnectHubspot={()=>{setPage('continuity');setSelected(null);setConnectRequest(n=>n+1);}}/></>
       :page==='team-sync'?<TeamSync/>
@@ -352,7 +352,7 @@ export default function App() {
     {help ? <ShortcutsHelp close={() => setHelp(false)} /> : null}
     <MobileNav page={page} entityName={entityName} runtime={!!state.runtime} ready={!!state.ready} overdue={signals.overdue} changes={state.changes ?? 0} go={next => { setPage(next); setSelected(null); }} openEntity={openEntity} openMore={() => setCommandsOpen(true)} />
     {focusOpen && spec && state.ready ? <FocusRun spec={spec} saveField={saveField} createTask={createTask} initialScope={focusOpen} onOpen={record => { openEntity(record.entity); setRecords([record]); setSelected(record); }} close={() => setFocusOpen(false)} /> : null}
-    {drill ? <GuidedDrill state={drill} onGo={goDrillStep} onClose={() => setDrill(null)} onRestart={startGuidedDrill} /> : null}
+    {drill ? <GuidedDrill state={drill} onGo={goDrillStep} onClose={() => setDrill(null)} onRestart={startGuidedDrill} onPassport={() => { setDrillNote(drillHandoffNote(drill, Date.now())); setDrill(null); setSelected(null); setContinuityTab('evidencia'); setPage('continuity'); setReturnedFrom('drill'); }} /> : null}
     {commandsOpen ? <CommandPalette commands={commandList} close={() => setCommandsOpen(false)} findRecords={state.ready && spec ? findRecords : undefined} /> : null}
     {modal === 'coverage' ? <Modal title="Cobertura de tu copia" close={() => setModal(null)} wide><div className="modal-body">
       <p className="muted">Comprobaciones sobre la captura y la aplicación que estás utilizando.</p>

@@ -31,7 +31,7 @@ export type ContinuityTab='estado'|'evidencia'|'copias'|'operaciones';
 const CONTINUITY_TABS=[{id:'estado',label:'Estado'},{id:'evidencia',label:'Evidencia e impacto'},{id:'copias',label:'Copias y archivo'},{id:'operaciones',label:'Operaciones'}] as const satisfies readonly {id:ContinuityTab;label:string}[];
 /** Navegación hacia superficies que ya existen en la App. Una ausente NO se simula: el hub explica que se abre desde el menú. */
 export interface ContinuityHubLinks { onOpenToday?: () => void; onOpenIntegrations?: () => void }
-export function ContinuityHome({state,workspaceContextRevision,refresh,work,prepare,protect,exportCopy,connectRequest=0,onOpenToday,onOpenIntegrations,returnedFrom=null,onReturnHandled,initialTab='estado',onStatus,onGuidedDrill}:{state:AppState;workspaceContextRevision?:string|null;refresh:()=>Promise<AppState>;work:()=>void;prepare:()=>void;protect:()=>void;exportCopy:()=>void;connectRequest?:number;returnedFrom?:'integrations'|null;onReturnHandled?:()=>void;initialTab?:ContinuityTab;onStatus?:(status:ContinuityStatus)=>void;onGuidedDrill?:()=>void}&ContinuityHubLinks) {
+export function ContinuityHome({state,workspaceContextRevision,refresh,work,prepare,protect,exportCopy,connectRequest=0,onOpenToday,onOpenIntegrations,returnedFrom=null,drillNote=null,onReturnHandled,initialTab='estado',onStatus,onGuidedDrill}:{state:AppState;workspaceContextRevision?:string|null;refresh:()=>Promise<AppState>;work:()=>void;prepare:()=>void;protect:()=>void;exportCopy:()=>void;connectRequest?:number;returnedFrom?:'integrations'|'drill'|null;drillNote?:string|null;onReturnHandled?:()=>void;initialTab?:ContinuityTab;onStatus?:(status:ContinuityStatus)=>void;onGuidedDrill?:()=>void}&ContinuityHubLinks) {
   const [status,setStatus]=useState<ContinuityStatus|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[connection,setConnection]=useState(false),[restore,setRestore]=useState(false);
   const [tab,setTab]=useState<ContinuityTab>(initialTab);
   const [file,setFile]=useState(''),[password,setPassword]=useState(''),[replace,setReplace]=useState(false);
@@ -41,7 +41,7 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
   const readHealth=useReadHealth();
   const load=()=>api<ContinuityStatus>('/v2/continuity').then(value=>{setStatus(value);statusOut.current?.(value);readHealth.ok();});
   // Remount the evidence consumer when the authorized App context changes, retiring its pending reads and visible results together.
-  const hubRef=useRef<HTMLDetailsElement|null>(null),[returnNote,setReturnNote]=useState(false);
+  const hubRef=useRef<HTMLDetailsElement|null>(null),[returnNote,setReturnNote]=useState<'integrations'|'drill'|null>(null);
   const workOwner=JSON.stringify([workspaceContextRevision??null,state.ready,state.runtime]);
   const [workPin,setWorkPin]=useState<{owner:string;pin:string|null}|null>(null);
   const [workRead,setWorkRead]=useState<{owner:string;result:WorkSummaryResult}|null>(null);
@@ -54,7 +54,7 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
   const canReadWork=!state.ready||typeof workspaceContextRevision==='string'&&expectedWorkPin!==null;
   const workSource=workRead?.owner===workOwner&&workRead.result.kind==='read'?toWorkSource(workRead.result.summary):undefined;
   const hubNavigate=useMemo(()=>({'open-preparation':prepare,'open-export':exportCopy,'open-continuity':()=>{setTab('evidencia');requestAnimationFrame(()=>hubRef.current?.scrollIntoView({block:'start'}));},...(onOpenToday?{'open-today':onOpenToday}:{}),...(onOpenIntegrations?{'open-integrations':onOpenIntegrations}:{})}),[prepare,exportCopy,onOpenToday,onOpenIntegrations]);
-  useEffect(()=>{if(!returnedFrom)return;setTab('evidencia');setReturnNote(true);const frame=requestAnimationFrame(()=>{const heading=hubRef.current?.querySelector<HTMLElement>('.cph > h2');if(heading){heading.tabIndex=-1;heading.focus();heading.scrollIntoView({block:'start'});}onReturnHandled?.();});return()=>cancelAnimationFrame(frame);},[returnedFrom]);
+  useEffect(()=>{if(!returnedFrom)return;setTab('evidencia');setReturnNote(returnedFrom);const frame=requestAnimationFrame(()=>{const heading=(returnedFrom==='drill'?hubRef.current?.querySelector<HTMLElement>('.cpp-head > h2'):null)??hubRef.current?.querySelector<HTMLElement>('.cph > h2');if(heading){heading.tabIndex=-1;heading.focus();heading.scrollIntoView({block:'start'});}onReturnHandled?.();});return()=>cancelAnimationFrame(frame);},[returnedFrom]);
   useEffect(()=>{void load().catch(f=>setError((f as Error).message));return pollWhileVisible(()=>void load().catch(readHealth.fail),2500);},[]);
   useEffect(()=>{if(connectRequest)void api<{configured:boolean}>('/v2/auth/status').then(g=>g.configured?setConnection(true):protect()).catch(f=>setError(f.message));},[connectRequest]);
   // Parte de continuidad: se genera en el navegador con el estado ya leído y se descarga; no envía nada a ningún sitio.
@@ -175,7 +175,7 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
     <div className="ct-panel ct-evidencia" {...tabPanelProps('ct','evidencia')} hidden={tab!=='evidencia'}>
     <details className="chub-block" ref={hubRef} open data-testid="continuity-hub-block"><summary>Evidencia, mapa de impacto y ensayo de relevo</summary>
       <p className="helper">Qué copia tienes, qué se observó de ella y de la lectura de HubSpot, y qué podría impedir seguir trabajando. «Probar mi Plan B» comprueba tu copia en un entorno aislado; el ensayo de relevo practica exportar e importar con datos ficticios y no la sustituye.</p>
-      {returnNote?<p className="chub-return" role="status" data-testid="return-note">Has vuelto de Integraciones. Lo guardado allí se lee de nuevo aquí; no se ha pedido nada al proveedor.</p>:null}
+      {returnNote==='integrations'?<p className="chub-return" role="status" data-testid="return-note">Has vuelto de Integraciones. Lo guardado allí se lee de nuevo aquí; no se ha pedido nada al proveedor.</p>:returnNote==='drill'&&drillNote?<p className="chub-return" role="status" data-testid="drill-note">{drillNote}</p>:null}
       {canReadWork?<WorkSummary key={workOwner+':'+(expectedWorkPin??'none')} expectedContext={expectedWorkPin} identityKey={workOwner} onOpenToday={onOpenToday} onSummary={receiveWork}/>:<p className="helper" role="status" data-testid="work-summary-awaiting-context">El resumen del trabajo espera una referencia autorizada de la copia. No se acredita ningún recuento mientras tanto.</p>}
       <ContinuityHub key={workspaceContextRevision??'unavailable'} workspaceContextRevision={workspaceContextRevision} navigate={hubNavigate} connectionKey={status?.connection?'portal:'+status.connection.accountId:null} evidenceLink="#/continuidad" extra={{work:workSource}} onCopyContext={receiveCopyContext}/>
     </details>

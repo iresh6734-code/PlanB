@@ -45,3 +45,12 @@ export function drillSummary(state: DrillState, now: number) {
     limit: 'Comprueba que sabes moverte por la copia. Que la copia funcione lo comprueba «Probar mi Plan B».',
   };
 }
+
+/** Nota que acompaña al pasaporte al terminar la práctica (super plan C4). La práctica no entra en el pasaporte como
+ *  evidencia: es un gesto de la persona, no una observación de la copia. Null si la práctica no ha terminado. */
+export function drillHandoffNote(state: DrillState, now: number): string | null {
+  const summary = drillSummary(state, now);
+  if (!summary.complete) return null;
+  return 'Práctica terminada: los ' + summary.total + ' gestos en ' + summary.elapsed + '. Demuestra que sabes moverte por la copia, no que la copia se recupere. '
+    + 'El pasaporte de abajo reúne lo que sí consta; si falta la prueba de la copia, «Probar mi Plan B» la hace.';
+}

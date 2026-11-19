@@ -1,8 +1,12 @@
 ﻿# Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026, 16:30, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 a V7 hechas. Oleada 3: H2, H3, H4, H5 y H6 hechas; H1 aplazada (requiere e2e). Continuidad: C2 y C5 hechas. Negocio: M1, M2, M3 y M6 hechas. Datos: D1, D2 y D3 hechas. Rendimiento: P3 hecha.
+Última revisión: **19/11/2026, 17:00, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 a V7 hechas. Oleada 3: H2, H3, H4, H5 y H6 hechas; H1 aplazada (requiere e2e). Continuidad: C2, C4 y C5 hechas. Negocio: M1, M2, M3 y M6 hechas. Datos: D1, D2 y D3 hechas. Rendimiento: P3 hecha.
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
+
+## Super plan C4 · De la práctica guiada al pasaporte · 19/11/2026, 17:00, Europe/Madrid
+
+Al terminar «Un día sin CRM», el panel ofrece «Ver mi pasaporte»: cierra la práctica y abre Continuidad › Evidencia con el foco en el pasaporte (o en el bloque, si aún carga) y una nota de `drillHandoffNote` (`src/app-shell/guided-drill.ts`) con el tiempo de los cinco gestos y su límite: demuestra que la persona sabe moverse por la copia, no que la copia se recupere, y remite a «Probar mi Plan B». Decisión: la práctica NO entra en el pasaporte como afirmación, porque su modelo (`shared/continuity-passport.ts`) solo admite evidencia observada o declarada con origen trazable. `ContinuityHome` acepta `returnedFrom: 'drill'` y `drillNote`. Prueba nueva en `tests/guided-drill.test.ts`. Sin verificación visual en este equipo.
 
 ## Super plan V7 · Registrar actividad · 19/11/2026, 16:30, Europe/Madrid
 

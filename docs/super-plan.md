@@ -125,7 +125,7 @@ Ninguna de estas tareas conecta con servicios de pago ni envía datos. Todo func
 | M3 | **Informe mensual de continuidad**: resumen del mes (capturas, fallos, simulacros, tiempo máximo sin copia) generado en local. | `app-shell/monthly-report.ts` nuevo | `tests/monthly-report.test.ts` | M, UI | Hecha: botón «Informe del mes» en la cabecera de Continuidad; página HTML autónoma con el mes en curso frente al anterior (días con copia, capturas, fallos, simulacros, mayor hueco), cortado en hora de Madrid. Ver en casa. |
 | M4 | **Primer uso en 10 minutos**: `FirstRun.tsx` guía conectar → primera captura → primer simulacro → pasaporte, con progreso y la franja de preparación como hilo conductor. | `FirstRun.tsx`, `continuity-insights.ts` | Prueba pura de los pasos | M, UI, Ver en casa | Pendiente |
 | M5 | **Página de precios en la landing** (`src/landing`): tres planes, qué incluye cada uno y la promesa de «tus datos nunca salen de tu ordenador». Precios a decidir por el usuario. | `src/landing/main.tsx` | `ui-copy.test.ts` | S–M, UI, Ver en casa | Pendiente |
-| M6 | **Ficha comercial al día**: actualizar `FICHA-COMERCIAL.md` con lo construido desde octubre y separar lo comprobado de lo pendiente. | `FICHA-COMERCIAL.md` | — | S, DOC | Pendiente |
+| M6 | **Ficha comercial al día**: actualizar `FICHA-COMERCIAL.md` con lo construido desde octubre y separar lo comprobado de lo pendiente. | `FICHA-COMERCIAL.md` | — | S, DOC | Hecha: qué es, para quién, por qué se compra, qué incluye con su estado (comprobado o «ver en casa»), tabla de planes desde `license.ts`, promesas sostenibles y lo que no se promete. La ficha del 28/10 queda como anexo. |
 
 ## Orden recomendado
 

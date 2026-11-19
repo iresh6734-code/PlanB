@@ -192,3 +192,18 @@ test('límites: cabecera obligatoria, filas máximas, campos desconocidos rechaz
   const unknownField = JSON.parse((await post(app, '/api/v2/import/csv/preview', { entity: 'contacts', csv: 'X;Nombre;Correo\n1;Ana;ana2@ejemplo.es', mapping: { X: 'inventado', Nombre: 'firstname', Correo: 'email' } })).body);
   assert.deepEqual(unknownField.ignoredColumns, ['X'], 'un campo inexistente en el mapeo se ignora, no se escribe');
 });
+
+test('ajuste de formato (super plan D1): la marca depende de él y aplicar guarda lo que se vio ajustado', async t => {
+  const { store, app } = seeded(t);
+  const csv = 'Nombre;Correo;Teléfono\nNora;nora.d1@ejemplo.es;600 123 123\n';
+  const off = JSON.parse((await post(app, '/api/v2/import/csv/preview', { entity: 'contacts', csv })).body);
+  const on = JSON.parse((await post(app, '/api/v2/import/csv/preview', { entity: 'contacts', csv, normalize: true })).body);
+  assert.deepEqual([off.adjusted, off.normalized, on.adjusted, on.normalized], [1, false, 1, true]);
+  assert.notEqual(off.token, on.token);
+  const mismatch = await post(app, '/api/v2/import/csv/apply', { entity: 'contacts', csv, mapping: on.mapping, token: on.token });
+  assert.equal(mismatch.statusCode, 409, 'la marca con ajuste no sirve para importar sin él');
+  const applied = await post(app, '/api/v2/import/csv/apply', { entity: 'contacts', csv, mapping: on.mapping, token: on.token, normalize: true });
+  assert.equal(applied.statusCode, 200, applied.body);
+  const created = store.records('contacts').find(record => record.values.email === 'nora.d1@ejemplo.es');
+  assert.equal(created?.values.phone, '+34 600 123 123');
+});

@@ -13,6 +13,7 @@ type Preview = {
   total: number; valid: number; invalid: number;
   preview: { line: number; values: Record<string, unknown>; errors: Record<string, string>; cells: Record<string, string> }[];
   errors: { line: number; errors: Record<string, string> }[]; duplicates: number; warnings: { line: number; text: string }[]; token: string;
+  adjusted?: number; adjustments?: { line: number; field: string; before: string; after: string }[]; normalized?: boolean;
 };
 type Applied = { created: number; skipped: number; duplicatesSkipped: number; failed: { line: number; error: string }[]; ids: string[] };
 
@@ -27,14 +28,15 @@ export function CsvImport({ spec, initialEntity, close, done }: { spec: AppSpec;
   const [busy, setBusy] = useState(false), [error, setError] = useState('');
   const [applied, setApplied] = useState<Applied | null>(null);
   const [skipDuplicates, setSkipDuplicates] = useState(false), [askClose, setAskClose] = useState(false);
+  const [tidy, setTidy] = useState(true);
   const definition = spec.entities.find(item => item.id === entity)!;
   const fieldLabel = (key: string) => definition.fields.find(f => f.key === key)?.label ?? key;
 
-  const review = async (nextMapping: Record<string, string | null> | null = mapping, text = csv, target = entity) => {
+  const review = async (nextMapping: Record<string, string | null> | null = mapping, text = csv, target = entity, normalize = tidy) => {
     if (!text.trim()) return;
     setBusy(true); setError('');
     try {
-      const result = await post<Preview>('/v2/import/csv/preview', { entity: target, csv: text, ...(nextMapping ? { mapping: nextMapping } : {}) });
+      const result = await post<Preview>('/v2/import/csv/preview', { entity: target, csv: text, ...(nextMapping ? { mapping: nextMapping } : {}), normalize });
       setPreview(result); setMapping(result.mapping);
     } catch (failure) { setPreview(null); setError(failure instanceof Error ? failure.message : 'No se pudo leer el archivo.'); }
     finally { setBusy(false); }
@@ -52,7 +54,7 @@ export function CsvImport({ spec, initialEntity, close, done }: { spec: AppSpec;
     if (!preview) return;
     setBusy(true); setError('');
     try {
-      const result = await post<Applied>('/v2/import/csv/apply', { entity, csv, mapping: preview.mapping, token: preview.token, ...(skipDuplicates && preview.duplicates ? { skipDuplicates: true } : {}) });
+      const result = await post<Applied>('/v2/import/csv/apply', { entity, csv, mapping: preview.mapping, token: preview.token, normalize: !!preview.normalized, ...(skipDuplicates && preview.duplicates ? { skipDuplicates: true } : {}) });
       setApplied(result); setPreview(null);
       if (result.created) done(entity, result.created);
     } catch (failure) {
@@ -102,6 +104,15 @@ export function CsvImport({ spec, initialEntity, close, done }: { spec: AppSpec;
             <input id="csv-skip-dup" type="checkbox" checked={skipDuplicates} disabled={busy} onChange={event => setSkipDuplicates(event.target.checked)} />
             <span>Omitir {preview.duplicates === 1 ? 'el posible duplicado' : 'los ' + preview.duplicates.toLocaleString('es-ES') + ' posibles duplicados'}: filas cuyo nombre{entity === 'companies' ? ' o sitio web' : ''} ya está en tu copia o más arriba en el archivo. Si son personas o empresas distintas, déjalo sin marcar.</span>
           </label> : null}
+          {preview.adjusted ? <div className="csv-tidy">
+            <label className="csv-dup-skip" htmlFor="csv-tidy">
+              <input id="csv-tidy" type="checkbox" checked={tidy} disabled={busy} onChange={event => { setTidy(event.target.checked); void review(mapping, csv, entity, event.target.checked); }} />
+              <span>Ajustar el formato de {plural(preview.adjusted, 'valor', 'valores')}: teléfonos con prefijo, correos sin «mailto:», webs sin «http» y espacios de más. {tidy ? 'Se guardarán ya ajustados.' : 'Se guardarán tal como vienen.'}</span>
+            </label>
+            <details><summary>Ver los ajustes{preview.adjusted > (preview.adjustments?.length ?? 0) ? ' (primeros ' + preview.adjustments?.length + ')' : ''}</summary>
+              <ul>{preview.adjustments?.map((item, i) => <li key={item.line + ':' + item.field + ':' + i}>Línea {item.line} · {fieldLabel(item.field)}: <del>{item.before}</del> → <ins>{item.after}</ins></li>)}</ul>
+            </details>
+          </div> : null}
           <div className="table-container" tabIndex={0} role="region" aria-label="Vista previa de la importación">
             <table><thead><tr><th scope="col">Línea</th><th scope="col">Resultado</th>{shownColumns.map((header, i) => <th scope="col" key={header} style={i === shownColumns.length - 1 ? { textAlign: 'left', width: 'auto' } : undefined}>{fieldLabel(preview!.mapping[header]!)}</th>)}</tr></thead>
               <tbody>{preview.preview.map(row => { const issues = Object.entries(row.errors); return <tr key={row.line}>

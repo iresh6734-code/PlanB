@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { CalendarClock, Check, Copy, ExternalLink, ListPlus, Mail, Phone, Plus, RotateCcw } from 'lucide-react';
+import { CalendarClock, Check, Copy, ExternalLink, ListPlus, Mail, Phone, Plus, RotateCcw, Wand2 } from 'lucide-react';
 import type { AppState, CrmRecord, EntityName, FieldValue } from '../../shared/model.js';
+import { proposeNormalization } from '../../shared/normalize.js';
 import { displayValue } from '../components.js';
 import { madridDay } from '../task-display.js';
 import { dueStatus, initials } from './deal-insights.js';
@@ -54,6 +55,7 @@ export function RecordSummary({ entityName, spec, values, set, records, disabled
     : companyShown && companyShown !== '—' && companyShown !== 'Relación no disponible' ? companyShown : text(entity.fields.find(field => field.type === 'text' && /company|empresa/i.test(field.key))?.key);
   const [y, m, d] = madridDay(new Date()).split('-');
   const templateContext = { nombre: entityName === 'contacts' ? text(entity.displayField) : '', empresa: company, correo: email, telefono: phone, hoy: d + '/' + m + '/' + y };
+  const tidy = proposeNormalization(entity.fields, values);
   const copy = async () => { try { await navigator.clipboard.writeText(email); setCopied(true); setTimeout(() => setCopied(false), 1800); } catch { /* sin portapapeles: no pasa nada */ } };
   return <section className="record-summary" data-entity={entityName} aria-label={entityName === 'contacts' ? 'Resumen del cliente' : 'Resumen de la empresa'}>
     <div className="rs-row">
@@ -72,6 +74,10 @@ export function RecordSummary({ entityName, spec, values, set, records, disabled
       {href ? <a className="button secondary" href={href} target="_blank" rel="noopener noreferrer"><ExternalLink size={15} aria-hidden="true" />Abrir web</a> : null}
       <NewTaskButton onNewTask={onNewTask} blocked={newTaskBlocked} />
       <NewTaskButton onNewTask={onNewDeal} blocked={newDealBlocked} label="Nueva oportunidad" />
+    </div> : null}
+    {tidy.length ? <div className="rs-tidy">
+      <p><Wand2 size={14} aria-hidden="true" />{tidy.length === 1 ? 'Un dato admite un formato más limpio' : tidy.length + ' datos admiten un formato más limpio'}: {tidy.map(item => item.label + ' «' + item.after + '»').join(' · ')}.</p>
+      <button type="button" className="button secondary" disabled={disabled} onClick={() => tidy.forEach(item => set(item.key, item.after))} title="Se guarda con «Guardar cambios»">Ajustar formato</button>
     </div> : null}
     <FollowUpTemplates context={templateContext} />
     <span className="sr-only" role="status">{copied ? 'Dirección copiada' : ''}</span>

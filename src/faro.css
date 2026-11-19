@@ -1885,6 +1885,12 @@ html body .modal-footer .ui-confirm { flex: 1 1 100%; margin: 0 0 4px; }
 html body .csv-dup { color: var(--warning-text, var(--warning)); }
 html body .csv-dup-skip { display: flex; align-items: flex-start; gap: 8px; margin: 8px 0; font-size: var(--fs-sm, 13px); }
 html body .csv-dup-skip input { margin-top: 3px; }
+/* Importar CSV · ajustes de formato propuestos (super plan D1). */
+html body .csv-tidy details { margin: 0 0 8px 24px; font-size: var(--fs-sm, 13px); }
+html body .csv-tidy summary { cursor: pointer; color: var(--text-2); }
+html body .csv-tidy ul { display: grid; gap: 2px; max-height: 180px; overflow: auto; margin: 6px 0 0; padding: 0; list-style: none; color: var(--text-2); font-variant-numeric: tabular-nums; }
+html body .csv-tidy del { color: var(--text-3); }
+html body .csv-tidy ins { text-decoration: none; font-weight: 600; color: var(--text-1); }
 /* ---- Tipografía propia empaquetada (17/11/2026, con autorización del usuario) ----
    Inter para el texto y Source Serif 4 para los títulos, variables (400–700) y solo con el subconjunto latino; licencia SIL OFL
    (src/assets/fonts). Nombres propios para no mezclarse con copias instaladas en el equipo. Si no cargan, siguen las del sistema. */
@@ -2052,6 +2058,10 @@ html body .rs-chip[data-tone="won"] { background: var(--success-bg); border-colo
 html body .record-summary[data-entity="tasks"] .rs-row .button { min-height: 34px; gap: 6px; }
 html body .rs-meta { margin: 0; font-size: var(--fs-sm); color: var(--text-2); }
 /* Ficha · plantillas de seguimiento (super plan H6). */
+html body .rs-tidy { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; padding: 8px 10px; border: 1px dashed var(--border); border-radius: var(--r-md); }
+html body .rs-tidy p { display: flex; align-items: baseline; gap: 6px; flex: 1 1 260px; margin: 0; font-size: var(--fs-xs); color: var(--text-2); overflow-wrap: anywhere; }
+html body .rs-tidy p svg { flex: none; transform: translateY(2px); color: var(--text-3); }
+html body .rs-tidy .button { min-height: 30px; padding: 0 10px; font-size: var(--fs-sm); }
 html body .rs-templates { border-top: 1px solid var(--border); padding-top: 8px; }
 html body .rs-templates > summary { cursor: pointer; font-size: var(--fs-sm); font-weight: 600; color: var(--text-2); }
 html body .rs-templates[open] > summary { margin-bottom: 8px; }

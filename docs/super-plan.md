@@ -101,7 +101,7 @@ Las oleadas van de lo que mejora la confianza y el día a día a lo que abre la 
 
 | ID | Tarea | Archivos | Prueba segura | Tamaño | Estado |
 |---|---|---|---|---|---|
-| D1 | **Normalizar al importar y al editar**: teléfonos con prefijo, correos en minúscula, sitios web sin `http`, espacios dobles. Se muestra la propuesta antes de aplicarla. | `shared/normalize.ts` nuevo, `shared/csv-import.ts` | `tests/normalize.test.ts` | M, UI+SRV | Pendiente |
+| D1 | **Normalizar al importar y al editar**: teléfonos con prefijo, correos en minúscula, sitios web sin `http`, espacios dobles. Se muestra la propuesta antes de aplicarla. | `shared/normalize.ts` nuevo, `shared/csv-import.ts` | `tests/normalize.test.ts` | M, UI+SRV | Hecha: al importar, casilla «Ajustar el formato» con la lista de ajustes (la marca de la vista previa depende de ella; la API sin `normalize` no cambia); en la ficha, aviso «Ajustar formato» que se guarda con «Guardar cambios» |
 | D2 | **Reglas por etapa**: qué campos hacen falta para pasar de etapa (importe en «Propuesta», fecha de cierre en «Negociación»). Aviso, no bloqueo. | `quality.ts`, `PipelineCard.tsx` | `quality` ampliado | M, UI | Pendiente |
 | D3 | **Panel de calidad con tendencia**: porcentaje de registros completos por objeto y su evolución entre capturas. | `QualityPanel.tsx`, `quality.ts` | Prueba pura de la tendencia | S–M, UI | Pendiente |
 

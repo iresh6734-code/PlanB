@@ -1,4 +1,4 @@
-// Importar registros desde CSV (mejora C9; CLAUDE-CSV-IMPORT, 17/11/2026).
+﻿// Importar registros desde CSV (mejora C9; CLAUDE-CSV-IMPORT, 17/11/2026).
 // Dos pasos: vista previa (no escribe) y aplicación. La aplicación exige la marca de la vista previa, que depende del
 // archivo, del mapeo y del estado de la copia: si algo cambió entre medias, se rechaza y hay que volver a mirar.
 // Solo se dan de alta las filas válidas, cada una por saveRecord (mismas reglas que la ficha y un cambio local por alta,
@@ -29,7 +29,8 @@ export function previewToken(store: Store, entity: EntityName, csv: string, plan
   // incluso en una instalación anterior que aún no la tiene.
   const copy = [snapshot?.id ?? '', snapshot?.capturedAt ?? '', store.get<string>('sessionId', ''), store.get<string>('copyEpoch', '')];
   const reviewed = plan.rows.map(row => [row.line, row.values, row.errors]);
-  return createHash('sha256').update(JSON.stringify([entity, csv, plan.mapping, copy, latest?.id ?? 0, latest?.at ?? '', count, reviewed])).digest('hex');
+  // D1: con el ajuste de formato activado la marca cambia, aunque los valores coincidan; sin él, la marca es la de siempre.
+  return createHash('sha256').update(JSON.stringify([entity, csv, plan.mapping, copy, latest?.id ?? 0, latest?.at ?? '', count, reviewed, ...(plan.normalized ? ['normalized'] : [])])).digest('hex');
 }
 
 export function registerCsvImport(app: FastifyInstance, store: Store) {
@@ -37,10 +38,11 @@ export function registerCsvImport(app: FastifyInstance, store: Store) {
     entity: EntityNameSchema,
     csv: z.string().min(1).max(CSV_LIMITS.bytes),
     mapping: z.record(z.string(), z.string().nullable()).optional(),
+    normalize: z.boolean().optional(),
   });
-  const plan = (entity: EntityName, csv: string, mapping?: Record<string, string | null>) => {
+  const plan = (entity: EntityName, csv: string, mapping?: Record<string, string | null>, normalize?: boolean) => {
     if (!store.ready || !store.spec) throw new AppError(409, 'Revisa y activa primero la aplicación.');
-    const result = planImport(store.spec, entity, csv, store.records(), mapping);
+    const result = planImport(store.spec, entity, csv, store.records(), mapping, { normalize: !!normalize });
     if (!result.headers.length) throw new AppError(422, 'El archivo no tiene cabecera: la primera fila debe nombrar las columnas.');
     if (result.rows.length > CSV_LIMITS.rows) throw new AppError(413, 'Como máximo ' + CSV_LIMITS.rows + ' filas por importación.');
     return result;
@@ -48,13 +50,14 @@ export function registerCsvImport(app: FastifyInstance, store: Store) {
 
   app.post('/api/v2/import/csv/preview', async request => {
     const body = base.strict().parse(request.body);
-    const result = plan(body.entity, body.csv, body.mapping);
+    const result = plan(body.entity, body.csv, body.mapping, body.normalize);
     return {
       entity: result.entity, headers: result.headers, mapping: result.mapping, ignoredColumns: result.ignoredColumns,
       total: result.rows.length, valid: result.valid, invalid: result.invalid,
       preview: result.rows.slice(0, PREVIEW_ROWS),
       errors: result.rows.filter(row => Object.keys(row.errors).length).slice(0, ERROR_ROWS).map(row => ({ line: row.line, errors: row.errors })),
       duplicates: result.warnings.length, warnings: result.warnings.slice(0, ERROR_ROWS),
+      adjusted: result.adjustments.length, adjustments: result.adjustments.slice(0, PREVIEW_ROWS), normalized: result.normalized,
       token: previewToken(store, body.entity, body.csv, result),
     };
   });
@@ -62,7 +65,7 @@ export function registerCsvImport(app: FastifyInstance, store: Store) {
   app.post('/api/v2/import/csv/apply', async request => {
     // skipDuplicates no entra en la marca: solo resta filas a lo revisado, nunca añade ni cambia ninguna.
     const body = base.extend({ token: z.string().regex(/^[a-f0-9]{64}$/), skipDuplicates: z.boolean().optional() }).strict().parse(request.body);
-    const result = plan(body.entity, body.csv, body.mapping);
+    const result = plan(body.entity, body.csv, body.mapping, body.normalize);
     if (previewToken(store, body.entity, body.csv, result) !== body.token) throw new AppError(409, 'La copia o el archivo cambiaron desde la vista previa. Vuelve a revisarla.', { code: 'STALE_PREVIEW' });
     const flagged = new Set(body.skipDuplicates ? result.warnings.map(warning => warning.line) : []);
     const valid = result.rows.filter(row => !Object.keys(row.errors).length && !flagged.has(row.line));

@@ -1,8 +1,14 @@
 ﻿# Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026, 14:26, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 a V6 hechas. Oleada 3: H2, H4 y H6 hechas; H1 aplazada (requiere e2e). Continuidad: C2 y C5 hechas. Negocio: M1, M2, M3 y M6 hechas.
+Última revisión: **19/11/2026, 14:34, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 a V6 hechas. Oleada 3: H2, H4 y H6 hechas; H1 aplazada (requiere e2e). Continuidad: C2 y C5 hechas. Negocio: M1, M2, M3 y M6 hechas. Datos: D1 hecha.
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
+
+## Super plan D1 · Normalizar al importar y al editar · 19/11/2026, 14:34, Europe/Madrid
+
+- `shared/normalize.ts`: `normalizeKind` (correo, teléfono, web, texto según tipo y nombre del campo), `normalizePhone` (+34 y grupos; con letras o longitudes raras no adivina), `normalizeEmail`, `normalizeWebsite`, `normalizeText`, `proposeNormalization`.
+- Importar CSV: `planImport(..., { normalize })` devuelve siempre `adjustments` y aplica solo si se pide. La API acepta `normalize` opcional (por defecto apagado: el contrato anterior no cambia salvo tres campos nuevos en la respuesta: `adjusted`, `adjustments`, `normalized`). La marca de vista previa incluye el ajuste solo cuando está activado. La UI lo activa por defecto y enseña los ajustes antes de importar.
+- Ficha (clientes y empresas): aviso «Ajustar formato» en `RecordSummary`; cambia el formulario y se guarda con «Guardar cambios».
 
 ## Super plan H6 y V6 · Plantillas y salud de la cuenta · 19/11/2026, 14:26, Europe/Madrid
 

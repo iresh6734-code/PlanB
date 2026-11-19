@@ -26,6 +26,9 @@ const PreviewSchema = z.object({
   }).strict()).max(50),
   errors: z.array(z.object({ line: z.number().int().min(2), errors: z.record(z.string(), z.string().min(1)) }).strict()),
   duplicates: z.number().int().nonnegative(), warnings: z.array(z.object({ line: z.number().int().min(2), text: z.string().min(1) }).strict()).max(200),
+  // Super plan D1: ajustes de formato propuestos (siempre) y si se aplicaron (solo con «normalize: true»).
+  adjusted: z.number().int().nonnegative(), normalized: z.boolean(),
+  adjustments: z.array(z.object({ line: z.number().int().min(2), field: z.string().min(1), before: z.string(), after: z.string() }).strict()).max(50),
   token: Sha256
 }).strict();
 const ApplySchema = z.object({

@@ -2,6 +2,7 @@
 // leer el archivo, proponer columnas, convertir valores al formato de la App y validar cada fila con las mismas reglas que
 // la ficha. Nada aquí escribe: el servidor decide qué filas aplicar a partir de este plan.
 import { validateRecord, type AppSpec, type CrmRecord, type EntityName, type Field } from './model.js';
+import { normalizeKind, normalizeValue } from './normalize.js';
 
 export const CSV_LIMITS = { bytes: 1_000_000, rows: 1000 } as const;
 
@@ -113,7 +114,9 @@ export function convertValue(field: Field, raw: string, references: (entity: Ent
 export type ImportRow = { line: number; values: CrmRecord['values']; errors: Record<string, string>; cells: Record<string, string> };
 /** Aviso que no bloquea la fila: parece el mismo cliente o empresa que otro ya presente. La persona decide si lo omite. */
 export type ImportWarning = { line: number; text: string };
-export type ImportPlan = { entity: EntityName; headers: string[]; mapping: Record<string, string | null>; rows: ImportRow[]; valid: number; invalid: number; ignoredColumns: string[]; warnings: ImportWarning[] };
+export type ImportPlan = { entity: EntityName; headers: string[]; mapping: Record<string, string | null>; rows: ImportRow[]; valid: number; invalid: number; ignoredColumns: string[]; warnings: ImportWarning[];
+  /** Ajustes de formato propuestos (D1) y si se aplicaron a los valores. */ adjustments: ImportAdjustment[]; normalized: boolean };
+export type ImportAdjustment = { line: number; field: string; before: string; after: string };
 
 /** Dominio comparable: sin protocolo, «www.», ruta ni mayúsculas («https://www.Acme.es/contacto» → «acme.es»). */
 export const normalizeDomain = (text: string) => text.trim().toLowerCase().replace(/^[a-z]+:\/\//, '').replace(/^www\./, '').replace(/[/?#].*$/, '').replace(/\.$/, '');
@@ -152,7 +155,7 @@ export function duplicateWarnings(spec: AppSpec, entity: EntityName, rows: Impor
  * Plan completo: cada fila convertida y validada como lo haría la ficha, más dos comprobaciones de importación:
  * correos repetidos (contra la copia y dentro del archivo) y relaciones que no existen. `existing` es la copia actual.
  */
-export function planImport(spec: AppSpec, entity: EntityName, csv: string, existing: CrmRecord[], mapping?: Record<string, string | null>): ImportPlan {
+export function planImport(spec: AppSpec, entity: EntityName, csv: string, existing: CrmRecord[], mapping?: Record<string, string | null>, options: { normalize?: boolean } = {}): ImportPlan {
   const definition = spec.entities.find(e => e.id === entity);
   if (!definition) throw new Error('Tipo de registro desconocido: ' + entity);
   const { headers, rows } = parseCsv(csv);
@@ -166,11 +169,15 @@ export function planImport(spec: AppSpec, entity: EntityName, csv: string, exist
   const references = (target: EntityName, text: string) => [...new Set(index.get(target + ':' + normalize(text)) ?? [])];
   const emailField = definition.fields.find(f => f.type === 'email');
   const seenEmails = new Set(existing.filter(r => r.entity === entity && emailField).map(r => String(r.values[emailField!.key] ?? '').toLowerCase()).filter(Boolean));
+  const adjustments: ImportAdjustment[] = [];
   const planned: ImportRow[] = rows.map((cells, i) => {
     const values: CrmRecord['values'] = {}, errors: Record<string, string> = {};
     headers.forEach((header, column) => {
       const field = fieldOf(map[header]); if (!field) return;
-      const converted = convertValue(field, cells[column] ?? '', references);
+      const raw = cells[column] ?? '', kind = normalizeKind(field);
+      const proposed = kind && raw.trim() ? normalizeValue(kind, raw) : raw.trim();
+      if (proposed !== raw.trim() && !(field.type === 'email' && proposed === raw.trim().toLowerCase())) adjustments.push({ line: i + 2, field: field.key, before: raw.trim(), after: proposed });
+      const converted = convertValue(field, options.normalize ? proposed : raw, references);
       if ('error' in converted) errors[field.key] = converted.error; else if (converted.value !== null) values[field.key] = converted.value;
     });
     Object.assign(errors, Object.fromEntries(Object.entries(validateRecord(spec, { entity, id: 'importacion', values }, null)).filter(([key]) => !(key in errors))));
@@ -179,5 +186,5 @@ export function planImport(spec: AppSpec, entity: EntityName, csv: string, exist
     return { line: i + 2, values, errors, cells: Object.fromEntries(headers.map((header, column) => [header, (cells[column] ?? '').trim()])) };
   });
   const valid = planned.filter(r => !Object.keys(r.errors).length).length;
-  return { entity, headers, mapping: map, rows: planned, valid, invalid: planned.length - valid, ignoredColumns: headers.filter(h => !fieldOf(map[h])), warnings: duplicateWarnings(spec, entity, planned, existing) };
+  return { entity, headers, mapping: map, rows: planned, valid, invalid: planned.length - valid, ignoredColumns: headers.filter(h => !fieldOf(map[h])), warnings: duplicateWarnings(spec, entity, planned, existing), adjustments, normalized: !!options.normalize };
 }

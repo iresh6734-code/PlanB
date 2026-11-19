@@ -1,4 +1,40 @@
 import type { AppSpec, CrmRecord } from '../../shared/model.js';
+import { MAX_PAGES, PAGE_SIZE } from './related.js';
+
+type FocusPage = { records: CrmRecord[]; related: CrmRecord[]; total: number };
+
+export async function loadFocusReview(
+  spec: AppSpec,
+  today: string,
+  readPage: (offset: number, limit: number, signal: AbortSignal) => Promise<FocusPage>,
+  signal: AbortSignal,
+) {
+  const records = new Map<string, CrmRecord>();
+  const related: CrmRecord[] = [];
+  let total = 0, consistent = true;
+
+  for (let page = 0; page < MAX_PAGES; page++) {
+    signal.throwIfAborted();
+    const data = await readPage(page * PAGE_SIZE, PAGE_SIZE, signal);
+    signal.throwIfAborted();
+    if (page > 0 && data.total !== total) consistent = false;
+    total = Math.max(total, data.total);
+    for (const record of data.records) {
+      if (record.entity !== 'tasks' || records.has(record.id)) {
+        consistent = false;
+        continue;
+      }
+      records.set(record.id, record);
+    }
+    related.push(...data.related);
+    if (records.size >= total || data.records.length === 0) break;
+  }
+
+  return {
+    tasks: overdueTasks(spec, [...records.values()], today),
+    related, scanned: records.size, total, complete: consistent && records.size === total,
+  };
+}
 
 /** Campo de estado de las tareas y opción que significa «hecha», deducida por su nombre (completada, hecha, cerrada…).
  *  Si no hay ninguna opción reconocible, devuelve null y la interfaz no ofrece «Hecha». */

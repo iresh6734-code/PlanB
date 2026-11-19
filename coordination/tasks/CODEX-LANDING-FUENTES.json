@@ -1,0 +1,10 @@
+{
+  "id": "CODEX-LANDING-FUENTES",
+  "agent": "codex",
+  "title": "Incluir la landing en la captura de candidatas",
+  "plan": "Ubicar el HTML y el arte en las raíces ya admitidas, sin cambiar el selector ni los manifiestos en revisión.",
+  "acceptance": "Las dos fuentes aparecen en la captura y la compilación sigue sirviendo la landing en /plan-b.html.",
+  "files": ["src/landing/plan-b.html", "src/assets/landing/hero-relay.webp"],
+  "readFiles": ["scripts/prepare-release-candidate.mjs", "tools/releases/candidate-integrity.mjs"],
+  "dependencies": []
+}

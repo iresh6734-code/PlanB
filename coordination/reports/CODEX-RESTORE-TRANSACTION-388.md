@@ -43,3 +43,11 @@ El manifiesto derivado registró 839 fuentes y 47 artefactos. Las huellas coinci
 ## Revalidación con Store actual · 17/11/2026, Europe/Madrid
 
 La adición autorizada de latestChange y las opciones guard/onChange en saveRecord quedó cotejada con la restauración existente. Revisión 417: 8/8 directas y 30/30 con caché y regresiones de guardado, tipos limpios. Retirar la transacción de restoreBundle en la copia hace fallar los tres controles de persistencia. El checkout conserva Store SHA-256 5842f24ea193b9f62dc6df2d6bd56bfad7f82eb2029508cd1c2cb502e2a7b457 y la presentación se actualiza con esa huella. El hallazgo de identidad de Deshacer en 399 sigue pendiente en su propia entrega. La última batería global completa sigue siendo 397.
+
+## Composición con Deshacer R3 · 18/11/2026 Europe/Madrid
+
+Store a4246275ef0f conserva la transacción de restauración e incluye dentro de ella la renovación de la época local. La revisión independiente 426 repite las ocho regresiones de 388 sobre esa huella. Un fallo al guardar el recibo revierte el estado y la época anterior. El Deshacer emitido antes del fallo sigue vigente. Una restauración que termina sí invalida esa etiqueta. La revisión completa pasa 140/140 y el chequeo de tipos termina con código 0. Evidencia en coordination/reviews/CODEX-UNDO-R3-REVIEW-426.md y tests/.tmp/undo426-wgthDu.
+
+## Sustitución desde Preparación · 18/11/2026 Europe/Madrid
+
+Store renueva la época dentro de la transacción al activar una candidata que sustituye registros. Las ocho regresiones de Restaurar siguen en verde y la batería relacionada pasa 45/45 con tipos limpios. El ensayo 428 cubre activación, reversión y cambio de solo esquema. Véase coordination/reports/CODEX-COPY-ACTIVATION-EPOCH-428.md.

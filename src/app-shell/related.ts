@@ -19,7 +19,13 @@ export const pointingTo = (records: CrmRecord[], fieldKey: string, id: string) =
 
 /** Lee, tipo por tipo, los registros que apuntan a `record`. Solo consulta: recorre como mucho MAX_PAGES páginas de PAGE_SIZE por tipo
  *  y devuelve cuántos revisó frente a cuántos hay, para que la interfaz no dé por completo lo que no lo es. */
-export async function loadRelated(spec: AppSpec, record: CrmRecord, fetchPage: (entity: EntityName, offset: number, limit: number) => Promise<RecordPage>): Promise<RelatedGroup[]> {
+export async function loadRelated(
+  spec: AppSpec,
+  record: Pick<CrmRecord, 'entity' | 'id'>,
+  fetchPage: (entity: EntityName, offset: number, limit: number) => Promise<RecordPage>,
+  signal?: AbortSignal,
+): Promise<RelatedGroup[]> {
+  signal?.throwIfAborted();
   const groups: RelatedGroup[] = [];
   const pages = new Map<EntityName, { records: CrmRecord[]; total: number }>();
   for (const source of sourcesFor(spec, record.entity)) {
@@ -28,6 +34,7 @@ export async function loadRelated(spec: AppSpec, record: CrmRecord, fetchPage: (
       loaded = { records: [], total: 0 };
       for (let page = 0; page < MAX_PAGES; page++) {
         const result = await fetchPage(source.entity, page * PAGE_SIZE, PAGE_SIZE);
+        signal?.throwIfAborted();
         loaded.records.push(...result.records); loaded.total = result.total;
         if (loaded.records.length >= result.total || result.records.length === 0) break;
       }

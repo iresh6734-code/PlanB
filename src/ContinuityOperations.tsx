@@ -62,8 +62,8 @@ function useQuery<T>(key: string | null, fetcher: (signal: AbortSignal) => Promi
   return { state: current, retry: () => setNonce(n => n + 1) };
 }
 
-function QueryError({ error, onRetry, children }: { error: Failure; onRetry: () => void; children?: ReactNode }) {
-  return <div className="error-box co-error" role="alert"><p>{error.message}</p><div className="button-row">{error.status === 401 ? null : <button type="button" className="button secondary" onClick={onRetry}>Reintentar consulta</button>}{children}</div></div>;
+function QueryError({ error, onRetry, children }: { error: Failure; onRetry?: () => void; children?: ReactNode }) {
+  return <div className="error-box co-error" role="alert"><p>{error.message}</p><div className="button-row">{error.status !== 401 && onRetry ? <button type="button" className="button secondary" onClick={onRetry}>Reintentar consulta</button> : null}{children}</div></div>;
 }
 
 function Value({ preview }: { preview: ValuePreview }) {
@@ -133,11 +133,12 @@ function RadarResult({ data, horizon }: { data: RadarResponse; horizon: number }
   </div>;
 }
 
-type Request = { from: string; to: string; offset: number };
+type Request = { from: string; to: string; offset: number; content?: { from: string; to: string } };
 
 export function ComparePanel({ captures }: { captures: CaptureOption[] }) {
   const [from, setFrom] = useState(''), [to, setTo] = useState(''), [req, setReq] = useState<Request | null>(null);
   const moved = useRef(false), heading = useRef<HTMLHeadingElement | null>(null);
+  const compareButton = useRef<HTMLButtonElement | null>(null);
   const known = new Map(captures.map(item => [item.id, item]));
   const missing = [from, to].filter(id => id && !known.has(id));
   // La consulta solo vale mientras ambas capturas del par pedido sigan en el historial; si falta una, se aborta y se retira todo (la selección y el aviso se conservan).
@@ -148,24 +149,50 @@ export function ComparePanel({ captures }: { captures: CaptureOption[] }) {
   const { state, retry } = useQuery<CompareResponse>(key, signal => {
     const r = active!;
     return api<CompareResponse>('/v2/captures/compare?from=' + encodeURIComponent(r.from) + '&to=' + encodeURIComponent(r.to) + '&offset=' + r.offset + '&limit=' + PAGE, { signal });
-  }, data => { const r = expected.current; return r && data.from?.captureId === r.from && data.to?.captureId === r.to && data.records?.offset === r.offset ? null : 'La respuesta no corresponde a las capturas elegidas y se ha descartado.'; }, 'compare');
-  useEffect(() => { if (state.phase === 'ok' && moved.current) { moved.current = false; heading.current?.focus(); } }, [state.phase]);
+  }, data => {
+    const r = expected.current;
+    if (!r || data.from?.captureId !== r.from || data.to?.captureId !== r.to || data.records?.offset !== r.offset) {
+      return 'La respuesta no corresponde a las capturas elegidas. Pulsa «Comparar capturas» para empezar de nuevo.';
+    }
+    const fromHash = data.from.contentHash, toHash = data.to.contentHash;
+    if (typeof fromHash !== 'string' || !fromHash || typeof toHash !== 'string' || !toHash) {
+      return 'No se pudo verificar el contenido de las capturas. Pulsa «Comparar capturas» para volver a consultar.';
+    }
+    return r.content && (r.content.from !== fromHash || r.content.to !== toHash)
+      ? 'El contenido de las capturas cambió desde la primera página. Pulsa «Comparar capturas» para empezar de nuevo.'
+      : null;
+  }, 'compare');
+  const stale = state.error?.stale;
+  useEffect(() => {
+    if (!moved.current) return;
+    if (state.phase === 'ok') { moved.current = false; heading.current?.focus(); }
+    if (state.phase === 'error' && stale) { moved.current = false; compareButton.current?.focus(); }
+  }, [state.phase, stale]);
   const choose = (side: 'from' | 'to', id: string) => { (side === 'from' ? setFrom : setTo)(id); setReq(null); };
   const ready = !!from && !!to && from !== to && !missing.length;
   const data = state.phase === 'ok' ? state.data! : null;
+  const compare = () => {
+    moved.current = false;
+    if (req && req.from === from && req.to === to && req.offset === 0 && !req.content) retry();
+    else setReq({ from, to, offset: 0 });
+  };
   const options = (selected: string) => <><option value="">Elige una captura</option>{!selected || known.has(selected) ? null : <option value={selected}>No disponible: {selected}</option>}{captures.map(item => <option key={item.id} value={item.id}>{when(item.at)} · {(item.bytes / 1024).toFixed(0)} KB</option>)}</>;
   return <div className="co-panel">
     {captures.length < 2 ? <p className="helper">Hacen falta al menos dos capturas guardadas para comparar. Ahora hay {captures.length}. Cuando exista otra, podrás ver qué cambió entre ambas.</p> : null}
     <div className="co-controls">
       <label className="field"><span>Primera captura</span><select aria-label="Primera captura" value={from} disabled={captures.length < 2} onChange={event => choose('from', event.target.value)}>{options(from)}</select></label>
       <label className="field"><span>Segunda captura</span><select aria-label="Segunda captura" value={to} disabled={captures.length < 2} onChange={event => choose('to', event.target.value)}>{options(to)}</select></label>
-      <button type="button" className="button secondary" disabled={!ready || state.phase === 'loading'} onClick={() => { moved.current = false; if (req && req.from === from && req.to === to && req.offset === 0) retry(); else setReq({ from, to, offset: 0 }); }}>Comparar capturas</button>
+      <button ref={compareButton} type="button" className="button secondary" disabled={!ready || state.phase === 'loading'} onClick={compare}>Comparar capturas</button>
     </div>
     {missing.length ? <p className="warning-text" role="alert">Una captura elegida ya no está en el historial. No se ha cambiado por otra: elígela de nuevo.</p> : null}
     {from && to && from === to ? <p className="helper">Elige dos capturas distintas. El orden elegido se respeta: comparar al revés es una comparación válida.</p> : null}
     {active && state.phase === 'loading' ? <Spinner text="Comparando capturas…" /> : null}
-    {active && state.phase === 'error' ? <QueryError error={state.error!} onRetry={retry} /> : null}
-    {active && data ? <CompareResult data={data} headingRef={heading} page={offset => { moved.current = true; setReq({ ...active, offset }); }} /> : null}
+    {active && state.phase === 'error' ? <QueryError error={state.error!} onRetry={stale ? undefined : retry} /> : null}
+    {active && data ? <CompareResult data={data} headingRef={heading} page={offset => {
+      moved.current = true;
+      const content = active.content ?? { from: data.from.contentHash, to: data.to.contentHash };
+      setReq({ ...active, offset, content });
+    }} /> : null}
   </div>;
 }
 

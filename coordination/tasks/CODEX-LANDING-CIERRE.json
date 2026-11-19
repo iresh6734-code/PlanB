@@ -1,0 +1,10 @@
+{
+  "id": "CODEX-LANDING-CIERRE",
+  "agent": "codex",
+  "title": "Ilustrar el retorno con una segunda escena nocturna",
+  "plan": "Incluir un cierre fotográfico de carga diferida en la misma dirección artística que la portada.",
+  "acceptance": "El cierre tiene una imagen optimizada y verificable en móvil y escritorio.",
+  "files": ["src/assets/landing/return-signal.webp"],
+  "readFiles": ["src/landing/plan-b.html"],
+  "dependencies": []
+}

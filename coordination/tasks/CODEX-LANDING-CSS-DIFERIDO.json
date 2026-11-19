@@ -1,0 +1,10 @@
+{
+  "id": "CODEX-LANDING-CSS-DIFERIDO",
+  "agent": "codex",
+  "title": "Diferir el bloque narrativo por proximidad",
+  "plan": "Separar los estilos del recorrido para reducir el bloqueo inicial en móvil.",
+  "acceptance": "La simulación aparece al aproximarse o mediante enlace directo; la portada sirve primero los recursos críticos.",
+  "files": ["src/landing/story.css"],
+  "readFiles": ["src/landing/styles.css", "src/landing/start.ts", "src/landing/main.tsx"],
+  "dependencies": []
+}

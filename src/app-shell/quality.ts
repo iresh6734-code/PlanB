@@ -3,7 +3,7 @@ import { MAX_PAGES, PAGE_SIZE, type RecordPage } from './related.js';
 
 /** Un aviso de calidad sobre un registro concreto. Son comprobaciones de forma, no de negocio: no deciden nada ni cambian datos. */
 export type QualityIssue = { kind: 'required' | 'email' | 'duplicate' | 'dangling'; record: CrmRecord; field: string; text: string };
-export type QualityReport = { issues: QualityIssue[]; scanned: number; total: number; complete: boolean };
+export type QualityReport = { issues: QualityIssue[]; scanned: number; total: number; complete: boolean; unstable?: true };
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const empty = (value: unknown) => value === null || value === undefined || (typeof value === 'string' && value.trim() === '');
@@ -53,17 +53,40 @@ export function checkQuality(spec: AppSpec, records: CrmRecord[], completeEntiti
 }
 
 /** Lee la copia (como mucho MAX_PAGES de PAGE_SIZE por tipo) y la revisa. Dice cuánto revisó frente a cuánto hay. */
-export async function loadQuality(spec: AppSpec, fetchPage: (entity: EntityName, offset: number, limit: number) => Promise<RecordPage>): Promise<QualityReport> {
-  const records: CrmRecord[] = [], complete = new Set<EntityName>(); let scanned = 0, total = 0;
+export async function loadQuality(
+  spec: AppSpec,
+  fetchPage: (entity: EntityName, offset: number, limit: number) => Promise<RecordPage>,
+  signal?: AbortSignal,
+): Promise<QualityReport> {
+  signal?.throwIfAborted();
+  const records: CrmRecord[] = [];
+  const complete = new Set<EntityName>();
+  let total = 0, unstable = false;
   for (const entity of spec.entities) {
-    const own: CrmRecord[] = []; let count = 0;
+    const own = new Map<string, CrmRecord>();
+    let count: number | undefined;
+    let consistent = true;
     for (let page = 0; page < MAX_PAGES; page++) {
-      const result = await fetchPage(entity.id, page * PAGE_SIZE, PAGE_SIZE);
-      own.push(...result.records); count = result.total;
-      if (own.length >= result.total || result.records.length === 0) break;
+      const offset = page * PAGE_SIZE;
+      const result = await fetchPage(entity.id, offset, PAGE_SIZE);
+      signal?.throwIfAborted();
+      if (!Number.isSafeInteger(result.total) || result.total < 0) throw Error('La copia no devolvió un recuento de registros válido.');
+      const expected = Math.min(PAGE_SIZE, Math.max(0, result.total - offset));
+      if ((count !== undefined && count !== result.total) || result.records.length !== expected) consistent = false;
+      count ??= result.total;
+      for (const record of result.records) {
+        if (record.entity !== entity.id || own.has(record.id)) consistent = false;
+        else own.set(record.id, record);
+      }
+      if (own.size >= result.total || result.records.length === 0) break;
     }
-    if (own.length >= count) complete.add(entity.id);
-    records.push(...own); scanned += own.length; total += count;
+    if (consistent && own.size === count) complete.add(entity.id);
+    if (!consistent) unstable = true;
+    records.push(...own.values());
+    total += Math.max(count ?? 0, own.size);
   }
-  return { issues: checkQuality(spec, records, complete), scanned, total, complete: scanned >= total };
+  return {
+    issues: checkQuality(spec, records, complete), scanned: records.length, total,
+    complete: complete.size === spec.entities.length, ...(unstable ? { unstable: true } : {}),
+  };
 }

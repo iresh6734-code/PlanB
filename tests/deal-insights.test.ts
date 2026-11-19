@@ -31,3 +31,37 @@ test('importes con separador de miles, como los totales', () => {
   assert.equal(euros('16650').replace(/\s/g, ' '), '16.650 €');
   assert.equal(euros(null).replace(/\s/g, ' '), '0 €');
 });
+
+import { dueStatus, initials } from '../src/app-shell/deal-insights.js';
+test('fecha límite de una tarea: vencida, hoy, mañana, pronto, más adelante, sin fecha y hecha', () => {
+  const today = '2026-11-18';
+  assert.deepEqual(dueStatus('2026-11-15', today, false), { label: 'Venció hace 3 días · 15 nov', tone: 'late' });
+  assert.deepEqual(dueStatus('2026-11-18', today, false), { label: 'Vence hoy', tone: 'soon' });
+  assert.deepEqual(dueStatus('2026-11-19', today, false), { label: 'Vence mañana · 19 nov', tone: 'soon' });
+  assert.deepEqual(dueStatus('2026-11-23', today, false), { label: 'Vence en 5 días · 23 nov', tone: 'soon' });
+  assert.deepEqual(dueStatus('2026-12-30', today, false), { label: 'Vence el 30 dic', tone: 'ok' });
+  assert.deepEqual(dueStatus('', today, false), { label: 'Sin fecha límite', tone: 'none' });
+  assert.deepEqual(dueStatus('2026-01-01', today, true), { label: 'Hecha', tone: 'won' });
+});
+
+test('los resúmenes no muestran una fecha distinta cuando reciben un día imposible', () => {
+  const today = '2026-03-01';
+  for (const invalid of ['2026-02-30', '2026-99-01', '2026-03-01 texto', '2026-03-01T25:00:00Z']) {
+    assert.deepEqual(closeStatus(invalid, today, 'open'), { label: 'Fecha de cierre no válida', tone: 'none' });
+    assert.deepEqual(dueStatus(invalid, today, false), { label: 'Fecha límite no válida', tone: 'none' });
+  }
+  assert.deepEqual(dueStatus('2028-02-29', '2028-03-01', false), { label: 'Venció hace 1 día · 29 feb', tone: 'late' });
+});
+
+test('una fecha límite con hora usa el día de Madrid y una fecha sin hora conserva su día', () => {
+  assert.deepEqual(dueStatus('2026-11-16T23:30:00Z', '2026-11-17', false), { label: 'Vence hoy', tone: 'soon' });
+  assert.deepEqual(dueStatus('2026-11-16', '2026-11-17', false), { label: 'Venció hace 1 día · 16 nov', tone: 'late' });
+  assert.deepEqual(dueStatus('2026-03-29T22:00:00Z', '2026-03-29', false), { label: 'Vence mañana · 30 mar', tone: 'soon' });
+  assert.deepEqual(closeStatus('2026-11-16T23:30:00Z', '2026-11-17', 'open'), { label: 'Venció hace 1 día · 16 nov', tone: 'late' });
+});
+test('iniciales', () => {
+  assert.equal(initials('Lucía Martín'), 'LM');
+  assert.equal(initials('Forma & Fondo'), 'FF');
+  assert.equal(initials('álvaro'), 'Á');
+  assert.equal(initials('  '), '·');
+});

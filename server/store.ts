@@ -236,7 +236,13 @@ export class Store {
       if (candidate) {
         const old = this.bundleOrNull();
         if (old) this.db.prepare('INSERT INTO archives(id,at,bundle) VALUES(?,?,?)').run(randomUUID(),new Date().toISOString(),this.encode(old));
-        if (candidate.replaceRecords) { this.db.exec('DELETE FROM records; DELETE FROM changes;'); this.forgetPlain(); for (const record of snapshot.records) this.insertRecord(record);this.resetReturnState(); }
+        if (candidate.replaceRecords) {
+          this.db.exec('DELETE FROM records; DELETE FROM changes;');
+          this.forgetPlain();
+          for (const record of snapshot.records) this.insertRecord(record);
+          this.set('copyEpoch', randomUUID());
+          this.resetReturnState();
+        }
         this.set('snapshot',snapshot); this.set('spec',spec); this.set('reconciliation',candidate.reconciliation);
       }
       this.set('generation', { ...generation, approved: true }); this.set('candidate',null); this.set('lastError',null);

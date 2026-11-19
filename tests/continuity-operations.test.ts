@@ -142,6 +142,54 @@ test('radar: con otra captura activa en la respuesta no se mezclan filas y se of
   m.press('Actualizar contexto'); await m.flush(); assert.equal(refreshed, 1); assert.equal(m.calls.length, 2, 'tras actualizar vuelve a consultar');
 });
 
+const contextA = 'a'.repeat(64), contextB = 'b'.repeat(64);
+const radarAt = (contextRevision: string) => radar({ source: { ...radar().source, contextRevision } });
+
+test('radar: la revisión distingue dos copias con la misma captura y cancela la lectura anterior', async () => {
+  const m = mount('RadarPanel', { activeCaptureId: CAP, workspaceContextRevision: contextA, refreshContext: async () => {} }, true);
+  assert.match(m.calls[0].path, new RegExp('contextRevision=' + contextA + '$'));
+  m.render({ workspaceContextRevision: contextB }); await m.flush();
+  assert.equal(m.calls[0].init.signal.aborted, true);
+  assert.match(m.calls[1].path, new RegExp('contextRevision=' + contextB + '$'));
+  m.calls[0].resolve(radarAt(contextA)); await m.flush();
+  assert.doesNotMatch(m.text(), /Llamar a Ana/);
+
+  m.calls[1].resolve(radarAt(contextA)); await m.flush();
+  assert.doesNotMatch(m.text(), /Llamar a Ana/);
+  assert.match(m.text(), /otra copia activa/);
+  assert.ok(m.button('Actualizar contexto'));
+});
+
+test('radar: un conflicto de contexto ofrece actualizar la copia y no reintenta el contexto caducado', async () => {
+  let refreshes = 0;
+  const m = mount('RadarPanel', { activeCaptureId: CAP, workspaceContextRevision: contextA, refreshContext: async () => { refreshes++; } });
+  m.calls[0].reject(Object.assign(httpError(409, 'La copia cambió. Actualiza el contexto.'), {
+    details: { code: 'RESPONSE_QUEUE_CONTEXT_CHANGED' },
+  }));
+  await m.flush();
+  assert.doesNotMatch(m.text(), /Llamar a Ana/);
+  assert.equal(m.button('Reintentar consulta'), undefined);
+  assert.equal(m.button('Actualizar radar')!.props.disabled, true);
+  m.press('Actualizar contexto'); await m.flush();
+  assert.equal(refreshes, 1);
+  m.render({ workspaceContextRevision: contextB }); await m.flush();
+  assert.match(m.calls.at(-1)!.path, new RegExp('contextRevision=' + contextB + '$'));
+  m.calls.at(-1)!.resolve(radarAt(contextB)); await m.flush();
+  assert.match(m.text(), /Llamar a Ana/);
+});
+
+test('radar: sin revisión comprobada en el montaje anclado no consulta', async () => {
+  let refreshes = 0;
+  const m = mount('RadarPanel', { activeCaptureId: CAP, workspaceContextRevision: null, refreshContext: async () => { refreshes++; } });
+  assert.equal(m.calls.length, 0);
+  assert.match(m.text(), /No se pudo verificar la identidad de la copia activa/);
+  m.press('Actualizar contexto'); await m.flush();
+  assert.equal(refreshes, 1);
+  assert.equal(m.calls.length, 0);
+  m.render({ workspaceContextRevision: contextA }); await m.flush();
+  assert.equal(m.calls.length, 1);
+});
+
 test('radar: sin copia activa no consulta; 404 de servidor antiguo y 401 no fingen éxito; reintentar vuelve a consultar', async () => {
   const none = mount('RadarPanel', { activeCaptureId: null, refreshContext: async () => {} });
   assert.equal(none.calls.length, 0); assert.match(none.text(), /No hay una copia activa/); assert.match(none.text(), /Continuar trabajando/);
@@ -284,4 +332,55 @@ test('comparador: pulsar Comparar de nuevo tras un error repite la consulta del 
   m.calls[0].reject(httpError(422, 'Las dos capturas deben tener formato válido y estar conciliadas.')); await m.flush();
   m.press('Comparar capturas'); await settle(); m.render();
   assert.equal(m.calls.length, 2); assert.equal(m.calls[1].path, m.calls[0].path);
+});
+
+for (const side of ['from', 'to'] as const) {
+  test('comparador: cambia el contenido de la captura ' + side + ' con el mismo ID entre páginas', async () => {
+    const m = mount('ComparePanel', { captures: OPTIONS }); await compareNow(m);
+    m.calls[0].resolve(compareBody()); await m.flush();
+    m.press('Siguiente');
+    const changed = compareBody({}, 25);
+    changed[side].contentHash = 'huella-nueva';
+    m.calls[1].resolve(changed); await m.flush();
+    assert.match(m.text(), /El contenido de las capturas cambió desde la primera página/);
+    assert.doesNotMatch(m.text(), /Resultado de la comparación|Registros 26/);
+    assert.equal(m.button('Siguiente'), undefined);
+    assert.equal(m.button('Reintentar consulta'), undefined);
+    assert.equal(m.select(FROM).props.value, 'a:1');
+    assert.equal(m.select(TO).props.value, 'b:2');
+    assert.equal(m.calls.length, 2, 'no se inicia otra comparación automáticamente');
+
+    m.press('Comparar capturas');
+    assert.match(m.calls[2].path, /from=a%3A1&to=b%3A2&offset=0/);
+    m.calls[2].resolve(compareBody({ [side]: changed[side] })); await m.flush();
+    assert.match(m.text(), /Registros 1–2 de 60/);
+    m.press('Siguiente');
+    m.calls[3].resolve(changed); await m.flush();
+    assert.match(m.text(), /Registros 26–27 de 60/, 'la comparación nueva mantiene la nueva huella');
+  });
+}
+
+test('comparador: volver a la primera página conserva las huellas hasta un nuevo clic en Comparar', async () => {
+  const m = mount('ComparePanel', { captures: OPTIONS }); await compareNow(m);
+  m.calls[0].resolve(compareBody()); await m.flush();
+  m.press('Siguiente'); m.calls[1].resolve(compareBody({}, 25)); await m.flush();
+  m.press('Anterior'); assert.match(m.calls[2].path, /offset=0/);
+  const changed = compareBody();
+  changed.to.contentHash = 'segunda-captura-actualizada';
+  m.calls[2].resolve(changed); await m.flush();
+  assert.match(m.text(), /El contenido de las capturas cambió/);
+  m.press('Comparar capturas');
+  assert.match(m.calls[3].path, /offset=0/);
+  m.calls[3].resolve(changed); await m.flush();
+  assert.match(m.text(), /Registros 1–2 de 60/);
+});
+
+test('comparador: una respuesta sin las dos huellas no inicia una comparación paginable', async () => {
+  const m = mount('ComparePanel', { captures: OPTIONS }); await compareNow(m);
+  const missing = compareBody();
+  delete (missing.from as Partial<typeof missing.from>).contentHash;
+  m.calls[0].resolve(missing); await m.flush();
+  assert.match(m.text(), /No se pudo verificar el contenido de las capturas/);
+  assert.doesNotMatch(m.text(), /Resultado de la comparación/);
+  assert.equal(m.button('Siguiente'), undefined);
 });

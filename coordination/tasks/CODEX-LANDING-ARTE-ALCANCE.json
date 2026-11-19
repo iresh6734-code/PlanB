@@ -1,0 +1,1 @@
+{"id":"CODEX-LANDING-ARTE-ALCANCE","agent":"codex","title":"Ilustrar el panel de alcance según la maqueta","plan":"Incluir el recorte fotográfico de la pared con sombras de ventana y vegetación.","acceptance":"Textura WebP propia integrada debajo de la columna marfil.","files":["src/assets/landing/coverage-wall.webp"],"readFiles":["src/landing/main.tsx"],"dependencies":[]}

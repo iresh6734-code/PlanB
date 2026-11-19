@@ -1,0 +1,102 @@
+import { useEffect, useState } from 'react';
+import type { AppState, CrmRecord } from '../../shared/model.js';
+import { api } from '../api.js';
+import { recordName } from '../components.js';
+import { madridDay } from '../task-display.js';
+import { ErrorState, Skeleton } from '../ui/index.js';
+import { closeStatus, euros, stageKind } from './deal-insights.js';
+import { recordListPath } from './useRecordList.js';
+
+type Spec = NonNullable<AppState['spec']>;
+type Page = { records: CrmRecord[]; total: number };
+type PipelineRead = { spec: Spec; revision: string; attempt: number } &
+  ({ page: Page; error?: never } | { error: string; page?: never });
+const LIMIT = 100; // máximo que da la lista del servidor en una petición
+
+function recordedAmount(value: unknown): number | null {
+  if (typeof value !== 'number' && (typeof value !== 'string' || !value.trim())) return null;
+  const amount = Number(value);
+  return Number.isFinite(amount) ? amount : null;
+}
+
+function amountSummary(rows: { amount: number | null }[]) {
+  const known = rows.flatMap(row => row.amount === null ? [] : [row.amount]);
+  const total = known.reduce((sum, amount) => sum + amount, 0);
+  const overflow = !Number.isFinite(total);
+  return { total: known.length > 0 && !overflow ? total : null, missing: rows.length - known.length, overflow };
+}
+
+/** Inicio · «Oportunidades abiertas»: cuánto hay en juego por etapa y las que antes piden atención (cierre vencido o próximo).
+ *  Solo lee la copia local (como la lista de Oportunidades); si hay más de 100, lo dice en lugar de dar un total falso. */
+export function PipelineCard({ spec, revision, onOpenRecord, onOpenDeals }: {
+  spec: Spec; revision: string; onOpenRecord?: (record: CrmRecord) => void; onOpenDeals?: () => void;
+}) {
+  const [read, setRead] = useState<PipelineRead | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const target = read?.spec === spec && read.revision === revision && read.attempt === attempt ? read : null;
+  const { page, error } = target ?? {};
+  const hasDeals = spec.entities.some(entity => entity.id === 'deals');
+  useEffect(() => {
+    if (!hasDeals) return;
+    const controller = new AbortController();
+    const context = { spec, revision, attempt };
+    setRead(null);
+    api<Page>(recordListPath('deals', '', 0, '', LIMIT), { signal: controller.signal })
+      .then(page => { if (!controller.signal.aborted) setRead({ ...context, page }); })
+      .catch(failure => {
+        if (!controller.signal.aborted) setRead({ ...context, error: failure instanceof Error ? failure.message : 'La consulta se interrumpió.' });
+      });
+    return () => controller.abort();
+  }, [hasDeals, spec, revision, attempt]);
+  const entity = spec.entities.find(item => item.id === 'deals');
+  if (!entity) return null;
+  const stageKey = spec.roles?.stage ?? 'dealstage', amountKey = spec.roles?.amount ?? 'amount';
+  const closeField = entity.fields.find(field => field.type === 'date' && /cierre|close/i.test(field.key + ' ' + field.label));
+  const today = madridDay(new Date());
+  const deals = page?.records ?? [];
+  const stagesById = new Map(spec.stages.map(stage => [stage.id, stage]));
+  const classified = deals.map(record => ({
+    record,
+    stage: stagesById.get(String(record.values[stageKey] ?? '')),
+    amount: recordedAmount(record.values[amountKey]),
+  }));
+  const uncertain = classified.filter(item => !item.stage).length;
+  const open = classified.flatMap(item => item.stage && stageKind(item.stage) === 'open' ? [{ ...item, stage: item.stage }] : []);
+  const amounts = amountSummary(open);
+  const stages = spec.stages.filter(stage => stageKind(stage) === 'open').map(stage => {
+    const list = open.filter(item => item.stage === stage);
+    return { stage, count: list.length, total: amountSummary(list).total };
+  }).filter(item => item.count > 0);
+  const chartStages = stages.flatMap(item => item.total === null ? [] : [{ ...item, total: item.total }]);
+  const withStatus = closeField ? open.map(item => ({ ...item, status: closeStatus(item.record.values[closeField.key], today, 'open') })) : [];
+  const late = withStatus.filter(item => item.status.tone === 'late');
+  const attention = withStatus.filter(item => item.status.tone === 'late' || item.status.tone === 'soon')
+    .sort((a, b) => String(a.record.values[closeField!.key]).localeCompare(String(b.record.values[closeField!.key]))).slice(0, 3);
+  const partial = !!page && page.total > deals.length;
+  return <article className="oc-card gx-pipe" aria-labelledby="gx-pipe-title">
+    <div className="oc-card-head"><h2 id="gx-pipe-title">Oportunidades abiertas</h2>{onOpenDeals ? <button type="button" className="oc-link" onClick={onOpenDeals}>Ver tablero →</button> : null}</div>
+    {!page ? (error ? <ErrorState title="No se pudieron leer las oportunidades" onAction={() => setAttempt(value => value + 1)}>{error}</ErrorState>
+      : <Skeleton rows={2} label="Leyendo las oportunidades de tu copia…" />)
+      : !open.length ? <p className="oc-empty-line ui-empty">{partial || uncertain ? 'No se han identificado oportunidades abiertas entre las leídas.' : 'No hay oportunidades abiertas.'}</p>
+      : <>
+        <div className="gx-pipe-figures">
+          <p><strong>{amounts.total === null ? '—' : euros(amounts.total)}</strong><span>{amounts.overflow ? 'No se pudo sumar el importe' : amounts.total === null ? 'Sin importe conocido' : amounts.missing ? 'Importe conocido' : 'Importe en juego'}</span></p>
+          <p><strong>{open.length}</strong><span>{open.length === 1 ? 'abierta' : 'abiertas'}</span></p>
+          {closeField ? <p data-tone={late.length ? 'late' : 'ok'}><strong>{late.length}</strong><span>con el cierre vencido</span></p> : null}
+        </div>
+        {chartStages.length ? <div className="gx-pipe-bar" role="img" aria-label={chartStages.map(item => item.stage.label + ': ' + euros(item.total)).join(', ')}>
+          {chartStages.map(item => <i key={item.stage.id} style={{ flexGrow: Math.max(item.total, 1), background: item.stage.color }} />)}
+        </div> : null}
+        <ul className="gx-pipe-legend">{stages.map(item => <li key={item.stage.id}><span style={{ background: item.stage.color }} aria-hidden="true" />{item.stage.label}<em>{item.count} · {item.total === null ? '—' : euros(item.total)}</em></li>)}</ul>
+        {attention.length ? <ul className="oc-task-list gx-pipe-list">{attention.map(({ record, stage, amount, status }) => <li key={record.id}>
+          <span className="oc-chip" data-tone={status.tone === 'late' ? 'danger' : 'warn'}>{status.tone === 'late' ? 'Cierre vencido' : 'Cierra pronto'}</span>
+          <div style={{ minWidth: 0 }}><strong title={recordName(record, spec)}>{recordName(record, spec)}</strong><span className="oc-due">{stage.label + ' · ' + (amount === null ? 'Sin importe' : euros(amount))}</span></div>
+          <span className="oc-due">{status.label.replace(/^.* · /, '')}</span>
+          {onOpenRecord ? <button type="button" className="oc-small-button" onClick={() => onOpenRecord(record)} aria-label={'Abrir la oportunidad ' + recordName(record, spec)}>Abrir</button> : null}
+        </li>)}</ul> : null}
+      </>}
+    {amounts.missing ? <p className="gx-pipe-note">{amounts.missing === 1 ? '1 oportunidad abierta sin importe.' : amounts.missing + ' oportunidades abiertas sin importe.'}</p> : null}
+    {uncertain ? <p className="gx-pipe-note">{uncertain === 1 ? '1 oportunidad con etapa por revisar.' : uncertain + ' oportunidades con etapa por revisar.'}</p> : null}
+    {page && partial ? <p className="gx-pipe-note">Calculado con las primeras {deals.length} de {page.total} oportunidades.</p> : null}
+  </article>;
+}

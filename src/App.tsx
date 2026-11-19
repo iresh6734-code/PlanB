@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CheckCircle2, Circle, ShieldCheck, X } from 'lucide-react';
-import { validateRecord, type AppState, type CrmRecord, type EntityName } from '../shared/model.js';
+import { validateRecord, type AppState, type CrmRecord, type EntityName, type FieldValue } from '../shared/model.js';
 import { api, post } from './api.js';
 import { Brand, Modal, RecordDrawer, Spinner, recordName } from './components.js';
 import { CsvImport } from './CsvImport.js';
@@ -17,6 +17,8 @@ import { TopBar } from './app-shell/TopBar.js';
 import { describeCapture } from './app-shell/workspace-copy.js';
 import { RelatedPanel } from './app-shell/RelatedPanel.js';
 import { DealSummary } from './app-shell/DealSummary.js';
+import { RecordSummary } from './app-shell/RecordSummary.js';
+import { linkedPreset, taskPreset } from './app-shell/task-preset.js';
 import { RecordTimeline } from './app-shell/RecordTimeline.js';
 import { CommandPalette } from './app-shell/CommandPalette.js';
 import { FocusRun } from './app-shell/FocusRun.js';
@@ -75,6 +77,8 @@ export default function App() {
   const [step, setStep] = useState(0);
   const [connectRequest,setConnectRequest]=useState(0);
   const [selected, setSelected] = useState<CrmRecord | 'new' | null>(null);
+  // «Nueva tarea» desde la ficha de un cliente u oportunidad: la tarea nueva empieza enlazada a ellos.
+  const [preset, setPreset] = useState<Record<string, FieldValue> | null>(null);
   const selectedId = selected && selected !== 'new' ? selected.id : undefined;
   const [globalSearch, setGlobalSearch] = useState(false);
   // Ensayo guiado «Un día sin CRM»: solo observa lo que la persona hace (apartado, búsqueda, ficha); no guarda nada y se pierde al cerrar.
@@ -125,8 +129,8 @@ export default function App() {
     };
     window.addEventListener('popstate', onPop); return () => window.removeEventListener('popstate', onPop);
   }, []);
-  // Si la persona se va a otro lugar antes de que llegue la ficha pedida, la lectura se retira (R2, revisión 411).
-  useEffect(() => { if (pendingRecord && !pendingStillWanted(pendingRecord, { page, entity: entityName })) setPendingRecord(null); }, [page, entityName, pendingRecord]);
+  // Si la persona se va a otro lugar o abre otra ficha antes de que llegue la pedida, la lectura se retira (R2 411, R3 427).
+  useEffect(() => { if (pendingRecord && !pendingStillWanted(pendingRecord, { page, entity: entityName, selected: selected === 'new' ? 'new' : selectedId ?? null })) setPendingRecord(null); }, [page, entityName, selected, selectedId, pendingRecord]);
   useEffect(() => {
     if (!pendingRecord || auth !== 'open' || !state?.ready) return;
     let active = true; const wanted = pendingRecord;
@@ -145,12 +149,14 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [probe, setProbe] = useState<{ checks: { id: string; label: string; passed: boolean }[] } | null>(null);
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (signal?: AbortSignal) => {
+    signal?.throwIfAborted();
     const sequence = ++refreshSequence.current;
     let next: LocalAppState;
-    try { next = await api<LocalAppState>('/v2/state'); }
+    try { next = await api<LocalAppState>('/v2/state', { signal }); }
     catch (failure) { if (sequence !== refreshSequence.current) throw new SupersededStateRead(); throw failure; }
     if (sequence !== refreshSequence.current) throw new SupersededStateRead();
+    signal?.throwIfAborted();
     setState(next);setDataRevision(r=>r+1);return next;
   }, []);
   useEffect(() => {
@@ -183,7 +189,7 @@ export default function App() {
     catch (failure) { setError(failure instanceof Error ? failure.message : 'No se pudo completar la operación.'); }
     finally { setBusy(false); }
   };
-  const openEntity = (id: EntityName) => { setEntity(id); setSelected(null); list.reset();setDataRevision(r=>r+1); setPage('workspace'); };
+  const openEntity = (id: EntityName) => { setEntity(id); setSelected(null); setPreset(null); list.reset();setDataRevision(r=>r+1); setPage('workspace'); };
   const openPreparation = (nextStep?: number) => { setPage('prepare'); setSelected(null); setPreparationOpen(true); if(nextStep!==undefined)setStep(nextStep); };
   const viewCoverage = async () => {
     setModal('coverage'); setProbe(null);
@@ -275,7 +281,7 @@ export default function App() {
       {error ? <div role="alert" className="global-error"><span>{error}</span><button className="icon-button" aria-label="Cerrar aviso" onClick={() => setError('')}><X size={18} /></button></div> : null}
       <OutcomesLockNotice summary={lockedOutcomes} failed={lockFailed} onRetry={()=>void protect()} onDismiss={()=>{setLockedOutcomes(null);setLockFailed(false);}}/>
       {!state.runtime?<TaskOutcomesSurface/>:null}
-      {page==='home'?<HomeOverview state={state} onSignals={setSignals} onOpenRecord={record => { openEntity(record.entity); setRecords([record]); setSelected(record); }}contextRevision={state.workspaceSearchContext?.contextRevision??null} onOpenToday={()=>{setPage('today');setSelected(null);}} onOpenTask={id=>openTaskFromOutcomes(id)} onOpenRadar={()=>{setRehearseFromToday(null);setPage('radar');setSelected(null);}} onRehearse={id=>{setRehearseFromToday(id);setPage('radar');setSelected(null);}} onOpenDateCheck={()=>{setPage('date-check');setSelected(null);}} onOpenContinuity={()=>{setPage('continuity');setSelected(null);}} onOpenChanges={()=>{setPage('changes');setSelected(null);}} onContinuityStatus={receiveContinuity} onOpenAlert={openAlert} onProtect={() => void protect()} onPrepare={() => openPreparation(0)} lab={lab}/>
+      {page==='home'?<HomeOverview state={state} onSignals={setSignals} onOpenDeals={() => openEntity('deals')} onOpenRecord={record => { openEntity(record.entity); setRecords([record]); setSelected(record); }}contextRevision={state.workspaceSearchContext?.contextRevision??null} onOpenToday={()=>{setPage('today');setSelected(null);}} onOpenTask={id=>openTaskFromOutcomes(id)} onOpenRadar={()=>{setRehearseFromToday(null);setPage('radar');setSelected(null);}} onRehearse={id=>{setRehearseFromToday(id);setPage('radar');setSelected(null);}} onOpenDateCheck={()=>{setPage('date-check');setSelected(null);}} onOpenContinuity={()=>{setPage('continuity');setSelected(null);}} onOpenChanges={()=>{setPage('changes');setSelected(null);}} onContinuityStatus={receiveContinuity} onOpenAlert={openAlert} onProtect={() => void protect()} onPrepare={() => openPreparation(0)} lab={lab}/>
       :page==='continuity'?<ContinuityHome initialTab={continuityTab??'estado'} onStatus={receiveContinuity} onGuidedDrill={state.ready && !state.runtime ? startGuidedDrill : undefined} state={state} workspaceContextRevision={state.workspaceSearchContext?.contextRevision??null} refresh={refresh} work={()=>openEntity('contacts')} prepare={()=>openPreparation(0)} protect={()=>void protect()} exportCopy={()=>setPage('export')} connectRequest={connectRequest} onOpenToday={()=>{setPage('today');setSelected(null);}} onOpenIntegrations={()=>{setIntegrationsFrom('continuity');setPage('integrations');setSelected(null);}} returnedFrom={returnedFrom} onReturnHandled={()=>setReturnedFrom(null)}/>
       :page==='today'||page==='agents'?<>{page==='today'&&lab?<RehearsalTodayEntry contextRevision={state.workspaceSearchContext?.contextRevision??null} onOpen={id=>{setRehearseFromToday(id);setPage('radar');setSelected(null);}} onOpenRadar={()=>{setRehearseFromToday(null);setPage('radar');setSelected(null);}}/>:null}<LocalOperations key={page} view={page} onDispatch={state.ready && spec ? () => setFocusOpen(true) : undefined} onOpenTasks={()=>openEntity('tasks')} onOpenDeals={()=>openEntity('deals')} onOpenProposals={()=>setPage('changes')} onPrepare={()=>openPreparation(0)} onRecordSaved={refresh} openTaskRequest={taskRequest} onOpenTaskHandled={()=>setTaskRequest(null)}/></>
         :page==='integrations'?<>{integrationsFrom?<p className="back-link"><button type="button" className="text-button" onClick={()=>{setIntegrationsFrom(null);setPage('continuity');setSelected(null);setReturnedFrom('integrations');}}>← Volver a Continuidad</button></p>:null}<LocalIntegrations onConnectHubspot={()=>{setPage('continuity');setSelected(null);setConnectRequest(n=>n+1);}}/></>
@@ -289,14 +295,19 @@ export default function App() {
       : !state.ready || !spec || !entity ? <section className="empty-state"><ShieldCheck size={36} /><h1>Revisa la preparación</h1><p>La captura y las reglas deben estar verificadas antes de editar.</p>
           <button className="button primary" onClick={() => openPreparation(2)}>Revisar aplicación</button></section>
       : <RecordsPage state={state} spec={spec} entity={entity} entityName={entityName} rows={rows} records={records} total={total} offset={offset} setOffset={setOffset}
-          query={query} setQuery={setQuery} pipeline={pipeline} setPipeline={setPipeline} selected={selected} setSelected={setSelected} recordsLoading={recordsLoading} recordsError={recordsError} onRetry={() => setDataRevision(r => r + 1)} busy={busy} date={date} moveDeal={moveDeal} saveField={saveField}
+          query={query} setQuery={setQuery} pipeline={pipeline} setPipeline={setPipeline} selected={selected} setSelected={setSelected} recordsLoading={recordsLoading} recordsError={recordsError} onRetry={() => setDataRevision(r => r + 1)} busy={busy} date={date} moveDeal={moveDeal} newWith={values => { setPreset(values); setSelected('new'); }} saveField={saveField}
           viewCoverage={() => void viewCoverage()} toggleServices={() => act(() => post('/disconnect', { disconnected: !state.disconnected }), state.disconnected ? 'Servicios habilitados para importar o generar.' : 'HubSpot e IA desconectados. Sigue trabajando con tus datos locales.')} />}
     </main>
-    {globalSearch && state.ready && state.snapshot ? <WorkspaceSearch captureId={state.snapshot.id+':'+state.snapshot.capturedAt} expectedContext={state.workspaceSearchContext??null} localRevision={dataRevision} close={() => setGlobalSearch(false)} openRecord={(record, related) => { setGlobalSearch(false); openEntity(record.entity); setRecords([record,...related]); setSelected(record); }}/>:null}
-    {selected && spec && state.ready ? <><div className="drawer-shade" onClick={() => setSelected(null)} /><RecordDrawer key={selected === 'new' ? entityName + '-new' : selected.id} entityName={entityName} selected={selected} spec={spec} records={records}
-      summary={entityName === 'deals' ? (values, set, saving) => <DealSummary spec={spec} values={values} set={set} records={records} disabled={saving} /> : undefined}
+    {globalSearch && state.ready && state.snapshot ? <WorkspaceSearch captureId={state.snapshot.id+':'+state.snapshot.capturedAt} expectedContext={state.workspaceSearchContext??null} localRevision={dataRevision} refreshWorkspace={refresh} close={() => setGlobalSearch(false)} openRecord={(record, related) => { setGlobalSearch(false); openEntity(record.entity); setRecords([record,...related]); setSelected(record); }}/>:null}
+    {selected && spec && state.ready ? <><div className="drawer-shade" onClick={() => { setSelected(null); setPreset(null); }} /><RecordDrawer key={selected === 'new' ? entityName + '-new' + (preset ? ':' + JSON.stringify(preset) : '') : selected.id} preset={selected === 'new' ? preset ?? undefined : undefined} entityName={entityName} selected={selected} spec={spec} records={records}
+      summary={(values, set, saving) => { const clean = selected !== 'new' && JSON.stringify(values) === JSON.stringify(selected.values);
+        const newTask = selected === 'new' ? null : taskPreset(spec, selected), newDeal = selected === 'new' ? null : linkedPreset(spec, 'deals', selected);
+        const onNewTask = newTask && clean ? () => { openEntity('tasks'); setPreset(newTask); setSelected('new'); } : undefined;
+        const onNewDeal = newDeal && clean ? () => { openEntity('deals'); setPreset(newDeal); setSelected('new'); } : undefined;
+        if (selected === 'new' && entityName !== 'deals') return null;
+        return entityName === 'deals' ? <DealSummary spec={spec} values={values} set={set} records={records} disabled={saving} onNewTask={onNewTask} newTaskBlocked={!!newTask && !onNewTask} /> : <RecordSummary entityName={entityName} spec={spec} values={values} set={set} records={records} disabled={saving} onNewTask={onNewTask} newTaskBlocked={!!newTask && !onNewTask} onNewDeal={onNewDeal} newDealBlocked={!!newDeal && !onNewDeal} />; }}
       extra={selected === 'new' ? undefined : dirty => <><RelatedPanel spec={spec} record={selected} dirty={dirty} onOpen={record => { openEntity(record.entity); setRecords([record]); setSelected(record); }} /><RecordTimeline spec={spec} record={selected} records={records} /></>}
-      close={() => setSelected(null)} saved={async (_record, change) => { const target = selected !== 'new' && change ? { changeId: change.id, at: change.at, copy: change.copy } : null; await refresh(); setSelected(null); setUndoable(target); setNotice('Guardado en tu copia local.'); }} /></> : null}
+      close={() => { setSelected(null); setPreset(null); }} saved={async (_record, change) => { const target = selected !== 'new' && change ? { changeId: change.id, at: change.at, copy: change.copy } : null; await refresh(); setSelected(null); setPreset(null); setUndoable(target); setNotice('Guardado en tu copia local.'); }} /></> : null}
     {notice ? <div className="toast" role="status"><CheckCircle2 size={19} />{notice}{undoable ? <button type="button" className="toast-action" onClick={() => void undoLast()}>Deshacer</button> : null}</div> : null}
     {modal === 'settings' ? <Settings state={state} close={() => setModal(null)} done={async () => { await refresh(); setNotice('Proveedor guardado.'); }} /> : null}
     {modal === 'csv' && spec && state.ready ? <CsvImport spec={spec} initialEntity={page === 'workspace' ? entityName : 'contacts'} close={() => setModal(null)} done={async (target, created) => { openEntity(target); setDataRevision(r => r + 1); await refresh(); setNotice(created + (created === 1 ? ' registro importado' : ' registros importados') + ' en tu copia local. Quedan en Cambios.'); }} /> : null}

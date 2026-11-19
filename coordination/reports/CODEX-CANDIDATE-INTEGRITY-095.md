@@ -55,3 +55,7 @@ Manifiesto no firmado: una reescritura coherente de declaración y bytes no acre
 - tools/releases/workspace-manifest.mjs: b79cc11b23c3ca9dcc911d0b24d6c63d8f13fccfa91bda3b195d562472514a0f
 
 El parser es dependencia de lectura, no archivo editado por095. El hash del informe lo registra submit. Reserva exacta de cuatro archivos, sin conflictos registrados con Claude. LAB036 sigue fuera de reserva, separado de esta entrega; no se integra ni se atribuye sesión autora por este informe.
+
+## Actualización 423 · 17/11/2026 22:20 Europe/Madrid
+
+La demo 422 mostró HTML en las peticiones WOFF2: src/assets estaba fuera de la selección. Se conserva ahora su contenido regular no oculto y se copian los avisos de texto al runtime sin sobrescribir bytes distintos. Se mantienen límites y exclusiones anteriores. Dos regresiones fallan con la versión previa; el fixture real de Vite pasa tras corregir. Suites focales 29/29, candidata nueva con tipos/compilación/163 integraciones correctas y 875 fuentes/56 artefactos cotejados. Dos viewports cargan ambas fuentes sin avisos. Evidencia completa en CODEX-CANDIDATE-FONT-ASSETS-423.md. La candidata y demo siguen sin aprobación de release; las ediciones posteriores de Claude quedan aparte.

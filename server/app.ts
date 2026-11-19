@@ -11,7 +11,7 @@ import { registerV2, type ExternalServices } from './v2.js';
 import { randomUUID } from 'node:crypto';
 import { registerV4 } from './v4.js';
 import { registerResponseQueue } from './response-queue.js';
-import { registerWorkspaceSearch, workspaceSearchIdentity } from './workspace-search.js';
+import { readWorkspaceVersion, registerWorkspaceSearch, workspaceSearchIdentity } from './workspace-search.js';
 import type { WorkspaceSearchContext } from '../shared/workspace-search.js';
 import { registerLocalOperations } from './local-operations.js';
 import { registerTaskRevision } from './task-revision.js';
@@ -62,7 +62,7 @@ export async function createBaseApp(options: AppOptions): Promise<{ app: Fastify
     const status = error && typeof error === 'object' && 'statusCode' in error ? Number(error.statusCode) : 500;
     return reply.code(status >= 400 && status < 500 ? status : 500).send({ error: status === 413 ? 'El archivo es demasiado grande.' : 'No se pudo completar la operación. La última copia válida sigue guardada.' });
   });
-  const readState = async (): Promise<AppState & { workspaceSearchContext: WorkspaceSearchContext | null }> => ({
+  const collectState = (): AppState & { workspaceSearchContext: WorkspaceSearchContext | null } => ({
     snapshot: store.snapshot, spec: store.spec, generation: store.generation,
     reconciliation: store.reconciliation, disconnected: store.disconnected, runtime: !!options.runtime,
     ready: store.ready, changes: store.changesCount, usage: store.usage(),
@@ -72,6 +72,15 @@ export async function createBaseApp(options: AppOptions): Promise<{ app: Fastify
     aiSettings: options.runtime ? null : options.aiPublic?.() ?? null
     ,candidate: store.candidate, workspaceSearchContext: workspaceSearchIdentity(store)
   });
+  const readState = async () => {
+    // Both state routes must describe one copy, even if a restore commits between their individual SQLite reads.
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const version = readWorkspaceVersion(store);
+      const state = collectState();
+      if (readWorkspaceVersion(store) === version) return state;
+    }
+    throw new AppError(409, 'La copia cambió mientras se leía su estado. Vuelve a intentarlo.');
+  };
   app.get('/api/state',readState);
   app.get('/api/v2/state',async()=>{
     const state=await readState();

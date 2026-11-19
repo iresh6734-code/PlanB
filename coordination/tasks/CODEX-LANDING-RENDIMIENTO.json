@@ -1,0 +1,10 @@
+{
+  "id": "CODEX-LANDING-RENDIMIENTO",
+  "agent": "codex",
+  "title": "Priorizar la señal y agilizar la carga inicial",
+  "plan": "Crear variantes WebP y una entrada ligera para dar prioridad al hero y cargar la simulación después de la primera pintura o cuando se necesite.",
+  "acceptance": "Imágenes adaptativas, carga diferida comprobada y auditoría Lighthouse repetida.",
+  "files": ["src/landing/start.ts", "src/assets/landing/hero-relay-480.webp", "src/assets/landing/hero-relay-840.webp"],
+  "readFiles": ["src/landing/plan-b.html", "src/landing/main.tsx"],
+  "dependencies": []
+}

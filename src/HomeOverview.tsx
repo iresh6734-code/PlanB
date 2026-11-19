@@ -14,6 +14,7 @@ import { loadCommitments, loadRadarCapability } from './commitment-radar-client.
 import { daysLate, dueLabel, taskChip } from './task-display.js';
 import { continuityAlerts, type AlertTarget } from './app-shell/continuity-alerts.js';
 import { FirstRun } from './app-shell/FirstRun.js';
+import { PipelineCard } from './app-shell/PipelineCard.js';
 import { captureRecordCount, describeCapture, workspaceCopy } from './app-shell/workspace-copy.js';
 
 /** INICIO («Operaciones claras», 11/11/2026). Solo LEE: estado de la copia, tareas de Hoy y Radar. No captura, no decide ni escribe nada; cada acción abre la página que ya la hace.
@@ -26,6 +27,8 @@ type Props = {
   onSignals?: (signals: { overdue: number | null; atRisk: number | null }) => void;
   /** Abre la ficha de un registro (avisos de calidad de los datos). */
   onOpenRecord?: (record: CrmRecord) => void;
+  /** Abre el tablero de Oportunidades (tarjeta «Oportunidades abiertas»). */
+  onOpenDeals?: () => void;
   /** Entrega a la App el estado de Continuidad ya leído aquí (avisos del menú), sin otra lectura. */
   onContinuityStatus?: (status: ContinuityStatus) => void;
   /** Abre el sitio donde se arregla un aviso de la copia (pestaña de Continuidad o Exportar). */
@@ -37,7 +40,7 @@ type Props = {
 };
 type Radar = { state: 'loading' } | { state: 'off'; reason: string } | { state: 'ready'; items: CommitmentSummary[] };
 
-export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, onOpenRadar, onRehearse, onOpenDateCheck, onOpenContinuity, onOpenChanges, onSignals, onOpenRecord, onContinuityStatus, onOpenAlert, onProtect, onPrepare, lab = true }: Props) {
+export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, onOpenRadar, onRehearse, onOpenDateCheck, onOpenContinuity, onOpenChanges, onSignals, onOpenRecord, onOpenDeals, onContinuityStatus, onOpenAlert, onProtect, onPrepare, lab = true }: Props) {
   const [ops, setOps] = useState<Operations | null>(null), [opsError, setOpsError] = useState('');
   const [status, setStatus] = useState<ContinuityStatus | null>(null);
   const [radar, setRadar] = useState<Radar>({ state: 'loading' });
@@ -170,6 +173,7 @@ export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, 
               <button type="button" className="oc-small-button" onClick={() => onOpenTask(task.id)} aria-label={'Abrir ' + (task.label || 'tarea') + ' en Hoy'}>Abrir</button>
             </li>; })}</ul>}
       </article> : null}
+      {!state.runtime && state.spec ? <PipelineCard spec={state.spec} revision={(snapshot?.capturedAt ?? '') + ':' + (state.changes ?? 0)} onOpenRecord={onOpenRecord} onOpenDeals={onOpenDeals} /> : null}
 
       </div>
       <div className="oc-home-side">

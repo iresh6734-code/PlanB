@@ -21,6 +21,50 @@
         "tests/.tmp/opus-date-check/showcase/server.mts"
       ],
       "port": 4612
+    },
+    {
+      "name": "ensayo-api",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "--require",
+        "./scripts/block-external.cjs",
+        "--import",
+        "tsx",
+        "tests/.tmp/ensayo-1711/start-api.mjs"
+      ],
+      "port": 4421
+    },
+    {
+      "name": "ensayo-ui",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "node_modules/vite/bin/vite.js",
+        "--config",
+        "tests/.tmp/rd/vite.config.ts"
+      ],
+      "port": 5199
+    },
+    {
+      "name": "ensayo-equipo",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "--require",
+        "./scripts/block-external.cjs",
+        "--import",
+        "tsx",
+        "tests/.tmp/ensayo-team/start-team.mjs"
+      ],
+      "port": 4431
+    },
+    {
+      "name": "ensayo-equipo-ui",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "node_modules/vite/bin/vite.js",
+        "--config",
+        "tests/.tmp/rd/vite-team.config.ts"
+      ],
+      "port": 5198
     }
   ]
 }

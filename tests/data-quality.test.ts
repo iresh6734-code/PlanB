@@ -52,3 +52,44 @@ test('loadQuality: dice cuánto revisó y no afirma referencias rotas fuera de l
   assert.equal(report.total - report.scanned, 10);
   assert.deepEqual(report.issues, []);
 });
+
+test('una página repetida no completa otra página ni convierte una relación en rota', async () => {
+  const records = base().filter(record => record.entity !== 'contacts');
+  const task = records.find(record => record.entity === 'tasks')!;
+  task.values.contact_id = 'contact-101';
+  const contacts: CrmRecord[] = Array.from({length:100},(_, i) => ({
+    entity:'contacts', id:'contact-' + (i+1), values:{firstname:'Cliente ' + i,email:'cliente-' + i + '@example.invalid'},
+  }));
+  const report = await loadQuality(spec, async (entity, offset) => entity === 'contacts'
+    ? {records:offset ? [contacts[0]] : contacts,total:101}
+    : {records:records.filter(record=>record.entity===entity),total:records.filter(record=>record.entity===entity).length});
+  assert.equal(report.scanned, records.length + 100);
+  assert.equal(report.complete, false);
+  assert.equal(report.unstable, true);
+  assert.equal(report.issues.some(issue=>issue.kind==='dangling' || issue.kind==='duplicate'), false);
+});
+
+test('una reducción del total durante el recorrido no declara completa la lectura', async () => {
+  const onlyContacts = {...spec,entities:spec.entities.filter(entity=>entity.id==='contacts')};
+  const contacts: CrmRecord[] = Array.from({length:120},(_, i) => ({
+    entity:'contacts', id:'contact-' + (i+1), values:{firstname:'Cliente ' + i,email:'cliente-' + i + '@example.invalid'},
+  }));
+  const report = await loadQuality(onlyContacts, async (_entity, offset, limit) => ({
+    records:contacts.slice(offset,offset+limit),total:offset ? 120 : 200,
+  }));
+  assert.equal(report.complete,false);
+  assert.equal(report.unstable,true);
+  assert.equal(report.scanned,120);
+});
+
+test('una respuesta tardía no abre otra página tras cancelar la revisión', async () => {
+  const controller = new AbortController();
+  const calls: string[] = [];
+  const review = loadQuality(spec, async (entity, offset) => {
+    calls.push(entity + '@' + offset);
+    controller.abort();
+    return {records:base().filter(record=>record.entity===entity),total:220};
+  }, controller.signal);
+  await assert.rejects(review, {name:'AbortError'});
+  assert.deepEqual(calls,['contacts@0']);
+});

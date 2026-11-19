@@ -45,9 +45,10 @@ const KEY = (entity: EntityName) => 'planb:views:' + entity;
 export const MAX_SAVED = 8;
 
 /** Lee las vistas guardadas descartando lo que no tenga la forma esperada (almacenamiento antiguo o manipulado). */
-export function readSavedViews(entity: EntityName, storage: Pick<Storage, 'getItem'> | null = typeof localStorage === 'undefined' ? null : localStorage): SavedView[] {
+export function readSavedViews(entity: EntityName, storage?: Pick<Storage, 'getItem'> | null): SavedView[] {
   try {
-    const raw = JSON.parse(storage?.getItem(KEY(entity)) ?? '[]');
+    const store = storage === undefined ? globalThis.localStorage : storage;
+    const raw = JSON.parse(store?.getItem(KEY(entity)) ?? '[]');
     if (!Array.isArray(raw)) return [];
     return raw.filter(item => item && typeof item.id === 'string' && typeof item.name === 'string' && item.name.trim() && typeof item.query === 'string')
       .map(item => ({ id: item.id, name: String(item.name).slice(0, 40), query: String(item.query).slice(0, 160), pick: typeof item.pick === 'string' ? item.pick : null,
@@ -56,8 +57,13 @@ export function readSavedViews(entity: EntityName, storage: Pick<Storage, 'getIt
       .slice(0, MAX_SAVED);
   } catch { return []; }
 }
-export function writeSavedViews(entity: EntityName, views: SavedView[], storage: Pick<Storage, 'setItem'> | null = typeof localStorage === 'undefined' ? null : localStorage) {
-  try { storage?.setItem(KEY(entity), JSON.stringify(views.slice(0, MAX_SAVED))); return true; } catch { return false; }
+export function writeSavedViews(entity: EntityName, views: SavedView[], storage?: Pick<Storage, 'setItem'> | null): boolean {
+  try {
+    const store = storage === undefined ? globalThis.localStorage : storage;
+    if (!store) return false;
+    store.setItem(KEY(entity), JSON.stringify(views.slice(0, MAX_SAVED)));
+    return true;
+  } catch { return false; }
 }
 
 export type ViewState = Omit<SavedView, 'id' | 'name'>;

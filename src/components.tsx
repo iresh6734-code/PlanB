@@ -38,7 +38,12 @@ export function Modal({ title, children, close, wide = false, side = false, conf
 const focusedElement = () => (typeof document === 'undefined' ? null : document.activeElement as HTMLElement | null);
 /** Foco inicial dentro de la ventana, Tab encerrado y, al cerrar, foco de vuelta a quien la abrió (`opener`, anotado al pintar). */
 function useDialogFocus(ref: { current: HTMLElement | null }, opener: HTMLElement | null) {
+  // El retorno del foco a quien abrió se aplaza un ciclo y se cancela si la misma ventana vuelve a montar su efecto en ese
+  // ciclo: es lo que hace StrictMode en desarrollo (monta, limpia y vuelve a montar). Sin esto, el ensayo de limpieza
+  // devolvía el foco al disparador y el segundo montaje elegía el primer botón (revisión 420 de Codex).
+  const restoring = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
+    if (restoring.current) { clearTimeout(restoring.current); restoring.current = null; }
     const previous = opener;
     const panel = ref.current;
     const focusable = () => [...(panel?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex="0"]') ?? [])];
@@ -50,7 +55,7 @@ function useDialogFocus(ref: { current: HTMLElement | null }, opener: HTMLElemen
       else if (!event.shiftKey && (document.activeElement === last || !panel?.contains(document.activeElement))) { event.preventDefault(); first?.focus(); }
     };
     document.addEventListener('keydown', key);
-    return () => { clearTimeout(timer); document.removeEventListener('keydown', key); previous?.focus(); };
+    return () => { clearTimeout(timer); document.removeEventListener('keydown', key); restoring.current = setTimeout(() => { restoring.current = null; previous?.focus(); }, 0); };
   }, [ref]);
 }
 export function recordName(record: CrmRecord, spec: AppSpec) {
@@ -66,12 +71,12 @@ export function displayValue(value: FieldValue | undefined, field: Field, record
   }
   if (field.type === 'enum') return field.options.find(o => o.id === String(value))?.label ?? String(value);
   if (field.type === 'boolean') return value ? 'Sí' : 'No';
-  if (field.type === 'number') return new Intl.NumberFormat('es-ES', field.label.includes('€') ? { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 } : {}).format(Number(value));
+  if (field.type === 'number') return new Intl.NumberFormat('es-ES', (field.label.includes('€') ? { style: 'currency', currency: 'EUR', maximumFractionDigits: 0, useGrouping: 'always' } : { useGrouping: 'always' }) as Intl.NumberFormatOptions).format(Number(value));
   if (field.type === 'date'||field.type==='datetime') return new Intl.DateTimeFormat('es-ES', { ...(field.type==='date'?{timeZone:'UTC'}:{hour:'2-digit',minute:'2-digit'}), day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(String(value)));
   if(field.type==='multiselect')return String(value).split(';').map(v=>field.options.find(o=>o.id===v)?.label??v).join(', ');
   return String(value);
 }
-export function RecordDrawer({ entityName, selected, spec, records, close, saved, extra, summary }: {
+export function RecordDrawer({ entityName, selected, spec, records, close, saved, extra, summary, preset }: {
   entityName: EntityName; selected: CrmRecord | 'new'; spec: AppSpec; records: CrmRecord[];
   close: () => void;
   /** change: identidad del cambio guardado (para «Deshacer»); null si el servidor no la devuelve. */
@@ -80,6 +85,8 @@ export function RecordDrawer({ entityName, selected, spec, records, close, saved
   extra?: (dirty: boolean) => ReactNode;
   /** Resumen sobre los campos (p. ej. importe y avance de una oportunidad). Recibe los valores del formulario y cómo cambiarlos. */
   summary?: (values: Record<string, FieldValue>, set: (key: string, value: FieldValue) => void, saving: boolean) => ReactNode;
+  /** Valores con los que empieza una ficha nueva (p. ej. la tarea de un cliente ya enlazada a él). */
+  preset?: Record<string, FieldValue>;
 }) {
   const entity = spec.entities.find(e => e.id === entityName)!;
   const dialog = useRef<HTMLElement>(null);
@@ -87,8 +94,8 @@ export function RecordDrawer({ entityName, selected, spec, records, close, saved
   useDialogFocus(dialog, opener);
   const isNew = selected === 'new';
   const [values, setValues] = useState<Record<string, FieldValue>>(() => isNew
-    ? Object.fromEntries(entity.fields.map(f => [f.key, f.type === 'boolean' ? false : f.type === 'number' && f.required ? 0
-      : f.key === 'dealstage' || f.key === 'pipeline' || f.key === 'status' || f.key === 'hs_task_status' ? f.options[0]?.id ?? '' : '']))
+    ? ({ ...Object.fromEntries(entity.fields.map(f => [f.key, f.type === 'boolean' ? false : f.type === 'number' && f.required ? 0
+      : f.key === 'dealstage' || f.key === 'pipeline' || f.key === 'status' || f.key === 'hs_task_status' ? f.options[0]?.id ?? '' : ''])), ...preset })
     : { ...selected.values });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);

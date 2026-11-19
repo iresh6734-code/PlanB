@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { compareCaptures, CaptureComparisonError } from '../shared/capture-comparison.js';
 import type { CrmSnapshot } from '../shared/model.js';
 import { AppError, type Store } from './store.js';
+import { readWorkspaceVersion } from './workspace-search.js';
 
 const querySchema = z.object({
   from: z.string().min(1).max(400), to: z.string().min(1).max(400),
@@ -16,7 +17,12 @@ function describe(snapshot: CrmSnapshot) {
 /** Saved captures only. Inherits local session/host/origin guards and never promotes either capture. */
 export function registerCaptureComparison(app: FastifyInstance, store: Store) {
   app.get('/api/v2/captures/compare', async request => {
-    const query = querySchema.parse(request.query), from = store.capture(query.from), to = store.capture(query.to);
+    const query = querySchema.parse(request.query);
+    const version = readWorkspaceVersion(store);
+    const from = store.capture(query.from), to = store.capture(query.to);
+    if (readWorkspaceVersion(store) !== version) {
+      throw new AppError(409, 'El historial cambió durante la lectura. Actualiza las capturas y vuelve a comparar.');
+    }
     if (query.from !== from.id + ':' + from.capturedAt || query.to !== to.id + ':' + to.capturedAt) throw new AppError(422, 'La identidad guardada no coincide con el contenido de la captura.');
     try {
       const comparison = compareCaptures(from, to, query);

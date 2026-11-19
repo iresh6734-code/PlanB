@@ -1844,6 +1844,27 @@ html body .sidebar .oc-search::after { display: none; }
   html body .main-content .table-container td select.gx-inline.gx-inline.gx-inline { height: 44px !important; min-height: 44px !important; }
   /* La barra superior medía 34 px en el móvil: crece para que sus botones de 44 px no queden recortados. */
   html body .workspace-context.gx-topbar { height: 52px; min-height: 52px; }
+  /* D5 (CLAUDE-MOBILE-D5): la barra es de una sola línea, pero una regla móvil antigua (design-system.css) daba a la
+     etiqueta «Datos de prueba» width:100% y la recortaba en todas las vistas (630 px de contenido en 390). La etiqueta
+     ocupa su ancho y es el nombre del lugar el que cede, con puntos suspensivos. */
+  html body .gx-topbar > span:last-child { width: auto; max-width: none; white-space: nowrap; }
+  html body .gx-topbar > .gx-crumb { flex: 1 1 auto; min-width: 0; overflow: hidden; }
+  html body .gx-topbar > .gx-crumb, html body .gx-topbar > .gx-crumb * { white-space: nowrap; text-overflow: ellipsis; }
+  /* La página nunca se desplaza de lado (en Clientes a 320 px sobraban 2 px por las filas de vistas que sangran hasta el
+     borde). `clip` no crea un contenedor de desplazamiento: no rompe lo fijo ni las filas que desplazan por sí mismas. */
+  html body .main-content { overflow-x: clip; }
+  /* Un correo o una web largos en la tarjeta de un registro parten la línea en lugar de salirse (adrian.pascual@… a 320 px). */
+  html body .table-container td { overflow-wrap: anywhere; }
+}
+@media (max-width: 359px) {
+  /* En las pantallas más estrechas, el botón de tema queda solo con su icono; su nombre accesible («Modo oscuro») sigue. */
+  html body .gx-topbar .gx-theme:not(.gx-lock) > span { display: none; }
+  /* El espacio y el lugar no caben con sentido (quedaba «A. /»); el título de la página ya dice dónde estás. */
+  html body .gx-topbar > strong, html body .gx-topbar > .gx-crumb { display: none; }
+}
+@media (max-width: 767px) {
+  /* El nombre del espacio de trabajo se encogía hasta letras sueltas: en el móvil la barra muestra solo el lugar. */
+  html body .gx-topbar > strong { display: none; }
 }
 
 /* ── Oportunidades (17/11): tablero más claro y ficha con resumen ─────────────────────────────
@@ -1927,3 +1948,71 @@ html[data-theme="dark"] body .ds-steps [data-state="lost"] button { background: 
   html body .kanban-column { flex: 1 1 0; min-width: 220px; }
   html body .kanban-column[data-empty="true"] { flex: 0 0 170px; min-width: 0; }
 }
+
+/* Fichas de cliente, empresa y tarea (18/11): resumen arriba con lo de cada día a un clic. */
+html body .record-summary { display: grid; gap: 10px; margin: 0 0 6px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--bg-subtle); }
+html body .rs-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: space-between; }
+html body .record-summary:not([data-entity="tasks"]) .rs-row { justify-content: flex-start; flex-wrap: nowrap; }
+html body .rs-avatar { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: var(--primary-subtle); color: var(--primary-text); font-family: var(--font-display); font-size: 17px; font-weight: 600; }
+html body .record-summary[data-entity="companies"] .rs-avatar { border-radius: 10px; }
+html body .rs-lines { display: grid; gap: 2px; min-width: 0; }
+html body .rs-line { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: var(--fs-sm); color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html body .rs-line svg { flex: none; color: var(--text-3); }
+html body .rs-missing { color: var(--text-3); }
+html body .rs-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+html body .rs-actions .button { min-height: 32px; padding: 0 11px; font-size: var(--fs-sm); gap: 6px; text-decoration: none; }
+html body .rs-chip { display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 4px 10px; border-radius: 999px; font-size: var(--fs-sm); font-weight: 550; background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-2); }
+html body .rs-chip[data-tone="late"] { background: var(--danger-bg); border-color: var(--danger-border); color: var(--danger); }
+html body .rs-chip[data-tone="soon"] { background: var(--warning-bg); border-color: var(--warning-border); color: var(--warning); }
+html body .rs-chip[data-tone="won"] { background: var(--success-bg); border-color: var(--success-border); color: var(--success); }
+html body .record-summary[data-entity="tasks"] .rs-row .button { min-height: 34px; gap: 6px; }
+html body .rs-meta { margin: 0; font-size: var(--fs-sm); color: var(--text-2); }
+html body .record-summary[data-done="true"] { border-color: var(--success-border); }
+html[data-theme="dark"] body .record-summary { background: #182a2e; border-color: #2b4448; }
+html[data-theme="dark"] body .rs-avatar { background: #12343a; color: #6fd6c8; }
+html[data-theme="dark"] body .rs-chip { background: #1a2e32; }
+html[data-theme="dark"] body .rs-chip[data-tone="late"] { background: var(--danger-bg); }
+html[data-theme="dark"] body .rs-chip[data-tone="soon"] { background: var(--warning-bg); }
+html[data-theme="dark"] body .rs-chip[data-tone="won"] { background: var(--success-bg); }
+@media (max-width: 600px) { html body .rs-actions .button, html body .record-summary[data-entity="tasks"] .rs-row .button { min-height: 44px; } }
+
+/* C4 · Devolución explicada por cliente (CLAUDE-RETURN-EXPLAIN-UI, 18/11/2026): resumen, una tarjeta por cliente y una
+   frase por campo. Los conflictos por decidir se marcan como aviso y lo que sustituye un valor del CRM, en rojo suave. */
+html body .return-summary { margin: 10px 0 12px; font-weight: 600; color: var(--text-1, inherit); }
+html body .return-group { margin: 0 0 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--bg-surface); }
+html body .return-group > h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 8px; font-size: var(--fs-md); }
+html body .return-group .return-conflicts { border: 1px solid var(--warning-border); background: var(--warning-bg); color: var(--warning-text); }
+html body .return-explained { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; margin: 8px 0; padding: 0; list-style: none; }
+html body .return-explained li > label { flex: 1 1 220px; min-width: 0; }
+html body .return-explained li select { width: 100%; max-width: 100%; }
+html body .return-explained li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding: 8px 10px; border-left: 3px solid transparent; border-radius: var(--r-sm); background: var(--bg-subtle); }
+html body .return-explained li p { margin: 0; max-width: 72ch; font-size: var(--fs-sm); }
+html body .return-explained li.return-tone-conflict { border-left-color: var(--warning-border); background: var(--warning-bg); }
+html body .return-explained li.return-tone-overwrite { border-left-color: var(--danger-border); background: var(--danger-bg); }
+html body .return-explained li.return-tone-keep, html body .return-explained li.return-tone-same { color: var(--text-2); }
+
+/* Inicio · «Oportunidades abiertas» (18/11): lo que hay en juego por etapa y lo que antes pide atención. */
+html body .gx-pipe-figures { display: flex; flex-wrap: wrap; gap: 8px 28px; padding: 12px 16px 4px; }
+html body .gx-pipe-figures p { display: grid; margin: 0; }
+html body .gx-pipe-figures strong { font-family: var(--font-display); font-size: 24px; font-weight: 600; line-height: 1.15; font-variant-numeric: tabular-nums; color: var(--text-1); }
+html body .gx-pipe-figures p[data-tone="late"] strong { color: var(--danger); }
+html body .gx-pipe-figures span { font-size: var(--fs-sm); color: var(--text-2); }
+html body .gx-pipe-bar { display: flex; gap: 2px; height: 8px; margin: 10px 16px 6px; border-radius: 4px; overflow: hidden; background: var(--border); }
+html body .gx-pipe-bar i { display: block; flex-basis: 0; min-width: 6px; }
+html body .gx-pipe-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0; padding: 0 16px 12px; list-style: none; font-size: var(--fs-sm); color: var(--text-2); }
+html body .gx-pipe-legend li { display: inline-flex; align-items: center; gap: 6px; }
+html body .gx-pipe-legend li > span { width: 8px; height: 8px; border-radius: 2px; }
+html body .gx-pipe-legend em { font-style: normal; font-variant-numeric: tabular-nums; color: var(--text-3); }
+html body .gx-pipe-list { border-top: 1px solid var(--border); }
+html body .gx-pipe-note { margin: 0; padding: 8px 16px 12px; font-size: var(--fs-sm); color: var(--text-3); }
+
+/* Tareas: cuándo vence en palabras junto a la fecha (18/11). */
+html body .gx-due-rel { margin-left: 8px; padding: 1px 7px; border-radius: 999px; font-size: 11.5px; font-weight: 550; white-space: nowrap; }
+html body .gx-due-rel[data-tone="late"] { background: var(--danger-bg); color: var(--danger); }
+html body .gx-due-rel[data-tone="soon"] { background: var(--warning-bg); color: var(--warning); }
+
+/* Tablero: «+» en la cabecera de cada etapa abierta para crear una oportunidad ya en ella (18/11). */
+html body .kanban-column h2 .gx-col-add { display: inline-grid; place-items: center; width: 24px; height: 24px; margin-left: 2px; padding: 0; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--text-2); cursor: pointer; }
+html body .kanban-column h2 .gx-col-add:hover { border-color: var(--border-strong); background: var(--bg-surface); color: var(--primary-text); }
+html body .kanban-column h2 .gx-col-add:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+@media (max-width: 600px) { html body .kanban-column h2 .gx-col-add { width: 44px; height: 44px; } }

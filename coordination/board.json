@@ -1,7 +1,7 @@
 {
   "format": 1,
-  "revision": 2912,
-  "updatedAt": "2026-11-17T21:13:12.195Z",
+  "revision": 3231,
+  "updatedAt": "2026-11-19T08:18:43.284Z",
   "tasks": [
     {
       "id": "CODEX-001",
@@ -3064,12 +3064,12 @@
         "scripts/demo-continuity-lab.ts": "b62157f65b283c427e7d63579a9e09e5b33e4bd24e0f4ead1833cd07d71dc2d5",
         "coordination/plans/PLAN-POTENCIA-035.md": "6e2e6115447f77d03928a414622604f747411ae3c41a46eed5a40a4bd2927e5c",
         "coordination/reviews/CLAUDE-UX-032-r2-codex.md": "79c87ee24dc52ba9b1f676feb8506798d948b1f81209014c61dabaf77cb1307b",
-        "coordination/reports/CODEX-LAB-035.md": "667055a063ddcfb4a5b4019340313881310b1831e83f966f444407b6a9705203",
+        "coordination/reports/CODEX-LAB-035.md": "e7cdd51d92a548f66697c6a1582ec77132c407dc7a732a34b97ebc450f0998c3",
         "coordination/briefs/CLAUDE-LAB-036.md": "e449a738986ce9d1472286af2749baa6c09482d330e2dfba5eebda6530eddf2a",
-        "CONTEXTO-PROYECTO.md": "bab06e929114f5cecc900ca2cc56ef0953fa1f24be9f79443f70bffc422de7d2",
-        "coordination/reports/duet-live.json": "cef7b54a73a8835aec27dcaf58b7da42909418bcfb875266452c49b4092ea0c7"
+        "CONTEXTO-PROYECTO.md": "595aca2849b8a8f519ec4ab40a54c5738fff953eef55b6b5f3a1277ad54b2857",
+        "coordination/reports/duet-live.json": "7611f178a9d508763ea89157806019960260eaca4410fa0dd04c5a34049351a0"
       },
-      "note": "Continuidad421: evidencia estructurada de fallos CI con pruebas causales y tipos limpios;solo3docs/6fuentesintactas/0 solapes, 1 diferencias documentadas.",
+      "note": "Continuidad 466–467: paginación coherente y revisión del auditor de Equipo.;solo3docs/6fuentesintactas/0 solapes, 9 diferencias documentadas.",
       "createdAt": "2026-10-29T20:56:30.010Z"
     },
     {
@@ -3536,14 +3536,17 @@
         "coordination/reports/CLAUDE-FIX-014.md"
       ],
       "dependencies": [],
-      "status": "working",
+      "status": "review",
       "reserved": true,
       "baseline": {
         "scripts/prepare-release-candidate.mjs": null,
         "coordination/reports/CODEX-REL-046.md": null
       },
-      "submitted": null,
-      "note": "423: demo422 prueba WOFF2 excluidos de src/assets y HTML en peticiones de fuentes. Capturar activos de ese directorio y conservar avisos en runtime, bajo las mismas dos reservas.",
+      "submitted": {
+        "scripts/prepare-release-candidate.mjs": "ea04eaa8aff643348e3975b175fa30f010aa49126fb58b61d7afb5339c44a2d9",
+        "coordination/reports/CODEX-REL-046.md": "5a50e41d302dd147508d0b53877340f8879c8880b2d4d75b1126c4526ef7a670"
+      },
+      "note": "423: captura src/assets y conserva avisos; regresión previa0/2, focales29/29, candidata tipos/bundles/163Node y 875/56 cotejados, fuentes cargadas en dos viewports. Sin release aprobada.",
       "createdAt": "2026-10-30T08:00:05.236Z"
     },
     {
@@ -5621,7 +5624,7 @@
         "coordination/reports/CODEX-REL-046.md"
       ],
       "dependencies": [],
-      "status": "working",
+      "status": "review",
       "reserved": true,
       "baseline": {
         "tools/releases/candidate-integrity.mjs": null,
@@ -5629,8 +5632,13 @@
         "tests/candidate-integrity.test.mjs": null,
         "coordination/reports/CODEX-CANDIDATE-INTEGRITY-095.md": null
       },
-      "submitted": null,
-      "note": "423: permitir activos declarados de src/assets con límites/guardas intactos y exigir copia fiel de sus avisos. Cotejar nueva candidata y mantener existentes. Mismas reservas.",
+      "submitted": {
+        "tools/releases/candidate-integrity.mjs": "88125389dfcbd98af4056ea97a0e53ecf1e55bdd415411bb0fed4e06b344835b",
+        "scripts/check-release-candidate.mjs": "d34d8b6b8ec17e896655d6bfe5a18970bee8959314d43ebaceea7e767f751910",
+        "tests/candidate-integrity.test.mjs": "94edf2fcf5233cd409661fb665305c266cfe1f923e3a8c49e87b6db20ef86041",
+        "coordination/reports/CODEX-CANDIDATE-INTEGRITY-095.md": "6ef745be63e05834658d0173e9004537c5750e3c2181539048bb4153a8bde08d"
+      },
+      "note": "423: activos opacos de src/assets admitidos, avisos runtime idénticos exigidos. 23/23 integridad dentro de29focales, mutante causalfalla; candidatas869/51y875/56 cotejadas. Sin aprobación.",
       "createdAt": "2026-11-01T10:53:48.191Z"
     },
     {
@@ -10196,11 +10204,11 @@
         "coordination/reports/CODEX-SEARCH-STALE-CONTEXT-207.md": null
       },
       "submitted": {
-        "server/workspace-search.ts": "303c179628bae6d2badefb6a0098ed47f99ead0d3f95f356923574b133abef05",
-        "tests/workspace-search-stale-context.test.ts": "702c55970746d5b11121cdbf73038c1388d3f4e2805e00af4f73fdd89a02300e",
-        "coordination/reports/CODEX-SEARCH-STALE-CONTEXT-207.md": "3fa936da7cd8bc1f30617a5bfec85b666bfdfc7a5a0cd3ec5de6f63916ca27b6"
+        "server/workspace-search.ts": "143f92aef5990737d1b73263bea309331585939f057a03a015f8970ee2ad1f2b",
+        "tests/workspace-search-stale-context.test.ts": "a53deab793f9a6c83aa616a0538be9b98076a3cd4157f51e7e12a1632b751dec",
+        "coordination/reports/CODEX-SEARCH-STALE-CONTEXT-207.md": "228cbdf7ab3e456f1a3d6de8860e10b4d49977e9f31c3c8dcc7ec1674c9f01ee"
       },
-      "note": "30 pruebas y tipos limpios. Dos regresiones causales contra 053. Los 409 de identidad anterior preceden a la enumeración. Revisiones compatibles.",
+      "note": "459. Lecura SQLite compartida con las rutas de estado. La batería conjunta de 46 casos y los tipos pasan.",
       "createdAt": "2026-11-05T16:25:44.258Z"
     },
     {
@@ -19400,19 +19408,15 @@
         "src/faro.css"
       ],
       "dependencies": [],
-      "status": "review",
+      "status": "working",
       "reserved": true,
       "baseline": {
         "src/app-shell/navigation.ts": null,
         "tests/navigation-model.test.ts": null,
         "coordination/reports/CLAUDE-UI-NAV-LAB.md": null
       },
-      "submitted": {
-        "src/app-shell/navigation.ts": "2cff289e36429f0aaabac0f8aef69ad7ef46910a57919b66386bd94b555572e6",
-        "tests/navigation-model.test.ts": "330d7aa8cbbe7a38c6f533baf6f5e654dfe5cae19d12beea652e7df81f1c6707",
-        "coordination/reports/CLAUDE-UI-NAV-LAB.md": "553edf0ae0363cf4aec204d7bb2771717f5d7e6f32c70b7683ef1226b5c5bcf2"
-      },
-      "note": "Menu de 5 lugares + Laboratorio solo con datos de prueba (decision del usuario 17/11). Modelo puro 6/6; 163/163 en suites de interfaz; tsc 0; navegador en ensayo aislado a 1366/390 y con copia clasificada como real (sin Laboratorio en menu, Inicio, paleta ni atajos). Archivos compartidos editados con autorizacion: huellas en coordination/reports/CLAUDE-UI-NAV-LAB.md. E2E con rotulos antiguos pendientes.",
+      "submitted": null,
+      "note": "Revisión 465. navigation.ts actual 71f3981f difiere de 2cff289e presentada, por el cambio de CLAUDE-NAV-GROUP-RETURN. La nueva navegación pasó cuatro recorridos en Chromium. Conservar archivos, documentar el cambio y volver a presentar la reserva propietaria; conciliar Sidebar y v6 como escrituras exactas en una entrega coordinada.",
       "createdAt": "2026-11-17T08:18:03.904Z"
     },
     {
@@ -19471,12 +19475,12 @@
         "coordination/reports/CODEX-RESTORE-TRANSACTION-388.md": null
       },
       "submitted": {
-        "server/store.ts": "5842f24ea193b9f62dc6df2d6bd56bfad7f82eb2029508cd1c2cb502e2a7b457",
+        "server/store.ts": "b9f4ce0580199b791f54e0d40db2a1031c199e9682ad9325fdb2c4294725f17e",
         "server/v2.ts": "4eaa43a147c9513bba27dd2170f5b2a36e0e81de94281f050290dc010dae9400",
         "tests/restore-transaction-388.test.ts": "3e8e057c728c8014c4f8b024a01e67b65c9d9b01e00dc3f85d44b179abd3cfa6",
-        "coordination/reports/CODEX-RESTORE-TRANSACTION-388.md": "b7aca012cfcdbeb75df36fbcbfb7aed5f926314fc8b2b14fb9e71d2a52088f64"
+        "coordination/reports/CODEX-RESTORE-TRANSACTION-388.md": "b128fd20d6110532425d589d4b87fa7dfb46d39abcdcfb7210ec923c66d171bc"
       },
-      "note": "Store actual cotejada en 417. Restauración atómica, caché y regresiones existentes pasan 30/30. Tipos limpios. Hallazgo 399 independiente.",
+      "note": "428: época nueva dentro de la transacción de activación con sustitución. Reversión conserva la época. Restaurar 8/8, 45/45 relacionadas y tipos limpios.",
       "createdAt": "2026-11-17T08:23:35.169Z"
     },
     {
@@ -19587,16 +19591,21 @@
         "src/faro.css"
       ],
       "dependencies": [],
-      "status": "working",
-      "reserved": true,
+      "status": "done",
+      "reserved": false,
       "baseline": {
         "server/undo.ts": "9b62ca190217562f2d2cbfcc17f081f8b3fae8dbf4b5fa69b04d7f5fcd036014",
         "server/app.ts": "86c27f82e93280952614c091e496022183c93265b778566df44bfce531ba0bee",
         "tests/undo-last.test.ts": "b1a7545cb550b5772c3fe5aac38c37624b6a885e04f66fc76a2efa175e68db83",
         "coordination/reports/CLAUDE-UNDO-LAST.md": null
       },
-      "submitted": null,
-      "note": "R3 en CODEX-UNDO-R2-399: una etiqueta previa a Restaurar debe responder 409 aunque coincidan ID y fecha. Mantener copia, registro e historial intactos y cubrir una segunda restauración del mismo respaldo.",
+      "submitted": {
+        "server/undo.ts": "3efb76d1c2bc0ac3a7b29121448a087b67717a66effafbfb14aba747468d774a",
+        "server/app.ts": "d90a014d7e53841155f8865e429ef3e7b2883b28596efb0ec5595f3f4f121eb5",
+        "tests/undo-last.test.ts": "49cc89d5fecadf0dac65345cf579fee30ebd9635b035394b34f5150fa32e3d4e",
+        "coordination/reports/CLAUDE-UNDO-LAST.md": "cd6ebdcb442e15c5a54bbb5b1cc66068ad9e732be686b624ea5d6cb884a74943"
+      },
+      "note": "R3 por 399: etiqueta {changeId, at, copy} con época de la copia (Store.copyEpoch, renovada en cada restoreBundle, también misma copia y sesión); OTHER_COPY 409 antes y dentro de la transacción. 10/10 (otra copia con mismo ID y fecha, misma copia restaurada dos veces, restauración en el hueco, control vigente 200); 2 mutaciones detectadas; suites de almacén y restauración verdes; tsc 0. store.ts (388) editado con autorización, huellas en el informe.",
       "createdAt": "2026-11-17T09:22:32.522Z"
     },
     {
@@ -19891,15 +19900,19 @@
         "server/app.ts"
       ],
       "dependencies": [],
-      "status": "working",
-      "reserved": true,
+      "status": "done",
+      "reserved": false,
       "baseline": {
         "src/app-shell/routes.ts": "187be97680fceba0d372e5418536b091a47ffd2cae34778785548f5b4795df67",
         "tests/url-routes.test.ts": "8be40d06a390e59ee9d393e1007507e5b28ade6f8361e614e0294a7b2e718b3e",
         "coordination/reports/CLAUDE-URL-ROUTES.md": null
       },
-      "submitted": null,
-      "note": "R2 en 411: una ficha pendiente puede reemplazar Inicio después de navegar. Correlacionar su lectura y error con el destino vigente, mantener el enlace directo, cubrir Atrás/Adelante y coordinar App con las reservas activas.",
+      "submitted": {
+        "src/app-shell/routes.ts": "d3d1a96da44d139334a784cd9cfe26cc1b761fd4a4362c46ef37f3206ddcf138",
+        "tests/url-routes.test.ts": "040f329de86dfc67a0854387d749f58e32a0e4898ee2ed9082b58765995c199a",
+        "coordination/reports/CLAUDE-URL-ROUTES.md": "0c08817e7966f1e63c4b1226176972dded4425608675731f0d86d0ad8c3050d1"
+      },
+      "note": "R3 por 427: pendingStillWanted recibe la ficha abierta; abrir otra ficha o una nueva en la misma lista retira la lectura pendiente. 7/7. Chromium con respuesta real retenida: R2 reproduce Lucía sustituyendo a Pablo; R3 conserva Pablo y /clientes/contact-2; los tres casos de R2 siguen igual. tsc 0.",
       "createdAt": "2026-11-17T13:39:21.369Z"
     },
     {
@@ -19950,15 +19963,19 @@
         "tests/helpers/auth-parent-harness.ts"
       ],
       "dependencies": [],
-      "status": "working",
-      "reserved": true,
+      "status": "done",
+      "reserved": false,
       "baseline": {
         "src/app-shell/useRecordList.ts": "99896ae7f45fa7c2251cfb2ece2d956d5ff857d6f78380ece6be500e959d7b2b",
         "tests/record-list.test.ts": "44b74d45a1673e1bbd4a303a17ce2ddd65244bb97f27b558b46cfc849c35d185",
         "coordination/reports/CLAUDE-RECORD-LIST.md": null
       },
-      "submitted": null,
-      "note": "R2 según 407: rechazar resultados y errores cuando la consulta ya fue cancelada. Control nativo pasa; un transporte que entrega después de abortar permite reaparecer 24 filas o un 503 anterior. Mantener consulta y espera de búsqueda.",
+      "submitted": {
+        "src/app-shell/useRecordList.ts": "30f4005fc52b1f3a92588e657b13f32b9910932eb12b1b4c86eb1057514cb282",
+        "tests/record-list.test.ts": "bea6cdcad4168cbbdac3f1689768179170c63a9b6baaff7a00eb5ca4b0cfa408",
+        "coordination/reports/CLAUDE-RECORD-LIST.md": "a4a44576811b98080333ff7e89f8224a357d68a51452a8f138efaeda92c5ea0f"
+      },
+      "note": "R2 por 407: loadRecordPage comprueba la vigencia (señal) antes de escribir filas/relacionados/total/error o avisar al padre; respuesta correcta tardía y 503 tardío con señal cancelada no cambian nada; la vigente sigue aplicando. 6/6 sin React con transporte que ignora la señal; 2 mutaciones detectadas; auth-parent, ui-journeys, contexts verdes; tsc 0.",
       "createdAt": "2026-11-17T13:53:51.332Z"
     },
     {
@@ -20022,15 +20039,19 @@
         "src/App.tsx"
       ],
       "dependencies": [],
-      "status": "working",
-      "reserved": true,
+      "status": "done",
+      "reserved": false,
       "baseline": {
         "docs/voz.md": null,
         "tests/ui-copy.test.ts": null,
         "coordination/reports/CLAUDE-UI-COPY-D2.md": null
       },
-      "submitted": null,
-      "note": "R2 en 401: la prueba de vocabulario omite comillas dobles, plantillas JSX y nombres accesibles. Añadir los tres controles dentro del test e informe y conservar exclusiones de rutas e identificadores.",
+      "submitted": {
+        "docs/voz.md": "481815d25745c200099cb2f34db15cb9d4c364f1e4b29906b798fb43c9502ba6",
+        "tests/ui-copy.test.ts": "8fa65525da5f3e6362bf992cac1adaf67f751cfe93c9eba65d3327c6aa010716",
+        "coordination/reports/CLAUDE-UI-COPY-D2.md": "a3849ceef2b81c4aba06567508981acd4a09526c78c5ccff28acdba1a986511c"
+      },
+      "note": "R2 por 401: visibleTexts ve comillas dobles (incluye aria-label/title/placeholder) y partes fijas de plantillas; regresión con los seis controles de la revisión y exclusiones de rutas/clases. Ningún término retirado en src con el detector ampliado. 3/3, 2 mutaciones detectadas. Solo cambia la prueba.",
       "createdAt": "2026-11-17T14:18:44.658Z"
     },
     {
@@ -20066,7 +20087,7 @@
         "coordination/reports/CLAUDE-CSV-IMPORT.md": null
       },
       "submitted": null,
-      "note": "R2 según 418/416: Restaurar otra copia con el mismo conteo e historial vacío mantiene la marca y permite importar con una asociación distinta. Invalidar antes de escribir y probar la regresión sobre los IDs company-1/company-2.",
+      "note": "R6 por 458: ligar la lectura antes de plan y marca con la guarda transaccional. Si se restaura entre comparar la marca y fijar la identidad, aún se escribe en la copia nueva. Cubrir esa ventana, copias sin época y visibilidad del resultado parcial.",
       "createdAt": "2026-11-17T14:26:43.829Z"
     },
     {
@@ -20503,17 +20524,17 @@
         "tools/visual/a11y.mts"
       ],
       "dependencies": [],
-      "status": "review",
-      "reserved": true,
+      "status": "done",
+      "reserved": false,
       "baseline": {
         "tests/e2e/dialog-focus.spec.ts": null,
         "coordination/reports/CLAUDE-A11Y-D7.md": null
       },
       "submitted": {
-        "tests/e2e/dialog-focus.spec.ts": "42ae5ffd6e2c9e2bcdbcd36bbecbb93c207605ca7eec5116b318f8a4597c0e08",
-        "coordination/reports/CLAUDE-A11Y-D7.md": "e726d9bafdcdf4e410516fc622cd6dc97b2a8bbb0e59c91a9ec1be99038a7828"
+        "tests/e2e/dialog-focus.spec.ts": "0d53acdfb4805196418e5ae74c863570a863f9cf3e3ae8399e7cb7c1e95ea5d5",
+        "coordination/reports/CLAUDE-A11Y-D7.md": "f6f0138ac2b3a99d79025a462b70a50e422bb7097d431eec9d01924e4759a631"
       },
-      "note": "D7: foco de ventanas (no roba autoFocus; devuelve a quien abrió, también en la ficha), paleta con autoFocus, h1 del Radar, objetivos 24 px escritorio / 44 px móvil medidos en a11y.mts. Auditoría: escritorio 235->0, móvil 608->26->0 (últimos dos motivos comprobados en página). E2E dialog-focus 3/3 + paleta 419 2/2, suites de interfaz verdes, tsc 0. Compartidos con huellas en el informe.",
+      "note": "R2 por 420: useDialogFocus aplaza un ciclo el retorno de foco y lo cancela si la ventana vuelve a montar (StrictMode); fixture con montaje sencillo y StrictMode, 3 casos en cada uno 6/6 + paleta 419 2/2; con el retorno anterior fallan los 2 casos StrictMode. Tabla de auditoría corregida: móvil 26 en la completa final, 0 solo en páginas afectadas.",
       "createdAt": "2026-11-17T20:08:39.125Z"
     },
     {
@@ -20538,9 +20559,9 @@
         "coordination/reviews/CODEX-D7-STRICT-REVIEW-420.md": null
       },
       "submitted": {
-        "coordination/reviews/CODEX-D7-STRICT-REVIEW-420.md": "9cb3b639eb8cb4a6f05b15a3a97925f7ac0f60bc5a04c94ca9187f433bbb71f1"
+        "coordination/reviews/CODEX-D7-STRICT-REVIEW-420.md": "c03cf535d96dd86206c9b50f78fe47ecdd3183f9b38a8ac08a17c4ee9724e6d9"
       },
-      "note": "F1 reproducido: D7 sencillo 3/3, misma copia con StrictMode 1/3. App usa StrictMode. Fuentes intactas; no afirma fallo en producción.",
+      "note": "D7 R2 favorable. 8/8 en dos cortes con huellas estables, tipos focales 0. Alcance de auditoría móvil corregido.",
       "createdAt": "2026-11-17T20:34:48.106Z"
     },
     {
@@ -20595,19 +20616,19 @@
         "src/ChangesView.tsx"
       ],
       "dependencies": [],
-      "status": "review",
-      "reserved": true,
+      "status": "done",
+      "reserved": false,
       "baseline": {
         "shared/return-explain.ts": null,
         "tests/return-explain.test.ts": null,
         "coordination/reports/CLAUDE-RETURN-EXPLAIN.md": null
       },
       "submitted": {
-        "shared/return-explain.ts": "91827adabf0cea41e37a398dffbab6b55d556d4a68cfc837b709117c80e0cd7d",
-        "tests/return-explain.test.ts": "1d3e6123cc3fe807082840ed5ff33a3243196f4645f785d989956163c6bd7ff8",
-        "coordination/reports/CLAUDE-RETURN-EXPLAIN.md": "d93ebc3596ff4dd331524f56fb21c2d157c0b2d49f1f658022a0fbf285e696e3"
+        "shared/return-explain.ts": "a33622f741ce1c477c771ed5a053f5c8de8febff0690d318241022697cee592d",
+        "tests/return-explain.test.ts": "ff690ab66f4b03f390b79fc69df06381e3c89d4c0a22f6c51481fb9df2898d77",
+        "coordination/reports/CLAUDE-RETURN-EXPLAIN.md": "a4485aae820d0eac0da2cb2f8e7f0eee72e4ececb823f2d5a8237b30d5dfe089"
       },
-      "note": "C4 (parte): el núcleo ya existía en recovery.ts; se añade shared/return-explain.ts, módulo puro que agrupa la devolución por cliente (conflictos primero) y explica cada campo en castellano con valores como en la App. 4/4 pruebas (una con Recovery.preview real y CRM simulado), 4 mutaciones detectadas, tsc 0. Sin tocar recovery.ts ni interfaz; conectar a ChangesView es otro encargo.",
+      "note": "R3 por 454: solo operaciones pendientes o fallidas cuentan altas y anuncian relaciones; incierta, en envío u omitida no prometen; resuelta como creada lista solo relaciones pendientes. 7/7; la regla de R2 falla la prueba nueva.",
       "createdAt": "2026-11-17T20:46:27.283Z"
     },
     {
@@ -20626,13 +20647,15 @@
         "tests/.tmp/preview400.json"
       ],
       "dependencies": [],
-      "status": "working",
+      "status": "review",
       "reserved": true,
       "baseline": {
         "coordination/reports/CODEX-DEMO-CURRENT-422.md": null
       },
-      "submitted": null,
-      "note": "",
+      "submitted": {
+        "coordination/reports/CODEX-DEMO-CURRENT-422.md": "02f8ef8a609bade1bfac525d1a3d1472756c25003fb2ba5b0804dd6ea8af959f"
+      },
+      "note": "Demo ficticia4386, PID31960 e identidad verificados; 56artefactos cotejados, 62registros nuevos. Dosviewports/Inicio–Clientes–ficha–Continuidad pasan, fuentes cargadas y consola limpia. Corte22:10; Kit y ediciones posteriores no acreditados.",
       "createdAt": "2026-11-17T20:57:41.655Z"
     },
     {
@@ -20650,17 +20673,17 @@
         "src/api.ts"
       ],
       "dependencies": [],
-      "status": "review",
-      "reserved": true,
+      "status": "done",
+      "reserved": false,
       "baseline": {
         "tests/api-client-routes.test.ts": "39976d609afd3f9a75719dcf9f818e35fc780dfcdc5ea35086ff60db5580ce27",
         "coordination/reports/CLAUDE-API-CLIENT-ROUTES.md": null
       },
       "submitted": {
-        "tests/api-client-routes.test.ts": "39976d609afd3f9a75719dcf9f818e35fc780dfcdc5ea35086ff60db5580ce27",
-        "coordination/reports/CLAUDE-API-CLIENT-ROUTES.md": "6e49190378d1cb9d8292b86ef0320b890ff241138eec23fb29a28c4a79e269f2"
+        "tests/api-client-routes.test.ts": "1296fc0addd0a2d1e5865cc5b0c235d572f66ada2b57752a7538ce3b8e0b4c77",
+        "coordination/reports/CLAUDE-API-CLIENT-ROUTES.md": "daf24688298ba53952dd692e99d838f5e37d30a6c8667ef2405f4e2e39ab5849"
       },
-      "note": "B5 (parte): prueba que cada llamada del cliente (95 en 32 archivos) va a una ruta de docs/api.md; listas explícitas de pendientes (con prueba anti-obsolescencia) y exclusiones del inventario según sus Límites. 4/4, ninguna llamada rota, tsc 0. Nota: el archivo se escribió antes de registrar el encargo; se registró al verlo.",
+      "note": "R3 por 455: una condición con ramas literales da una dirección por rama y cada una se contrasta por separado (concatenación y plantilla); la rama ausente falla y las dos documentadas pasan; se conservan los casos de 433. 5/5.",
       "createdAt": "2026-11-17T20:59:34.009Z"
     },
     {
@@ -20681,1217 +20704,3122 @@
         "src/faro.css"
       ],
       "dependencies": [],
-      "status": "working",
+      "status": "review",
       "reserved": true,
       "baseline": {
         "tests/candidate-font-assets.test.mjs": null,
         "coordination/reports/CODEX-CANDIDATE-FONT-ASSETS-423.md": null
       },
+      "submitted": {
+        "tests/candidate-font-assets.test.mjs": "da9781e6ab683a8b52ca485b306e885f420d7abe83bc4c0fdacc16ac03305066",
+        "coordination/reports/CODEX-CANDIDATE-FONT-ASSETS-423.md": "c7b593d50c521f36f16db7a6cd22a7a60ced55e96727e416cc9d87da566966f7"
+      },
+      "note": "Empaquetado de fuentes corregido bajo046/095. Dos fallos previoscausales,29/29y163/163Node, dosviewports con fuentes cargadas y consola limpia. Captura22:10, no cubre ediciones posteriores ni Kit.",
+      "createdAt": "2026-11-17T21:08:07.701Z"
+    },
+    {
+      "id": "CODEX-CSV-R2-REVIEW-425",
+      "agent": "codex",
+      "title": "Contrastar CSV R2 con restauraciones de identidad reutilizada",
+      "plan": "Fijar huellas presentadas y dependencias actuales, repetir las nueve pruebas CSV y contrastar copia estable, restauración distinta, identificadores reutilizados, cambio de origen y ausencia de escrituras en preview. Solo fixtures y API inyectada; no editar fuentes de Claude.",
+      "acceptance": "Dictamen sobre hashes actuales, controles positivos y negativos reproducibles, estado e historial verificados antes/después, límites de contexto y dependencias sin aceptar hashes antiguos.",
+      "files": [
+        "tests/csv-preview-context-independent-425.test.ts",
+        "coordination/reviews/CODEX-CSV-R2-REVIEW-425.md"
+      ],
+      "readFiles": [
+        "server/csv-import.ts",
+        "shared/csv-import.ts",
+        "server/store.ts",
+        "server/app.ts",
+        "tests/csv-import-api.test.ts",
+        "coordination/reviews/CODEX-CSV-SUBMISSION-REVIEW-418.md"
+      ],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "tests/csv-preview-context-independent-425.test.ts": null,
+        "coordination/reviews/CODEX-CSV-R2-REVIEW-425.md": null
+      },
+      "submitted": {
+        "tests/csv-preview-context-independent-425.test.ts": "dd616c446cc77f923add023f344ce1482a0790b9eeb5316624a41dd201b9354a",
+        "coordination/reviews/CODEX-CSV-R2-REVIEW-425.md": "c416e84f474c08f4f3e52d084c415dec573a2524a5848e08a1268423ea9471c1"
+      },
+      "note": "9/9 de Claude; 12/14 total. Dos restauraciones válidas conservan la marca y crean registro e historial. 14/14 en copia con época de solo lectura. Tipos focales limpios.",
+      "createdAt": "2026-11-17T21:27:51.765Z"
+    },
+    {
+      "id": "CODEX-UNDO-R3-REVIEW-426",
+      "agent": "codex",
+      "title": "Verificar Deshacer tras restaurar sobre la entrega R3",
+      "plan": "Cotejar la entrega, probar la API real con restauraciones válidas y rechazadas y repetir las suites de Deshacer/restauración. Conciliar 388 tras verificar la nueva huella.",
+      "acceptance": "La etiqueta viaja desde PATCH. Una restauración aplicada invalida la antigua y una rechazada conserva estado y vigencia. Se comprueban huellas, tipos y reservas.",
+      "files": [
+        "coordination/reviews/CODEX-UNDO-R3-REVIEW-426.md"
+      ],
+      "readFiles": [
+        "server/undo.ts",
+        "server/app.ts",
+        "server/store.ts",
+        "src/App.tsx",
+        "src/components.tsx",
+        "tests/undo-last.test.ts",
+        "tests/restore-transaction-388.test.ts"
+      ],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "coordination/reviews/CODEX-UNDO-R3-REVIEW-426.md": null
+      },
+      "submitted": {
+        "coordination/reviews/CODEX-UNDO-R3-REVIEW-426.md": "c1520f747e2261572eddbf5eefba698476540285026eafd315f2c4613674c3b4"
+      },
+      "note": "R3 favorable. Etiqueta PATCH, restauración idéntica, rechazo sin cambios, Deshacer vigente e intento repetido. Rollback conserva época y Deshacer. 140/140 y tipos 0 sobre fuentes cotejadas.",
+      "createdAt": "2026-11-18T13:51:14.814Z"
+    },
+    {
+      "id": "CLAUDE-RETURN-EXPLAIN-UI",
+      "agent": "claude",
+      "title": "Pantalla de devolución explicada: por cliente, con frases y decisiones claras (C4, segunda parte)",
+      "plan": "Por orden del usuario (18/11/2026). Hook src/app-shell/useReturnExplanation.ts: carga por la ruta existente GET /api/v2/records/:entity/:id solo los registros que el plan necesita (los cambiados, sus empresas y personas, y los destinos de sus relaciones) y aplica explainReturnPlan. ChangesView (compartido, reserva CODEX-HISTORY-064, editado con autorización y huellas) muestra el resumen, tarjetas por cliente con conflictos primero, la frase de cada campo con valores como en la App y la decisión con textos «Quedarme con lo mío» / «Quedarme con lo de HubSpot»; mientras carga o si falla, la vista anterior. Sin rutas nuevas ni cambios en el servidor.",
+      "acceptance": "Pruebas del hook (registros pedidos, sin duplicados, tolera ausentes); recorrido en el ensayo aislado con conflicto real en el destino simulado; tsc 0; suites de interfaz verdes.",
+      "files": [
+        "src/app-shell/useReturnExplanation.ts",
+        "tests/return-explain-ui.test.ts",
+        "coordination/reports/CLAUDE-RETURN-EXPLAIN-UI.md"
+      ],
+      "readFiles": [
+        "src/ChangesView.tsx",
+        "src/faro.css",
+        "shared/return-explain.ts"
+      ],
+      "dependencies": [],
+      "status": "done",
+      "reserved": false,
+      "baseline": {
+        "src/app-shell/useReturnExplanation.ts": null,
+        "tests/return-explain-ui.test.ts": null,
+        "coordination/reports/CLAUDE-RETURN-EXPLAIN-UI.md": null
+      },
+      "submitted": {
+        "src/app-shell/useReturnExplanation.ts": "eee5bb985a7cbc8a7b2ff1dc9a1900aa67d0fb3ab14f915ba77087438e689c09",
+        "tests/return-explain-ui.test.ts": "13820aa54800748828d00c7376afca3036d1b33b548f67f599c1c1c259d35369",
+        "coordination/reports/CLAUDE-RETURN-EXPLAIN-UI.md": "a739f09436bd8809f9c65fc06eef04089bdbc6008ca58387d28e7e31f8e0f21d"
+      },
+      "note": "R2 por 430 F2: explicación ligada a clave del plan y especificación (explanationFor); con plan nuevo, decisión o spec distinta se usa el respaldo desde el primer pintado; guarda ante operación ausente; resumen con verificados/inciertos/registros por crear. 6/6, tsc 0.",
+      "createdAt": "2026-11-18T13:55:19.366Z"
+    },
+    {
+      "id": "CODEX-COPY-ACTIVATION-EPOCH-428",
+      "agent": "codex",
+      "title": "Renovar la identidad al sustituir los registros desde Preparación",
+      "plan": "Probar la activación revisada que sustituye la copia, su reversión ante un fallo y la activación de solo esquema. Corregir Store bajo su reserva propia 388.",
+      "acceptance": "La sustitución confirmada genera una época nueva aunque la captura reutilice ID, fecha y sesión. Si falla, restaura registros, historial, candidata y época. Activar solo el esquema conserva la época.",
+      "files": [
+        "tests/copy-activation-epoch.test.ts",
+        "coordination/reports/CODEX-COPY-ACTIVATION-EPOCH-428.md"
+      ],
+      "readFiles": [
+        "server/store.ts",
+        "server/csv-import.ts",
+        "server/app.ts"
+      ],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "tests/copy-activation-epoch.test.ts": null,
+        "coordination/reports/CODEX-COPY-ACTIVATION-EPOCH-428.md": null
+      },
+      "submitted": {
+        "tests/copy-activation-epoch.test.ts": "c20b0de22a49c44bf17a4c664ec09497abc4d384e30a2a30622d6288af9874b4",
+        "coordination/reports/CODEX-COPY-ACTIVATION-EPOCH-428.md": "1667400dba9ed2ebfcff4dcaf74490fada2537665eb4c73acc9a0b63d63e5a4e"
+      },
+      "note": "Dos fallos previos, 45/45 con corrección, tipos limpios. Composición temporal de CSV devuelve 409 y conserva 62 registros y 0 cambios.",
+      "createdAt": "2026-11-18T14:01:24.604Z"
+    },
+    {
+      "id": "CODEX-NAVIGATION-R2-REVIEW-427",
+      "agent": "codex",
+      "title": "Contrastar las entregas de navegación y listas R2",
+      "plan": "Cotejar las seis huellas presentadas. Repetir los escenarios previamente observados en Chromium y las pruebas focales en una captura aislada.",
+      "acceptance": "Enlaces vigentes abren ficha, respuestas abandonadas conservan Inicio y consultas canceladas no reemplazan resultados ni avisos.",
+      "files": [
+        "coordination/reviews/CODEX-NAVIGATION-R2-REVIEW-427.md"
+      ],
+      "readFiles": [
+        "src/App.tsx",
+        "src/app-shell/routes.ts",
+        "src/app-shell/useRecordList.ts",
+        "tests/url-routes.test.ts",
+        "tests/record-list.test.ts"
+      ],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "coordination/reviews/CODEX-NAVIGATION-R2-REVIEW-427.md": null
+      },
+      "submitted": {
+        "coordination/reviews/CODEX-NAVIGATION-R2-REVIEW-427.md": "a38aa405449ac1eb2d1acef9ff6b5b6da14c02b0ea08f580d58063ef6bdb3abf"
+      },
+      "note": "Listas favorable, tres controles Chromium. Enlaces conserva Inicio, pero una respuesta anterior sustituye otra ficha abierta en la misma entidad. 16/16 y tipos limpios.",
+      "createdAt": "2026-11-18T14:02:28.107Z"
+    },
+    {
+      "id": "CODEX-RETURN-EXPLANATION-REVIEW-430",
+      "agent": "codex",
+      "title": "Verificar que la devolución describe el plan vigente y su estado",
+      "plan": "Cotejar entregas puras y de interfaz. Repetir suites, ejecutar una devolución simulada y reemplazar un plan en Cambios con la explicación anterior cargada.",
+      "acceptance": "Dictamen sobre huellas declaradas, comparación con el estado real de las operaciones, transición de plan y casos reproducibles sin salida a CRM.",
+      "files": [
+        "coordination/reviews/CODEX-RETURN-EXPLANATION-REVIEW-430.md"
+      ],
+      "readFiles": [
+        "shared/return-explain.ts",
+        "src/app-shell/useReturnExplanation.ts",
+        "src/ChangesView.tsx",
+        "server/recovery.ts"
+      ],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "coordination/reviews/CODEX-RETURN-EXPLANATION-REVIEW-430.md": null
+      },
+      "submitted": {
+        "coordination/reviews/CODEX-RETURN-EXPLANATION-REVIEW-430.md": "d72e12b087b194ea762dd06039db4314bbae4af87870bebd673918fa70f4615e"
+      },
+      "note": "34/34 existentes. Real simulado complete/applied sigue contando un envío. Cambiar de plan con explicación anterior activa da TypeError en ChangesView. Control causal pasa.",
+      "createdAt": "2026-11-18T14:16:16.296Z"
+    },
+    {
+      "id": "CODEX-CSV-R3-REVIEW-431",
+      "agent": "codex",
+      "title": "Contrastar CSV R3 con activación y fechas de hora inválida",
+      "plan": "Verificar las huellas de R3. Repetir pruebas de restauración e importar una vista previa de prueba tras activar otra copia. Comprobar el tratamiento de hora inválida.",
+      "acceptance": "Vigencia de CSV tras restaurar y activar acreditada. Dictamen reproducible sobre archivo mixto y estado del almacén.",
+      "files": [
+        "coordination/reviews/CODEX-CSV-R3-REVIEW-431.md"
+      ],
+      "readFiles": [
+        "server/csv-import.ts",
+        "shared/csv-import.ts",
+        "server/store.ts"
+      ],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "coordination/reviews/CODEX-CSV-R3-REVIEW-431.md": null
+      },
+      "submitted": {
+        "coordination/reviews/CODEX-CSV-R3-REVIEW-431.md": "3ba3be020d2f6cbefc0ce7435431fe113a0d98258f1ce7ef47617401a880ed1a"
+      },
+      "note": "Vigencia favorable 19/19 y activación real 409. CSV mixto con una hora imposible devuelve 500 en preview. Control causal conserva revisión de las filas válidas.",
+      "createdAt": "2026-11-18T14:22:30.613Z"
+    },
+    {
+      "id": "CLAUDE-MOBILE-D5",
+      "agent": "claude",
+      "title": "Móvil: la barra superior cabe en 390 y 320 px y la página no se desplaza de lado (parte de D5 del informe)",
+      "plan": "Por orden del usuario (18/11/2026). Medido en Chromium móvil sobre el ensayo aislado: la etiqueta «Datos de prueba» se recorta en todas las vistas porque una regla móvil antigua (design-system.css) le da width:100% y la barra de Faro es de una sola línea (630 px de contenido en 390). Corrección solo en móvil, en el bloque D7/D5 de faro.css (compartido, con autorización): la etiqueta ocupa su ancho, el nombre del lugar cede con puntos suspensivos y, bajo 360 px, el botón de tema queda solo con icono. Además, localizar y corregir el desplazamiento lateral de 2 px en Clientes a 320. La ficha a pantalla completa queda fuera: la sesión Faro está trabajando en la ficha (RecordSummary). Guion de medición reutilizable.",
+      "acceptance": "Barra sin contenido recortado y sin desplazamiento lateral de página en las 9 vistas a 390 y 320; los objetivos de 44 px se mantienen; tsc 0.",
+      "files": [
+        "tools/visual/mobile-scan.mts",
+        "coordination/reports/CLAUDE-MOBILE-D5.md"
+      ],
+      "readFiles": [
+        "src/faro.css",
+        "src/design-system.css",
+        "src/app-shell/TopBar.tsx"
+      ],
+      "dependencies": [],
+      "status": "working",
+      "reserved": true,
+      "baseline": {
+        "tools/visual/mobile-scan.mts": null,
+        "coordination/reports/CLAUDE-MOBILE-D5.md": null
+      },
+      "submitted": null,
+      "note": "R3 pedida en revisión 462. Chromium confirma falso verde al cambiar a sesión tras 160 ms y ante botón completamente fuera por la izquierda. Validar el destino después del marcador y medir los dos bordes preservando carriles accesibles.",
+      "createdAt": "2026-11-18T14:28:54.471Z"
+    },
+    {
+      "id": "CODEX-URL-ROUTES-R3-REVIEW-432",
+      "agent": "codex",
+      "title": "Verificación independiente de Enlaces R3",
+      "plan": "Guardar evidencia de pruebas y comprobar las huellas de la entrega.",
+      "acceptance": "Dictamen basado en escenarios Chromium y suites fijadas.",
+      "files": [
+        "coordination/reviews/CODEX-URL-ROUTES-R3-REVIEW-432.md"
+      ],
+      "readFiles": [],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "coordination/reviews/CODEX-URL-ROUTES-R3-REVIEW-432.md": null
+      },
+      "submitted": {
+        "coordination/reviews/CODEX-URL-ROUTES-R3-REVIEW-432.md": "981cf849234beab59525edd324354f9f19c96fd40b71a0b8be1069143033a0ca"
+      },
+      "note": "21 pruebas, tipos y cuatro casos Chromium con huellas comprobadas",
+      "createdAt": "2026-11-18T14:30:52.147Z"
+    },
+    {
+      "id": "CODEX-API-CLIENT-ROUTES-REVIEW-433",
+      "agent": "codex",
+      "title": "Verificación independiente de las rutas del cliente",
+      "plan": "Documentar comprobaciones sobre la extracción y contraste con el inventario.",
+      "acceptance": "Reproducciones aisladas y correcciones solicitadas.",
+      "files": [
+        "coordination/reviews/CODEX-API-CLIENT-ROUTES-REVIEW-433.md"
+      ],
+      "readFiles": [],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "coordination/reviews/CODEX-API-CLIENT-ROUTES-REVIEW-433.md": null
+      },
+      "submitted": {
+        "coordination/reviews/CODEX-API-CLIENT-ROUTES-REVIEW-433.md": "31e3095d245eb75487b03f510824f7926f8c96e5a501345e9b819261308742ba"
+      },
+      "note": "Tres casos de extracción de rutas fallan en una copia fijada",
+      "createdAt": "2026-11-18T14:30:53.025Z"
+    },
+    {
+      "id": "CODEX-SAVED-VIEW-PERSISTENCE-434",
+      "agent": "codex",
+      "title": "Confirmación real al guardar y borrar vistas",
+      "plan": "Corregir la persistencia y la respuesta de la lista cuando el almacenamiento del navegador no está disponible o rechaza una escritura.",
+      "acceptance": "Casos reproducibles de error y reintento. La lista y los avisos reflejan la escritura real.",
+      "files": [
+        "src/app-shell/saved-views.ts",
+        "src/app-shell/RecordsPage.tsx",
+        "tests/saved-views.test.ts",
+        "tests/e2e/saved-view-persistence.spec.ts",
+        "coordination/reports/CODEX-SAVED-VIEW-PERSISTENCE-434.md"
+      ],
+      "readFiles": [],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "src/app-shell/saved-views.ts": "8c0d13662d0d5559a8ba073b685778327a00ec9cd69f0a1749ccd978cb691a66",
+        "src/app-shell/RecordsPage.tsx": "ad0d64fdc6cdc863e7a8312063d22cc341165993c1602515a7cbef44e70cf847",
+        "tests/saved-views.test.ts": "9930be668c19d5a2aab083bc2e35365b0ba9909405cfb34de9586da3f9dfce11",
+        "tests/e2e/saved-view-persistence.spec.ts": null,
+        "coordination/reports/CODEX-SAVED-VIEW-PERSISTENCE-434.md": null
+      },
+      "submitted": {
+        "src/app-shell/saved-views.ts": "54902b138fc1b89d6cdaebfd0e4ed7adb9b73a605955baa77e25ccf44b34eee2",
+        "src/app-shell/RecordsPage.tsx": "49e851d8cf52fa0e8922ce30fac0671d89106c5e4271ed40097b8e2fe8396a4b",
+        "tests/saved-views.test.ts": "d03244b40ba128bb291e1fb44392bc64e24261c68100eed6f0b23721276b0a59",
+        "tests/e2e/saved-view-persistence.spec.ts": "58b88ff5e27ca005057d8cf52d639ee3f57e2d7ad6fded6924b092c756e782ba",
+        "coordination/reports/CODEX-SAVED-VIEW-PERSISTENCE-434.md": "589f2824c870192687dad7ceb06342468b2109f1388a58c0ccc80946690056f4"
+      },
+      "note": "19 pruebas, tipos y Chromium. Reproduce aviso falso en la versión previa y comprueba error, reintento y recarga con la corrección.",
+      "createdAt": "2026-11-18T14:30:53.999Z"
+    },
+    {
+      "id": "CODEX-CRM-CALENDAR-435",
+      "agent": "codex",
+      "title": "Fechas fiables en tareas y oportunidades",
+      "plan": "Corregir la lectura de días imposibles y de instantes cercanos a medianoche en los resúmenes de tareas y oportunidades.",
+      "acceptance": "Casos de fechas inválidas, año bisiesto y cambio de día en Madrid. Sin actualizar campos ni fichas de otros agentes.",
+      "files": [
+        "src/app-shell/deal-insights.ts",
+        "tests/deal-insights.test.ts",
+        "coordination/reports/CODEX-CRM-CALENDAR-435.md"
+      ],
+      "readFiles": [
+        "src/task-display.ts",
+        "src/app-shell/RecordSummary.tsx",
+        "src/app-shell/PipelineCard.tsx",
+        "src/app-shell/DealSummary.tsx",
+        "shared/response-queue.ts"
+      ],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "src/app-shell/deal-insights.ts": "463e1dd046ffa943049563fb3c59c9643fbf1bf7c0f15879ede341a7ebe85faa",
+        "tests/deal-insights.test.ts": "85a8c095fffb5602a8036d5bab6bab3b949809a3ebb0ad4ab1e5808034b28948",
+        "coordination/reports/CODEX-CRM-CALENDAR-435.md": null
+      },
+      "submitted": {
+        "src/app-shell/deal-insights.ts": "fc522da1d85df1ef7a4cd0f00971ba36af189c43416165f57d69eae5a190a7c2",
+        "tests/deal-insights.test.ts": "79bea2b438c94e77f4d6995643a194827bb7543863823fa882664b60a0fe5915",
+        "coordination/reports/CODEX-CRM-CALENDAR-435.md": "f7bcd17a03070a127ac287522f916b519081d355a7f303bd802eb20a9f36ed4a"
+      },
+      "note": "Dos fallos causales antes, 29 pruebas y tipos/Vite después, tablero y ficha verificados en Chromium a 320 y 390.",
+      "createdAt": "2026-11-18T14:40:30.783Z"
+    },
+    {
+      "id": "CODEX-UI-COPY-R2-REVIEW-436",
+      "agent": "codex",
+      "title": "Revisión del vocabulario de interfaz R2",
+      "plan": "Repetir los casos de la revisión 401 con los archivos exactos presentados por Claude.",
+      "acceptance": "Informe con controles, huellas y alcance del dictamen.",
+      "files": [
+        "coordination/reviews/CODEX-UI-COPY-R2-REVIEW-436.md"
+      ],
+      "readFiles": [],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "coordination/reviews/CODEX-UI-COPY-R2-REVIEW-436.md": null
+      },
+      "submitted": {
+        "coordination/reviews/CODEX-UI-COPY-R2-REVIEW-436.md": "82143426ddab1bcbb6ad4f1041727b85c0a13b60b95bff42ad2a305a9b30280f"
+      },
+      "note": "86 TSX congelados y 7 controles sintéticos superados",
+      "createdAt": "2026-11-18T14:40:31.380Z"
+    },
+    {
+      "id": "CODEX-MOBILE-D5-REVIEW-437",
+      "agent": "codex",
+      "title": "Revisión de la medición móvil D5",
+      "plan": "Verificar las huellas y contrastar si la herramienta detecta páginas incorrectas y contenido recortado.",
+      "acceptance": "Evidencia aislada con Chromium y dictamen basado en casos reproducibles.",
+      "files": [
+        "coordination/reviews/CODEX-MOBILE-D5-REVIEW-437.md"
+      ],
+      "readFiles": [],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "coordination/reviews/CODEX-MOBILE-D5-REVIEW-437.md": null
+      },
+      "submitted": {
+        "coordination/reviews/CODEX-MOBILE-D5-REVIEW-437.md": "b6a83a4a87694920ae74156af1f519c2aecf0f2cccd62553dae694c704efe4d3"
+      },
+      "note": "Barra comprobada en 20 vistas. El escáner acepta destinos incorrectos y omite recortes anidados.",
+      "createdAt": "2026-11-18T14:40:31.789Z"
+    },
+    {
+      "id": "CLAUDE-TEAM-D8",
+      "agent": "claude",
+      "title": "Espacio de equipo al nivel de la App: sin botones muertos como única acción y con la misma voz (D8 del informe)",
+      "plan": "Por orden del usuario (18/11/2026). Medido en un ensayo aislado del servicio de equipo (demo, 4 perfiles x 8 secciones): con Solo lectura, Trabajos, Dispositivos y Equipo muestran como única acción un botón primario deshabilitado sin explicación; Capturar en lectura no dice por qué está deshabilitado; los textos usan «ficticias», «Ensayo local» y «la demo» en lugar del glosario (docs/voz.md). Cambios en src/TeamApp.tsx: sin permiso, una nota con quién puede hacerlo (patrón ya usado en el agente local: «Administración puede…») en lugar del botón; razón visible junto a Capturar en lectura; textos según el glosario. CommercialWorkspace.tsx: una frase. team.css: estilo de la nota. Se conserva «Perfil de ensayo» porque lo usan tres E2E ajenos. TeamSync.tsx (reserva CODEX-TEAM-069) no se toca.",
+      "acceptance": "Recorrido de los 4 perfiles sin ninguna sección cuya única acción sea un primario deshabilitado sin motivo; textos sin «ficticio», «Ensayo local» ni «la demo» en el espacio de equipo; pruebas; tsc 0.",
+      "files": [
+        "tests/team-voice-d8.test.ts",
+        "coordination/reports/CLAUDE-TEAM-D8.md"
+      ],
+      "readFiles": [
+        "src/TeamApp.tsx",
+        "src/CommercialWorkspace.tsx",
+        "src/team.css",
+        "shared/team.ts"
+      ],
+      "dependencies": [],
+      "status": "done",
+      "reserved": false,
+      "baseline": {
+        "tests/team-voice-d8.test.ts": null,
+        "coordination/reports/CLAUDE-TEAM-D8.md": null
+      },
+      "submitted": {
+        "tests/team-voice-d8.test.ts": "e0a4bf2dc135ef5594ce416a93d0e71ef7cf7942fb832fc207fe2aef7106087c",
+        "coordination/reports/CLAUDE-TEAM-D8.md": "6463203d2b8b3345857da9a84e2f4b17ed9643b2fd263f593015208f019369be"
+      },
+      "note": "R2 por 438: «Conecta primero» solo sin conexión (no con needs_reconnect); nombres de la demo en encargo propio CLAUDE-TEAM-DEMO-NAMES. 4/4 + equipo verdes, tsc 0.",
+      "createdAt": "2026-11-18T14:44:35.609Z"
+    },
+    {
+      "id": "CODEX-TEAM-D8-REVIEW-438",
+      "agent": "codex",
+      "title": "Revisión independiente de Equipo D8",
+      "plan": "Cotejar las huellas de la entrega y comprobar en un ensayo aislado acciones y notas según el perfil.",
+      "acceptance": "Ensayo con cuatro perfiles y sin cuentas externas, evidencias y dictamen.",
+      "files": [
+        "coordination/reviews/CODEX-TEAM-D8-REVIEW-438.md"
+      ],
+      "readFiles": [],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "coordination/reviews/CODEX-TEAM-D8-REVIEW-438.md": null
+      },
+      "submitted": {
+        "coordination/reviews/CODEX-TEAM-D8-REVIEW-438.md": "55b57f490f65f621a883ab4f23005a303e7bffb54322e353a358629a943d3188"
+      },
+      "note": "50 pruebas, tipos, compilación y 32+3 vistas. Dos casos de texto comprobados en Chromium.",
+      "createdAt": "2026-11-18T14:52:37.189Z"
+    },
+    {
+      "id": "CODEX-RELATED-CANCEL-439",
+      "agent": "codex",
+      "title": "Lecturas relacionadas vigentes al navegar entre fichas",
+      "plan": "Cancelar lecturas de relaciones al cambiar de ficha o cerrar y añadir reintento scoped al destino actual.",
+      "acceptance": "Transporte o respuesta diferidos no continúan paginando ni aparecen en otra ficha. Errores permiten reintentar sin escrituras.",
+      "files": [
+        "src/app-shell/related.ts",
+        "src/app-shell/RelatedPanel.tsx",
+        "tests/related-records.test.ts",
+        "tests/e2e/related-records-navigation.spec.ts",
+        "coordination/reports/CODEX-RELATED-CANCEL-439.md"
+      ],
+      "readFiles": [],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "src/app-shell/related.ts": "86861ca15e2229ede5bb937ac1dc4b00b31439e960a7636148d0f3a10e0f74df",
+        "src/app-shell/RelatedPanel.tsx": "cc6e1ece213b04fb98a2d2de8bda2c3c7ca1d237202ccadf837b23acfcf32e59",
+        "tests/related-records.test.ts": "00338887d4587a49974e2add1b8dd53884926449340abdb730b3ce5dd2aea58b",
+        "tests/e2e/related-records-navigation.spec.ts": null,
+        "coordination/reports/CODEX-RELATED-CANCEL-439.md": null
+      },
+      "submitted": {
+        "src/app-shell/related.ts": "c39df46bb71ed671f8946b015c273cfc02509cfb2140ac3271225584a747a25f",
+        "src/app-shell/RelatedPanel.tsx": "30d15f3631ae010a29c0efa5d099e6b79ac55c7e5521eac8156439f1872bd86b",
+        "tests/related-records.test.ts": "0a11cf61577c8cb4a199df50601f650009ceaa723a704944b9b389d02aac4d5f",
+        "tests/e2e/related-records-navigation.spec.ts": "4085e1ab373f70ac094b3139b951300562edb102957a3ca69f6c10a6b7056333",
+        "coordination/reports/CODEX-RELATED-CANCEL-439.md": "11f6157f9ee59000b6a133373e29351a6163272e3505b5858097af556cf09307"
+      },
+      "note": "20 pruebas, tipos y 2 casos en Chromium. Las dos regresiones de navegador fallan antes de la corrección.",
+      "createdAt": "2026-11-18T14:52:37.977Z"
+    },
+    {
+      "id": "CLAUDE-E2E-ADAPT",
+      "agent": "claude",
+      "title": "Pruebas de navegador al día con el menú de cinco lugares y los textos del glosario, y arnés para ejecutarlas sin tocar el piloto",
+      "plan": "Por orden del usuario (18/11/2026). 31 E2E esperan el menú anterior (Agentes, Trabajar, Proteger / bloquear, Operaciones, Abrir aplicación, Espacio comercial) o textos retirados (ficción, sin demostrar, · ID, Ensayo local). Se adaptan a lo que hay ahora (Hoy > Propuestas, Clientes, Bloquear en la barra superior, datos de prueba, sin comprobar, ID solo en homónimos) sin debilitar lo que comprueban. Arnés tools/e2e/isolated.mjs: compila con vite y esbuild en tests/.tmp/e2e-build (nunca en dist/ ni build/ del piloto) y ejecuta Playwright con los servidores arrancados desde esa carpeta (no leen .env.local), red exterior bloqueada y datos nuevos. 17 de los 31 archivos tienen reservas antiguas: se editan con autorización del usuario y huellas.",
+      "acceptance": "Las 31 pruebas ejecutadas con el arnés; las que fallen por el menú o los textos, corregidas; las que fallen por otra causa, documentadas con su causa.",
+      "files": [
+        "tools/e2e/isolated.mjs",
+        "tools/e2e/playwright.isolated.config.ts",
+        "coordination/reports/CLAUDE-E2E-ADAPT.md"
+      ],
+      "readFiles": [
+        "tests/e2e/app-refresh-notice.spec.ts",
+        "tests/e2e/auth-gate-order.spec.ts",
+        "tests/e2e/candidate-date-check-341.spec.ts",
+        "tests/e2e/continuity-lab.spec.ts",
+        "tests/e2e/continuity-operations.spec.ts",
+        "tests/e2e/continuity.spec.ts",
+        "tests/e2e/date-check-app.spec.ts",
+        "tests/e2e/date-check-review.spec.ts",
+        "tests/e2e/date-check.spec.ts",
+        "tests/e2e/full-workspace.spec.ts",
+        "tests/e2e/hoy-cola-jornada.spec.ts",
+        "tests/e2e/hubspot-read-check-integration.spec.ts",
+        "tests/e2e/independent-date-check-flow-338.spec.ts",
+        "tests/e2e/independent-interface-flows.spec.ts",
+        "tests/e2e/independent-task-mount.spec.ts",
+        "tests/e2e/local-integrations.spec.ts",
+        "tests/e2e/main-app-readiness.spec.ts",
+        "tests/e2e/operational-rehearsal-app.spec.ts",
+        "tests/e2e/operational-rehearsal-receipt-independent-328.spec.ts",
+        "tests/e2e/operational-rehearsal-today.spec.ts",
+        "tests/e2e/operational-rehearsal.spec.ts",
+        "tests/e2e/preparation-navigation.spec.ts",
+        "tests/e2e/protection-review.spec.ts",
+        "tests/e2e/reference-select.spec.ts",
+        "tests/e2e/task-d7-real-app-baseline.spec.ts",
+        "tests/e2e/task-d7-real-app.spec.ts",
+        "tests/e2e/task-parent-state.spec.ts",
+        "tests/e2e/ux.spec.ts",
+        "tests/e2e/v3.spec.ts",
+        "tests/e2e/v4.spec.ts",
+        "tests/e2e/v6.spec.ts"
+      ],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "tools/e2e/isolated.mjs": null,
+        "tools/e2e/playwright.isolated.config.ts": null,
+        "coordination/reports/CLAUDE-E2E-ADAPT.md": null
+      },
+      "submitted": {
+        "tools/e2e/isolated.mjs": "1f810e644aecbac73920b6cb4fd3d85f38156763558be7f14f92ed4a30f539b2",
+        "tools/e2e/playwright.isolated.config.ts": "4ccdbd7d98bc29a8d1d33346c8746317af7c94541364b52fd36d629a60b1d32b",
+        "coordination/reports/CLAUDE-E2E-ADAPT.md": "c571d2667e62b1f74b3df677b18006ef57d9e5647af959e7796832484530aab8"
+      },
+      "note": "32 E2E al día con el menú de cinco lugares y los textos del glosario, y arnés aislado tools/e2e/isolated.mjs (compila en tests/.tmp/e2e-build, nunca en dist/build del piloto; comprueba sus fechas). Línea base 62/79/30 → final 98/56/19 de 171: 36 arregladas, 0 rotas. Las 56 restantes con causa identificada (32 bancos privados, rediseños ajenos de Operaciones/SalesWorkspace/338, entorno del Kit de relevo, simulacro lento, intermitencia previa demostrada con git archive, línea base invertida).",
+      "createdAt": "2026-11-18T14:53:51.448Z"
+    },
+    {
+      "id": "CODEX-DRAWER-INVALID-DATE-440",
+      "agent": "codex",
+      "title": "Reproducción de fechas ilegibles en listado y ficha",
+      "plan": "Acreditar los fallos con el código exacto y preparar el alcance de reparación sin editar el componente en revisión.",
+      "acceptance": "Informe con los casos reproducidos y las rutas reservadas.",
+      "files": [
+        "coordination/reviews/CODEX-DRAWER-INVALID-DATE-440.md"
+      ],
+      "readFiles": [
+        "src/components.tsx",
+        "shared/local-task-focus.ts"
+      ],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "coordination/reviews/CODEX-DRAWER-INVALID-DATE-440.md": null
+      },
+      "submitted": {
+        "coordination/reviews/CODEX-DRAWER-INVALID-DATE-440.md": "9e2e61596c95a45e6dda1292f084c920a0de117d9246c35c3bad5b29cc13c2fb"
+      },
+      "note": "Tres casos reproducidos sobre la huella viva d4a3ae65 de components; 063 conserva el archivo reservado.",
+      "createdAt": "2026-11-18T14:59:19.438Z"
+    },
+    {
+      "id": "CLAUDE-PERF-BUDGETS",
+      "agent": "claude",
+      "title": "E3 · Presupuestos de rendimiento con datos ficticios: lista de clientes, ficha, búsqueda global y paquete inicial",
+      "plan": "Por orden del usuario (18/11/2026, carril E3 del informe de mejoras). Herramienta reutilizable tools/perf/ que genera un almacén cifrado en tests/.tmp/perf-* con 10.000 registros ficticios, monta la app real con createBaseApp y mide por HTTP (inject) la primera página de clientes, la apertura de una ficha y la búsqueda global; mide el paquete inicial compilando con vite en tests/.tmp/perf-build (nunca dist/ ni build/). Prueba que falla si se superan presupuestos razonables (con margen para un equipo cargado). Cuellos de botella documentados con medidas; los arreglos en archivos ajenos (server/store.ts, server/workspace-search.ts) solo se proponen como encargo aparte. Sin datos reales, red ni servicios externos.",
+      "acceptance": "tools/perf/ ejecutable y documentado, pruebas en verde con presupuestos explícitos, medidas reales en el informe y propuestas de mejora con su archivo y responsable.",
+      "files": [
+        "tools/perf/fixture.ts",
+        "tools/perf/budgets.json",
+        "tools/perf/measure.ts",
+        "tools/perf/bundle.mjs",
+        "tools/perf/README.md",
+        "tests/perf-budgets.test.ts",
+        "coordination/reports/CLAUDE-PERF-BUDGETS.md"
+      ],
+      "readFiles": [
+        "server/app.ts",
+        "server/v2.ts",
+        "server/store.ts",
+        "server/workspace-search.ts",
+        "shared/workspace-search.ts",
+        "shared/fixtures.ts",
+        "shared/model.ts",
+        "vite.config.ts",
+        "src/main.tsx"
+      ],
+      "dependencies": [],
+      "status": "done",
+      "reserved": false,
+      "baseline": {
+        "tools/perf/fixture.ts": null,
+        "tools/perf/budgets.json": null,
+        "tools/perf/measure.ts": null,
+        "tools/perf/bundle.mjs": null,
+        "tools/perf/README.md": null,
+        "tests/perf-budgets.test.ts": null,
+        "coordination/reports/CLAUDE-PERF-BUDGETS.md": null
+      },
+      "submitted": {
+        "tools/perf/fixture.ts": "ef46461718b213aa79d7fbb92a8dfdc7085fef12be1be0da7ab8f40770c82b1f",
+        "tools/perf/budgets.json": "c973ee2209f60a08c38d64d874f3726ba5269c0f2330a01e16c3ab6eb1ef460f",
+        "tools/perf/measure.ts": "ad6a1d6003633e40840469b694f5f4052cc3ef14d75131ed9ba0682ca2a3c08c",
+        "tools/perf/bundle.mjs": "0564d8dcdf878a3db6b5486b48dd6e504a1ee0a0800336174f95f4d70851148b",
+        "tools/perf/README.md": "28a22ac7f905360e78a3d60c00e0eaef61cfa59089d497db3d3c624e33ce7059",
+        "tests/perf-budgets.test.ts": "24c037b6fa373ab43fac36d3717a9f56ef1b242eb4fe1e19e485f64f41ec32c3",
+        "coordination/reports/CLAUDE-PERF-BUDGETS.md": "e2622102bc4c0c6a63121911f5bfd714956b87701fdb121f2b550151cccda285"
+      },
+      "note": "R2 (445): --check ya no aprueba una muestra que no tenga exactamente los 10.000 registros de budgets.json (exploratoria, código 1); cifras del generador corregidas a 5.000 clientes y 12.000 enlaces y fijadas en la prueba. 8/8. measure.ts ad6a1d60, README 28a22ac7, prueba 24c037b6.",
+      "createdAt": "2026-11-18T15:02:52.860Z"
+    },
+    {
+      "id": "CLAUDE-API-CONTRACTS",
+      "agent": "claude",
+      "title": "E2 · Pruebas por contrato de las rutas principales /api/v2 (respuestas HTTP y esquemas zod de shared/)",
+      "plan": "Por orden del usuario (18/11/2026, carril E2). Pruebas nuevas que montan la app real (createBaseApp, base en memoria, datos ficticios de shared/fixtures.ts) y comprueban códigos HTTP, forma de las respuestas y su validez frente a los esquemas zod de shared/ (SnapshotSchema, RecordSchema, AppSpecSchema, WorkspaceSearchContextSchema…) en estado, registros, ficha, búsqueda, cambios, autenticación y errores. Sin huellas de archivos ajenos ni datos reales.",
+      "acceptance": "Pruebas en verde aisladas y con tsc; cada ruta cubierta con caso feliz y de error; informe con lo que cubre y lo que no.",
+      "files": [
+        "tests/api-v2-contracts.test.ts",
+        "coordination/reports/CLAUDE-API-CONTRACTS.md"
+      ],
+      "readFiles": [
+        "server/app.ts",
+        "server/v2.ts",
+        "server/security.ts",
+        "server/workspace-search.ts",
+        "shared/model.ts",
+        "shared/workspace-search.ts",
+        "docs/api.md"
+      ],
+      "dependencies": [],
+      "status": "done",
+      "reserved": false,
+      "baseline": {
+        "tests/api-v2-contracts.test.ts": null,
+        "coordination/reports/CLAUDE-API-CONTRACTS.md": null
+      },
+      "submitted": {
+        "tests/api-v2-contracts.test.ts": "5bd99c591116e594978cd6b703e491f7abf33f23026b2fc57d6ab2644e37c2f7",
+        "coordination/reports/CLAUDE-API-CONTRACTS.md": "7a6298b8937ebfaf73d3c4ca4b7ffe7a8670367c35db7e7bbdf388fb3965e0dd"
+      },
+      "note": "E2: tests/api-v2-contracts.test.ts 11/11 (health, cabeceras, state, records, ficha, guardado, changes, search, search-record, bundle, auth; oráculo comprobado), tsc 0. Sin huellas de archivos ajenos.",
+      "createdAt": "2026-11-18T15:02:53.341Z"
+    },
+    {
+      "id": "CLAUDE-DOCS-G2-G4",
+      "agent": "claude",
+      "title": "G2–G4 · Propuesta de historial de documentos, límite de tamaño de informes y protocolo de órdenes directas del usuario",
+      "plan": "Por orden del usuario (18/11/2026). G2: propuesta (sin mover nada) de qué LEEME-* y guías de la raíz pasan a docs/historial/, con motivo y referencias que habría que actualizar. G3: comprobación independiente tools/coordination/report-size.mjs (no toca board.mjs ni core.mjs, reservados por Codex) que lista informes del tablón por encima de un límite y su prueba. G4: protocolo escrito docs/protocolo-ordenes-directas.md para cuando el usuario ordena tocar reservas ajenas (encargo de reconciliación, huellas antes/después, aviso en el chat).",
+      "acceptance": "Propuesta G2 en el informe, comprobación G3 con prueba en verde y medida sobre los informes actuales, protocolo G4 escrito. Nada movido ni borrado.",
+      "files": [
+        "tools/coordination/report-size.mjs",
+        "tools/coordination/report-size.test.mjs",
+        "docs/protocolo-ordenes-directas.md",
+        "coordination/reports/CLAUDE-DOCS-G2-G4.md"
+      ],
+      "readFiles": [
+        "COORDINACION.md",
+        "AGENTS.md",
+        "CLAUDE.md",
+        "tools/coordination/board.mjs",
+        "tools/coordination/core.mjs"
+      ],
+      "dependencies": [],
+      "status": "done",
+      "reserved": false,
+      "baseline": {
+        "tools/coordination/report-size.mjs": null,
+        "tools/coordination/report-size.test.mjs": null,
+        "docs/protocolo-ordenes-directas.md": null,
+        "coordination/reports/CLAUDE-DOCS-G2-G4.md": null
+      },
+      "submitted": {
+        "tools/coordination/report-size.mjs": "381bac963676315e82e6e8d6a95f1ce93e0a5425a3c97b63bcd47ec58450c10d",
+        "tools/coordination/report-size.test.mjs": "ace0604001f4e577d7b87bcba02a0c01ca2461cfd9c7ef8926375d3dbc305d53",
+        "docs/protocolo-ordenes-directas.md": "bd084be166819478cebbbe211ffa93eda5b1fc115fce41985f878def9cae8c2d",
+        "coordination/reports/CLAUDE-DOCS-G2-G4.md": "c0d08d0e11cdd517a801bc3e2f242d2f4d41416624781321b0fd62b70680fc72"
+      },
+      "note": "R2 (445): límite finito y positivo (Infinity/NaN/1e999 rechazados, código 2), una carpeta .md ya no cuenta como informe (no es un archivo), --task/--limit sin valor son error de uso. 6/6. report-size.mjs 381bac96, prueba ace06040.",
+      "createdAt": "2026-11-18T15:02:53.814Z"
+    },
+    {
+      "id": "CODEX-QA052-CURRENT-441",
+      "agent": "codex",
+      "title": "Revalidación de QA052 en las fuentes actuales",
+      "plan": "Verificar F1 restauración, F2 activos y F3 entorno con las pruebas independientes y el constructor exacto cotejado.",
+      "acceptance": "Recibo de fuentes, resultados y límites, incluidas ramas de enlaces. Sin tocar los bancos de Claude.",
+      "files": [
+        "coordination/reviews/CODEX-QA052-CURRENT-441.md"
+      ],
+      "readFiles": [],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "coordination/reviews/CODEX-QA052-CURRENT-441.md": null
+      },
+      "submitted": {
+        "coordination/reviews/CODEX-QA052-CURRENT-441.md": "0f49fd97b5f1570e17fc19ad1e1b0dbdd72da02793997b6e73c0b7b3dda6b482"
+      },
+      "note": "52/52 entre la restauración, cobertura y constructor fijado. F1/F2/F3 pasan. Enlaces de archivo aún sin verificar por EPERM.",
+      "createdAt": "2026-11-18T15:04:03.673Z"
+    },
+    {
+      "id": "CODEX-PIPELINE-CERTAINTY-442",
+      "agent": "codex",
+      "title": "Oportunidades abiertas con alcance e importe verificables",
+      "plan": "Hacer que la tarjeta de Inicio distinga oportunidades sin etapa reconocible, importes que faltan y una lectura parcial. Mostrar error y reintento de la lectura vigente.",
+      "acceptance": "Pruebas con etapas no reconocidas, importe cero o ausente, subconjunto de 100 y respuesta atrasada. Las peticiones siguen siendo GET.",
+      "files": [
+        "src/app-shell/PipelineCard.tsx",
+        "tests/e2e/pipeline-card.spec.ts",
+        "coordination/reports/CODEX-PIPELINE-CERTAINTY-442.md"
+      ],
+      "readFiles": [],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "src/app-shell/PipelineCard.tsx": "faadcd269e0031027ee9b5044837452678a89d3789d2097aced3342808858849",
+        "tests/e2e/pipeline-card.spec.ts": null,
+        "coordination/reports/CODEX-PIPELINE-CERTAINTY-442.md": null
+      },
+      "submitted": {
+        "src/app-shell/PipelineCard.tsx": "1d90c101563c4480695a33ff051c072defa8982794443323332b0e73dd12f169",
+        "tests/e2e/pipeline-card.spec.ts": "a155205f8eed36cdd41084dd4419df8f1102eace3be109e60d5ec8eae49bc3a0",
+        "coordination/reports/CODEX-PIPELINE-CERTAINTY-442.md": "b3607f92cffc6a99a322e767d676ff5eb9c4da96223052630e42241034ac853f"
+      },
+      "note": "5/5 Chromium después y 0/5 antes; tipos limpios. Distingue etapa desconocida, importe ausente, alcance parcial y cancelación.",
+      "createdAt": "2026-11-18T15:04:04.310Z"
+    },
+    {
+      "id": "CLAUDE-E2E-MENU-HELPER",
+      "agent": "claude",
+      "title": "Ayudante de navegación por el menú de cinco lugares para las pruebas de navegador",
+      "plan": "Por orden del usuario (18/11/2026), complemento de CLAUDE-E2E-ADAPT: tests/e2e/menu.ts exporta openSection(page, nombre), que despliega el grupo del menú si hace falta y pulsa el apartado, y sectionPath para ir por dirección en móvil. Las pruebas dicen qué apartado quieren, no cómo está construido el menú.",
+      "acceptance": "Lo usan las pruebas adaptadas y pasan con el arnés aislado.",
+      "files": [
+        "tests/e2e/menu.ts"
+      ],
+      "readFiles": [
+        "src/app-shell/navigation.ts",
+        "src/app-shell/Sidebar.tsx",
+        "src/app-shell/routes.ts"
+      ],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "tests/e2e/menu.ts": null
+      },
+      "submitted": {
+        "tests/e2e/menu.ts": "30481e0c0652fbf1ffdd2033b0538f8e9a13f520be202778aa04607703349b06"
+      },
+      "note": "tests/e2e/menu.ts: openSection (grupo del menú lateral o «Más» y paleta en móvil, esperando a que se pinte el menú), menuGroup/menuItem (distinguen el grupo Clientes de su apartado), place (lugar visible lateral o barra inferior), lockButton, sectionPath. Lo usan las 32 pruebas adaptadas.",
+      "createdAt": "2026-11-18T15:05:24.333Z"
+    },
+    {
+      "id": "CODEX-RECORD-TIMELINE-443",
+      "agent": "codex",
+      "title": "Historial fiable y completo en la ficha",
+      "plan": "Permitir desplegar los campos de cada operación, conservar valores históricos de fecha ilegibles y ligar la lectura y el reintento a la ficha abierta.",
+      "acceptance": "Lectura GET, detalle accesible por teclado, datos exactos y descarte de lecturas obsoletas.",
+      "files": [
+        "src/app-shell/RecordTimeline.tsx",
+        "tests/e2e/record-timeline.spec.ts",
+        "coordination/reports/CODEX-RECORD-TIMELINE-443.md"
+      ],
+      "readFiles": [],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "src/app-shell/RecordTimeline.tsx": "715e17b05b5e87ac9c71a4e33806a678c9225b6a8eedce7cebd07e2c6b1ae2eb",
+        "tests/e2e/record-timeline.spec.ts": null,
+        "coordination/reports/CODEX-RECORD-TIMELINE-443.md": null
+      },
+      "submitted": {
+        "src/app-shell/RecordTimeline.tsx": "e92843d631457a865c8d3df21828283270a10d1cd0b24f09535238e9271b9fee",
+        "tests/e2e/record-timeline.spec.ts": "ae0aca5e61750c5aefedfd8d4670a272c1e5f8da8cfa9cbbcf0aafe082e4f849",
+        "coordination/reports/CODEX-RECORD-TIMELINE-443.md": "0a11e55f642ebba770c9f1a40c252ee6f7506990d65208ccdae2981affe0fa38"
+      },
+      "note": "33 pruebas relacionadas y 3 recorridos Chromium. Dos fallaban antes. Detalle por teclado y valores históricos preservados. Tipos limpios en 444.",
+      "createdAt": "2026-11-18T15:17:00.549Z"
+    },
+    {
+      "id": "CODEX-CANDIDATE-NOV18-444",
+      "agent": "codex",
+      "title": "Candidata aislada del estado actual de Plan B",
+      "plan": "Construir una candidata nueva con los archivos actuales, cotejar manifiesto y ejecutar un recorrido mínimo sin instalación.",
+      "acceptance": "Recibo con archivos, checks, resultado real y bloqueos. Sin desplegar ni reiniciar servicios instalados.",
+      "files": [
+        "coordination/reviews/CODEX-CANDIDATE-NOV18-444.md"
+      ],
+      "readFiles": [],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "coordination/reviews/CODEX-CANDIDATE-NOV18-444.md": null
+      },
+      "submitted": {
+        "coordination/reviews/CODEX-CANDIDATE-NOV18-444.md": "cbde9cff2ee6bcde181ca6f4929904e2b6949038b3eb76ff5664e3de48423277"
+      },
+      "note": "898/55 cotejados, 10 checks, 163 Node y cuatro vistas Chromium sin errores. 161 impedimentos y sin publicación.",
+      "createdAt": "2026-11-18T15:17:01.511Z"
+    },
+    {
+      "id": "CLAUDE-SEARCH-PERF",
+      "agent": "claude",
+      "title": "Búsqueda global rápida con 10.000 registros sin cambiar resultados ni orden",
+      "plan": "Por orden del usuario (18/11/2026), transmitida por la sesión principal. server/workspace-search.ts tiene la reserva antigua CODEX-SEARCH-STALE-CONTEXT-207 (en revisión): se toma con autorización del usuario, huella de antes y aviso a Codex en el chat antes de editar. Cambio mínimo: (1) caché por almacén de la identidad de búsqueda y de los registros con su revisión, con clave el texto almacenado (cifrado) de las filas, como recoveryCache en store.ts: si el texto es idéntico, el valor lo es; (2) índice normalizado preparado una vez por revisión (shared/workspace-search.ts, función nueva y parámetro opcional) reutilizado entre consultas. normalizeSearch no cambia. Prueba de equivalencia con la implementación anterior (copia literal en la prueba) sobre muchas consultas y medida del presupuesto.",
+      "acceptance": "Resultados idénticos (mismas consultas, mismo orden, mismos recuentos y revisiones), búsqueda medida por debajo de 150 ms con 10.000 registros, pruebas de búsqueda existentes en verde y tsc 0.",
+      "files": [
+        "server/workspace-search.ts",
+        "shared/workspace-search.ts",
+        "tests/workspace-search-perf.test.ts",
+        "coordination/reports/CLAUDE-SEARCH-PERF.md"
+      ],
+      "readFiles": [
+        "server/store.ts",
+        "server/app.ts",
+        "tools/perf/measure.ts",
+        "tests/workspace-search.test.ts",
+        "tests/workspace-search-api.test.ts",
+        "tests/workspace-search-identity.test.ts",
+        "tests/workspace-search-stale-context.test.ts",
+        "tests/independent-workspace-search-143.test.ts"
+      ],
+      "dependencies": [],
+      "status": "blocked",
+      "reserved": false,
+      "baseline": null,
+      "submitted": null,
+      "note": "Sustituido por CLAUDE-SEARCH-PERF-R: server/workspace-search.ts está reservado por CODEX-SEARCH-STALE-CONTEXT-207 y take-over solo lo registra Codex; se declara en readFiles con huellas.",
+      "createdAt": "2026-11-18T15:24:29.525Z"
+    },
+    {
+      "id": "CODEX-CLAUDE-TOOLING-REVIEW-445",
+      "agent": "codex",
+      "title": "Revisión de contratos, rendimiento y herramientas de coordinación",
+      "plan": "Cotejar las tres entregas de Claude, repetir pruebas focales aisladas e informar hallazgos comprobados.",
+      "acceptance": "Dictamen por unidad, huellas, resultados y límites.",
+      "files": [
+        "coordination/reviews/CODEX-CLAUDE-TOOLING-REVIEW-445.md"
+      ],
+      "readFiles": [],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "coordination/reviews/CODEX-CLAUDE-TOOLING-REVIEW-445.md": null
+      },
+      "submitted": {
+        "coordination/reviews/CODEX-CLAUDE-TOOLING-REVIEW-445.md": "aeac7bdbc5c10d476adb0de455df13022416bb8cec1bc2b8d3a0191de3c1f60b"
+      },
+      "note": "Huellas cotejadas. API 11/11 favorable. Rendimiento 7/7 y G3 3/3 con falsos aprobados reproducidos.",
+      "createdAt": "2026-11-18T15:24:41.599Z"
+    },
+    {
+      "id": "CLAUDE-SEARCH-PERF-R",
+      "agent": "claude",
+      "title": "Búsqueda global rápida con 10.000 registros sin cambiar resultados ni orden",
+      "plan": "Por orden del usuario (18/11/2026), transmitida por la sesión principal. server/workspace-search.ts tiene la reserva antigua CODEX-SEARCH-STALE-CONTEXT-207 (en revisión): se toma con autorización del usuario, huella de antes y aviso a Codex en el chat antes de editar. Cambio mínimo: (1) caché por almacén de la identidad de búsqueda y de los registros con su revisión, con clave el texto almacenado (cifrado) de las filas, como recoveryCache en store.ts: si el texto es idéntico, el valor lo es; (2) índice normalizado preparado una vez por revisión (shared/workspace-search.ts, función nueva y parámetro opcional) reutilizado entre consultas. normalizeSearch no cambia. Prueba de equivalencia con la implementación anterior (copia literal en la prueba) sobre muchas consultas y medida del presupuesto. server/workspace-search.ts no se puede reservar (CODEX-SEARCH-STALE-CONTEXT-207; take-over solo lo registra Codex): se declara aquí, se edita por autorización del usuario con huellas antes/después en el informe (antes 303c179628bae6d2badefb6a0098ed47f99ead0d3f95f356923574b133abef05) y Codex re-presenta o acepta 207 con la huella nueva.",
+      "acceptance": "Resultados idénticos (mismas consultas, mismo orden, mismos recuentos y revisiones), búsqueda medida por debajo de 150 ms con 10.000 registros, pruebas de búsqueda existentes en verde y tsc 0.",
+      "files": [
+        "shared/workspace-search.ts",
+        "tests/workspace-search-perf.test.ts",
+        "coordination/reports/CLAUDE-SEARCH-PERF-R.md"
+      ],
+      "readFiles": [
+        "server/workspace-search.ts",
+        "server/store.ts",
+        "server/app.ts",
+        "tools/perf/measure.ts",
+        "tests/workspace-search.test.ts",
+        "tests/workspace-search-api.test.ts",
+        "tests/workspace-search-identity.test.ts",
+        "tests/workspace-search-stale-context.test.ts",
+        "tests/independent-workspace-search-143.test.ts"
+      ],
+      "dependencies": [],
+      "status": "done",
+      "reserved": false,
+      "baseline": {
+        "shared/workspace-search.ts": "610ca847b8d2e1fbbcaf06633af24e99722623a271b48528c4e7abc81b07034e",
+        "tests/workspace-search-perf.test.ts": null,
+        "coordination/reports/CLAUDE-SEARCH-PERF-R.md": null
+      },
+      "submitted": {
+        "shared/workspace-search.ts": "158ada53d692b18b6adeebed10282c9a775536331d188c30598243d9f968ea15",
+        "tests/workspace-search-perf.test.ts": "39202a0be97f7bb7863479cbcb5a64a98030e8c26143cf2ddef3abd186fcbf66",
+        "coordination/reports/CLAUDE-SEARCH-PERF-R.md": "7c9932385ad864d4bb7efb9d55d28b50b6c7dd04d987d28b3563b233a6f0d07c"
+      },
+      "note": "Búsqueda global: identidad, revisión e índice normalizado reutilizados por clave de fila almacenada (IV+etiqueta GCM); vistas previas solo de la página. Idéntica a la versión anterior (copia literal) en 180 combinaciones x 10.000 registros y por la API con escrituras de otra conexión; mutantes 3/3; 66/66 incluida la 207. 3,8-4,1x más rápida (92,6 ms con CPU 80 %), 2,6x tras editar. server/workspace-search.ts (reserva 207) 303c1796 -> 5239fc2c.",
+      "createdAt": "2026-11-18T15:25:06.110Z"
+    },
+    {
+      "id": "CODEX-SEARCH-CONTEXT-MIXED-446",
+      "agent": "codex",
+      "title": "Consistencia de búsqueda al sustituir la copia",
+      "plan": "Verificar la revisión 207 y comprobar con dos conexiones SQLite si una lectura coincide con la identidad que declara.",
+      "acceptance": "Pruebas en banco ficticio y dictamen de la combinación observada.",
+      "files": [
+        "coordination/reviews/CODEX-SEARCH-CONTEXT-MIXED-446.md"
+      ],
+      "readFiles": [],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "coordination/reviews/CODEX-SEARCH-CONTEXT-MIXED-446.md": null
+      },
+      "submitted": {
+        "coordination/reviews/CODEX-SEARCH-CONTEXT-MIXED-446.md": "730f5b816cc656de86e4826e41d58662f3824acd3e9d300cafda1621f5513c6f"
+      },
+      "note": "29 pruebas por variante. 207 y 444 reproducen mezcla de identidad; el control temporal pasa con 409. Archivo reservado intacto.",
+      "createdAt": "2026-11-18T20:42:28.870Z"
+    },
+    {
+      "id": "CODEX-QUALITY-COVERAGE-447",
+      "agent": "codex",
+      "title": "Avisos de calidad con cobertura comprobada",
+      "plan": "Evitar falsos avisos de relación rota si las páginas se repiten o cambian de total. Cancelar revisiones anteriores y reintentar la lectura actual.",
+      "acceptance": "Resultados únicos, cobertura parcial si hay señales inconsistentes, cancelación con respuesta tardía y reintento. GET y sin cambios de configuración.",
+      "files": [
+        "src/app-shell/quality.ts",
+        "src/app-shell/QualityPanel.tsx",
+        "tests/data-quality.test.ts",
+        "tests/e2e/data-quality-card.spec.ts",
+        "coordination/reports/CODEX-QUALITY-COVERAGE-447.md"
+      ],
+      "readFiles": [],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "src/app-shell/quality.ts": "3320cef8946fe3ccf70782f180f6f2dfe34903d7434124051c060b6cb09d3183",
+        "src/app-shell/QualityPanel.tsx": "20ed22bba567a1f1e817e8f5d45433f9b3d5b9a4b74c1b2e673a64858f3eafd1",
+        "tests/data-quality.test.ts": "0b2790ea8efccca856285965114c5c0ef462a08eedb1776b23f505021985fb48",
+        "tests/e2e/data-quality-card.spec.ts": null,
+        "coordination/reports/CODEX-QUALITY-COVERAGE-447.md": null
+      },
+      "submitted": {
+        "src/app-shell/quality.ts": "a4c670a95c675aeec75465dbfc25b0c38f48a6b883be1de465e643825770da56",
+        "src/app-shell/QualityPanel.tsx": "10fb0bb4c8397ceed9b235f71c162e680b9ce8a16e77a1ac2704518ea1159c75",
+        "tests/data-quality.test.ts": "ff171d3ba26df6c8679a80432d4f78c4f016c60092ad001254642cb06e36b00b",
+        "tests/e2e/data-quality-card.spec.ts": "a2a855c2283f9ffc5a5ed73945ee01cf1df1efb90e5507ee0ad151120556f349",
+        "coordination/reports/CODEX-QUALITY-COVERAGE-447.md": "b8b2339c39ae498168e1477ae708afaf805ce4c4d5749a71fd6f05d0ae91c3ac"
+      },
+      "note": "21 Node, 3 Chromium y tipos. Tres fallos causales de cobertura, retirada de avisos y reintento.",
+      "createdAt": "2026-11-18T20:42:30.996Z"
+    },
+    {
+      "id": "CODEX-SEARCH-CACHE-RECHECK-448",
+      "agent": "codex",
+      "title": "Reverificación de lectura de búsqueda con la caché nueva",
+      "plan": "Congelar las huellas vigentes y comprobar si el cambio de copia sigue mezclando identidad y resultados. Verificar la protección en un banco separado.",
+      "acceptance": "Resultados reproducibles y distinción entre cambio vivo y prueba aislada. Preservar reservas de servidor y compartido.",
+      "files": [
+        "coordination/reviews/CODEX-SEARCH-CACHE-RECHECK-448.md"
+      ],
+      "readFiles": [],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "coordination/reviews/CODEX-SEARCH-CACHE-RECHECK-448.md": null
+      },
+      "submitted": {
+        "coordination/reviews/CODEX-SEARCH-CACHE-RECHECK-448.md": "cd8278f1a00a1f402e57c5aa790fd080f328d388131f2aaad8fa9084138d9a89"
+      },
+      "note": "Corte 4cebb7cb. Dos búsquedas y apertura de ficha reproducidas; la guarda aislada devuelve 409 en las tres. 29 pruebas por banco.",
+      "createdAt": "2026-11-18T20:54:27.098Z"
+    },
+    {
+      "id": "CODEX-RELATED-PRESET-449",
+      "agent": "codex",
+      "title": "Crear tareas y oportunidades con relaciones inequívocas",
+      "plan": "Evitar que una ficha nueva herede una empresa o un contacto de otro papel cuando existen varias relaciones al mismo tipo.",
+      "acceptance": "Mantener enlaces actuales inequívocos y los de campos con misma clave y tipo. Dejar sin completar los ambiguos, no escribir campos de solo lectura y comprobar los recorridos.",
+      "files": [
+        "src/app-shell/task-preset.ts",
+        "tests/task-preset.test.ts",
+        "coordination/reports/CODEX-RELATED-PRESET-449.md"
+      ],
+      "readFiles": [],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "src/app-shell/task-preset.ts": "871ccdf09f3cb5bc2a4de6495a4a36da87b88cf2ebc348e1c1479dcfe6aecc94",
+        "tests/task-preset.test.ts": "aa04767008f0636d4751e2d4536c868b39e11815df263b57401dc998ce3c1f99",
+        "coordination/reports/CODEX-RELATED-PRESET-449.md": null
+      },
+      "submitted": {
+        "src/app-shell/task-preset.ts": "a9ea9e4360bec67d929ea63b9a8063925db63b513099726284ac54d78ee5a235",
+        "tests/task-preset.test.ts": "237ec6e5e2b5141793442b65a5581d95c65ff995b77a26c6f0f75dd350752e1c",
+        "coordination/reports/CODEX-RELATED-PRESET-449.md": "198783c6d21bc9c02a8d59868d80915d648487bbd36a85a3318cf7f07c1d6289"
+      },
+      "note": "Tres regresiones fallan antes; 29 pruebas, tipos y ficha real en Chromium pasan con la corrección.",
+      "createdAt": "2026-11-18T20:54:28.905Z"
+    },
+    {
+      "id": "CODEX-LANDING-CONTINUIDAD",
+      "agent": "codex",
+      "title": "Landing de continuidad de Plan B",
+      "plan": "Construir una entrada comercial de Vite, con demostración interactiva ficticia y enlaces locales a funciones existentes. Entrega independiente, sin envío de fuentes a Claude.",
+      "acceptance": "Compilación, rutas reales, simulación de tres estados y revisión de cambios, adaptación a diferentes pantallas, teclado y movimiento reducido.",
+      "files": [
+        "plan-b.html",
+        "vite.config.ts",
+        "scripts/package-demo.ts",
+        "src/landing/main.tsx",
+        "src/landing/styles.css",
+        "src/landing/hero-relay.webp",
+        "tests/e2e/landing.spec.ts"
+      ],
+      "readFiles": [
+        "PRODUCT.md",
+        "DESIGN.md",
+        "CONTEXTO-PROYECTO.md",
+        "src/app-shell/routes.ts"
+      ],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "plan-b.html": null,
+        "vite.config.ts": "fa4cad8c9ec465e617b3d86bce47cb4023b5684122318f9c05894efe49d56137",
+        "scripts/package-demo.ts": "11086fa56e09d28aa32317bc5acaaf89ce3a85fc85e91ef0ca569353dcc714b8",
+        "src/landing/main.tsx": null,
+        "src/landing/styles.css": null,
+        "src/landing/hero-relay.webp": null,
+        "tests/e2e/landing.spec.ts": null
+      },
+      "submitted": {
+        "plan-b.html": null,
+        "vite.config.ts": "86c1f9d19ff93967e742e1ca5c55d38cdf4c291676010b5f47046cd6db2d3d44",
+        "scripts/package-demo.ts": "11086fa56e09d28aa32317bc5acaaf89ce3a85fc85e91ef0ca569353dcc714b8",
+        "src/landing/main.tsx": "332f4620bf6b993cf01c0d385125357f38e511a39ebbcc2ed6eebf04aa2e498d",
+        "src/landing/styles.css": "c00d0e379d247971ec1e7efb368be61e08b0473f3fe0196b409eb199a66e8059",
+        "src/landing/hero-relay.webp": null,
+        "tests/e2e/landing.spec.ts": "9be3797d236d47f83cc19f14935c35f9d78c4fcc8557cc0c30228509662a544f"
+      },
+      "note": "Reconstrucción de la composición de la maqueta. Seis pruebas Chromium correctas; se repitió la inspección de seis anchos tras ajustar el cierre.",
+      "createdAt": "2026-11-18T21:00:00.942Z"
+    },
+    {
+      "id": "CODEX-FOCUS-COVERAGE-450",
+      "agent": "codex",
+      "title": "Alcance verificable en Despachar vencidas",
+      "plan": "Conservar la revisión acotada de tareas, indicar la cobertura si es parcial, cancelar las peticiones al salir y permitir reintentar un error de lectura.",
+      "acceptance": "300 de 350 sin vencidas leídas muestra alcance parcial, sin afirmar que la lista completa esté al día. Distintas filas y locales de orden, sin repetición ni peticiones después de cerrar. Conservar resultados completos y acciones previas. Pruebas Node y Chromium.",
+      "files": [
+        "src/app-shell/FocusRun.tsx",
+        "src/app-shell/focus.ts",
+        "tests/focus-run.test.ts",
+        "tests/e2e/focus-run-coverage.spec.ts",
+        "coordination/reports/CODEX-FOCUS-COVERAGE-450.md"
+      ],
+      "readFiles": [
+        "src/App.tsx",
+        "src/app-shell/related.ts",
+        "src/app-shell/useRecordList.ts"
+      ],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "src/app-shell/FocusRun.tsx": "4843f5a4a5aad71f5820c59a413d0d221cce934f1cf246429ae6cfd0f1038a20",
+        "src/app-shell/focus.ts": "ae2cc5187abc58398180b77c9ff727723acd3244b1e380744f870098dbbde1bc",
+        "tests/focus-run.test.ts": "874e5d765a0765fdce4793c5041165ca6e20a02e890d4345347c382da98b9751",
+        "tests/e2e/focus-run-coverage.spec.ts": null,
+        "coordination/reports/CODEX-FOCUS-COVERAGE-450.md": null
+      },
+      "submitted": {
+        "src/app-shell/FocusRun.tsx": "1c30d0a37b7c4fd5ede6a9b190bde6e1c670f6a1e2b4e49492926d51f545b5e9",
+        "src/app-shell/focus.ts": "68a0908edbeea2d94b61d7daeec7c04425579b34121dda7ea664d242cdbe65ab",
+        "tests/focus-run.test.ts": "7b4c2534af51a2347826876beaefe8fc228ff161aa2f9a1a8bf99fd687ee9cd8",
+        "tests/e2e/focus-run-coverage.spec.ts": "d2baf0257674a03c3cdb73691f335592655c57514b06c53705b9ccea9a8fd1c4",
+        "coordination/reports/CODEX-FOCUS-COVERAGE-450.md": "96947b9c9f19b5bc6a0261c73b40e73a49dea39c1ae7f23a8b3248cc8394fcf6"
+      },
+      "note": "22 pruebas Node, tipos, 3 Chromium con reversión y recorrido desde Hoy con 350 tareas en SQLite aislado.",
+      "createdAt": "2026-11-18T21:13:48.508Z"
+    },
+    {
+      "id": "CODEX-LANDING-FUENTES",
+      "agent": "codex",
+      "title": "Incluir la landing en la captura de candidatas",
+      "plan": "Ubicar el HTML y el arte en las raíces ya admitidas, sin cambiar el selector ni los manifiestos en revisión.",
+      "acceptance": "Las dos fuentes aparecen en la captura y la compilación sigue sirviendo la landing en /plan-b.html.",
+      "files": [
+        "src/landing/plan-b.html",
+        "src/assets/landing/hero-relay.webp"
+      ],
+      "readFiles": [
+        "scripts/prepare-release-candidate.mjs",
+        "tools/releases/candidate-integrity.mjs"
+      ],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "src/landing/plan-b.html": null,
+        "src/assets/landing/hero-relay.webp": null
+      },
+      "submitted": {
+        "src/landing/plan-b.html": "1ab63e52ae4c821bb05ac275e27f6bd6c106fc7f82c36cf2852222efebd2e987",
+        "src/assets/landing/hero-relay.webp": "7b758d98c77b163077b5919f928d6fbc15db328e2fe3060459d232ce60b460ab"
+      },
+      "note": "Vista previa comprobada en 5281 y encabezado adaptable al fondo. HTML funcional con y sin JavaScript.",
+      "createdAt": "2026-11-18T21:15:41.210Z"
+    },
+    {
+      "id": "CODEX-LANDING-RENDIMIENTO",
+      "agent": "codex",
+      "title": "Priorizar la señal y agilizar la carga inicial",
+      "plan": "Crear variantes WebP y una entrada ligera para dar prioridad al hero y cargar la simulación después de la primera pintura o cuando se necesite.",
+      "acceptance": "Imágenes adaptativas, carga diferida comprobada y auditoría Lighthouse repetida.",
+      "files": [
+        "src/landing/start.ts",
+        "src/assets/landing/hero-relay-480.webp",
+        "src/assets/landing/hero-relay-840.webp"
+      ],
+      "readFiles": [
+        "src/landing/plan-b.html",
+        "src/landing/main.tsx"
+      ],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "src/landing/start.ts": null,
+        "src/assets/landing/hero-relay-480.webp": null,
+        "src/assets/landing/hero-relay-840.webp": null
+      },
+      "submitted": {
+        "src/landing/start.ts": "a53c033a9cf9a2258070b8c61a94ef8b8eac4f04bb3ead18a6a40e566b6cfadb",
+        "src/assets/landing/hero-relay-480.webp": "605c92b34a09bdeac264c4c23fcb9b7f2d9f3aab05d3aaf7d5f3a8f6582f4d0e",
+        "src/assets/landing/hero-relay-840.webp": "5a4b9d09e88aeedb63195cfd0ddb28cc770d3d66f828c8f143f2e68f0db56025"
+      },
+      "note": "Imagen oblicua regenerada a partir de la maqueta y variantes para móvil. Sigue la carga por proximidad.",
+      "createdAt": "2026-11-18T21:22:59.484Z"
+    },
+    {
+      "id": "CODEX-SEARCH-SQLITE-VERSION-451",
+      "agent": "codex",
+      "title": "Medir una protección de concurrencia para la búsqueda",
+      "plan": "Comparar el índice actual, la comprobación de filas y la señal de escritura de SQLite en copias aisladas con datos ficticios.",
+      "acceptance": "Casos reproducibles con otra conexión y otro proceso. Comparación de latencia y equivalencia de resultados con 10.000 filas cifradas. Registrar límites sin editar las reservas de búsqueda.",
+      "files": [
+        "coordination/reviews/CODEX-SEARCH-SQLITE-VERSION-451.md"
+      ],
+      "readFiles": [
+        "server/workspace-search.ts",
+        "shared/workspace-search.ts",
+        "server/store.ts",
+        "tools/perf/fixture.ts"
+      ],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "coordination/reviews/CODEX-SEARCH-SQLITE-VERSION-451.md": null
+      },
+      "submitted": {
+        "coordination/reviews/CODEX-SEARCH-SQLITE-VERSION-451.md": "6590d9091b2d15d6726444e6117ee8eb771503554c5eed60cad25683b136c4b9"
+      },
+      "note": "21 comprobaciones de concurrencia, benchmark intercalado con 10.000 filas, 29 pruebas existentes y tipos. Prototipo aislado.",
+      "createdAt": "2026-11-18T21:25:20.290Z"
+    },
+    {
+      "id": "CODEX-LANDING-CIERRE",
+      "agent": "codex",
+      "title": "Ilustrar el retorno con una segunda escena nocturna",
+      "plan": "Incluir un cierre fotográfico de carga diferida en la misma dirección artística que la portada.",
+      "acceptance": "El cierre tiene una imagen optimizada y verificable en móvil y escritorio.",
+      "files": [
+        "src/assets/landing/return-signal.webp"
+      ],
+      "readFiles": [
+        "src/landing/plan-b.html"
+      ],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "src/assets/landing/return-signal.webp": null
+      },
+      "submitted": {
+        "src/assets/landing/return-signal.webp": "afa10b597b867111fe6feba2678530195ab6cfc700c3bd7c1026b3cee97a42be"
+      },
+      "note": "Arco de luz reconstruido y composición en dos líneas cotejada con la captura final.",
+      "createdAt": "2026-11-18T21:28:00.956Z"
+    },
+    {
+      "id": "CLAUDE-API-CONTRACTS-R2",
+      "agent": "claude",
+      "title": "E2 · Contratos de la importación CSV (vista previa y aplicación) y de deshacer el último guardado",
+      "plan": "Por orden del usuario (18/11/2026), vía la sesión principal. Archivo nuevo para no editar tests/api-v2-contracts.test.ts, ya presentado. Monta registerCsvImport sobre createBaseApp igual que server/main.ts y comprueba con zod los códigos y la forma de /api/v2/import/csv/preview, /api/v2/import/csv/apply y /api/v2/changes/undo-last, incluidos sus errores (409 con details.code, 413, 422, 404). Solo lee server/csv-import.ts, server/undo.ts y shared/csv-import.ts (de la sesión principal); no los edita.",
+      "acceptance": "Pruebas en verde aisladas y tsc 0; cada ruta con caso feliz y sus errores; informe con lo que cubre.",
+      "files": [
+        "tests/api-v2-contracts-csv-undo.test.ts",
+        "coordination/reports/CLAUDE-API-CONTRACTS-R2.md"
+      ],
+      "readFiles": [
+        "server/csv-import.ts",
+        "server/undo.ts",
+        "shared/csv-import.ts",
+        "server/app.ts",
+        "server/main.ts"
+      ],
+      "dependencies": [],
+      "status": "done",
+      "reserved": false,
+      "baseline": {
+        "tests/api-v2-contracts-csv-undo.test.ts": null,
+        "coordination/reports/CLAUDE-API-CONTRACTS-R2.md": null
+      },
+      "submitted": {
+        "tests/api-v2-contracts-csv-undo.test.ts": "676b570002ee46dace2765e370b6db139512a52f2e41a21743e3107427b109af",
+        "coordination/reports/CLAUDE-API-CONTRACTS-R2.md": "af2078150b4ee29c50290fa822cb6bbc221ce38dd88b5291e00d22bcd8615d06"
+      },
+      "note": "Contratos CSV preview/apply y undo-last 5/5: forma cerrada con zod, errores 404/409 con details.code, 413 y 422; la vista previa no escribe. Solo lectura de csv-import.ts/undo.ts.",
+      "createdAt": "2026-11-18T21:31:24.740Z"
+    },
+    {
+      "id": "CODEX-CSV-R4-REVIEW-452",
+      "agent": "codex",
+      "title": "Revisión independiente del importador CSV R4",
+      "plan": "Cotejar la entrega exacta, repetir las regresiones de fecha y vigencia en una base ficticia, y contrastar cambios entre validación y escritura.",
+      "acceptance": "Evidencia de filas válidas, errores de fecha, no escritura en vista previa y protección de la copia. Dictamen sobre las huellas presentadas.",
+      "files": [
+        "coordination/reviews/CODEX-CSV-R4-REVIEW-452.md"
+      ],
+      "readFiles": [
+        "shared/csv-import.ts",
+        "server/csv-import.ts",
+        "tests/csv-import-api.test.ts"
+      ],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "coordination/reviews/CODEX-CSV-R4-REVIEW-452.md": null
+      },
+      "submitted": {
+        "coordination/reviews/CODEX-CSV-R4-REVIEW-452.md": "27ac207fefec3811270412fc7deaccbd00cfe02201a96f00cfe7aa7da1bd7b23"
+      },
+      "note": "Fechas verificadas, 20 pruebas y tipos. R5 por escritura después de validar la marca. Banco causal incluido.",
+      "createdAt": "2026-11-18T21:34:18.229Z"
+    },
+    {
+      "id": "CODEX-SEARCH-RETRY-453",
+      "agent": "codex",
+      "title": "Retirar resultados de búsqueda tras un conflicto",
+      "plan": "Cerrar la vía a volver a pulsar sobre resultados desmentidos tras un 409 al abrir una ficha. Conservar la revisión y los errores recuperables ya existentes.",
+      "acceptance": "El 409 retira filas, datos de procedencia y paginación, sin abrir ficha. Reintentar empieza en offset cero y sigue exigiendo el contexto de la app. Chromium reproduce antes y pasa después.",
+      "files": [
+        "src/WorkspaceSearch.tsx",
+        "tests/e2e/search-conflict-results.spec.ts",
+        "coordination/reports/CODEX-SEARCH-RETRY-453.md"
+      ],
+      "readFiles": [
+        "src/App.tsx",
+        "tests/e2e/workspace-search-identity.spec.ts"
+      ],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "src/WorkspaceSearch.tsx": "52b589eec4878ac156dcc810ddfb0e61e2bb84e0dbbc08bda5d797dd2839319c",
+        "tests/e2e/search-conflict-results.spec.ts": null,
+        "coordination/reports/CODEX-SEARCH-RETRY-453.md": null
+      },
+      "submitted": {
+        "src/WorkspaceSearch.tsx": "be3c1c831a2dc6644f422214a8e4f7f536f592023b242942177fc8a1787c6039",
+        "tests/e2e/search-conflict-results.spec.ts": "e5550194830173188bd66af5379bb97da9051f9c3e41cf353344965ff46da077",
+        "coordination/reports/CODEX-SEARCH-RETRY-453.md": "db368ce748d55e0ffab9516cdc6077e848ff1fe4c72f852788353acca729b871"
+      },
+      "note": "456. Retiro de resultados y reintento con estado autenticado. Regresiones anteriores conservadas.",
+      "createdAt": "2026-11-18T21:34:19.159Z"
+    },
+    {
+      "id": "CODEX-RETURN-R2-REVIEW-454",
+      "agent": "codex",
+      "title": "Revisar explicación de devolución R2",
+      "plan": "Cotejar las seis huellas, repetir el reemplazo de plan y el envío simulado, y comprobar el recibo de altas inciertas.",
+      "acceptance": "Informe con dictamen por unidad, pruebas y recibo contrastado con el motor simulado.",
+      "files": [
+        "coordination/reviews/CODEX-RETURN-R2-REVIEW-454.md"
+      ],
+      "readFiles": [
+        "shared/return-explain.ts",
+        "src/app-shell/useReturnExplanation.ts",
+        "src/ChangesView.tsx",
+        "server/recovery.ts"
+      ],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "coordination/reviews/CODEX-RETURN-R2-REVIEW-454.md": null
+      },
+      "submitted": {
+        "coordination/reviews/CODEX-RETURN-R2-REVIEW-454.md": "7b6a6ec744e4103a464538622afbbf56fc4d8daa36192b601e03bd5e80cf6e0c"
+      },
+      "note": "38 pruebas, tipos y transición contrastada. R3 del modelo por prometer un alta incierta que ya existe en el destino simulado.",
+      "createdAt": "2026-11-18T21:44:43.669Z"
+    },
+    {
+      "id": "CODEX-LANDING-CSS-DIFERIDO",
+      "agent": "codex",
+      "title": "Diferir el bloque narrativo por proximidad",
+      "plan": "Separar los estilos del recorrido para reducir el bloqueo inicial en móvil.",
+      "acceptance": "La simulación aparece al aproximarse o mediante enlace directo; la portada sirve primero los recursos críticos.",
+      "files": [
+        "src/landing/story.css"
+      ],
+      "readFiles": [
+        "src/landing/styles.css",
+        "src/landing/start.ts",
+        "src/landing/main.tsx"
+      ],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "src/landing/story.css": null
+      },
+      "submitted": {
+        "src/landing/story.css": "0b7a05c1484afe061fe034812557b75049faaa13ee8530c574fa13069ddda7cd"
+      },
+      "note": "Simulador, alcance y recuperación comparados con la maqueta en Chromium. TypeScript correcto.",
+      "createdAt": "2026-11-18T21:45:26.506Z"
+    },
+    {
+      "id": "CODEX-API-CLIENT-R2-REVIEW-455",
+      "agent": "codex",
+      "title": "Revisar detector de rutas del cliente R2",
+      "plan": "Contrastar las dos huellas, repetir las regresiones de 433 y comprobar que las ramas literales conocidas no quedan ocultas por un patrón dinámico.",
+      "acceptance": "Pruebas exactas y oráculo independiente. Dictamen sobre la cobertura declarada.",
+      "files": [
+        "coordination/reviews/CODEX-API-CLIENT-R2-REVIEW-455.md"
+      ],
+      "readFiles": [
+        "docs/api.md",
+        "tests/api-client-routes.test.ts",
+        "src/Protection.tsx"
+      ],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "coordination/reviews/CODEX-API-CLIENT-R2-REVIEW-455.md": null
+      },
+      "submitted": {
+        "coordination/reviews/CODEX-API-CLIENT-R2-REVIEW-455.md": "6a1877299d886ac8f4323e2d3caf15191eee8d7d3e7275b1f8bc3ce63c70d0e6"
+      },
+      "note": "5/5 sobre R2 y 5/5 aun sustituyendo una rama fija por una ruta inexistente. Dictamen R3.",
+      "createdAt": "2026-11-18T21:52:31.607Z"
+    },
+    {
+      "id": "CODEX-SEARCH-WORKSPACE-REFRESH-456",
+      "agent": "codex",
+      "title": "Actualizar la copia desde el reintento de búsqueda",
+      "plan": "Conectar el botón de reintento con el estado auténtico de App. El montaje se edita por la reserva Codex CLAUDE-FABLE-UI-GRAFITO y el diálogo por la reapertura de CODEX-SEARCH-RETRY-453. El presente encargo reserva únicamente la regresión nueva y su informe para evitar solapes.",
+      "acceptance": "Tras un 409 se lee el estado, se consulta la primera página con su nueva identidad y se puede abrir el registro de la nueva copia. Al cerrar se aborta la lectura. Si falla el estado, permite reintentar sin buscar con la identidad antigua. Verificar en navegador.",
+      "files": [
+        "tests/e2e/search-refresh-workspace.spec.ts",
+        "coordination/reports/CODEX-SEARCH-WORKSPACE-REFRESH-456.md"
+      ],
+      "readFiles": [
+        "src/App.tsx",
+        "src/WorkspaceSearch.tsx"
+      ],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "tests/e2e/search-refresh-workspace.spec.ts": null,
+        "coordination/reports/CODEX-SEARCH-WORKSPACE-REFRESH-456.md": null
+      },
+      "submitted": {
+        "tests/e2e/search-refresh-workspace.spec.ts": "c3625c6512af8da18055df0170dc5786c49323114dcfd531e0c7d3fec31f3306",
+        "coordination/reports/CODEX-SEARCH-WORKSPACE-REFRESH-456.md": "eee78011a032dbca165ea6e6f522c3ef7f3d87a60c4c980836600eb18655d49d"
+      },
+      "note": "3 Chromium causales, 2 regresiones, tipos y recorrido real con restauración ficticia. Montaje bajo reserva Grafito de Codex.",
+      "createdAt": "2026-11-18T21:52:34.674Z"
+    },
+    {
+      "id": "CLAUDE-TEAM-DEMO-NAMES",
+      "agent": "claude",
+      "title": "Datos de demostración del espacio de equipo con la voz de la App («de prueba», no «ficticia»)",
+      "plan": "Por orden del usuario (18/11/2026), caso 1 de la revisión 438 de CLAUDE-TEAM-D8: las empresas de la demo se llaman «Empresa ficticia Arce/Faro» (server/team/demo.ts). Pasan a «Empresa de prueba Arce/Faro» y la E2E que las espera se actualiza.",
+      "acceptance": "Ningún «ficticia» en los datos de la demo; customers.spec espera el nombre nuevo; pruebas de equipo verdes.",
+      "files": [
+        "server/team/demo.ts",
+        "tests/e2e/customers.spec.ts"
+      ],
+      "readFiles": [
+        "src/TeamApp.tsx"
+      ],
+      "dependencies": [],
+      "status": "working",
+      "reserved": true,
+      "baseline": {
+        "server/team/demo.ts": "69209e33078e69be907e9699b4f05c81e04cfda77289f29da4fcbd4cdfa4ffb5",
+        "tests/e2e/customers.spec.ts": "55a36bf00ec903e8576f7d879e875197e9dd049b56a8f76bff354005110b4f3f"
+      },
+      "submitted": null,
+      "note": "R2 pedida en revisión 463. Los nombres funcionan en ambos espacios. El spec presentado falla antes de la aserción. Con solo abrir /team?view=records en su primer recorrido, los 2 E2E pasan en aislamiento; conserva el resto del spec.",
+      "createdAt": "2026-11-18T21:54:11.950Z"
+    },
+    {
+      "id": "CODEX-LANDING-ARTE-ALCANCE",
+      "agent": "codex",
+      "title": "Ilustrar el panel de alcance según la maqueta",
+      "plan": "Incluir el recorte fotográfico de la pared con sombras de ventana y vegetación.",
+      "acceptance": "Textura WebP propia integrada debajo de la columna marfil.",
+      "files": [
+        "src/assets/landing/coverage-wall.webp"
+      ],
+      "readFiles": [
+        "src/landing/main.tsx"
+      ],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "src/assets/landing/coverage-wall.webp": null
+      },
+      "submitted": {
+        "src/assets/landing/coverage-wall.webp": "0dbac65a5fac89bba87498f0d1d2f2856131945825ab628bfeeff05a206210b2"
+      },
+      "note": "Recorte de pared, sombra de ventana y vegetación verificado en el panel marfil.",
+      "createdAt": "2026-11-19T07:15:04.468Z"
+    },
+    {
+      "id": "CODEX-SEARCH-PERF-REVIEW-457",
+      "agent": "codex",
+      "title": "Validar e integrar la búsqueda rápida con control de copia",
+      "plan": "Contrastar la entrega de Claude y su servidor. Integrar la comprobación de versión en server/workspace-search.ts y sus regresiones por la reserva Codex 207. Este encargo reserva el dictamen.",
+      "acceptance": "La misma respuesta estable y la protección antes de devolver resultados, con y sin caché. Volver a medir el rendimiento usando las pruebas de Claude. Mantener las tres huellas de su entrega.",
+      "files": [
+        "coordination/reviews/CODEX-SEARCH-PERF-REVIEW-457.md"
+      ],
+      "readFiles": [
+        "server/workspace-search.ts",
+        "shared/workspace-search.ts",
+        "tests/workspace-search-stale-context.test.ts",
+        "tests/workspace-search-perf.test.ts"
+      ],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "coordination/reviews/CODEX-SEARCH-PERF-REVIEW-457.md": null
+      },
+      "submitted": {
+        "coordination/reviews/CODEX-SEARCH-PERF-REVIEW-457.md": "6153f2a5d8defe5ccf2180d88ec9dfb8e1cf06b71625c1a0a5622807ab6cfdf1"
+      },
+      "note": "Entrega exacta verificada con su integración: 70 pruebas, tipos, navegador y 4,2x en el banco de 10.000 registros.",
+      "createdAt": "2026-11-19T07:15:22.351Z"
+    },
+    {
+      "id": "CODEX-CSV-R5-REVIEW-458",
+      "agent": "codex",
+      "title": "Comprobar la vigencia de CSV R5",
+      "plan": "Cotejar entrega exacta y repetir casos antes, durante y entre altas. Verificar que no se pueda adoptar como aprobada una copia llegada después de validar la marca.",
+      "acceptance": "Dictamen reproducible con SQLite ficticio y controles del importador.",
+      "files": [
+        "coordination/reviews/CODEX-CSV-R5-REVIEW-458.md"
+      ],
+      "readFiles": [
+        "server/csv-import.ts",
+        "server/store.ts",
+        "src/CsvImport.tsx"
+      ],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "coordination/reviews/CODEX-CSV-R5-REVIEW-458.md": null
+      },
+      "submitted": {
+        "coordination/reviews/CODEX-CSV-R5-REVIEW-458.md": "a0b9df40074e9ba86a8e41aaf9eb20a071842294a6d8597731481f6e50705fb8"
+      },
+      "note": "R5: 22 pruebas y tipos. La marca deja una ventana antes de fijar la identidad. Prototipo en la misma SQLite: 409 y cero altas.",
+      "createdAt": "2026-11-19T07:24:26.069Z"
+    },
+    {
+      "id": "CLAUDE-CI-STEPS",
+      "agent": "claude",
+      "title": "E1 · CI local con pasos opcionales (--perf, --mobile, --e2e) y un informe único",
+      "plan": "Por orden del usuario (19/11/2026), vía la sesión principal. tools/ci/run.mjs está reservado por CODEX-CI-FAILURE-EVIDENCE-421 (en revisión): para no invalidar esa entrega no se edita. Orquestador nuevo tools/ci/full.mjs: ejecuta run.mjs sin cambios como paso base (reenvía sus opciones y valida con su parseArgs) y añade pasos opcionales apagados por defecto: --perf (tools/perf/measure.ts --check, su propia carpeta temporal), --mobile (tools/visual/mobile-scan.mts --self-test) y --e2e [filtros] (tools/e2e/isolated.mjs, compila en tests/.tmp/e2e-build). Un único report.json con estado, duración, salida resumida y registro de cada paso; los no pedidos figuran como «no ejecutado». Solo llama a tools/visual y tools/e2e, no los edita. Pruebas con ejecución inyectada (sin navegadores ni compilación) y un ensayo real corto con --tests acotado, --perf y --mobile.",
+      "acceptance": "Orquestación, códigos de salida e informe probados con comandos inyectados; ensayo real corto en verde; README actualizado; propuesta de integración en run.mjs cuando se libere la 421.",
+      "files": [
+        "tools/ci/full.mjs",
+        "tests/ci-full.test.ts",
+        "tools/ci/README.md",
+        "coordination/reports/CLAUDE-CI-STEPS.md"
+      ],
+      "readFiles": [
+        "tools/ci/run.mjs",
+        "tools/ci/compare.mjs",
+        "tools/perf/measure.ts",
+        "tools/visual/mobile-scan.mts",
+        "tools/e2e/isolated.mjs"
+      ],
+      "dependencies": [],
+      "status": "working",
+      "reserved": true,
+      "baseline": {
+        "tools/ci/full.mjs": null,
+        "tests/ci-full.test.ts": null,
+        "tools/ci/README.md": "4bd3bd6c059732cd882d116021b98809f2c70a10072d15ae03bde05c76725a2a",
+        "coordination/reports/CLAUDE-CI-STEPS.md": null
+      },
+      "submitted": null,
+      "note": "R2 pedida en revisión 462. --e2e --list informa correcto sin ejecutar. Limitar argumentos al contrato de selección, impedir configuración y build alternativos, y verificar ejecución real en fixture o fallar en uso. Documentar arnés compartido.",
+      "createdAt": "2026-11-19T07:31:00.924Z"
+    },
+    {
+      "id": "CODEX-WORKSPACE-STATE-CONSISTENCY-459",
+      "agent": "codex",
+      "title": "Mantener coherente el estado de la copia",
+      "plan": "Proteger las dos rutas de estado con la misma lectura de versión SQLite de búsqueda. El servidor compartido de búsqueda se edita únicamente en la reserva Codex 207 para exponer esa lectura.",
+      "acceptance": "Una restauración durante el estado devuelve la copia completa vigente tras un único reintento. Dos cambios reciben 409 sin estado mezclado. Se conservan el formato compacto, el historial y la protección de acceso.",
+      "files": [
+        "server/app.ts",
+        "tests/workspace-state-consistency-459.test.ts",
+        "coordination/reports/CODEX-WORKSPACE-STATE-CONSISTENCY-459.md"
+      ],
+      "readFiles": [
+        "server/workspace-search.ts",
+        "server/store.ts"
+      ],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "server/app.ts": "d90a014d7e53841155f8865e429ef3e7b2883b28596efb0ec5595f3f4f121eb5",
+        "tests/workspace-state-consistency-459.test.ts": null,
+        "coordination/reports/CODEX-WORKSPACE-STATE-CONSISTENCY-459.md": null
+      },
+      "submitted": {
+        "server/app.ts": "9a38d7cbc6da69d757d72dc848f371de2eb95c47e2ca8db0bfca063f522ea439",
+        "tests/workspace-state-consistency-459.test.ts": "557d3d8ac0871a54fc225c33eae55f051a46885a6dea2bcb3dee453187732a1f",
+        "coordination/reports/CODEX-WORKSPACE-STATE-CONSISTENCY-459.md": "db1bd3cd5595d2ffd19bb6dd90c4d8fd99525ecf29f7b8617b6b2a4694f6190c"
+      },
+      "note": "Tres regresiones de lectura concurrente fallan en la versión anterior y pasan con un reintento acotado. 46 pruebas y tipos.",
+      "createdAt": "2026-11-19T07:32:31.231Z"
+    },
+    {
+      "id": "CODEX-CLAUDE-TOOLING-R2-460",
+      "agent": "codex",
+      "title": "Revisar las correcciones de presupuestos y coordinación",
+      "plan": "Contrastar las dos entregas R2 y repetir los controles CLI de 445.",
+      "acceptance": "La muestra exploratoria no obtiene un aprobado. Los parámetros inválidos y los directorios se rechazan con su código. Probar las huellas exactas.",
+      "files": [
+        "coordination/reviews/CODEX-CLAUDE-TOOLING-R2-460.md"
+      ],
+      "readFiles": [
+        "tools/perf/measure.ts",
+        "tools/coordination/report-size.mjs",
+        "docs/protocolo-ordenes-directas.md"
+      ],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "coordination/reviews/CODEX-CLAUDE-TOOLING-R2-460.md": null
+      },
+      "submitted": {
+        "coordination/reviews/CODEX-CLAUDE-TOOLING-R2-460.md": "198ab53761e953d89cbf24e1d06804b2c5aa37f6e66f746387c50d8e7025d766"
+      },
+      "note": "Dos entregas exactas. 8 y 6 pruebas, muestra exploratoria rechazada y tres controles CLI independientes.",
+      "createdAt": "2026-11-19T07:36:35.729Z"
+    },
+    {
+      "id": "CODEX-EVIDENCE-AUTH-CACHE-461",
+      "agent": "codex",
+      "title": "Conservar la regresión de autorización con la caché nueva",
+      "plan": "Sustituir la cuenta fija de lecturas de identidad por la última lectura observada después de calcular evidencia. Probar sobre los cortes antes y después del estado 459.",
+      "acceptance": "Control autenticado 200, expiración en la última lectura 401 sin atestación, y una variante sin comprobación final detectada por la prueba.",
+      "files": [
+        "tests/continuity-evidence-workspace-context.test.ts",
+        "coordination/reports/CODEX-EVIDENCE-AUTH-CACHE-461.md"
+      ],
+      "readFiles": [
+        "server/continuity-evidence-api.ts",
+        "server/security.ts",
+        "server/workspace-search.ts"
+      ],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "tests/continuity-evidence-workspace-context.test.ts": "692c0ff610b24d39f7cc8c8e5d67762d1d75e8970d0c62bd80002b1253c7dbf1",
+        "coordination/reports/CODEX-EVIDENCE-AUTH-CACHE-461.md": null
+      },
+      "submitted": {
+        "tests/continuity-evidence-workspace-context.test.ts": "50fc69c447c072558e0704b73099700ef33544c0bb3f244e650f5ea7dcc0a058",
+        "coordination/reports/CODEX-EVIDENCE-AUTH-CACHE-461.md": "f178e08ee7b1d4d9cb0e684739a02756b10f6b58ee5da5a305e86806063a2e45"
+      },
+      "note": "Control con caché actual 200 y expiración 401. La variante con comprobación adelantada se detecta. 46 pruebas.",
+      "createdAt": "2026-11-19T07:38:45.934Z"
+    },
+    {
+      "id": "CLAUDE-TEAM-AUDIT",
+      "agent": "claude",
+      "title": "Auditoría de accesibilidad y móvil del espacio de equipo (/team) en ensayo propio",
+      "plan": "Por orden del usuario (19/11/2026), vía la sesión principal. Solo lectura del código de la App. Ensayo propio: servidor de equipo en modo demo en 4531 (datos ficticios en tests/.tmp/perf-team-*, red exterior bloqueada con scripts/block-external.cjs, sin leer .env.local) y Vite en 5299 con /api/team hacia 4531. Herramienta nueva tools/team-audit/ (lógica de medida copiada y ampliada de tools/visual/a11y.mts y mobile-scan.mts, que no se editan): 8 secciones x 4 perfiles de ensayo x 1366/390/320 px; contraste, nombres accesibles, campos etiquetados, objetivos táctiles (24 px escritorio, 44 px móvil), foco visible, un h1 por vista y desplazamiento lateral, con la regla CSS y el archivo que la originan. Informe por gravedad con causa probable. Sin cambios en src/.",
+      "acceptance": "Recorrido completo ejecutado y resultados crudos guardados; informe por gravedad con archivo y regla; pruebas de la lógica pura en verde; ningún cambio en src/.",
+      "files": [
+        "tools/team-audit/start.mjs",
+        "tools/team-audit/checks.mjs",
+        "tools/team-audit/run.mjs",
+        "tools/team-audit/README.md",
+        "tests/team-audit.test.ts",
+        "coordination/reports/CLAUDE-TEAM-AUDIT.md"
+      ],
+      "readFiles": [
+        "src/TeamApp.tsx",
+        "src/team.css",
+        "src/faro.css",
+        "src/design-system.css",
+        "src/planb-ui.css",
+        "server/team/main.ts",
+        "server/team/app.ts",
+        "tools/visual/a11y.mts",
+        "tools/visual/mobile-scan.mts",
+        "tests/.tmp/ensayo-team/start-team.mjs"
+      ],
+      "dependencies": [],
+      "status": "working",
+      "reserved": true,
+      "baseline": {
+        "tools/team-audit/start.mjs": null,
+        "tools/team-audit/checks.mjs": null,
+        "tools/team-audit/run.mjs": null,
+        "tools/team-audit/README.md": null,
+        "tests/team-audit.test.ts": null,
+        "coordination/reports/CLAUDE-TEAM-AUDIT.md": null
+      },
+      "submitted": null,
+      "note": "R2 pedida en revisión 467. Añadir controles para aria-labelledby inexistente, sombra estática que no señala foco, textarea excluido y botón totalmente fuera por la izquierda. Repetir recorrido o acotar criterios comprobados.",
+      "createdAt": "2026-11-19T07:40:31.176Z"
+    },
+    {
+      "id": "CODEX-CI-MOBILE-REVIEW-462",
+      "agent": "codex",
+      "title": "Revisión independiente de CI opcional y escáner móvil",
+      "plan": "Confrontar argumentos E2E y controles móviles en pruebas aisladas.",
+      "acceptance": "Huellas exactas, controles independientes y dictamen por entrega.",
+      "files": [
+        "coordination/reviews/CODEX-CI-MOBILE-REVIEW-462.md"
+      ],
+      "readFiles": [],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "coordination/reviews/CODEX-CI-MOBILE-REVIEW-462.md": null
+      },
+      "submitted": {
+        "coordination/reviews/CODEX-CI-MOBILE-REVIEW-462.md": "872c4f65a13ab838f9fea2e0b215becf6f8f5907a43fdca7c3022e197618dabf"
+      },
+      "note": "R2 del informe: CI opcional 7/7, base 20/20 en dos corridas; el timeout aislado Windows pasa en 1,87 s. Hallazgos independientes de CI y móvil confirmados.",
+      "createdAt": "2026-11-19T07:50:24.452Z"
+    },
+    {
+      "id": "CODEX-TEAM-D8-R2-REVIEW-463",
+      "agent": "codex",
+      "title": "Revisión integrada de Equipo D8 y nombres de la demo",
+      "plan": "Reconstruir el banco 438 con los archivos exactos R2 y revisar los criterios de conexión y destinos.",
+      "acceptance": "Evidencia de Chromium con el servidor ficticio y comprobación de la ruta de cliente afectada.",
+      "files": [
+        "coordination/reviews/CODEX-TEAM-D8-R2-REVIEW-463.md"
+      ],
+      "readFiles": [],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "coordination/reviews/CODEX-TEAM-D8-R2-REVIEW-463.md": null
+      },
+      "submitted": {
+        "coordination/reviews/CODEX-TEAM-D8-R2-REVIEW-463.md": "1279e73498fdb337821345951d1b0a7841afefd85e63489199f7041a1da08a3d"
+      },
+      "note": "Compilación congelada y 51 pruebas focales. 32 controles de rol, 3 móviles, conexión caducada y ambos nombres. Spec original 1/2; variante con ruta apropiada 2/2.",
+      "createdAt": "2026-11-19T07:50:24.707Z"
+    },
+    {
+      "id": "CLAUDE-NAV-GROUP-RETURN",
+      "agent": "claude",
+      "title": "Menú: la cabecera de un grupo lleva a su primer apartado si estás en otro, y solo pliega si ya estás en él",
+      "plan": "Por orden del usuario (19/11/2026), propuesta del informe CLAUDE-E2E-ADAPT: desde Propuestas, pulsar «Hoy» no volvía a la cola de Hoy (solo plegaba). Regla pura headerPress(grupo, página, entidad) en navigation.ts: fuera del grupo o dentro pero no en su primer apartado → ir a él (y dejarlo desplegado); ya en el primero → plegar o desplegar. Sidebar.tsx la usa. v6.spec.ts se ajusta (ahora la cabecera, desde Oportunidades, vuelve a Clientes y la segunda pulsación pliega). Sidebar.tsx y navigation.ts están en CLAUDE-UI-NAV-LAB (revisión) y v6 en CLAUDE-E2E-ADAPT (revisión): se editan como compartidos con huellas.",
+      "acceptance": "Prueba de la regla; v6 con el arnés aislado; recorrido real: desde Propuestas «Hoy» vuelve a la cola, segunda pulsación pliega; tsc 0.",
+      "files": [
+        "tests/navigation-group-header.test.ts",
+        "coordination/reports/CLAUDE-NAV-GROUP-RETURN.md"
+      ],
+      "readFiles": [
+        "src/app-shell/Sidebar.tsx",
+        "src/app-shell/navigation.ts",
+        "tests/e2e/v6.spec.ts"
+      ],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "tests/navigation-group-header.test.ts": null,
+        "coordination/reports/CLAUDE-NAV-GROUP-RETURN.md": null
+      },
+      "submitted": {
+        "tests/navigation-group-header.test.ts": "057d73a55dcbcabc32da7bae9ce72ebfb7d5a4c55cf4500153f16a9cdac1449f",
+        "coordination/reports/CLAUDE-NAV-GROUP-RETURN.md": "10d877ba6952df9454e3fd005b6d5ae185b798b054d8f29c7e485039e29f1edb"
+      },
+      "note": "Cabecera de grupo: fuera o en otro apartado del grupo lleva al primero (y lo deja desplegado); en el primero pliega/despliega (headerPress en navigation.ts, usado por Sidebar). 4/4 + navigation-model, tsc 0; recorrido real Propuestas→Hoy→pliega→despliega; v6 supera la navegación y se detiene en la causa previa de los logos.",
+      "createdAt": "2026-11-19T07:53:24.328Z"
+    },
+    {
+      "id": "CODEX-CONTINUITY-READ-CONSISTENCY-464",
+      "agent": "codex",
+      "title": "Mantener coherentes las dos lecturas de Continuidad",
+      "plan": "Blindar radar y comparador contra confirmaciones concurrentes de otra conexión SQLite. Pruebas deterministas con restauración y poda reales sobre datos de ensayo.",
+      "acceptance": "Reproducir ambos fallos con el código previo, responder 409 sin resultados mezclados, conservar el contrato en lecturas estables y vincular la revisión del radar a su procedencia.",
+      "files": [
+        "server/response-queue.ts",
+        "server/capture-comparison.ts",
+        "tests/continuity-read-consistency-464.test.ts",
+        "coordination/reports/CODEX-CONTINUITY-READ-CONSISTENCY-464.md"
+      ],
+      "readFiles": [
+        "server/workspace-search.ts",
+        "server/store.ts",
+        "src/ContinuityOperations.tsx"
+      ],
+      "dependencies": [],
+      "status": "working",
+      "reserved": true,
+      "baseline": {
+        "server/response-queue.ts": "eb3d0d64b8da5f351f34a0ba2ff0412ec8bc878a43dda730cf50e0d9d1772465",
+        "server/capture-comparison.ts": "356fe7ec48d2bb5b070084888b0409dbe2b102f5860842489fbc28106900e46d",
+        "tests/continuity-read-consistency-464.test.ts": null,
+        "coordination/reports/CODEX-CONTINUITY-READ-CONSISTENCY-464.md": null
+      },
+      "submitted": null,
+      "note": "Extender el radar con un contexto esperado opcional y conservar los controles SQLite de 464; evidencia 468.",
+      "createdAt": "2026-11-19T08:02:22.872Z"
+    },
+    {
+      "id": "CODEX-NAV-GROUP-REVIEW-465",
+      "agent": "codex",
+      "title": "Contrastar el retorno por la cabecera del menú",
+      "plan": "Verificar el comportamiento en Chromium y conciliar las huellas que cambiaron en otra reserva.",
+      "acceptance": "Evidencia sobre la app compilada, regla, navegación y procedencia de los archivos modificados.",
+      "files": [
+        "coordination/reviews/CODEX-NAV-GROUP-REVIEW-465.md"
+      ],
+      "readFiles": [
+        "src/app-shell/Sidebar.tsx",
+        "src/app-shell/navigation.ts",
+        "tests/e2e/v6.spec.ts"
+      ],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "coordination/reviews/CODEX-NAV-GROUP-REVIEW-465.md": null
+      },
+      "submitted": {
+        "coordination/reviews/CODEX-NAV-GROUP-REVIEW-465.md": "25c3de69cb69962eef9cd139df27d2ec86e5087ecf86475d576e48fbb84ce202"
+      },
+      "note": "10/10 unitarias y cuatro recorridos reales, con repliegue y Enter. Entrega pendiente de conciliar la huella de navigation y la autoría de Sidebar y v6.",
+      "createdAt": "2026-11-19T08:05:31.991Z"
+    },
+    {
+      "id": "CODEX-COMPARISON-PAGE-PROVENANCE-466",
+      "agent": "codex",
+      "title": "Conservar las capturas al paginar el comparador",
+      "plan": "Fijar la huella de ambas capturas tras la primera página. Descartar páginas incompatibles y exigir reinicio explícito en el componente actual.",
+      "acceptance": "Regresiones causales para ambos lados, misma pareja alterada y retorno a la primera página. Navegador con servidor real y datos ficticios.",
+      "files": [
+        "src/ContinuityOperations.tsx",
+        "tests/continuity-operations.test.ts",
+        "coordination/reports/CODEX-COMPARISON-PAGE-PROVENANCE-466.md"
+      ],
+      "readFiles": [
+        "server/capture-comparison.ts",
+        "server/store.ts",
+        "src/ContinuityHome.tsx"
+      ],
+      "dependencies": [],
+      "status": "working",
+      "reserved": true,
+      "baseline": {
+        "src/ContinuityOperations.tsx": "7624dd4060de01f337bb74208aee7c80e9728c163622be6fd342c64dc9ca8790",
+        "tests/continuity-operations.test.ts": "c060871f6d11e9f6518f2cf66e2567168825b4335c4d2ed78bf0492a8b01527e",
+        "coordination/reports/CODEX-COMPARISON-PAGE-PROVENANCE-466.md": null
+      },
+      "submitted": null,
+      "note": "Preparar el contrato para vincular el radar con el espacio. La reserva de montaje continúa en Grafito; evidencia 468.",
+      "createdAt": "2026-11-19T08:10:07.138Z"
+    },
+    {
+      "id": "CODEX-TEAM-AUDIT-REVIEW-467",
+      "agent": "codex",
+      "title": "Revisar el alcance del auditor de accesibilidad de Equipo",
+      "plan": "Verificar las huellas, la evidencia de cobertura y la detección de controles sintéticos con Chromium.",
+      "acceptance": "Evidencia comparada con el árbol accesible real y dictamen de la entrega.",
+      "files": [
+        "coordination/reviews/CODEX-TEAM-AUDIT-REVIEW-467.md"
+      ],
+      "readFiles": [
+        "tools/team-audit/checks.mjs",
+        "tools/team-audit/run.mjs"
+      ],
+      "dependencies": [],
+      "status": "review",
+      "reserved": true,
+      "baseline": {
+        "coordination/reviews/CODEX-TEAM-AUDIT-REVIEW-467.md": null
+      },
+      "submitted": {
+        "coordination/reviews/CODEX-TEAM-AUDIT-REVIEW-467.md": "773b36cf94871ce1309a0bfa09c472ac4cc3c9d967f037260665b921fcbcd135"
+      },
+      "note": "7/7 y autoprueba verde. Chromium independiente: etiqueta con referencia inválida, sombra estática, textarea de 22 px y control totalmente a la izquierda son cuatro falsos negativos.",
+      "createdAt": "2026-11-19T08:10:07.374Z"
+    },
+    {
+      "id": "CLAUDE-TEAM-AUDIT-R",
+      "agent": "claude",
+      "title": "Auditoría de /team, segunda ronda: modo oscuro y ventanas",
+      "plan": "Por orden del usuario (19/11/2026), vía la sesión principal. Solo lectura del código de la App. Archivos nuevos (los de CLAUDE-TEAM-AUDIT siguen en revisión y no se tocan; se reutilizan pageAudit, focusState y start.mjs tal cual). (1) Modo oscuro: recorrido 8 secciones x 4 perfiles x 1366/390/320 con planb:theme=dark en localStorage antes de cargar, como src/app-shell/theme.ts. (2) Ventanas: «Editar teléfono del equipo» (Contactos) por perfil, anchura y tema, y «Nuevo espacio», que solo aparece en el piloto local, montado en una página de ensayo (tools/team-audit/harness.*) que importa src/TeamSpaceCreate.tsx sin cambios con una llamada falsa que nunca se usa. Por ventana: nombre accesible y aria-modal, foco inicial dentro, Tab y Mayús+Tab encerrados, foco visible, contraste/nombres/objetivos dentro, Escape cierra y devuelve el foco. Nunca se envía ni guarda nada. Ensayo en 4531/5299. Informe por gravedad con arreglo propuesto (archivo y regla); sin cambios en src/.",
+      "acceptance": "Recorridos claro/oscuro y ventanas ejecutados con resultados crudos; autoprueba de las comprobaciones de ventana; pruebas puras en verde; informe por gravedad con propuesta de arreglo; ningún cambio en src/.",
+      "files": [
+        "tools/team-audit/dialogs.mjs",
+        "tools/team-audit/run-r.mjs",
+        "tools/team-audit/harness.html",
+        "tools/team-audit/harness.tsx",
+        "tools/team-audit/RONDA-2.md",
+        "tests/team-audit-r.test.ts",
+        "coordination/reports/CLAUDE-TEAM-AUDIT-R.md"
+      ],
+      "readFiles": [
+        "tools/team-audit/checks.mjs",
+        "tools/team-audit/run.mjs",
+        "tools/team-audit/start.mjs",
+        "src/app-shell/theme.ts",
+        "src/components.tsx",
+        "src/TeamApp.tsx",
+        "src/TeamContacts.tsx",
+        "src/TeamSpaceCreate.tsx",
+        "src/CommercialWorkspace.tsx",
+        "src/TeamAgentWorkspace.tsx",
+        "src/faro.css",
+        "src/team.css",
+        "src/design-system.css",
+        "src/main.tsx"
+      ],
+      "dependencies": [],
+      "status": "working",
+      "reserved": true,
+      "baseline": {
+        "tools/team-audit/dialogs.mjs": null,
+        "tools/team-audit/run-r.mjs": null,
+        "tools/team-audit/harness.html": null,
+        "tools/team-audit/harness.tsx": null,
+        "tools/team-audit/RONDA-2.md": null,
+        "tests/team-audit-r.test.ts": null,
+        "coordination/reports/CLAUDE-TEAM-AUDIT-R.md": null
+      },
       "submitted": null,
       "note": "",
-      "createdAt": "2026-11-17T21:08:07.701Z"
+      "createdAt": "2026-11-19T08:10:10.077Z"
+    },
+    {
+      "id": "CODEX-RESPONSE-QUEUE-CONTEXT-468",
+      "agent": "codex",
+      "title": "Validar la copia esperada en la consulta de prioridades",
+      "plan": "Reusar la identidad del espacio para que una consulta anclada rechace una copia reemplazada. Verificar API y radar con datos ficticios; documentar el montaje que pertenece a Grafito.",
+      "acceptance": "Conflicto sin tareas tras sustituir la copia con el mismo ID y fecha, GET legado compatible, recuperación de la vista y verificación del contexto devuelto.",
+      "files": [
+        "tests/response-queue-context-468.test.ts",
+        "coordination/reports/CODEX-RESPONSE-QUEUE-CONTEXT-468.md"
+      ],
+      "readFiles": [
+        "src/ContinuityHome.tsx",
+        "src/App.tsx",
+        "server/workspace-search.ts"
+      ],
+      "dependencies": [],
+      "status": "working",
+      "reserved": true,
+      "baseline": {
+        "tests/response-queue-context-468.test.ts": null,
+        "coordination/reports/CODEX-RESPONSE-QUEUE-CONTEXT-468.md": null
+      },
+      "submitted": null,
+      "note": "",
+      "createdAt": "2026-11-19T08:18:42.892Z"
     }
   ],
   "events": [
     {
-      "at": "2026-11-17T09:15:28.375Z",
+      "at": "2026-11-18T15:13:45.715Z",
       "actor": "codex",
-      "action": "revise",
-      "task": "CLAUDE-CI-LOCAL"
+      "action": "submit",
+      "task": "CODEX-PIPELINE-CERTAINTY-442"
     },
     {
-      "at": "2026-11-17T09:16:04.169Z",
+      "at": "2026-11-18T15:14:46.946Z",
+      "actor": "codex",
+      "action": "revise",
+      "task": "CODEX-LAB-035"
+    },
+    {
+      "at": "2026-11-18T15:14:47.581Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-LAB-035"
+    },
+    {
+      "at": "2026-11-18T15:17:00.549Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CODEX-RECORD-TIMELINE-443"
+    },
+    {
+      "at": "2026-11-18T15:17:00.739Z",
+      "actor": "codex",
+      "action": "claim",
+      "task": "CODEX-RECORD-TIMELINE-443"
+    },
+    {
+      "at": "2026-11-18T15:17:01.511Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CODEX-CANDIDATE-NOV18-444"
+    },
+    {
+      "at": "2026-11-18T15:17:01.803Z",
+      "actor": "codex",
+      "action": "claim",
+      "task": "CODEX-CANDIDATE-NOV18-444"
+    },
+    {
+      "at": "2026-11-18T15:21:07.456Z",
       "actor": "claude",
       "action": "submit",
+      "task": "CLAUDE-PERF-BUDGETS"
+    },
+    {
+      "at": "2026-11-18T15:21:07.736Z",
+      "actor": "claude",
+      "action": "submit",
+      "task": "CLAUDE-API-CONTRACTS"
+    },
+    {
+      "at": "2026-11-18T15:21:07.999Z",
+      "actor": "claude",
+      "action": "submit",
+      "task": "CLAUDE-DOCS-G2-G4"
+    },
+    {
+      "at": "2026-11-18T15:24:29.525Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CLAUDE-SEARCH-PERF"
+    },
+    {
+      "at": "2026-11-18T15:24:41.600Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CODEX-CLAUDE-TOOLING-REVIEW-445"
+    },
+    {
+      "at": "2026-11-18T15:24:41.918Z",
+      "actor": "codex",
+      "action": "claim",
+      "task": "CODEX-CLAUDE-TOOLING-REVIEW-445"
+    },
+    {
+      "at": "2026-11-18T15:25:06.110Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CLAUDE-SEARCH-PERF-R"
+    },
+    {
+      "at": "2026-11-18T15:25:06.425Z",
+      "actor": "claude",
+      "action": "claim",
+      "task": "CLAUDE-SEARCH-PERF-R"
+    },
+    {
+      "at": "2026-11-18T15:25:06.690Z",
+      "actor": "claude",
+      "action": "block",
+      "task": "CLAUDE-SEARCH-PERF"
+    },
+    {
+      "at": "2026-11-18T15:29:25.307Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-CLAUDE-TOOLING-REVIEW-445"
+    },
+    {
+      "at": "2026-11-18T15:29:25.435Z",
+      "actor": "codex",
+      "action": "accept",
+      "task": "CLAUDE-API-CONTRACTS"
+    },
+    {
+      "at": "2026-11-18T15:29:25.564Z",
+      "actor": "codex",
+      "action": "revise",
+      "task": "CLAUDE-PERF-BUDGETS"
+    },
+    {
+      "at": "2026-11-18T15:29:25.723Z",
+      "actor": "codex",
+      "action": "revise",
+      "task": "CLAUDE-DOCS-G2-G4"
+    },
+    {
+      "at": "2026-11-18T15:30:04.300Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-RECORD-TIMELINE-443"
+    },
+    {
+      "at": "2026-11-18T15:31:12.212Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-CANDIDATE-NOV18-444"
+    },
+    {
+      "at": "2026-11-18T15:31:50.312Z",
+      "actor": "codex",
+      "action": "revise",
+      "task": "CODEX-LAB-035"
+    },
+    {
+      "at": "2026-11-18T15:31:50.428Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-LAB-035"
+    },
+    {
+      "at": "2026-11-18T20:42:28.870Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CODEX-SEARCH-CONTEXT-MIXED-446"
+    },
+    {
+      "at": "2026-11-18T20:42:29.776Z",
+      "actor": "codex",
+      "action": "claim",
+      "task": "CODEX-SEARCH-CONTEXT-MIXED-446"
+    },
+    {
+      "at": "2026-11-18T20:42:30.996Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CODEX-QUALITY-COVERAGE-447"
+    },
+    {
+      "at": "2026-11-18T20:42:31.449Z",
+      "actor": "codex",
+      "action": "claim",
+      "task": "CODEX-QUALITY-COVERAGE-447"
+    },
+    {
+      "at": "2026-11-18T20:48:19.786Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-QUALITY-COVERAGE-447"
+    },
+    {
+      "at": "2026-11-18T20:49:16.716Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-SEARCH-CONTEXT-MIXED-446"
+    },
+    {
+      "at": "2026-11-18T20:51:47.017Z",
+      "actor": "codex",
+      "action": "revise",
+      "task": "CODEX-LAB-035"
+    },
+    {
+      "at": "2026-11-18T20:51:47.364Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-LAB-035"
+    },
+    {
+      "at": "2026-11-18T20:54:27.098Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CODEX-SEARCH-CACHE-RECHECK-448"
+    },
+    {
+      "at": "2026-11-18T20:54:27.712Z",
+      "actor": "codex",
+      "action": "claim",
+      "task": "CODEX-SEARCH-CACHE-RECHECK-448"
+    },
+    {
+      "at": "2026-11-18T20:54:28.905Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CODEX-RELATED-PRESET-449"
+    },
+    {
+      "at": "2026-11-18T20:54:29.305Z",
+      "actor": "codex",
+      "action": "claim",
+      "task": "CODEX-RELATED-PRESET-449"
+    },
+    {
+      "at": "2026-11-18T20:58:40.255Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-SEARCH-CACHE-RECHECK-448"
+    },
+    {
+      "at": "2026-11-18T21:00:00.942Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CODEX-LANDING-CONTINUIDAD"
+    },
+    {
+      "at": "2026-11-18T21:00:01.514Z",
+      "actor": "codex",
+      "action": "claim",
+      "task": "CODEX-LANDING-CONTINUIDAD"
+    },
+    {
+      "at": "2026-11-18T21:01:20.342Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-RELATED-PRESET-449"
+    },
+    {
+      "at": "2026-11-18T21:08:54.882Z",
+      "actor": "codex",
+      "action": "revise",
+      "task": "CODEX-SEARCH-CACHE-RECHECK-448"
+    },
+    {
+      "at": "2026-11-18T21:08:56.257Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-SEARCH-CACHE-RECHECK-448"
+    },
+    {
+      "at": "2026-11-18T21:10:39.351Z",
+      "actor": "codex",
+      "action": "revise",
+      "task": "CODEX-LAB-035"
+    },
+    {
+      "at": "2026-11-18T21:10:40.007Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-LAB-035"
+    },
+    {
+      "at": "2026-11-18T21:13:48.508Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CODEX-FOCUS-COVERAGE-450"
+    },
+    {
+      "at": "2026-11-18T21:13:49.607Z",
+      "actor": "codex",
+      "action": "claim",
+      "task": "CODEX-FOCUS-COVERAGE-450"
+    },
+    {
+      "at": "2026-11-18T21:15:41.211Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CODEX-LANDING-FUENTES"
+    },
+    {
+      "at": "2026-11-18T21:15:41.728Z",
+      "actor": "codex",
+      "action": "claim",
+      "task": "CODEX-LANDING-FUENTES"
+    },
+    {
+      "at": "2026-11-18T21:21:04.622Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-FOCUS-COVERAGE-450"
+    },
+    {
+      "at": "2026-11-18T21:22:59.484Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CODEX-LANDING-RENDIMIENTO"
+    },
+    {
+      "at": "2026-11-18T21:23:00.117Z",
+      "actor": "codex",
+      "action": "revise",
+      "task": "CODEX-LAB-035"
+    },
+    {
+      "at": "2026-11-18T21:23:00.305Z",
+      "actor": "codex",
+      "action": "claim",
+      "task": "CODEX-LANDING-RENDIMIENTO"
+    },
+    {
+      "at": "2026-11-18T21:23:00.511Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-LAB-035"
+    },
+    {
+      "at": "2026-11-18T21:25:20.290Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CODEX-SEARCH-SQLITE-VERSION-451"
+    },
+    {
+      "at": "2026-11-18T21:25:21.231Z",
+      "actor": "codex",
+      "action": "claim",
+      "task": "CODEX-SEARCH-SQLITE-VERSION-451"
+    },
+    {
+      "at": "2026-11-18T21:28:00.956Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CODEX-LANDING-CIERRE"
+    },
+    {
+      "at": "2026-11-18T21:28:02.020Z",
+      "actor": "codex",
+      "action": "claim",
+      "task": "CODEX-LANDING-CIERRE"
+    },
+    {
+      "at": "2026-11-18T21:31:24.740Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CLAUDE-API-CONTRACTS-R2"
+    },
+    {
+      "at": "2026-11-18T21:31:25.138Z",
+      "actor": "claude",
+      "action": "claim",
+      "task": "CLAUDE-API-CONTRACTS-R2"
+    },
+    {
+      "at": "2026-11-18T21:31:33.730Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-SEARCH-SQLITE-VERSION-451"
+    },
+    {
+      "at": "2026-11-18T21:31:37.533Z",
+      "actor": "codex",
+      "action": "revise",
+      "task": "CODEX-LAB-035"
+    },
+    {
+      "at": "2026-11-18T21:31:37.827Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-LAB-035"
+    },
+    {
+      "at": "2026-11-18T21:31:40.012Z",
+      "actor": "claude",
+      "action": "submit",
+      "task": "CLAUDE-CSV-IMPORT"
+    },
+    {
+      "at": "2026-11-18T21:34:18.229Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CODEX-CSV-R4-REVIEW-452"
+    },
+    {
+      "at": "2026-11-18T21:34:18.576Z",
+      "actor": "codex",
+      "action": "claim",
+      "task": "CODEX-CSV-R4-REVIEW-452"
+    },
+    {
+      "at": "2026-11-18T21:34:19.159Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CODEX-SEARCH-RETRY-453"
+    },
+    {
+      "at": "2026-11-18T21:34:19.610Z",
+      "actor": "codex",
+      "action": "claim",
+      "task": "CODEX-SEARCH-RETRY-453"
+    },
+    {
+      "at": "2026-11-18T21:39:14.790Z",
+      "actor": "claude",
+      "action": "submit",
+      "task": "CLAUDE-RETURN-EXPLAIN"
+    },
+    {
+      "at": "2026-11-18T21:39:15.214Z",
+      "actor": "claude",
+      "action": "submit",
+      "task": "CLAUDE-RETURN-EXPLAIN-UI"
+    },
+    {
+      "at": "2026-11-18T21:42:04.510Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-CSV-R4-REVIEW-452"
+    },
+    {
+      "at": "2026-11-18T21:42:05.231Z",
+      "actor": "codex",
+      "action": "revise",
+      "task": "CLAUDE-CSV-IMPORT"
+    },
+    {
+      "at": "2026-11-18T21:44:40.040Z",
+      "actor": "claude",
+      "action": "submit",
+      "task": "CLAUDE-API-CLIENT-ROUTES"
+    },
+    {
+      "at": "2026-11-18T21:44:43.280Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-SEARCH-RETRY-453"
+    },
+    {
+      "at": "2026-11-18T21:44:43.669Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CODEX-RETURN-R2-REVIEW-454"
+    },
+    {
+      "at": "2026-11-18T21:44:44.039Z",
+      "actor": "codex",
+      "action": "claim",
+      "task": "CODEX-RETURN-R2-REVIEW-454"
+    },
+    {
+      "at": "2026-11-18T21:45:26.506Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CODEX-LANDING-CSS-DIFERIDO"
+    },
+    {
+      "at": "2026-11-18T21:45:27.415Z",
+      "actor": "codex",
+      "action": "claim",
+      "task": "CODEX-LANDING-CSS-DIFERIDO"
+    },
+    {
+      "at": "2026-11-18T21:48:20.109Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-RETURN-R2-REVIEW-454"
+    },
+    {
+      "at": "2026-11-18T21:48:20.971Z",
+      "actor": "codex",
+      "action": "accept",
+      "task": "CLAUDE-RETURN-EXPLAIN-UI"
+    },
+    {
+      "at": "2026-11-18T21:48:23.316Z",
+      "actor": "codex",
+      "action": "revise",
+      "task": "CLAUDE-RETURN-EXPLAIN"
+    },
+    {
+      "at": "2026-11-18T21:49:04.481Z",
+      "actor": "codex",
+      "action": "revise",
+      "task": "CODEX-LAB-035"
+    },
+    {
+      "at": "2026-11-18T21:49:05.772Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-LAB-035"
+    },
+    {
+      "at": "2026-11-18T21:50:57.727Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-LANDING-CONTINUIDAD"
+    },
+    {
+      "at": "2026-11-18T21:50:58.323Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-LANDING-FUENTES"
+    },
+    {
+      "at": "2026-11-18T21:50:58.616Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-LANDING-RENDIMIENTO"
+    },
+    {
+      "at": "2026-11-18T21:50:58.889Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-LANDING-CIERRE"
+    },
+    {
+      "at": "2026-11-18T21:50:59.172Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-LANDING-CSS-DIFERIDO"
+    },
+    {
+      "at": "2026-11-18T21:51:07.038Z",
+      "actor": "claude",
+      "action": "submit",
+      "task": "CLAUDE-MOBILE-D5"
+    },
+    {
+      "at": "2026-11-18T21:52:31.607Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CODEX-API-CLIENT-R2-REVIEW-455"
+    },
+    {
+      "at": "2026-11-18T21:52:33.000Z",
+      "actor": "codex",
+      "action": "claim",
+      "task": "CODEX-API-CLIENT-R2-REVIEW-455"
+    },
+    {
+      "at": "2026-11-18T21:52:34.674Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CODEX-SEARCH-WORKSPACE-REFRESH-456"
+    },
+    {
+      "at": "2026-11-18T21:52:35.780Z",
+      "actor": "codex",
+      "action": "claim",
+      "task": "CODEX-SEARCH-WORKSPACE-REFRESH-456"
+    },
+    {
+      "at": "2026-11-18T21:52:38.018Z",
+      "actor": "codex",
+      "action": "revise",
+      "task": "CODEX-SEARCH-RETRY-453"
+    },
+    {
+      "at": "2026-11-18T21:53:26.515Z",
+      "actor": "claude",
+      "action": "submit",
+      "task": "CLAUDE-SEARCH-PERF-R"
+    },
+    {
+      "at": "2026-11-18T21:53:26.797Z",
+      "actor": "claude",
+      "action": "submit",
+      "task": "CLAUDE-API-CONTRACTS-R2"
+    },
+    {
+      "at": "2026-11-18T21:54:11.950Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CLAUDE-TEAM-DEMO-NAMES"
+    },
+    {
+      "at": "2026-11-18T21:54:12.209Z",
+      "actor": "claude",
+      "action": "claim",
+      "task": "CLAUDE-TEAM-DEMO-NAMES"
+    },
+    {
+      "at": "2026-11-19T07:13:26.346Z",
+      "actor": "codex",
+      "action": "revise",
+      "task": "CODEX-LANDING-CONTINUIDAD"
+    },
+    {
+      "at": "2026-11-19T07:13:26.868Z",
+      "actor": "codex",
+      "action": "revise",
+      "task": "CODEX-LANDING-FUENTES"
+    },
+    {
+      "at": "2026-11-19T07:13:27.066Z",
+      "actor": "codex",
+      "action": "revise",
+      "task": "CODEX-LANDING-RENDIMIENTO"
+    },
+    {
+      "at": "2026-11-19T07:13:27.235Z",
+      "actor": "codex",
+      "action": "revise",
+      "task": "CODEX-LANDING-CIERRE"
+    },
+    {
+      "at": "2026-11-19T07:13:27.403Z",
+      "actor": "codex",
+      "action": "revise",
+      "task": "CODEX-LANDING-CSS-DIFERIDO"
+    },
+    {
+      "at": "2026-11-19T07:15:04.468Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CODEX-LANDING-ARTE-ALCANCE"
+    },
+    {
+      "at": "2026-11-19T07:15:04.862Z",
+      "actor": "codex",
+      "action": "claim",
+      "task": "CODEX-LANDING-ARTE-ALCANCE"
+    },
+    {
+      "at": "2026-11-19T07:15:20.619Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-API-CLIENT-R2-REVIEW-455"
+    },
+    {
+      "at": "2026-11-19T07:15:21.125Z",
+      "actor": "codex",
+      "action": "revise",
+      "task": "CLAUDE-API-CLIENT-ROUTES"
+    },
+    {
+      "at": "2026-11-19T07:15:22.351Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CODEX-SEARCH-PERF-REVIEW-457"
+    },
+    {
+      "at": "2026-11-19T07:15:22.841Z",
+      "actor": "codex",
+      "action": "claim",
+      "task": "CODEX-SEARCH-PERF-REVIEW-457"
+    },
+    {
+      "at": "2026-11-19T07:15:25.118Z",
+      "actor": "codex",
+      "action": "revise",
+      "task": "CODEX-SEARCH-STALE-CONTEXT-207"
+    },
+    {
+      "at": "2026-11-19T07:20:48.215Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-SEARCH-RETRY-453"
+    },
+    {
+      "at": "2026-11-19T07:20:48.359Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-SEARCH-WORKSPACE-REFRESH-456"
+    },
+    {
+      "at": "2026-11-19T07:20:48.512Z",
+      "actor": "codex",
+      "action": "accept",
+      "task": "CLAUDE-API-CONTRACTS-R2"
+    },
+    {
+      "at": "2026-11-19T07:21:13.466Z",
+      "actor": "claude",
+      "action": "submit",
+      "task": "CLAUDE-TEAM-D8"
+    },
+    {
+      "at": "2026-11-19T07:21:13.658Z",
+      "actor": "claude",
+      "action": "submit",
+      "task": "CLAUDE-TEAM-DEMO-NAMES"
+    },
+    {
+      "at": "2026-11-19T07:21:53.234Z",
+      "actor": "claude",
+      "action": "submit",
+      "task": "CLAUDE-PERF-BUDGETS"
+    },
+    {
+      "at": "2026-11-19T07:21:53.506Z",
+      "actor": "claude",
+      "action": "submit",
+      "task": "CLAUDE-DOCS-G2-G4"
+    },
+    {
+      "at": "2026-11-19T07:23:25.026Z",
+      "actor": "claude",
+      "action": "submit",
+      "task": "CLAUDE-CSV-IMPORT"
+    },
+    {
+      "at": "2026-11-19T07:24:26.069Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CODEX-CSV-R5-REVIEW-458"
+    },
+    {
+      "at": "2026-11-19T07:24:26.519Z",
+      "actor": "codex",
+      "action": "claim",
+      "task": "CODEX-CSV-R5-REVIEW-458"
+    },
+    {
+      "at": "2026-11-19T07:24:30.652Z",
+      "actor": "claude",
+      "action": "submit",
+      "task": "CLAUDE-RETURN-EXPLAIN"
+    },
+    {
+      "at": "2026-11-19T07:25:03.820Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-SEARCH-STALE-CONTEXT-207"
+    },
+    {
+      "at": "2026-11-19T07:25:04.142Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-SEARCH-PERF-REVIEW-457"
+    },
+    {
+      "at": "2026-11-19T07:25:04.468Z",
+      "actor": "codex",
+      "action": "accept",
+      "task": "CLAUDE-SEARCH-PERF-R"
+    },
+    {
+      "at": "2026-11-19T07:25:47.897Z",
+      "actor": "claude",
+      "action": "submit",
+      "task": "CLAUDE-API-CLIENT-ROUTES"
+    },
+    {
+      "at": "2026-11-19T07:28:42.522Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-CSV-R5-REVIEW-458"
+    },
+    {
+      "at": "2026-11-19T07:28:43.405Z",
+      "actor": "codex",
+      "action": "revise",
+      "task": "CLAUDE-CSV-IMPORT"
+    },
+    {
+      "at": "2026-11-19T07:29:10.587Z",
+      "actor": "codex",
+      "action": "accept",
+      "task": "CLAUDE-API-CLIENT-ROUTES"
+    },
+    {
+      "at": "2026-11-19T07:29:11.072Z",
+      "actor": "codex",
+      "action": "accept",
+      "task": "CLAUDE-RETURN-EXPLAIN"
+    },
+    {
+      "at": "2026-11-19T07:30:06.414Z",
+      "actor": "codex",
+      "action": "revise",
+      "task": "CODEX-LAB-035"
+    },
+    {
+      "at": "2026-11-19T07:30:06.894Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-LAB-035"
+    },
+    {
+      "at": "2026-11-19T07:31:00.924Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CLAUDE-CI-STEPS"
+    },
+    {
+      "at": "2026-11-19T07:31:01.211Z",
+      "actor": "claude",
+      "action": "claim",
+      "task": "CLAUDE-CI-STEPS"
+    },
+    {
+      "at": "2026-11-19T07:32:31.231Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CODEX-WORKSPACE-STATE-CONSISTENCY-459"
+    },
+    {
+      "at": "2026-11-19T07:32:31.399Z",
+      "actor": "codex",
+      "action": "claim",
+      "task": "CODEX-WORKSPACE-STATE-CONSISTENCY-459"
+    },
+    {
+      "at": "2026-11-19T07:32:32.238Z",
+      "actor": "codex",
+      "action": "revise",
+      "task": "CODEX-SEARCH-STALE-CONTEXT-207"
+    },
+    {
+      "at": "2026-11-19T07:33:01.451Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-LANDING-CONTINUIDAD"
+    },
+    {
+      "at": "2026-11-19T07:33:01.880Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-LANDING-FUENTES"
+    },
+    {
+      "at": "2026-11-19T07:33:02.097Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-LANDING-RENDIMIENTO"
+    },
+    {
+      "at": "2026-11-19T07:33:02.500Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-LANDING-CIERRE"
+    },
+    {
+      "at": "2026-11-19T07:33:02.788Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-LANDING-CSS-DIFERIDO"
+    },
+    {
+      "at": "2026-11-19T07:33:03.104Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-LANDING-ARTE-ALCANCE"
+    },
+    {
+      "at": "2026-11-19T07:36:35.729Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CODEX-CLAUDE-TOOLING-R2-460"
+    },
+    {
+      "at": "2026-11-19T07:36:35.872Z",
+      "actor": "codex",
+      "action": "claim",
+      "task": "CODEX-CLAUDE-TOOLING-R2-460"
+    },
+    {
+      "at": "2026-11-19T07:37:52.175Z",
+      "actor": "claude",
+      "action": "submit",
+      "task": "CLAUDE-CI-STEPS"
+    },
+    {
+      "at": "2026-11-19T07:38:45.934Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CODEX-EVIDENCE-AUTH-CACHE-461"
+    },
+    {
+      "at": "2026-11-19T07:38:46.603Z",
+      "actor": "codex",
+      "action": "claim",
+      "task": "CODEX-EVIDENCE-AUTH-CACHE-461"
+    },
+    {
+      "at": "2026-11-19T07:40:31.176Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CLAUDE-TEAM-AUDIT"
+    },
+    {
+      "at": "2026-11-19T07:40:31.577Z",
+      "actor": "claude",
+      "action": "claim",
+      "task": "CLAUDE-TEAM-AUDIT"
+    },
+    {
+      "at": "2026-11-19T07:43:12.348Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-SEARCH-STALE-CONTEXT-207"
+    },
+    {
+      "at": "2026-11-19T07:43:12.655Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-WORKSPACE-STATE-CONSISTENCY-459"
+    },
+    {
+      "at": "2026-11-19T07:43:13.051Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-EVIDENCE-AUTH-CACHE-461"
+    },
+    {
+      "at": "2026-11-19T07:43:13.358Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-CLAUDE-TOOLING-R2-460"
+    },
+    {
+      "at": "2026-11-19T07:43:13.829Z",
+      "actor": "codex",
+      "action": "accept",
+      "task": "CLAUDE-PERF-BUDGETS"
+    },
+    {
+      "at": "2026-11-19T07:43:14.403Z",
+      "actor": "codex",
+      "action": "accept",
+      "task": "CLAUDE-DOCS-G2-G4"
+    },
+    {
+      "at": "2026-11-19T07:44:13.821Z",
+      "actor": "codex",
+      "action": "revise",
+      "task": "CODEX-LAB-035"
+    },
+    {
+      "at": "2026-11-19T07:44:13.995Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-LAB-035"
+    },
+    {
+      "at": "2026-11-19T07:50:24.452Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CODEX-CI-MOBILE-REVIEW-462"
+    },
+    {
+      "at": "2026-11-19T07:50:24.582Z",
+      "actor": "codex",
+      "action": "claim",
+      "task": "CODEX-CI-MOBILE-REVIEW-462"
+    },
+    {
+      "at": "2026-11-19T07:50:24.707Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CODEX-TEAM-D8-R2-REVIEW-463"
+    },
+    {
+      "at": "2026-11-19T07:50:24.826Z",
+      "actor": "codex",
+      "action": "claim",
+      "task": "CODEX-TEAM-D8-R2-REVIEW-463"
+    },
+    {
+      "at": "2026-11-19T07:50:35.416Z",
+      "actor": "claude",
+      "action": "submit",
+      "task": "CLAUDE-E2E-MENU-HELPER"
+    },
+    {
+      "at": "2026-11-19T07:50:35.771Z",
+      "actor": "claude",
+      "action": "submit",
+      "task": "CLAUDE-E2E-ADAPT"
+    },
+    {
+      "at": "2026-11-19T07:52:33.296Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-CI-MOBILE-REVIEW-462"
+    },
+    {
+      "at": "2026-11-19T07:52:33.397Z",
+      "actor": "codex",
+      "action": "revise",
+      "task": "CLAUDE-CI-STEPS"
+    },
+    {
+      "at": "2026-11-19T07:52:33.506Z",
+      "actor": "codex",
+      "action": "revise",
+      "task": "CLAUDE-MOBILE-D5"
+    },
+    {
+      "at": "2026-11-19T07:53:24.329Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CLAUDE-NAV-GROUP-RETURN"
+    },
+    {
+      "at": "2026-11-19T07:53:24.464Z",
+      "actor": "claude",
+      "action": "claim",
+      "task": "CLAUDE-NAV-GROUP-RETURN"
+    },
+    {
+      "at": "2026-11-19T07:54:40.470Z",
+      "actor": "codex",
+      "action": "revise",
+      "task": "CODEX-CI-MOBILE-REVIEW-462"
+    },
+    {
+      "at": "2026-11-19T07:54:54.795Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-CI-MOBILE-REVIEW-462"
+    },
+    {
+      "at": "2026-11-19T07:57:00.595Z",
+      "actor": "claude",
+      "action": "submit",
+      "task": "CLAUDE-NAV-GROUP-RETURN"
+    },
+    {
+      "at": "2026-11-19T07:57:11.160Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-TEAM-D8-R2-REVIEW-463"
+    },
+    {
+      "at": "2026-11-19T07:57:11.293Z",
+      "actor": "codex",
+      "action": "accept",
+      "task": "CLAUDE-TEAM-D8"
+    },
+    {
+      "at": "2026-11-19T07:57:11.443Z",
+      "actor": "codex",
+      "action": "revise",
+      "task": "CLAUDE-TEAM-DEMO-NAMES"
+    },
+    {
+      "at": "2026-11-19T07:57:43.341Z",
+      "actor": "codex",
+      "action": "revise",
+      "task": "CODEX-LAB-035"
+    },
+    {
+      "at": "2026-11-19T07:57:43.546Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-LAB-035"
+    },
+    {
+      "at": "2026-11-19T08:02:22.872Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CODEX-CONTINUITY-READ-CONSISTENCY-464"
+    },
+    {
+      "at": "2026-11-19T08:02:23.248Z",
+      "actor": "codex",
+      "action": "claim",
+      "task": "CODEX-CONTINUITY-READ-CONSISTENCY-464"
+    },
+    {
+      "at": "2026-11-19T08:05:28.993Z",
+      "actor": "claude",
+      "action": "submit",
+      "task": "CLAUDE-TEAM-AUDIT"
+    },
+    {
+      "at": "2026-11-19T08:05:31.715Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-CONTINUITY-READ-CONSISTENCY-464"
+    },
+    {
+      "at": "2026-11-19T08:05:31.991Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CODEX-NAV-GROUP-REVIEW-465"
+    },
+    {
+      "at": "2026-11-19T08:05:32.202Z",
+      "actor": "codex",
+      "action": "claim",
+      "task": "CODEX-NAV-GROUP-REVIEW-465"
+    },
+    {
+      "at": "2026-11-19T08:07:26.086Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-NAV-GROUP-REVIEW-465"
+    },
+    {
+      "at": "2026-11-19T08:07:26.227Z",
+      "actor": "codex",
+      "action": "revise",
       "task": "CLAUDE-UI-NAV-LAB"
     },
     {
-      "at": "2026-11-17T09:16:09.876Z",
+      "at": "2026-11-19T08:08:10.557Z",
       "actor": "codex",
       "action": "revise",
       "task": "CODEX-LAB-035"
     },
     {
-      "at": "2026-11-17T09:16:10.006Z",
+      "at": "2026-11-19T08:08:10.776Z",
       "actor": "codex",
       "action": "submit",
       "task": "CODEX-LAB-035"
     },
     {
-      "at": "2026-11-17T09:18:04.013Z",
+      "at": "2026-11-19T08:10:07.138Z",
       "actor": "codex",
       "action": "add",
-      "task": "CODEX-NAVIGATION-REVIEW-391"
+      "task": "CODEX-COMPARISON-PAGE-PROVENANCE-466"
     },
     {
-      "at": "2026-11-17T09:18:04.229Z",
+      "at": "2026-11-19T08:10:07.258Z",
       "actor": "codex",
       "action": "claim",
-      "task": "CODEX-NAVIGATION-REVIEW-391"
+      "task": "CODEX-COMPARISON-PAGE-PROVENANCE-466"
     },
     {
-      "at": "2026-11-17T09:22:32.522Z",
+      "at": "2026-11-19T08:10:07.374Z",
       "actor": "codex",
       "action": "add",
-      "task": "CLAUDE-UNDO-LAST"
+      "task": "CODEX-TEAM-AUDIT-REVIEW-467"
     },
     {
-      "at": "2026-11-17T09:22:32.697Z",
+      "at": "2026-11-19T08:10:07.507Z",
+      "actor": "codex",
+      "action": "claim",
+      "task": "CODEX-TEAM-AUDIT-REVIEW-467"
+    },
+    {
+      "at": "2026-11-19T08:10:10.077Z",
+      "actor": "codex",
+      "action": "add",
+      "task": "CLAUDE-TEAM-AUDIT-R"
+    },
+    {
+      "at": "2026-11-19T08:10:10.204Z",
       "actor": "claude",
       "action": "claim",
-      "task": "CLAUDE-UNDO-LAST"
+      "task": "CLAUDE-TEAM-AUDIT-R"
     },
     {
-      "at": "2026-11-17T09:22:53.312Z",
-      "actor": "claude",
-      "action": "submit",
-      "task": "CLAUDE-UNDO-LAST"
-    },
-    {
-      "at": "2026-11-17T09:29:28.528Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CLAUDE-PASSWORD-HASH-V2"
-    },
-    {
-      "at": "2026-11-17T09:29:29.054Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CLAUDE-UI-FIXES-D4"
-    },
-    {
-      "at": "2026-11-17T09:29:29.626Z",
-      "actor": "claude",
-      "action": "claim",
-      "task": "CLAUDE-PASSWORD-HASH-V2"
-    },
-    {
-      "at": "2026-11-17T09:29:30.415Z",
-      "actor": "claude",
-      "action": "claim",
-      "task": "CLAUDE-UI-FIXES-D4"
-    },
-    {
-      "at": "2026-11-17T09:30:08.447Z",
-      "actor": "claude",
-      "action": "submit",
-      "task": "CLAUDE-PASSWORD-HASH-V2"
-    },
-    {
-      "at": "2026-11-17T09:30:08.851Z",
-      "actor": "claude",
-      "action": "submit",
-      "task": "CLAUDE-UI-FIXES-D4"
-    },
-    {
-      "at": "2026-11-17T09:31:51.691Z",
+      "at": "2026-11-19T08:14:12.700Z",
       "actor": "codex",
       "action": "submit",
-      "task": "CODEX-NAVIGATION-REVIEW-391"
+      "task": "CODEX-TEAM-AUDIT-REVIEW-467"
     },
     {
-      "at": "2026-11-17T09:32:55.941Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CODEX-UNDO-REVIEW-392"
-    },
-    {
-      "at": "2026-11-17T09:32:56.043Z",
-      "actor": "codex",
-      "action": "claim",
-      "task": "CODEX-UNDO-REVIEW-392"
-    },
-    {
-      "at": "2026-11-17T09:35:39.641Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-UNDO-REVIEW-392"
-    },
-    {
-      "at": "2026-11-17T09:35:39.747Z",
+      "at": "2026-11-19T08:14:13.043Z",
       "actor": "codex",
       "action": "revise",
-      "task": "CLAUDE-UNDO-LAST"
+      "task": "CLAUDE-TEAM-AUDIT"
     },
     {
-      "at": "2026-11-17T09:36:38.400Z",
+      "at": "2026-11-19T08:14:58.587Z",
+      "actor": "codex",
+      "action": "submit",
+      "task": "CODEX-COMPARISON-PAGE-PROVENANCE-466"
+    },
+    {
+      "at": "2026-11-19T08:16:11.210Z",
       "actor": "codex",
       "action": "revise",
       "task": "CODEX-LAB-035"
     },
     {
-      "at": "2026-11-17T09:36:38.502Z",
+      "at": "2026-11-19T08:16:11.364Z",
       "actor": "codex",
       "action": "submit",
       "task": "CODEX-LAB-035"
     },
     {
-      "at": "2026-11-17T09:38:01.026Z",
+      "at": "2026-11-19T08:18:42.892Z",
       "actor": "codex",
       "action": "add",
-      "task": "CODEX-PASSWORD-REVIEW-393"
+      "task": "CODEX-RESPONSE-QUEUE-CONTEXT-468"
     },
     {
-      "at": "2026-11-17T09:38:01.141Z",
+      "at": "2026-11-19T08:18:43.025Z",
       "actor": "codex",
       "action": "claim",
-      "task": "CODEX-PASSWORD-REVIEW-393"
+      "task": "CODEX-RESPONSE-QUEUE-CONTEXT-468"
     },
     {
-      "at": "2026-11-17T09:38:29.263Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CODEX-D4-REVIEW-394"
-    },
-    {
-      "at": "2026-11-17T09:38:29.752Z",
-      "actor": "codex",
-      "action": "claim",
-      "task": "CODEX-D4-REVIEW-394"
-    },
-    {
-      "at": "2026-11-17T09:44:20.554Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-PASSWORD-REVIEW-393"
-    },
-    {
-      "at": "2026-11-17T09:44:20.706Z",
+      "at": "2026-11-19T08:18:43.154Z",
       "actor": "codex",
       "action": "revise",
-      "task": "CLAUDE-PASSWORD-HASH-V2"
+      "task": "CODEX-CONTINUITY-READ-CONSISTENCY-464"
     },
     {
-      "at": "2026-11-17T09:46:01.429Z",
+      "at": "2026-11-19T08:18:43.284Z",
       "actor": "codex",
       "action": "revise",
-      "task": "CODEX-RELATION-062"
-    },
-    {
-      "at": "2026-11-17T09:46:02.017Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-RELATION-062"
-    },
-    {
-      "at": "2026-11-17T09:49:42.060Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-D4-REVIEW-394"
-    },
-    {
-      "at": "2026-11-17T09:49:42.175Z",
-      "actor": "codex",
-      "action": "accept",
-      "task": "CLAUDE-UI-FIXES-D4"
-    },
-    {
-      "at": "2026-11-17T09:50:36.314Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T09:50:36.435Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T09:51:44.086Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CODEX-PORTABLE-NAVIGATION-395"
-    },
-    {
-      "at": "2026-11-17T09:51:44.201Z",
-      "actor": "codex",
-      "action": "claim",
-      "task": "CODEX-PORTABLE-NAVIGATION-395"
-    },
-    {
-      "at": "2026-11-17T09:51:44.322Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CODEX-WINDOWS-PORTABLE-FLOW-373"
-    },
-    {
-      "at": "2026-11-17T09:58:08.483Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CODEX-AUTH-PARENT-RACE-380"
-    },
-    {
-      "at": "2026-11-17T09:58:08.700Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-AUTH-PARENT-RACE-380"
-    },
-    {
-      "at": "2026-11-17T09:59:54.694Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-WINDOWS-PORTABLE-FLOW-373"
-    },
-    {
-      "at": "2026-11-17T09:59:54.792Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-PORTABLE-NAVIGATION-395"
-    },
-    {
-      "at": "2026-11-17T10:00:41.919Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T10:00:42.051Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T10:02:39.100Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CODEX-MOBILE-COPY-REVIEW-396"
-    },
-    {
-      "at": "2026-11-17T10:02:39.210Z",
-      "actor": "codex",
-      "action": "claim",
-      "task": "CODEX-MOBILE-COPY-REVIEW-396"
-    },
-    {
-      "at": "2026-11-17T10:05:15.427Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CODEX-UNIT-BASELINE-397"
-    },
-    {
-      "at": "2026-11-17T10:05:15.540Z",
-      "actor": "codex",
-      "action": "claim",
-      "task": "CODEX-UNIT-BASELINE-397"
-    },
-    {
-      "at": "2026-11-17T12:45:32.527Z",
-      "actor": "claude",
-      "action": "submit",
-      "task": "CLAUDE-PASSWORD-HASH-V2"
-    },
-    {
-      "at": "2026-11-17T12:49:39.543Z",
-      "actor": "claude",
-      "action": "submit",
-      "task": "CLAUDE-API-INVENTORY"
-    },
-    {
-      "at": "2026-11-17T12:55:01.897Z",
-      "actor": "claude",
-      "action": "submit",
-      "task": "CLAUDE-CI-LOCAL"
-    },
-    {
-      "at": "2026-11-17T12:55:41.082Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CLAUDE-UNDO-LAST-STORE"
-    },
-    {
-      "at": "2026-11-17T13:04:30.935Z",
-      "actor": "claude",
-      "action": "submit",
-      "task": "CLAUDE-UNDO-LAST"
-    },
-    {
-      "at": "2026-11-17T13:04:50.675Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CLAUDE-ESTADO-G1"
-    },
-    {
-      "at": "2026-11-17T13:04:50.804Z",
-      "actor": "claude",
-      "action": "claim",
-      "task": "CLAUDE-ESTADO-G1"
-    },
-    {
-      "at": "2026-11-17T13:05:09.038Z",
-      "actor": "claude",
-      "action": "submit",
-      "task": "CLAUDE-ESTADO-G1"
-    },
-    {
-      "at": "2026-11-17T13:39:21.369Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CLAUDE-URL-ROUTES"
-    },
-    {
-      "at": "2026-11-17T13:39:21.517Z",
-      "actor": "claude",
-      "action": "claim",
-      "task": "CLAUDE-URL-ROUTES"
-    },
-    {
-      "at": "2026-11-17T13:39:40.430Z",
-      "actor": "claude",
-      "action": "submit",
-      "task": "CLAUDE-URL-ROUTES"
-    },
-    {
-      "at": "2026-11-17T13:42:59.753Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CLAUDE-SERVER-MODULES"
-    },
-    {
-      "at": "2026-11-17T13:42:59.900Z",
-      "actor": "claude",
-      "action": "claim",
-      "task": "CLAUDE-SERVER-MODULES"
-    },
-    {
-      "at": "2026-11-17T13:43:25.330Z",
-      "actor": "claude",
-      "action": "submit",
-      "task": "CLAUDE-SERVER-MODULES"
-    },
-    {
-      "at": "2026-11-17T13:53:51.332Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CLAUDE-RECORD-LIST"
-    },
-    {
-      "at": "2026-11-17T13:53:51.450Z",
-      "actor": "claude",
-      "action": "claim",
-      "task": "CLAUDE-RECORD-LIST"
-    },
-    {
-      "at": "2026-11-17T13:54:06.179Z",
-      "actor": "claude",
-      "action": "submit",
-      "task": "CLAUDE-RECORD-LIST"
-    },
-    {
-      "at": "2026-11-17T13:54:38.731Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CLAUDE-UI-STATES-D3"
-    },
-    {
-      "at": "2026-11-17T13:54:38.876Z",
-      "actor": "claude",
-      "action": "claim",
-      "task": "CLAUDE-UI-STATES-D3"
-    },
-    {
-      "at": "2026-11-17T13:57:33.750Z",
-      "actor": "claude",
-      "action": "submit",
-      "task": "CLAUDE-UI-STATES-D3"
-    },
-    {
-      "at": "2026-11-17T14:18:44.658Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CLAUDE-UI-COPY-D2"
-    },
-    {
-      "at": "2026-11-17T14:18:44.780Z",
-      "actor": "claude",
-      "action": "claim",
-      "task": "CLAUDE-UI-COPY-D2"
-    },
-    {
-      "at": "2026-11-17T14:22:18.302Z",
-      "actor": "claude",
-      "action": "submit",
-      "task": "CLAUDE-UI-COPY-D2"
-    },
-    {
-      "at": "2026-11-17T14:26:43.829Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CLAUDE-CSV-IMPORT"
-    },
-    {
-      "at": "2026-11-17T14:26:43.948Z",
-      "actor": "claude",
-      "action": "claim",
-      "task": "CLAUDE-CSV-IMPORT"
-    },
-    {
-      "at": "2026-11-17T14:41:50.071Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CODEX-PASSWORD-R2-398"
-    },
-    {
-      "at": "2026-11-17T14:41:50.262Z",
-      "actor": "codex",
-      "action": "claim",
-      "task": "CODEX-PASSWORD-R2-398"
-    },
-    {
-      "at": "2026-11-17T14:43:50.837Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CODEX-UNDO-R2-399"
-    },
-    {
-      "at": "2026-11-17T14:43:51.253Z",
-      "actor": "codex",
-      "action": "claim",
-      "task": "CODEX-UNDO-R2-399"
-    },
-    {
-      "at": "2026-11-17T14:47:56.556Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-PASSWORD-R2-398"
-    },
-    {
-      "at": "2026-11-17T14:47:56.958Z",
-      "actor": "codex",
-      "action": "accept",
-      "task": "CLAUDE-PASSWORD-HASH-V2"
-    },
-    {
-      "at": "2026-11-17T14:49:20.978Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-MOBILE-COPY-REVIEW-396"
-    },
-    {
-      "at": "2026-11-17T14:49:21.329Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CODEX-MOBILE-COPY-ALERT-367"
-    },
-    {
-      "at": "2026-11-17T14:49:21.723Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-MOBILE-COPY-ALERT-367"
-    },
-    {
-      "at": "2026-11-17T14:51:23.881Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-UNDO-R2-399"
-    },
-    {
-      "at": "2026-11-17T14:51:24.202Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CLAUDE-UNDO-LAST"
-    },
-    {
-      "at": "2026-11-17T14:55:15.632Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CODEX-UI-COPY-REVIEW-401"
-    },
-    {
-      "at": "2026-11-17T14:55:16.057Z",
-      "actor": "codex",
-      "action": "claim",
-      "task": "CODEX-UI-COPY-REVIEW-401"
-    },
-    {
-      "at": "2026-11-17T14:55:44.385Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-UI-COPY-REVIEW-401"
-    },
-    {
-      "at": "2026-11-17T14:55:45.110Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CLAUDE-UI-COPY-D2"
-    },
-    {
-      "at": "2026-11-17T14:56:34.899Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T14:56:35.237Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T15:01:38.352Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T15:01:38.888Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T15:02:45.159Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CODEX-API-R3-403"
-    },
-    {
-      "at": "2026-11-17T15:02:45.818Z",
-      "actor": "codex",
-      "action": "claim",
-      "task": "CODEX-API-R3-403"
-    },
-    {
-      "at": "2026-11-17T15:03:23.669Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-API-R3-403"
-    },
-    {
-      "at": "2026-11-17T15:03:48.861Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T15:03:49.250Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T15:07:06.648Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CODEX-EVIDENCE-COPY-E2E-406"
-    },
-    {
-      "at": "2026-11-17T15:07:07.196Z",
-      "actor": "codex",
-      "action": "claim",
-      "task": "CODEX-EVIDENCE-COPY-E2E-406"
-    },
-    {
-      "at": "2026-11-17T15:09:59.108Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CODEX-UI-STATES-D3-404"
-    },
-    {
-      "at": "2026-11-17T15:09:59.900Z",
-      "actor": "codex",
-      "action": "claim",
-      "task": "CODEX-UI-STATES-D3-404"
-    },
-    {
-      "at": "2026-11-17T15:10:01.325Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-UI-STATES-D3-404"
-    },
-    {
-      "at": "2026-11-17T15:10:02.362Z",
-      "actor": "codex",
-      "action": "accept",
-      "task": "CLAUDE-UI-STATES-D3"
-    },
-    {
-      "at": "2026-11-17T15:12:15.517Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CODEX-CI-R3-405"
-    },
-    {
-      "at": "2026-11-17T15:12:15.823Z",
-      "actor": "codex",
-      "action": "claim",
-      "task": "CODEX-CI-R3-405"
-    },
-    {
-      "at": "2026-11-17T15:12:16.645Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-CI-R3-405"
-    },
-    {
-      "at": "2026-11-17T15:12:17.044Z",
-      "actor": "codex",
-      "action": "accept",
-      "task": "CLAUDE-CI-LOCAL"
-    },
-    {
-      "at": "2026-11-17T15:13:20.480Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-EVIDENCE-COPY-E2E-406"
-    },
-    {
-      "at": "2026-11-17T15:14:58.247Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T15:14:58.617Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T15:18:54.571Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CODEX-RECORD-LIST-REVIEW-407"
-    },
-    {
-      "at": "2026-11-17T15:18:55.177Z",
-      "actor": "codex",
-      "action": "claim",
-      "task": "CODEX-RECORD-LIST-REVIEW-407"
-    },
-    {
-      "at": "2026-11-17T15:18:56.539Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-RECORD-LIST-REVIEW-407"
-    },
-    {
-      "at": "2026-11-17T15:18:57.298Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CLAUDE-RECORD-LIST"
-    },
-    {
-      "at": "2026-11-17T15:22:01.387Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CODEX-AUTH-PARENT-RACE-380"
-    },
-    {
-      "at": "2026-11-17T15:22:03.457Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-AUTH-PARENT-RACE-380"
-    },
-    {
-      "at": "2026-11-17T15:22:49.233Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CODEX-AUTH-PARENT-RACE-380"
-    },
-    {
-      "at": "2026-11-17T15:22:51.170Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-AUTH-PARENT-RACE-380"
-    },
-    {
-      "at": "2026-11-17T15:25:20.924Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T15:25:22.119Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T15:31:55.193Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CODEX-ACTIVATION-066"
-    },
-    {
-      "at": "2026-11-17T15:31:57.952Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-ACTIVATION-066"
-    },
-    {
-      "at": "2026-11-17T15:33:27.202Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CODEX-A4-TASK-FOCUS-COMPACT-329"
-    },
-    {
-      "at": "2026-11-17T15:33:30.608Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-A4-TASK-FOCUS-COMPACT-329"
-    },
-    {
-      "at": "2026-11-17T15:34:33.162Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T15:34:33.501Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T15:36:49.100Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CODEX-URL-ROUTES-REVIEW-411"
-    },
-    {
-      "at": "2026-11-17T15:36:49.399Z",
-      "actor": "codex",
-      "action": "claim",
-      "task": "CODEX-URL-ROUTES-REVIEW-411"
-    },
-    {
-      "at": "2026-11-17T15:36:49.954Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-URL-ROUTES-REVIEW-411"
-    },
-    {
-      "at": "2026-11-17T15:36:50.152Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CLAUDE-URL-ROUTES"
-    },
-    {
-      "at": "2026-11-17T15:37:18.522Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T15:37:18.764Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T15:41:56.774Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CODEX-RELATION-LABEL-063"
-    },
-    {
-      "at": "2026-11-17T15:41:57.379Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-RELATION-LABEL-063"
-    },
-    {
-      "at": "2026-11-17T15:45:06.985Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-UNIT-BASELINE-397"
-    },
-    {
-      "at": "2026-11-17T15:47:23.507Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CODEX-A4-COMPACT-ACK-323"
-    },
-    {
-      "at": "2026-11-17T15:48:15.756Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-A4-COMPACT-ACK-323"
-    },
-    {
-      "at": "2026-11-17T15:48:54.621Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T15:48:55.080Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T15:49:50.002Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CODEX-UNIT-BASELINE-414"
-    },
-    {
-      "at": "2026-11-17T15:49:50.467Z",
-      "actor": "codex",
-      "action": "claim",
-      "task": "CODEX-UNIT-BASELINE-414"
-    },
-    {
-      "at": "2026-11-17T15:57:10.918Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CODEX-SERVER-MODULES-REVIEW-415"
-    },
-    {
-      "at": "2026-11-17T15:57:12.207Z",
-      "actor": "codex",
-      "action": "claim",
-      "task": "CODEX-SERVER-MODULES-REVIEW-415"
-    },
-    {
-      "at": "2026-11-17T16:03:15.971Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-SERVER-MODULES-REVIEW-415"
-    },
-    {
-      "at": "2026-11-17T16:03:16.978Z",
-      "actor": "codex",
-      "action": "accept",
-      "task": "CLAUDE-SERVER-MODULES"
-    },
-    {
-      "at": "2026-11-17T16:04:03.017Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CODEX-CSV-PREVIEW-REVIEW-416"
-    },
-    {
-      "at": "2026-11-17T16:04:03.970Z",
-      "actor": "codex",
-      "action": "claim",
-      "task": "CODEX-CSV-PREVIEW-REVIEW-416"
-    },
-    {
-      "at": "2026-11-17T16:04:05.788Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-CSV-PREVIEW-REVIEW-416"
-    },
-    {
-      "at": "2026-11-17T16:05:44.737Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T16:05:47.032Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T19:56:24.323Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CODEX-RESTORE-REVALIDATION-417"
-    },
-    {
-      "at": "2026-11-17T19:56:24.498Z",
-      "actor": "codex",
-      "action": "claim",
-      "task": "CODEX-RESTORE-REVALIDATION-417"
-    },
-    {
-      "at": "2026-11-17T19:58:23.731Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-RESTORE-REVALIDATION-417"
-    },
-    {
-      "at": "2026-11-17T19:58:23.942Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CODEX-RESTORE-TRANSACTION-388"
-    },
-    {
-      "at": "2026-11-17T19:58:24.372Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-RESTORE-TRANSACTION-388"
-    },
-    {
-      "at": "2026-11-17T20:00:27.184Z",
-      "actor": "claude",
-      "action": "submit",
-      "task": "CLAUDE-CSV-IMPORT"
-    },
-    {
-      "at": "2026-11-17T20:03:31.376Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CODEX-CSV-SUBMISSION-REVIEW-418"
-    },
-    {
-      "at": "2026-11-17T20:03:31.745Z",
-      "actor": "codex",
-      "action": "claim",
-      "task": "CODEX-CSV-SUBMISSION-REVIEW-418"
-    },
-    {
-      "at": "2026-11-17T20:03:32.531Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-CSV-SUBMISSION-REVIEW-418"
-    },
-    {
-      "at": "2026-11-17T20:03:33.210Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CLAUDE-CSV-IMPORT"
-    },
-    {
-      "at": "2026-11-17T20:04:20.055Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T20:04:20.606Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T20:06:01.154Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CODEX-COMMAND-PALETTE-KEYBOARD-419"
-    },
-    {
-      "at": "2026-11-17T20:06:01.563Z",
-      "actor": "codex",
-      "action": "claim",
-      "task": "CODEX-COMMAND-PALETTE-KEYBOARD-419"
-    },
-    {
-      "at": "2026-11-17T20:08:39.125Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CLAUDE-A11Y-D7"
-    },
-    {
-      "at": "2026-11-17T20:08:39.809Z",
-      "actor": "claude",
-      "action": "claim",
-      "task": "CLAUDE-A11Y-D7"
-    },
-    {
-      "at": "2026-11-17T20:20:55.796Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-COMMAND-PALETTE-KEYBOARD-419"
-    },
-    {
-      "at": "2026-11-17T20:23:48.353Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T20:23:49.801Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T20:29:08.891Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CODEX-COMMAND-PALETTE-KEYBOARD-419"
-    },
-    {
-      "at": "2026-11-17T20:29:26.685Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-COMMAND-PALETTE-KEYBOARD-419"
-    },
-    {
-      "at": "2026-11-17T20:30:35.626Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T20:30:36.469Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T20:34:48.106Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CODEX-D7-STRICT-REVIEW-420"
-    },
-    {
-      "at": "2026-11-17T20:34:48.925Z",
-      "actor": "codex",
-      "action": "claim",
-      "task": "CODEX-D7-STRICT-REVIEW-420"
-    },
-    {
-      "at": "2026-11-17T20:35:29.011Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-D7-STRICT-REVIEW-420"
-    },
-    {
-      "at": "2026-11-17T20:35:29.520Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CODEX-COMMAND-PALETTE-KEYBOARD-419"
-    },
-    {
-      "at": "2026-11-17T20:35:30.061Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-COMMAND-PALETTE-KEYBOARD-419"
-    },
-    {
-      "at": "2026-11-17T20:41:15.099Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T20:41:15.288Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T20:42:22.700Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-UNIT-BASELINE-414"
-    },
-    {
-      "at": "2026-11-17T20:42:26.855Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T20:42:27.116Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T20:45:55.150Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CODEX-CI-FAILURE-EVIDENCE-421"
-    },
-    {
-      "at": "2026-11-17T20:45:55.393Z",
-      "actor": "codex",
-      "action": "claim",
-      "task": "CODEX-CI-FAILURE-EVIDENCE-421"
-    },
-    {
-      "at": "2026-11-17T20:46:27.283Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CLAUDE-RETURN-EXPLAIN"
-    },
-    {
-      "at": "2026-11-17T20:46:27.631Z",
-      "actor": "claude",
-      "action": "claim",
-      "task": "CLAUDE-RETURN-EXPLAIN"
-    },
-    {
-      "at": "2026-11-17T20:54:37.717Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-CI-FAILURE-EVIDENCE-421"
-    },
-    {
-      "at": "2026-11-17T20:54:48.352Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T20:54:48.717Z",
-      "actor": "codex",
-      "action": "submit",
-      "task": "CODEX-LAB-035"
-    },
-    {
-      "at": "2026-11-17T20:55:04.022Z",
-      "actor": "claude",
-      "action": "submit",
-      "task": "CLAUDE-RETURN-EXPLAIN"
-    },
-    {
-      "at": "2026-11-17T20:57:41.655Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CODEX-DEMO-CURRENT-422"
-    },
-    {
-      "at": "2026-11-17T20:57:42.320Z",
-      "actor": "codex",
-      "action": "claim",
-      "task": "CODEX-DEMO-CURRENT-422"
-    },
-    {
-      "at": "2026-11-17T20:59:34.009Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CLAUDE-API-CLIENT-ROUTES"
-    },
-    {
-      "at": "2026-11-17T20:59:34.362Z",
-      "actor": "claude",
-      "action": "claim",
-      "task": "CLAUDE-API-CLIENT-ROUTES"
-    },
-    {
-      "at": "2026-11-17T21:00:11.089Z",
-      "actor": "claude",
-      "action": "submit",
-      "task": "CLAUDE-API-CLIENT-ROUTES"
-    },
-    {
-      "at": "2026-11-17T21:08:07.701Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CODEX-CANDIDATE-FONT-ASSETS-423"
-    },
-    {
-      "at": "2026-11-17T21:08:07.920Z",
-      "actor": "codex",
-      "action": "claim",
-      "task": "CODEX-CANDIDATE-FONT-ASSETS-423"
-    },
-    {
-      "at": "2026-11-17T21:08:08.138Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CODEX-REL-046"
-    },
-    {
-      "at": "2026-11-17T21:08:08.367Z",
-      "actor": "codex",
-      "action": "revise",
-      "task": "CODEX-CANDIDATE-INTEGRITY-095"
-    },
-    {
-      "at": "2026-11-17T21:13:12.195Z",
-      "actor": "claude",
-      "action": "submit",
-      "task": "CLAUDE-A11Y-D7"
+      "task": "CODEX-COMPARISON-PAGE-PROVENANCE-466"
     }
   ]
 }

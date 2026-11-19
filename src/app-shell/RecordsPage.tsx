@@ -5,7 +5,7 @@ import { displayValue, recordName } from '../components.js';
 import { EmptyState, ErrorState, Skeleton } from '../ui/index.js';
 import { downloadCsv, toCsv } from './csv.js';
 import { madridDay } from '../task-display.js';
-import { closeStatus, euros, stageKind } from './deal-insights.js';
+import { closeStatus, dueStatus, euros, stageKind } from './deal-insights.js';
 import { addSavedView, describeView, readSavedViews, sameView, smartViews, writeSavedViews, type SavedView } from './saved-views.js';
 
 const singular: Record<EntityName, string> = { contacts: 'Nuevo cliente', companies: 'Nueva empresa', deals: 'Nueva oportunidad', tasks: 'Nueva tarea' };
@@ -20,6 +20,8 @@ type Props = {
   viewCoverage: () => void; toggleServices: () => void;
   /** Cambia la etapa de una oportunidad con la validación y el guardado de la ficha. Devuelve el motivo si no se pudo. */
   moveDeal: (record: CrmRecord, stageId: string) => Promise<string | null>;
+  /** Abre una ficha nueva con valores iniciales (p. ej. una oportunidad ya en la etapa de su columna). */
+  newWith?: (values: Record<string, string>) => void;
   /** Cambia un campo de lista desde la tabla, con la validación y el guardado de la ficha. */
   saveField: (record: CrmRecord, key: string, value: string | null) => Promise<string | null>;
 };
@@ -30,7 +32,7 @@ const writeView = (entity: EntityName, view: View) => { try { localStorage.setIt
 
 /** Clientes, Empresas, Oportunidades y Tareas: cabecera-barra, tabla ordenable o tablero por etapas, y barra de estado.
  *  Solo presenta lo que App ya cargó; el orden reordena los registros de la página, no pide nada nuevo. */
-export function RecordsPage({ state, spec, entity, entityName, rows, records, total, offset, setOffset, query, setQuery, pipeline, setPipeline, selected, setSelected, recordsLoading, recordsError, onRetry, busy, date, viewCoverage, toggleServices, moveDeal, saveField }: Props) {
+export function RecordsPage({ state, spec, entity, entityName, rows, records, total, offset, setOffset, query, setQuery, pipeline, setPipeline, selected, setSelected, recordsLoading, recordsError, onRetry, busy, date, viewCoverage, toggleServices, moveDeal, saveField, newWith }: Props) {
   const [sort, setSort] = useState<{ key: string; dir: 1 | -1 } | null>(() => readView(entityName).sort);
   // Al cambiar de tipo de registro se recupera la vista recordada de ese tipo (la página no se desmonta).
   useEffect(() => { const view = readView(entityName); setSort(view.sort); setPick(view.pick); setSmart(view.smart); setSaved(readSavedViews(entityName)); setNaming(null); setMoveNote(null); }, [entityName]);
@@ -77,6 +79,8 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
     setEditing(null);
     setMoveNote(problem ? { tone: 'error', text: '«' + recordName(record, spec) + '» no cambió de fecha. ' + problem } : { tone: 'ok', text: '«' + recordName(record, spec) + '» pasa a mañana. Guardado en tu copia local.' });
   };
+  // Tareas abiertas: a la fecha límite se le añade cuándo vence en palabras («hace 3 días», «hoy», «mañana», «en 5 días»).
+  const dueHint = (record: CrmRecord, value: unknown) => { if (looksDone(record)) return null; const status = dueStatus(value, today, false); if (status.tone !== 'late' && status.tone !== 'soon') return null; return { tone: status.tone, text: status.label.replace(/ · .*$/, '').replace(/^Venció /, '').replace(/^Vence /, '') }; };
   const isPast = (record: CrmRecord, value: unknown) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value) && value.slice(0, 10) < today && !looksDone(record);
   const smarts = smartViews(entityName, entity, spec), activeSmart = smarts.find(view => view.id === smart);
   const smartContext = { today, looksDone };
@@ -98,10 +102,27 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
   const current = { query, pick, sort, smart };
   const isDefault = !query.trim() && !pick && !sort && !smart;
   const labels = { pick: (id: string) => pickField?.options.find(option => option.id === id)?.label, sort: (key: string) => entity.fields.find(field => field.key === key)?.label, smart: (id: string) => smarts.find(view => view.id === id)?.label };
-  const store = (next: SavedView[]) => { setSaved(next); writeSavedViews(entityName, next); };
-  const saveView = (name: string) => { const next = addSavedView(saved, name, current, Date.now().toString(36) + Math.random().toString(36).slice(2, 7)); if (next !== saved) { store(next); setMoveNote({ tone: 'ok', text: 'Vista «' + next[0].name + '» guardada en este navegador.' }); } setNaming(null); };
+  const saveView = (name: string) => {
+    const next = addSavedView(saved, name, current, Date.now().toString(36) + Math.random().toString(36).slice(2, 7));
+    if (next === saved) { setNaming(null); return; }
+    if (!writeSavedViews(entityName, next)) {
+      setMoveNote({ tone: 'error', text: 'No se pudo guardar esta vista en el navegador.' });
+      return;
+    }
+    setSaved(next);
+    setNaming(null);
+    setMoveNote({ tone: 'ok', text: 'Vista «' + next[0].name + '» guardada en este navegador.' });
+  };
   const applyView = (view: SavedView) => { setQuery(view.query); setOffset(0); setPick(view.pick); setSort(view.sort); setSmart(smarts.some(item => item.id === view.smart) ? view.smart : null); setMoveNote(null); };
-  const removeView = (view: SavedView) => { store(saved.filter(item => item.id !== view.id)); setMoveNote({ tone: 'ok', text: 'Vista «' + view.name + '» borrada.' }); };
+  const removeView = (view: SavedView) => {
+    const next = saved.filter(item => item.id !== view.id);
+    if (!writeSavedViews(entityName, next)) {
+      setMoveNote({ tone: 'error', text: 'No se pudo borrar esta vista del navegador.' });
+      return;
+    }
+    setSaved(next);
+    setMoveNote({ tone: 'ok', text: 'Vista «' + view.name + '» borrada.' });
+  };
   // Lo que filtra en el navegador (vista inteligente o filtro rápido) solo ve la página cargada: se dice cuando hay más.
   const pageOnly = (!!activeSmart || (!!pick && !!pickField)) && total > rows.length;
   const dealsSum = filtered.reduce((sum, record) => sum + (Number(record.values[amountKey]) || 0), 0);
@@ -133,7 +154,7 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
       return <section className="kanban-column" key={stage.id} data-kind={kind} data-empty={deals.length ? undefined : 'true'} style={{ '--stage': stage.color } as Record<string, string>} data-over={overStage === stage.id ? 'true' : undefined}
               onDragOver={event => { if (dragId) { event.preventDefault(); event.dataTransfer.dropEffect = 'move'; if (overStage !== stage.id) setOverStage(stage.id); } }}
               onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOverStage(current => current === stage.id ? null : current); }}
-              onDrop={event => { event.preventDefault(); const record = filtered.find(item => item.id === dragId); setDragId(null); setOverStage(null); if (record) void move(record, stage.id); }}><h2><span className="dot" style={{ background: stage.color }} />{stage.label}<small>{deals.length}</small></h2>
+              onDrop={event => { event.preventDefault(); const record = filtered.find(item => item.id === dragId); setDragId(null); setOverStage(null); if (record) void move(record, stage.id); }}><h2><span className="dot" style={{ background: stage.color }} />{stage.label}<small>{deals.length}</small>{newWith && kind === 'open' ? <button type="button" className="gx-col-add" aria-label={'Nueva oportunidad en ' + stage.label} title={'Nueva oportunidad en ' + stage.label} onClick={() => newWith({ [stageKey]: stage.id, ...(stage.pipelineId ? { pipeline: stage.pipelineId } : {}) })}><Plus size={14} aria-hidden="true" /></button> : null}</h2>
         {deals.length ? <p className="gx-sum" title="Suma de los importes de esta etapa en la vista actual">{euros(stageSum)}{dealsSum > 0 && kind === 'open' ? <span className="gx-share" aria-hidden="true"><i style={{ width: Math.max(4, Math.round(stageSum / dealsSum * 100)) + '%' }} /></span> : null}</p> : null}
         {deals.map(record => <button key={record.id} className="deal-card" draggable={!moving} data-dragging={dragId === record.id ? 'true' : undefined} data-moving={moving === record.id ? 'true' : undefined} aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight"
               title="Arrastra a otra etapa, o Alt + flechas para moverla"
@@ -154,7 +175,7 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
             {entityName === 'contacts' && key === entity.displayField ? recordName(record, spec) : value}</button>
             : field.type === 'enum' && !field.readOnly && field.options.length ? <select className="gx-inline" aria-label={'Cambiar ' + field.label.toLowerCase() + ' de ' + recordName(record, spec)} title={'Cambiar ' + field.label.toLowerCase()} value={String(record.values[key] ?? '')} disabled={editing !== null} data-saving={editing === record.id + ':' + key ? 'true' : undefined} onChange={event => void change(record, key, event.target.value)}>
                 {field.required ? null : <option value="">—</option>}{!field.options.some(option => option.id === String(record.values[key] ?? '')) && record.values[key] ? <option value={String(record.values[key])}>{value}</option> : null}{field.options.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}</select>
-            : <span className={field.type === 'enum' ? 'enum-label' : field.type === 'date' && isPast(record, record.values[key]) ? 'gx-past' : ''} title={field.type === 'date' && isPast(record, record.values[key]) ? 'Fecha anterior a hoy' : undefined}>{value}</span>}{entityName === 'tasks' && key === dueKey && field.type === 'date' && !field.readOnly && isPast(record, record.values[key]) ? <button type="button" className="gx-postpone" disabled={editing !== null} aria-label={'Pasar «' + recordName(record, spec) + '» a mañana'} onClick={() => void postpone(record)}>Mañana</button> : null}</td>; })}
+            : <span className={field.type === 'enum' ? 'enum-label' : field.type === 'date' && isPast(record, record.values[key]) ? 'gx-past' : ''} title={field.type === 'date' && isPast(record, record.values[key]) ? 'Fecha anterior a hoy' : undefined}>{value}</span>}{entityName === 'tasks' && key === dueKey && field.type === 'date' ? (() => { const hint = dueHint(record, record.values[key]); return hint ? <small className="gx-due-rel" data-tone={hint.tone}>{hint.text}</small> : null; })() : null}{entityName === 'tasks' && key === dueKey && field.type === 'date' && !field.readOnly && isPast(record, record.values[key]) ? <button type="button" className="gx-postpone" disabled={editing !== null} aria-label={'Pasar «' + recordName(record, spec) + '» a mañana'} onClick={() => void postpone(record)}>Mañana</button> : null}</td>; })}
         <td className="gx-row-open"><button className="icon-button" aria-label={'Editar ' + recordName(record, spec)} onClick={() => setSelected(record)}><ChevronRight size={18} /></button></td></tr>)}</tbody></table>
       {recordsLoading?<Skeleton rows={8} label="Cargando registros…" />:recordsError?<ErrorState title="No se pudieron cargar los registros" onAction={onRetry}>Tus datos siguen en este ordenador. {onRetry?'Vuelve a intentarlo; si se repite, comprueba que Plan B sigue abierto.':'Vuelve a seleccionar la sección para intentarlo de nuevo.'}</ErrorState>:!visible.length ? <EmptyState icon={<Search size={22} />} title={query ? 'Sin resultados' : 'Todavía no hay registros'} action={query ? <button type="button" className="button secondary" onClick={() => { setQuery(''); setOffset(0); }}>Quitar la búsqueda</button> : <button type="button" className="button primary" onClick={() => setSelected('new')}><Plus size={16} />{singular[entityName]}</button>}>{query ? 'Prueba con otro nombre, correo o empresa.' : 'Crea el primer registro para empezar.'}</EmptyState> : null}
     </div>}

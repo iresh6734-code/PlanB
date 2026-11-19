@@ -1,0 +1,10 @@
+{
+  "id": "CODEX-LANDING-CONTINUIDAD",
+  "agent": "codex",
+  "title": "Landing de continuidad de Plan B",
+  "plan": "Construir una entrada comercial de Vite, con demostración interactiva ficticia y enlaces locales a funciones existentes. Entrega independiente, sin envío de fuentes a Claude.",
+  "acceptance": "Compilación, rutas reales, simulación de tres estados y revisión de cambios, adaptación a diferentes pantallas, teclado y movimiento reducido.",
+  "files": ["plan-b.html", "vite.config.ts", "scripts/package-demo.ts", "src/landing/main.tsx", "src/landing/styles.css", "src/landing/hero-relay.webp", "tests/e2e/landing.spec.ts"],
+  "readFiles": ["PRODUCT.md", "DESIGN.md", "CONTEXTO-PROYECTO.md", "src/app-shell/routes.ts"],
+  "dependencies": []
+}

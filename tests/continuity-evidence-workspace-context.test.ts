@@ -134,10 +134,11 @@ test('a bound read checks expiry after its final installation read and never att
     const state=await f.app.inject({url:'/api/v2/state',headers:{...headers,cookie}});
     const context=state.json().workspaceSearchContext;
     const read=f.store.get.bind(f.store);
-    let count=0,expire=false;
+    let evidenceStarted=false, lateReads=0, expireAfterRead: number | undefined;
+    f.whenReading(()=>{evidenceStarted=true;});
     t.mock.method(f.store,'get',<T>(key:string,fallback:T):T=>{
       const value=read(key,fallback);
-      if(key==='instanceId'&&++count===4&&expire)wall=now+30*60_000+1;
+      if(key==='instanceId'&&evidenceStarted&&++lateReads===expireAfterRead)wall=now+30*60_000+1;
       return value;
     });
     wall=now+30*60_000-1;
@@ -145,11 +146,14 @@ test('a bound read checks expiry after its final installation read and never att
     const valid=await f.app.inject(request);
     assert.equal(valid.statusCode,200);
     assert.equal(valid.headers[revisionHeader],context.contextRevision);
-    assert.equal(count,4);
-    count=0;
-    expire=true;
+    // The warmed-cache control identifies the final installation read without assuming how the identity is cached.
+    assert.ok(lateReads>0);
+    expireAfterRead=lateReads;
+    evidenceStarted=false;
+    lateReads=0;
     const expired=await f.app.inject(request);
-    assert.equal(count,4);
+    assert.equal(lateReads,expireAfterRead);
+    assert.equal(wall,now+30*60_000+1);
     assert.equal(expired.statusCode,401);
     assert.equal(expired.headers[revisionHeader],undefined);
     assert.equal(expired.headers['set-cookie'],undefined);

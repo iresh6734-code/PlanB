@@ -2848,3 +2848,401 @@ Estados cotejados: CODEX-MOBILE-COPY-ALERT-367: review; CODEX-MOBILE-COPY-REVIEW
 
 Estados cotejados: CODEX-MOBILE-COPY-ALERT-367: review; CODEX-MOBILE-COPY-REVIEW-396: review; CODEX-PASSWORD-R2-398: review; CLAUDE-PASSWORD-HASH-V2: done; CODEX-UNDO-R2-399: review; CLAUDE-UNDO-LAST: working; CODEX-UI-COPY-REVIEW-401: review; CLAUDE-UI-COPY-D2: working; CLAUDE-UI-STATES-D3: done; CODEX-UNIT-BASELINE-397: review; CLAUDE-API-INVENTORY: review; CLAUDE-CI-LOCAL: done; CLAUDE-CSV-IMPORT: working; CLAUDE-LAB-036: ready; CLAUDE-QA-052: done; CODEX-API-R3-403: review; CODEX-UI-STATES-D3-404: review; CODEX-CI-R3-405: review; CODEX-EVIDENCE-COPY-E2E-406: review; CLAUDE-RECORD-LIST: working; CODEX-RECORD-LIST-REVIEW-407: review; CODEX-AUTH-PARENT-RACE-380: review; CODEX-ACTIVATION-066: review; CODEX-A4-TASK-FOCUS-COMPACT-329: review; CLAUDE-URL-ROUTES: working; CODEX-URL-ROUTES-REVIEW-411: review; CODEX-A4-COMPACT-ACK-323: review; CODEX-RELATION-LABEL-063: review; CODEX-UNIT-BASELINE-414: review; CLAUDE-SERVER-MODULES: done; CODEX-SERVER-MODULES-REVIEW-415: review; CODEX-CSV-PREVIEW-REVIEW-416: review; CODEX-RESTORE-TRANSACTION-388: review; CODEX-RESTORE-REVALIDATION-417: review; CODEX-CSV-SUBMISSION-REVIEW-418: review; CODEX-COMMAND-PALETTE-KEYBOARD-419: review; CLAUDE-A11Y-D7: working; CODEX-D7-STRICT-REVIEW-420: review; CODEX-CI-FAILURE-EVIDENCE-421: review. Auditoría de reservas efectivas:0 solapes de reservas y 1 archivos cambiados después de presentar, detallados en este corte. Se conservaron las seis fuentes de esta reserva documental y los apuntes añadidos por el otro chat.
 
+
+
+## Registro 17/11/2026, 22:22:52, Europe/Madrid
+
+## Corte vigente · Demo 4386 verificada y captura de fuentes corregida · 17/11/2026, 22:22:52, Europe/Madrid
+
+**Demo 422/423.** Nueva instalación ficticia en http://127.0.0.1:4386, PID 31960, identidad cotejada desde otro proceso y 56 artefactos copiados idénticos al manifiesto. Base nueva de 62 registros, fixture/demo-revision-423, sin contraseña configurada. La demo propia anterior PID31536 se detuvo tras cotejar su ruta; se conservan ambas carpetas y bases. No se usan pilotos 4331/4334.
+
+**Fuentes 423.** La primera candidata había excluido WOFF2 y avisos de src/assets: Vite terminaba sin fuentes y el navegador recibía HTML al pedirlas. Bajo las reservas propias 046 y 095 se conservan activos opacos no ocultos de src/assets, se copian avisos de texto y se exige correspondencia de sus bytes en runtime. La tarea423 reserva prueba/informe. Dos regresiones fallan antes; 29/29 focales después. Retirar solo el cotejo de avisos en una copia hace fallar su regresión. Sintaxis limpia. Se presentan nuevamente046/095 y423.
+
+**Candidata.** candidate-0c7e2616-b9e5-495f-a8f3-c41589151d78: 875 fuentes y 56 artefactos, todos cotejados. Tipos, Vite, seis bundles, activos y163/163Node correctos. Captura17/11/2026 22:10:46 Europe/Madrid, no una release aprobada. El inspector también mantiene compatible la anterior869/51 sin ocultar su defecto histórico. Se conservan tres avisos de texto y dos WOFF2.
+
+**Navegador.** Browser no disponible; fallback Chromium local de Playwright, solo GET/HEAD al propio origen. En1366×900 y390×844: identidad/título, contenido, sin overlay, dos fuentes200font/woff2 y faces loaded, cero errores/avisos, Inicio sin desbordamiento y navegación Inicio→Clientes→ficha→Escape con foco de retorno→Continuidad. Capturas inspeccionadas en C:/Users/iresh/AppData/Local/Temp/planb-font423-FiPmKp. Banco final tests/.tmp/font423-eb8d88fd350f4ae6892a780bc0d4f972; banco inicialdemo422-822319b3cc8041c2864f91cd653c10bd.
+
+**Límites.** Falta paquete del Kit: el ensayo de relevo se informa no disponible y no se probó. No se activaron escenarios ni se hicieron escrituras HTTP. La demo no acredita CSS final de D7 ni ediciones posteriores de CSV, Deshacer y foco. final-check.json enumera ocho fuentes distintas al corte observado. La batería global vigente sigue siendo414, con17fallos y3canceladas, y47/47 focales posteriores.
+
+**D7.** Se presentó y se contrastó su entrega49c606c3: la misma copia StrictMode da1/3, fuentes de esa ejecución intactas. Se actualizó420 y se devolvióD7 aR2, manteniendo sus reservas y pidiendo separar el cero móvil parcial de la auditoría completa. Hay otra edición de components posterior a esa prueba; queda por revisar cuando se presente. No se modifica código de Claude.
+
+**Conciliación pendiente.** Reconcile registra nuevas huellas de components.tsx en063 y Store en388, con ediciones compartidas observadas durante estas tareas. Se conservan sin refrescar presentaciones antiguas hasta probar las versiones actuales. Los hashes y estados exactos quedan en el corte del tablón.
+
+Estados cotejados: CODEX-MOBILE-COPY-ALERT-367: review; CODEX-MOBILE-COPY-REVIEW-396: review; CODEX-PASSWORD-R2-398: review; CLAUDE-PASSWORD-HASH-V2: done; CODEX-UNDO-R2-399: review; CLAUDE-UNDO-LAST: working; CODEX-UI-COPY-REVIEW-401: review; CLAUDE-UI-COPY-D2: working; CLAUDE-UI-STATES-D3: done; CODEX-UNIT-BASELINE-397: review; CLAUDE-API-INVENTORY: review; CLAUDE-CI-LOCAL: done; CLAUDE-CSV-IMPORT: review; CLAUDE-LAB-036: ready; CLAUDE-QA-052: done; CODEX-API-R3-403: review; CODEX-UI-STATES-D3-404: review; CODEX-CI-R3-405: review; CODEX-EVIDENCE-COPY-E2E-406: review; CLAUDE-RECORD-LIST: working; CODEX-RECORD-LIST-REVIEW-407: review; CODEX-AUTH-PARENT-RACE-380: review; CODEX-ACTIVATION-066: review; CODEX-A4-TASK-FOCUS-COMPACT-329: review; CLAUDE-URL-ROUTES: working; CODEX-URL-ROUTES-REVIEW-411: review; CODEX-A4-COMPACT-ACK-323: review; CODEX-RELATION-LABEL-063: review; CODEX-UNIT-BASELINE-414: review; CLAUDE-SERVER-MODULES: done; CODEX-SERVER-MODULES-REVIEW-415: review; CODEX-CSV-PREVIEW-REVIEW-416: review; CODEX-RESTORE-TRANSACTION-388: review; CODEX-RESTORE-REVALIDATION-417: review; CODEX-CSV-SUBMISSION-REVIEW-418: review; CODEX-COMMAND-PALETTE-KEYBOARD-419: review; CLAUDE-A11Y-D7: working; CODEX-D7-STRICT-REVIEW-420: review; CODEX-CI-FAILURE-EVIDENCE-421: review; CODEX-DEMO-CURRENT-422: review; CODEX-CANDIDATE-FONT-ASSETS-423: review; CODEX-REL-046: review; CODEX-CANDIDATE-INTEGRITY-095: review. Auditoría de reservas efectivas:0 solapes de reservas y 2 archivos cambiados después de presentar, detallados en este corte. Se conservaron las seis fuentes de esta reserva documental y los apuntes añadidos por el otro chat.
+
+
+
+## Registro 18/11/2026, 14:53:43, Europe/Madrid
+
+## Corte vigente · Revisión de la marca de importación CSV tras restaurar · 18/11/2026, 14:53:43, Europe/Madrid
+
+CSV R2 corrige la restauración con otro ID de captura. Las nueve pruebas de Claude pasan. La revisión 425 reproduce dos variantes que conservan ID de captura, fecha, sesión y valores revisados. Una cambia el contexto del registro y otra cambia la cuenta de origen en una carpeta sin vincular. Ambas aceptan la marca antigua con 200 y pasan de 62 a 63 registros y de 0 a 1 cambios. La carpeta vinculada sí rechaza restaurar otro origen. Resultado conjunto 12/14, tipos focales limpios. En una copia temporal, añadir la lectura de la época local de restauración sin inicializar metadatos hace pasar 14/14. Se conserva la entrega original y vuelve a R3 bajo las mismas reservas. Evidencia en tests/.tmp/csv425-hjXDaR.
+
+Deshacer R3 está presentado. Se inició la comprobación de su entrega con API inyectada, pruebas relacionadas y tipos sobre fuentes fijadas. La primera preparación del ensayo API omitió el entorno de prueba y se corrigió con bases ficticias en carpetas nuevas. D7 conserva la revisión 420. Las huellas compartidas pendientes de conciliación son components.tsx ab5d7153 de 063 y server/store.ts a4246275 de 388.
+
+Estados cotejados: CODEX-CSV-R2-REVIEW-425: review; CLAUDE-CSV-IMPORT: working; CLAUDE-UNDO-LAST: review; CLAUDE-A11Y-D7: working. Auditoría de reservas efectivas:0 solapes de reservas y 2 archivos cambiados después de presentar, detallados en este corte. Se conservaron las seis fuentes de esta reserva documental y los apuntes añadidos por el otro chat.
+
+
+
+## Registro 18/11/2026, 14:56:00, Europe/Madrid
+
+## Corte vigente · Deshacer R3 aceptada tras probar restauración y reversión · 18/11/2026, 14:56:00, Europe/Madrid
+
+Deshacer R3 aceptada con las cuatro huellas presentadas y dependencias compartidas cotejadas. La API inyectada emite la época con PATCH. Una restauración aplicada del mismo respaldo invalida la etiqueta anterior con 409 y preserva sus registros e historial. Un guardado nuevo sí admite Deshacer y repetirlo devuelve 409. Un fallo al escribir el recibo de restauración devuelve 500 y revierte también la época. La etiqueta previa sigue funcionando. Cinco suites pasan 140/140 y el chequeo completo de tipos termina con código 0. Código de interfaz comprobado por lectura y suites de interfaz. El ensayo independiente de esta revisión se concentra en la API. Banco tests/.tmp/undo426-wgthDu. Se concilia Store a4246275 en 388 con sus ocho regresiones y la evidencia de reversión.
+
+CSV R2 corrige el caso de otra captura con IDs distintos, pero conserva la marca cuando la restauración reutiliza ID, fecha y sesión y el resultado revisado coincide. Las dos variantes probadas escriben un registro y una fila de historial. La lectura de la época pasa 14/14 en una copia temporal. 425 está presentada y CSV vuelve a R3 bajo sus mismas reservas. La demo del corte 22:10 se documenta en 422 y 423. Esta revisión no comprobó un proceso de la demo. D7 sigue en R2. La única huella pendiente de conciliación es components.tsx ab5d7153 en 063.
+
+Estados cotejados: CODEX-CSV-R2-REVIEW-425: review; CLAUDE-CSV-IMPORT: working; CLAUDE-UNDO-LAST: done; CODEX-UNDO-R3-REVIEW-426: review; CODEX-RESTORE-TRANSACTION-388: review; CLAUDE-A11Y-D7: working. Auditoría de reservas efectivas:0 solapes de reservas y 1 archivos cambiados después de presentar, detallados en este corte. Se conservaron las seis fuentes de esta reserva documental y los apuntes añadidos por el otro chat.
+
+
+
+## Registro 18/11/2026, 15:09:16, Europe/Madrid
+
+## Corte vigente · Identidad de copia al activar y revisión de navegación · 18/11/2026, 15:09:16, Europe/Madrid
+
+Preparación renueva la época local al activar una captura que sustituye los registros. Dos pruebas detectaban el fallo anterior y pasan con el cambio. Preparar, revisar o activar solo el esquema conserva la época. El fallo al guardar la generación revierte los registros, la candidata, el historial y la época. Batería 45/45 y tipos completos limpios, con Store b9f4ce05 nuevamente presentado bajo 388. Banco tests/.tmp/copy428-c70bd4b533224120a16c080f047606b2.
+
+CSV R3 conserva su reserva. El ensayo temporal de activación confirma que renovar solo la época o leerla solo en CSV permite importar con 200. Combinarlos rechaza la marca antigua con 409 y conserva los 62 registros y el historial vacío. El primer intento de preparar ese ensayo carecía del package.json de la copia. Se corrigió antes de ejecutar la API. El código reservado de CSV sigue pendiente de incorporar la lectura.
+
+Listas R2 aceptada. Chromium conserva «Sin resultados» al llegar las 24 filas de una búsqueda cancelada o su 503, con control nativo. Enlaces R2 abre el enlace vigente y conserva Inicio tras abandonar su lectura. La revisión 427 detecta otro caso. El 200 retenido de Lucía sustituye la ficha de Pablo, abierta manualmente en la misma lista. Enlaces vuelve a R3. Las 16 pruebas focales y tipos pasan en el corte nav427-D60hAX. El primer corte detectó una edición concurrente y se descartó. La segunda compilación y los servidores propios completaron los controles de navegador.
+
+Quedan dos diferencias compartidas por conciliar. components.tsx cambió en 063 y ChangesView.tsx en 064. Se registran sus huellas, a la espera de revisar la composición con los cambios en curso. D7 conserva su reserva.
+
+Estados cotejados: CODEX-COPY-ACTIVATION-EPOCH-428: review; CODEX-NAVIGATION-R2-REVIEW-427: review; CODEX-RESTORE-TRANSACTION-388: review; CLAUDE-RECORD-LIST: done; CLAUDE-URL-ROUTES: working; CLAUDE-CSV-IMPORT: working; CLAUDE-UNDO-LAST: done; CLAUDE-A11Y-D7: working. Auditoría de reservas efectivas:0 solapes de reservas y 2 archivos cambiados después de presentar, detallados en este corte. Se conservaron las seis fuentes de esta reserva documental y los apuntes añadidos por el otro chat.
+
+
+
+## Registro 18/11/2026, 15:23:14, Europe/Madrid
+
+## Corte vigente · Foco D7 aceptado y nuevas regresiones en devolución y CSV · 18/11/2026, 15:23:14, Europe/Madrid
+
+D7 R2 aceptada. Dos ejecuciones de Chromium pasan 8/8 con montaje sencillo y StrictMode, incluidas las dos regresiones de la paleta. La segunda incluye el cambio concurrente de RecordDrawer y conserva huellas. Tipos focales limpios con components.tsx d4a3ae65. El chequeo global de un corte anterior falló en RecordDrawer. El siguiente terminó limpio durante un cambio concurrente de App. El dictamen se apoya en la comprobación focal. El informe D7 distingue la auditoría móvil completa de 26 avisos y la comprobación posterior con cero en dos páginas.
+
+Devolución vuelve a R2 en núcleo y UI. Las 34 pruebas existentes pasan. 430 confirma con Recovery y simulador que una operación aplicada y verificada sigue contándose como un envío futuro. El arnés de ChangesView registra un TypeError si un plan nuevo llega con operaciones distintas mientras sigue visible la explicación anterior. La copia que liga la explicación con su clave y especificación supera la transición. El banco inicial de tipos tenía el error de RecordDrawer ajeno al plan. Datos ficticios, sin cuenta externa. Evidencia en tests/.tmp/return430-A87oUt.
+
+CSV R3 corrige las marcas antiguas. Pasan 19/19 y la API devuelve 409 tras activar una captura con ID y sesión reutilizados. La revisión 431 devuelve CSV a R4 por una hora imposible en una fila que provoca 500 para todo el archivo. En la copia temporal, comprobar el rango permite revisar una fila válida y una inválida. Se conservan 62 registros y el historial vacío. Banco tests/.tmp/csv431-KE65Pm.
+
+Las huellas pendientes de conciliación siguen siendo components.tsx en 063 y ChangesView.tsx en 064. El código de las dos entregas devueltas conserva sus reservas.
+
+Estados cotejados: CLAUDE-A11Y-D7: done; CODEX-D7-STRICT-REVIEW-420: review; CODEX-RETURN-EXPLANATION-REVIEW-430: review; CLAUDE-RETURN-EXPLAIN: working; CLAUDE-RETURN-EXPLAIN-UI: working; CODEX-CSV-R3-REVIEW-431: review; CLAUDE-CSV-IMPORT: working. Auditoría de reservas efectivas:0 solapes de reservas y 2 archivos cambiados después de presentar, detallados en este corte. Se conservaron las seis fuentes de esta reserva documental y los apuntes añadidos por el otro chat.
+
+
+
+## Registro 18/11/2026, 15:36:33, Europe/Madrid
+
+## Corte vigente · Enlaces R3 aceptada y guardado de vistas corregido · 18/11/2026, 15:36:33, Europe/Madrid
+
+Enlaces R3 aceptada después de cotejar las tres huellas. El banco fijado pasó 21 pruebas y tipos. Cuatro recorridos independientes de Chromium conservaron el destino correcto tras resolver lecturas tardías y abrieron el enlace profundo al permanecer en él. La versión más reciente de App añade una condición en el resumen de fichas nuevas. Los cuatro recorridos independientes se hicieron sobre fichas existentes y respuestas 200; el 404 tardío está en el informe de Claude.
+
+La revisión 433 devuelve el contraste de rutas cliente–API a R2. Sus cuatro pruebas pasan y fallan los tres controles agregados en la copia aislada. Casos: llamada con comillas dobles que se omite, sufijo desconocido que se aprueba tras un segmento dinámico y concatenación multilínea que se toma por literal completo. La nueva revisión debe distinguir formas comprobadas e indeterminadas.
+
+Vistas 434 presentada con cinco archivos. El listado conserva el nombre o la vista cuando localStorage rechaza guardar o borrar. Reproduce el aviso falso con el código previo. Chromium pasa el caso de reintento y recarga con el componente de lista y almacenamiento controlado. Tipos limpios y 19 pruebas relacionadas. Se verificaron las huellas de las cuatro entradas de código y pruebas.
+
+CSV R4 y devolución R2 siguen reservadas por sus sesiones. El siguiente paso es cotejar la presentación de las correcciones y sus regresiones al llegar. Los cambios de huella pendientes siguen siendo components.tsx en 063 y ChangesView.tsx en 064. La evidencia actual usa datos ficticios y no verifica el piloto instalado.
+
+Estados cotejados: CLAUDE-URL-ROUTES: done; CODEX-URL-ROUTES-R3-REVIEW-432: review; CLAUDE-API-CLIENT-ROUTES: working; CODEX-API-CLIENT-ROUTES-REVIEW-433: review; CODEX-SAVED-VIEW-PERSISTENCE-434: review. Auditoría de reservas efectivas:0 solapes de reservas y 2 archivos cambiados después de presentar, detallados en este corte. Se conservaron las seis fuentes de esta reserva documental y los apuntes añadidos por el otro chat.
+
+
+
+## Registro 18/11/2026, 15:50:24, Europe/Madrid
+
+## Corte vigente · Fechas de CRM corregidas y auditoría móvil D5 · 18/11/2026, 15:50:24, Europe/Madrid
+
+Fechas 435 presentada. El código anterior desplazaba los días imposibles y mostraba como vencido el instante que ya era hoy en Madrid. La corrección muestra un aviso explícito para valores inválidos, conserva el día civil y convierte instantes de tareas con zona a Madrid. Dos regresiones fallan antes y pasan después. 29 pruebas focales, Vite y tsc limpios. Chromium a 320/390 abre la tarjeta y ficha de una oportunidad con fecha imposible simulada en GET. La activación rechaza esa fecha en el servidor. El banco conserva esa distinción y no guarda el valor simulado.
+
+Vocabulario D2 R2 aceptado tras cotejar las tres huellas. El detector pasa las tres pruebas sobre el banco de 86 TSX y clasifica correctamente siete ejemplos sintéticos. El informe 436 conserva las limitaciones de mensajes del servidor y E2E.
+
+D5: 10 vistas reales a 320 y 390 px con 20 resultados válidos en tests/.tmp/finish435-sJELRR/app-7HYAba. La etiqueta y los tres controles caben. Los controles mantienen 44 px. Se coteja 200, URL final y encabezado por ruta. No hay escrituras, tráfico exterior ni errores de página. Se registra un 404 de ensayo de relay/rehearsal. El backend es el congelado de 432. El script de D5 se devuelve a R2 tras reproducir en Chromium que cuenta diez redirecciones a una sola página y que omite un recorte tras un contenedor intermedio. La revisión se limita al escáner e informe. Se conserva el CSS probado. La ficha a pantalla completa queda fuera.
+
+CSV R4, devolución R2 y el contraste cliente–API R2 conservan sus reservas. Se registró D8 en curso durante la compilación y hubo tres cambios de equipo en el árbol vivo (CommercialWorkspace, TeamApp y team.css), fuera del banco local. Siguiente paso: revisar las nuevas presentaciones o concretar el tratamiento de fechas ilegibles en otros listados cuando se concilien sus archivos. Las huellas pendientes 063 y 064 conservan los valores documentados. No se verificó el piloto instalado.
+
+Estados cotejados: CODEX-CRM-CALENDAR-435: review; CODEX-UI-COPY-R2-REVIEW-436: review; CLAUDE-UI-COPY-D2: done; CODEX-MOBILE-D5-REVIEW-437: review; CLAUDE-MOBILE-D5: working. Auditoría de reservas efectivas:0 solapes de reservas y 2 archivos cambiados después de presentar, detallados en este corte. Se conservaron las seis fuentes de esta reserva documental y los apuntes añadidos por el otro chat.
+
+
+
+## Registro 18/11/2026, 16:01:16, Europe/Madrid
+
+## Corte vigente · Relacionado cancela lecturas y Equipo D8 vuelve a revisión · 18/11/2026, 16:01:16, Europe/Madrid
+
+Relacionado 439 presentado. Al cambiar de ficha o cerrar, aborta la petición pendiente y detiene las páginas posteriores, aunque el transporte ignore abort. El resultado está ligado a ficha, esquema e intento. El error de lectura ofrece Reintentar. El límite de 300 registros por tipo y el aviso de cobertura parcial se conservan. Dos unitarias y dos recorridos Chromium fallaban con el código anterior. Después pasan 20 unitarias, los dos recorridos de navegador y tipos. Se cotejaron las cuatro huellas de código y prueba.
+
+Equipo D8 pasó ensamblaje, Vite, tipos y 50 pruebas focales en el banco congelado. Chromium recorrió 4 perfiles × 8 secciones y repitió tres vistas de Solo lectura a 390 px. Pasan los controles de notas y acciones por permiso. Dos casos adicionales quedan para R2: «Empresa ficticia Arce» sigue visible en Empresa → Registros guardados → Empresas, y una conexión simulada como caducada muestra el mensaje de renovación junto con el aviso de conectar por primera vez. Solo se enviaron siete POST de selección de perfil a la demo local. Cero tráfico exterior o errores de página/HTTP. La revisión se registró con las dos huellas presentadas y las tres fuentes de montaje cotejadas. El siguiente paso del encargo requiere reservar las rutas exactas del código, dato de prueba y E2E afectado.
+
+Fechas 440. Sobre components.tsx d4a3ae65, una sonda congelada confirma que el listado desplaza 30 de febrero y lanza RangeError con 2026-99-01. RecordDrawer lanza RangeError al renderizar 2026-11-18T24:99:00Z en un campo con hora. Datos ficticios en memoria. Se conserva la reserva de 063 hasta conciliar. La reparación debe conservar valores almacenados hasta que la persona edite y cubrir listado, ficha y guardado. 064 conserva su otra diferencia documentada.
+
+El tablón registró CLAUDE-E2E-ADAPT en curso mientras se verificaban estas unidades. La próxima revisión seguirá las nuevas entregas de D5, D8, CSV, API o devolución según sus hashes. La instalación queda fuera de estas verificaciones.
+
+Estados cotejados: CODEX-TEAM-D8-REVIEW-438: review; CODEX-RELATED-CANCEL-439: review; CODEX-DRAWER-INVALID-DATE-440: review; CLAUDE-TEAM-D8: working. Auditoría de reservas efectivas:0 solapes de reservas y 2 archivos cambiados después de presentar, detallados en este corte. Se conservaron las seis fuentes de esta reserva documental y los apuntes añadidos por el otro chat.
+
+
+
+## Registro 18/11/2026, 16:14:46, Europe/Madrid
+
+## Corte vigente · QA052 revalidada e importes fiables en Inicio · 18/11/2026, 16:14:46, Europe/Madrid
+
+QA052/QA056 en el corte actual: 20 pruebas de restauración, 12 de cobertura y 20 del constructor pasan. El banco de empaquetado usa la versión vigente de REL046 cotejada por SHA-256 y ejecuta los mismos oráculos F2/F3. El envío en curso sigue convirtiéndose en incierto al restaurar o reiniciar. Las junctions se comprobaron. Windows rechazó crear el enlace simbólico de archivo con EPERM y esa rama queda sin verificar, aunque las tres suites salgan con código 0. El primer intento de las dos suites de copias necesitaba un directorio temporal dentro de la copia. Se repitieron en un banco nuevo correctamente preparado. Bancos qa441-2DRBJw y qa441-MWKdda. Constructores sintéticos y datos ficticios, fuera de la instalación.
+
+Tarjeta de Oportunidades 442 presentada. Una etapa no reconocida se muestra por revisar y no suma a lo abierto. Un importe desconocido se distingue de cero. Si la lectura cubre solo 100, se indica el alcance incluso si no hay abiertas en esas filas. La primera reproducción daba 4 abiertas y 6.200 EUR por sumar una etapa desconocida. La corrección muestra 3 abiertas y 1.200 EUR conocidos. Recrear el esquema con la misma revisión retira los totales previos. La respuesta anterior se ignora tras el cambio aunque el transporte no aborte. El error ofrece reintento. Cinco casos Chromium pasan y las mismas aserciones fallan contra el banco previo. TypeScript limpio.
+
+Claude abrió reservas para rendimiento, contratos API, documentación y helper de menú. Adaptación E2E continúa en curso. Se observaron cinco cambios de huella posteriores a la presentación en pruebas con adaptación de selectores al helper de menú: continuity y v4 de 058, protection-review de 070, main-app-readiness de 121 e independent-task-mount de 142. El encargo de adaptación documenta autorización de edición compartida. Los cambios se conservan para revisar las pruebas al presentar las huellas. Los otros dos cambios, components.tsx de 063 y ChangesView.tsx de 064, mantienen sus valores previos. Se recoteja la adaptación y las correcciones de Claude cuando entren en revisión.
+
+Estados cotejados: CODEX-QA052-CURRENT-441: review; CODEX-PIPELINE-CERTAINTY-442: review. Auditoría de reservas efectivas:0 solapes de reservas y 7 archivos cambiados después de presentar, detallados en este corte. Se conservaron las seis fuentes de esta reserva documental y los apuntes añadidos por el otro chat.
+
+
+
+## Registro 18/11/2026, 16:31:50, Europe/Madrid
+
+## Corte vigente · Detalle del historial, candidata aislada y revisión de herramientas · 18/11/2026, 16:31:50, Europe/Madrid
+
+Historial de ficha 443. Despliega todos los campos de cada edición y los valores iniciales de las altas, conserva fechas ilegibles y distingue ausente, nulo y texto vacío. Reintenta una lectura fallida y descarta la anterior al cambiar de ficha. Pasa 3/3 Chromium. La versión previa falla en dos y ya pasaba la separación de entidades con ID repetido. 33 pruebas Node relacionadas y tipos. La corrección de fechas del editor 440 permanece pendiente por la reserva 063.
+
+Candidata 444. El primer corte compiló, pero el checkout cambió. La siguiente candidata 9bb9d4c5-752b-4eb8-9cc2-834037a388e8 completó diez controles y 163/163 Node, con las fuentes vivas coincidentes al acabar. Inspector verificó 898 fuentes y 55 artefactos sin diferencias. Los cuatro recorridos Chromium de Inicio y ficha a 1366 y 320 px comprobaron importes, detalle de historial con teclado y fecha antigua simulada, sin errores, tráfico externo ni escrituras. Se verificó el foco a 320 px y cerró la instancia. La candidata conserva 161 impedimentos de publicación. Datos ficticios, sin despliegue.
+
+Contratos API de Claude: aceptados sobre las dos huellas verificadas, 11/11. La sonda independiente confirmó filtro no vacío y 422 al enviar un número no finito literal a un campo numérico. El caso con un objeto JavaScript que contiene Infinity serializa null, límite documentado. Rendimiento: 7/7. Vuelve a R2 porque el propio CLI aprueba una muestra de 200 registros contra un presupuesto de 10.000. Las cifras reales del generador quedan registradas. G2–G4: 3/3, vuelve a R2 por límite no finito, directorio leído como informe y --task sin ID ignorado. Evidencia de los tres en 445.
+
+La reserva original de rendimiento de búsqueda queda bloqueada; SEARCH-PERF-R trabaja sobre la parte libre. Apareció una diferencia de server/workspace-search.ts en 207 (06d5947d...), que se conserva para revisar junto con su implementación. Las otras siete diferencias permanecen registradas en 442. Siguiente paso: revisar cada nueva presentación y las guardas de identidad de la búsqueda antes de conciliar el archivo reservado.
+
+Estados cotejados: CODEX-RECORD-TIMELINE-443: review; CODEX-CANDIDATE-NOV18-444: review; CODEX-CLAUDE-TOOLING-REVIEW-445: review; CLAUDE-API-CONTRACTS: done; CLAUDE-PERF-BUDGETS: working; CLAUDE-DOCS-G2-G4: working. Auditoría de reservas efectivas:0 solapes de reservas y 8 archivos cambiados después de presentar, detallados en este corte. Se conservaron las seis fuentes de esta reserva documental y los apuntes añadidos por el otro chat.
+
+
+
+## Registro 18/11/2026, 21:51:46, Europe/Madrid
+
+## Corte vigente · Calidad con cobertura verificable y consistencia de búsqueda · 18/11/2026, 21:51:46, Europe/Madrid
+
+Calidad 447 presentada. La tarjeta cuenta registros únicos, retira los avisos anteriores al cambiar de copia y cancela la petición y la paginación pendientes. Cubre totales cambiantes y páginas repetidas sin dar por rotas relaciones con destinos leídos parcialmente. Permite reintentar. 21/21 Node, 3/3 Chromium y tipos limpios. Las tres regresiones unitarias y las tres de navegador fallan antes. Sin una revisión común en las páginas, solo se detectan incoherencias observables.
+
+Búsqueda 446 presentada. Las 29 pruebas existentes pasan con 207, con 444 y con la corrección temporal. Dos conexiones en un banco propio reproducen HTTP 200 con identidad vieja y resultado nuevo si la copia se sustituye durante la lectura. Ocurre en 303c1796 y 06d5947d, así que precede a la optimización. La corrección temporal a68d5f3c devuelve 409 sin resultados en ese escenario y conserva la consulta nueva. No se editó el servidor vivo. La huella d48978d1 que apareció después cambia la clave de caché; no hereda el dictamen de la copia antigua.
+
+No se observó una presentación nueva de Claude. SEARCH-PERF-R conserva el módulo compartido y 207 el servidor. En las adaptaciones de E2E se observaron nuevas huellas de continuity, v4, main-app-readiness, independent-task-mount y date-check-app. Se cotejaron como cambios de selectores, pendientes de pruebas. Continúa la verificación de entregas y la coordinación para integrar la protección del servidor. Datos ficticios y sin acceso a la instalación.
+
+Estados cotejados: CODEX-QUALITY-COVERAGE-447: review; CODEX-SEARCH-CONTEXT-MIXED-446: review. Auditoría de reservas efectivas:0 solapes de reservas y 9 archivos cambiados después de presentar, detallados en este corte. Se conservaron las seis fuentes de esta reserva documental y los apuntes añadidos por el otro chat.
+
+
+
+## Registro 18/11/2026, 22:10:39, Europe/Madrid
+
+## Corte vigente · Relaciones en fichas, demo local y búsqueda concurrente · 18/11/2026, 22:10:39, Europe/Madrid
+
+La corrección 449 está en revisión. Al crear una tarea u oportunidad desde una ficha, la app conserva las relaciones que coinciden por clave y tipo. Si hay varios campos posibles, deja vacíos los dudosos y oculta el acceso directo cuando no puede identificar su campo. Siguen disponibles los accesos de creación desde la lista. Tres regresiones fallan con la fuente anterior. Con la corrección pasan 29 pruebas Node, TypeScript y el recorrido de dos fichas en Chromium. El banco conserva contacto y aprobador distintos con el observador vacío.
+
+Demo local puesta en marcha en http://127.0.0.1:55317/ con 62 registros ficticios nuevos. Usa la candidata 444 más el helper 449. Chromium abrió Inicio y una ficha sin errores, escrituras API ni tráfico externo. El servidor local conserva su propio directorio y bloquea conexiones externas. La protección de búsqueda sigue en el banco aislado.
+
+La comprobación 448 está en revisión. Se probaron dos revisiones del servidor con la misma búsqueda compartida 20795632. Con d48978d1 se reprodujo un 200 con identidad anterior y resultado nuevo. Con 4cebb7cb se comprobó además que una búsqueda con caché caliente y la apertura de una ficha conservan indebidamente datos anteriores cuando se activa otra copia durante la lectura. Los tres controles devuelven 409 sin datos con la comprobación temporal. Las suites existentes pasan 29/29 en cada variante. La guarda se verificó en las secuencias controladas y queda pendiente de integrar con SEARCH-PERF-R. Se preservaron sus reservas. QA052 y QA081 siguen aceptadas. LAB036 queda a la espera de su sesión autora.
+
+Nueve diferencias en las reservas en revisión. Cambió continuity.spec.ts a caba5823 en 058 y el servidor de búsqueda a 4cebb7cb en 207. Continúan las de v4.spec.ts (058), components.tsx (063), ChangesView.tsx (064), protection-review.spec.ts (070), main-app-readiness.spec.ts (121), independent-task-mount.spec.ts (142) y date-check-app.spec.ts (DATE-CHECK-HOST-MOUNT). Próximo paso: cotejar nuevas presentaciones y coordinar la integración de la protección de búsqueda con las pruebas de rendimiento.
+
+Estados cotejados: CODEX-SEARCH-CACHE-RECHECK-448: review; CODEX-RELATED-PRESET-449: review; CLAUDE-SEARCH-PERF-R: working. Auditoría de reservas efectivas:0 solapes de reservas y 9 archivos cambiados después de presentar, detallados en este corte. Se conservaron las seis fuentes de esta reserva documental y los apuntes añadidos por el otro chat.
+
+
+
+## Registro 18/11/2026, 22:22:59, Europe/Madrid
+
+## Corte vigente · Cobertura de tareas vencidas y comprobación del índice de búsqueda · 18/11/2026, 22:22:59, Europe/Madrid
+
+450 en revisión. «Despachar vencidas» indica el alcance parcial, cuenta tareas únicas y evita afirmar que no hay vencidas cuando faltan páginas. Permite reintentar y aborta la lectura y la paginación al cerrar. Verificación con 22 pruebas Node, TypeScript y tres recorridos Chromium. Los tres recorridos fallan con la fuente anterior. Desde Hoy, una compilación aislada de 444+449+450 leyó 300 de 350 tareas ficticias, mostró una vencida y mantuvo el aviso tras «Saltar». Cero errores de página, escrituras API o accesos externos. La información disponible permite detectar repeticiones y cambios de recuento, pero no toda alteración entre páginas.
+
+SEARCH-PERF-R sigue en trabajo. Se cotejaron las huellas d8f572ff (servidor bajo la reserva 207) y 158ada53 (módulo compartido). El nuevo índice reutiliza elementos de fichas sin cambios. Pasan las 29 pruebas existentes y se mantienen los tres HTTP 200 del informe 448 ante el cambio de copia dirigido durante la consulta. Banco tests/.tmp/search446-xPcqPH. Queda por revisar la entrega formal e integrar la protección con una comprobación de rendimiento. Se preservaron las reservas. QA052 y QA081 conservan su aceptación.
+
+El recorrido se hizo en una instancia separada de la demo y de la instalación. Diferencias observadas en reservas en revisión, pendientes de conciliar con sus entregas.
+
+- CODEX-INTEGRATION-058, tests/e2e/continuity.spec.ts, 278afe0f
+- CODEX-INTEGRATION-058, tests/e2e/v4.spec.ts, 78e67027
+- CODEX-RELATION-LABEL-063, src/components.tsx, d4a3ae65
+- CODEX-HISTORY-064, src/ChangesView.tsx, fca4fc70
+- CODEX-AUTH-070, tests/e2e/protection-review.spec.ts, 8a0e766f
+- CODEX-APP-READINESS-121, tests/e2e/main-app-readiness.spec.ts, 19b1f9b6
+- CODEX-TASK-MOUNT-REVIEW-142, tests/e2e/independent-task-mount.spec.ts, 5470f45a
+- CODEX-SEARCH-STALE-CONTEXT-207, server/workspace-search.ts, d8f572ff
+- CLAUDE-OPUS-DATE-CHECK-HOST-MOUNT, tests/e2e/date-check-app.spec.ts, b49321a6
+
+Estados cotejados: CODEX-FOCUS-COVERAGE-450: review; CLAUDE-SEARCH-PERF-R: working. Auditoría de reservas efectivas:0 solapes de reservas y 9 archivos cambiados después de presentar, detallados en este corte. Se conservaron las seis fuentes de esta reserva documental y los apuntes añadidos por el otro chat.
+
+
+
+## Registro 18/11/2026, 22:31:37, Europe/Madrid
+
+## Corte vigente · Concurrencia de búsqueda medida con 10.000 registros cifrados · 18/11/2026, 22:31:37, Europe/Madrid
+
+451 en revisión. En un banco aislado se comparó el índice actual de Claude con dos protecciones. La versión de SQLite detectó cambios de copia y ediciones confirmadas desde otra conexión y otro proceso. Devolvió 409 sin datos en los cinco cambios relevantes y permitió la consulta siguiente con la identidad vigente. También devolvió 409 ante una escritura ajena a la búsqueda. Un rollback no generó conflicto. La variante no utiliza la versión de SQLite como revisión pública. Conserva identidad, resultados y revisión.
+
+Con 10.000 filas cifradas, las tres variantes produjeron el mismo JSON en cada ronda estable. Con caché caliente, medianas de 187,42 ms sin protección, 251,18 ms releyendo filas e identidad y 192,21 ms con la versión. Tras guardar una edición, 257,51 ms, 322,94 ms y 271,90 ms, respectivamente. Muestras intercaladas, una máquina, sin umbral de producción. 29 pruebas existentes y TypeScript con el prototipo. Evidencia en tests/.tmp/search451-AKKycq.
+
+SEARCH-PERF-R sigue en trabajo y conserva sus archivos. Se probó el corte d8f572ff/158ada53, no se editó el servidor vivo. El siguiente paso es contrastar el corte formal de Claude e integrar una protección con pruebas que cubran el reintento del navegador y la identidad que entrega el estado general. QA052 mantiene su aceptación.
+
+Diferencias observadas en las reservas en revisión, pendientes de conciliar con las entregas.
+
+- CODEX-INTEGRATION-058, tests/e2e/continuity.spec.ts, 278afe0f
+- CODEX-INTEGRATION-058, tests/e2e/v4.spec.ts, 78e67027
+- CODEX-RELATION-LABEL-063, src/components.tsx, d4a3ae65
+- CODEX-HISTORY-064, src/ChangesView.tsx, fca4fc70
+- CODEX-AUTH-070, tests/e2e/protection-review.spec.ts, 8a0e766f
+- CODEX-APP-READINESS-121, tests/e2e/main-app-readiness.spec.ts, 19b1f9b6
+- CODEX-TASK-MOUNT-REVIEW-142, tests/e2e/independent-task-mount.spec.ts, 5470f45a
+- CODEX-SEARCH-STALE-CONTEXT-207, server/workspace-search.ts, d8f572ff
+- CLAUDE-OPUS-DATE-CHECK-HOST-MOUNT, tests/e2e/date-check-app.spec.ts, b49321a6
+
+Estados cotejados: CODEX-SEARCH-SQLITE-VERSION-451: review; CLAUDE-SEARCH-PERF-R: working. Auditoría de reservas efectivas:0 solapes de reservas y 9 archivos cambiados después de presentar, detallados en este corte. Se conservaron las seis fuentes de esta reserva documental y los apuntes añadidos por el otro chat.
+
+
+
+## Registro 18/11/2026, 22:49:04, Europe/Madrid
+
+## Corte vigente · Resultados de búsqueda y revisiones de CSV y devoluciones · 18/11/2026, 22:49:04, Europe/Madrid
+
+Búsqueda 453 presentada. Un 409 al abrir una ficha retira resultados, procedencia y paginación. Un 503 conserva resultados vigentes. El reintento vuelve a offset cero con la identidad exigida por la app. 29 pruebas, TypeScript y dos Chromium; la regresión de 409 falla con la fuente anterior. En la compilación aislada con el montaje real de 444 se comprobó la restauración con mismo ID y fecha y la recuperación al provocar la lectura autenticada del estado. Queda pendiente ligar esa lectura al botón de reintento en el montaje. Banco tests/.tmp/search453-app-6oCtmE.
+
+CSV 452 presentado. R4 pasa 20 pruebas y TypeScript. Cinco fechas mixtas producen dos altas, tres errores con línea y cero escrituras de vista previa. Si otra conexión restaura la copia tras validar la marca y antes del primer guardado, R4 crea una asociación con la empresa de la revisión anterior. En el prototipo, la comprobación dentro de la transacción devuelve 409, cero altas, cero cambios. La importación estable de dos filas funciona incluso sin época inicial. R5 queda en el tablón para cubrir también una interrupción entre filas. Banco tests/.tmp/csv452-fqDZVi.
+
+Devolución 454 presentada. Se aceptó la interfaz R2 al repetir el reemplazo de plan con lectura pendiente. Sus datos anteriores se retiran en el mismo render. El modelo R2 describe correctamente un envío confirmado, pero el motor simulado reproduce un alta guardada cuya confirmación se pierde. El modelo la cuenta por crear y anuncia relaciones, aunque el motor la marca incierta y bloquea la reaprobación. Prototipo local retira ambas promesas. Modelo en R3. 38 pruebas, tipos y controles del motor y del arnés. Banco tests/.tmp/return454-1bZT6u.
+
+SEARCH-PERF-R y los contratos API R2 siguen en trabajo según el tablón. QA052 mantiene su aceptación. Los ensayos emplearon bases ficticias nuevas, sin tráficos externos. Siguiente paso: cotejar las nuevas propuestas cuando se presenten e integrar el refresco del estado de búsqueda con quien tiene reservado el montaje.
+
+Diferencias observadas en las reservas en revisión, pendientes de conciliar con sus entregas.
+
+- CODEX-INTEGRATION-058, tests/e2e/continuity.spec.ts, 642d5b37
+- CODEX-INTEGRATION-058, tests/e2e/v4.spec.ts, 78e67027
+- CODEX-RELATION-LABEL-063, src/components.tsx, d4a3ae65
+- CODEX-HISTORY-064, src/ChangesView.tsx, 052a4284
+- CODEX-AUTH-070, tests/e2e/protection-review.spec.ts, 8a0e766f
+- CODEX-APP-READINESS-121, tests/e2e/main-app-readiness.spec.ts, 19b1f9b6
+- CODEX-TASK-MOUNT-REVIEW-142, tests/e2e/independent-task-mount.spec.ts, 5470f45a
+- CODEX-SEARCH-STALE-CONTEXT-207, server/workspace-search.ts, 5239fc2c
+- CLAUDE-OPUS-DATE-CHECK-HOST-MOUNT, tests/e2e/date-check-app.spec.ts, b49321a6
+
+Estados cotejados: CODEX-CSV-R4-REVIEW-452: review; CODEX-SEARCH-RETRY-453: review; CODEX-RETURN-R2-REVIEW-454: review; CLAUDE-CSV-IMPORT: working; CLAUDE-RETURN-EXPLAIN-UI: done; CLAUDE-RETURN-EXPLAIN: working. Auditoría de reservas efectivas:0 solapes de reservas y 9 archivos cambiados después de presentar, detallados en este corte. Se conservaron las seis fuentes de esta reserva documental y los apuntes añadidos por el otro chat.
+
+
+
+## Registro 19/11/2026, 8:30:06, Europe/Madrid
+
+## Corte vigente · Búsqueda recuperable e índice rápido, revisión de CSV R5 · 19/11/2026, 8:30:06, Europe/Madrid
+
+Búsqueda 456 integrada: un 409 al buscar o abrir una ficha, seguido de reintento, usa el refresco autenticado de App, conserva el criterio vigente y solicita la primera página con la nueva identidad. Si falla el estado ofrece reintentar; al cerrar se cancela. Tres regresiones nuevas causales, dos anteriores, tipos y recorrido completo con cambio de copia SQLite de mismo ID y fecha. En la app compilada la acción hizo exactamente GET estado y GET búsqueda, y abrió la ficha nueva. Banco tests/.tmp/search456-app-uaIOsw. El montaje se editó con la reserva transferida Grafito y el diálogo con 453.
+
+Búsqueda 457 integrada en la reserva 207 y entrega de rendimiento de Claude aceptada. La versión SQLite se comprueba al comienzo y tras leer los datos. Otra conexión que confirma una escritura provoca 409, descarta la caché y evita mezclar fichas e identidad. Los tres casos fallan antes y pasan después. 70 pruebas, tipos, 180 combinaciones con 10.000 registros. Mediana de 178,6 ms frente a 749,5 ms de la referencia local, y 229,3 frente a 590,2 ms tras editar. La versión de SQLite cubre las dos rutas de búsqueda; queda pendiente comprobar la coherencia de la lectura general de estado con una escritura dirigida durante su propia lectura.
+
+CSV R5 pasa 22 pruebas y tipos. Detiene la restauración justo antes de guardar. Una restauración dirigida después de validar la marca y antes de fijar su identidad para guardar produce 200 y asocia la empresa anterior. El prototipo que toma la versión antes del plan y la contrasta en la transacción devuelve 409 y deja cero cambios. R6 registrada con ese caso, copias sin época y visibilidad del recibo parcial. Banco tests/.tmp/csv458-BqROAT.
+
+R3 del detector de rutas aceptada. 5/5 con rutas reales y el mismo cambio ficticio a una rama inexistente ahora falla y localiza la ruta; evidencia apuntada en tests/.tmp/api455-r3-pointer.txt. Modelo de devoluciones R3 aceptado. 39/39 y el motor simulado confirma que ante respuesta perdida conserva el alta como incierta sin contabilizarla por crear ni prometer relaciones; evidencia apuntada en tests/.tmp/return454-r3-pointer.txt. Contratos CSV/Deshacer R2 aceptados con 5/5. QA052 mantiene su aceptación.
+
+Se conservaron la sección y la entrada de la landing añadidas por el otro chat. Los ensayos de búsqueda y CSV se hicieron en bancos ficticios separados. Diferencias observadas en las reservas en revisión.
+
+- CODEX-LAB-035, CONTEXTO-PROYECTO.md, 4f9421a5
+- CODEX-INTEGRATION-058, tests/e2e/continuity.spec.ts, 39450efa
+- CODEX-INTEGRATION-058, tests/e2e/v4.spec.ts, 78e67027
+- CODEX-RELATION-LABEL-063, src/components.tsx, d4a3ae65
+- CODEX-HISTORY-064, src/ChangesView.tsx, 052a4284
+- CODEX-AUTH-070, tests/e2e/protection-review.spec.ts, 8a0e766f
+- CODEX-APP-READINESS-121, tests/e2e/main-app-readiness.spec.ts, 19b1f9b6
+- CODEX-TASK-MOUNT-REVIEW-142, tests/e2e/independent-task-mount.spec.ts, 5470f45a
+- CLAUDE-OPUS-DATE-CHECK-HOST-MOUNT, tests/e2e/date-check-app.spec.ts, b49321a6
+
+Estados cotejados: CODEX-SEARCH-WORKSPACE-REFRESH-456: review; CODEX-SEARCH-PERF-REVIEW-457: review; CODEX-CSV-R5-REVIEW-458: review; CLAUDE-SEARCH-PERF-R: done; CLAUDE-CSV-IMPORT: working; CLAUDE-API-CLIENT-ROUTES: done; CLAUDE-RETURN-EXPLAIN: done; CLAUDE-API-CONTRACTS-R2: done. Auditoría de reservas efectivas:0 solapes de reservas y 9 archivos cambiados después de presentar, detallados en este corte. Se conservaron las seis fuentes de esta reserva documental y los apuntes añadidos por el otro chat.
+
+
+
+## Registro 19/11/2026, 8:44:13, Europe/Madrid
+
+## Corte vigente · Estado coherente durante restauraciones y comprobaciones de herramientas · 19/11/2026, 8:44:13, Europe/Madrid
+
+Estado 459 presentado. Tanto el estado completo como el compacto devolvían la captura de A con la identidad de B al restaurar con el mismo ID y fecha durante su lectura. La integración comparte la comprobación de versión SQLite con 207, repite una vez si cambió y devuelve 409 si vuelve a cambiar. La captura y el esquema vigentes viajan juntos, el formato compacto conserva sus listas vacías y la lectura no escribe. Las tres regresiones fallan antes y pasan después. 46 pruebas focales y TypeScript. Datos ficticios con dos conexiones SQLite; logs tests/.tmp/state459-before.log y state459-final.log.
+
+Evidencia 461 presentada. Se reprodujo antes de 459 el fallo de una prueba que esperaba cuatro lecturas de identidad; la búsqueda con caché hace dos. Ahora vence la sesión en la última lectura posterior al cálculo, según el control autenticado. El servidor devuelve 401 sin cabecera de atestación. La variante aislada que adelanta la comprobación final devuelve 200 y la prueba la detecta. El servicio conserva su comprobación; solo se actualizó la prueba.
+
+Herramientas de Claude R2 aceptadas, huellas verificadas en 460. Presupuestos 8/8 con muestra de tamaño de referencia y compilación copiada. La CLI con 200 registros devuelve código 1 y reference:false. Informes 6/6 y tres controles de uso por CLI; límite infinito y --task sin ID devuelven 2, carpeta explícita con sufijo .md devuelve 1. G2 y G4 registran propuestas sobre el trabajo en equipo. QA052 conserva su aceptación. CSV sigue en R6 según el tablón actual.
+
+Se preservaron la sección de fidelidad de la landing, los pasos de colaboración documentados por el otro chat y su entrada del registro. Diferencias observadas en reservas al revisar este corte.
+
+- CODEX-LAB-035, CONTEXTO-PROYECTO.md, 014b8687
+- CODEX-INTEGRATION-058, tests/e2e/continuity.spec.ts, 39450efa
+- CODEX-INTEGRATION-058, tests/e2e/v4.spec.ts, 78e67027
+- CODEX-RELATION-LABEL-063, src/components.tsx, d4a3ae65
+- CODEX-HISTORY-064, src/ChangesView.tsx, 052a4284
+- CODEX-AUTH-070, tests/e2e/protection-review.spec.ts, 8a0e766f
+- CODEX-APP-READINESS-121, tests/e2e/main-app-readiness.spec.ts, 19b1f9b6
+- CODEX-TASK-MOUNT-REVIEW-142, tests/e2e/independent-task-mount.spec.ts, 5470f45a
+- CLAUDE-OPUS-DATE-CHECK-HOST-MOUNT, tests/e2e/date-check-app.spec.ts, b49321a6
+
+Estados cotejados: CODEX-WORKSPACE-STATE-CONSISTENCY-459: review; CODEX-CLAUDE-TOOLING-R2-460: review; CODEX-EVIDENCE-AUTH-CACHE-461: review; CODEX-SEARCH-STALE-CONTEXT-207: review; CLAUDE-PERF-BUDGETS: done; CLAUDE-DOCS-G2-G4: done; CLAUDE-CSV-IMPORT: working. Auditoría de reservas efectivas:0 solapes de reservas y 9 archivos cambiados después de presentar, detallados en este corte. Se conservaron las seis fuentes de esta reserva documental y los apuntes añadidos por el otro chat.
+
+
+
+## Registro 19/11/2026, 8:57:43, Europe/Madrid
+
+## Corte vigente · CI con evidencia de ejecución, escáner móvil y permisos de Equipo · 19/11/2026, 8:57:43, Europe/Madrid
+
+Revisión 462. Las siete comprobaciones de la CI opcional y las veinte de la base pasaron en ejecuciones focales. Se repitió el cierre de procesos propios de Windows con permiso y tardó 1,87 s. Un spec sintético que falla al ejecutarse devuelve 0 con --list, y el orquestador interpreta el listado como ejecución correcta. También reenvía opciones de configuración y reutilización de build. CI vuelve a R2 para acotar los filtros, comprobar ejecución efectiva y declarar el alcance del arnés compartido. No se invocó ese arnés con la configuración del proyecto.
+
+Revisión 462. La autoprueba móvil de Claude pasa 6/6. En Chromium, una navegación 160 ms después a /sesion y un botón que termina 40 px a la izquierda del viewport se contabilizan como vistas sin problemas. La página correcta y el HTTP 503 se clasifican como corresponde. El escáner vuelve a R3. Se dejaron intactos los archivos reservados por Claude.
+
+Revisión 463. Equipo D8 R2 aceptada con build aislado, TypeScript y 51 pruebas focales. Chromium verificó cuatro perfiles en ocho secciones, tres controles de Solo lectura a 390 px y las razones de conexión caducada, portal ausente y falta de permisos. En las dos empresas ficticias aparecen los nombres nuevos. El spec E2E presentado devuelve 1/2 porque abre Empresa y busca allí a Lucía. La copia que abre Contactos por /team?view=records devuelve 2/2, conservando las aserciones de contacto, persistencia, foco y aprobación. Los nombres se devolvieron a R2 concretamente por ese recorrido. Los bancos se cerraron después de probar con datos ficticios y bloqueo de tráfico externo. No se comprobó el piloto instalado.
+
+Se conservó íntegra la entrada de las 08:48 añadida por el otro chat. CSV sigue en su R6 y QA052 conserva su aceptación. Siguiente paso: contrastar las nuevas presentaciones de CI, móvil, nombres y CSV al quedar disponibles.
+
+Huellas divergentes observadas en reservas presentadas durante la auditoría del corte.
+
+- CODEX-LAB-035 · CONTEXTO-PROYECTO.md · d622f428
+- CODEX-INTEGRATION-058 · tests/e2e/continuity.spec.ts · 39450efa
+- CODEX-INTEGRATION-058 · tests/e2e/v4.spec.ts · 78e67027
+- CODEX-RELATION-LABEL-063 · src/components.tsx · d4a3ae65
+- CODEX-HISTORY-064 · src/ChangesView.tsx · 052a4284
+- CODEX-AUTH-070 · tests/e2e/protection-review.spec.ts · 8a0e766f
+- CODEX-APP-READINESS-121 · tests/e2e/main-app-readiness.spec.ts · 19b1f9b6
+- CODEX-TASK-MOUNT-REVIEW-142 · tests/e2e/independent-task-mount.spec.ts · 5470f45a
+- CLAUDE-OPUS-DATE-CHECK-HOST-MOUNT · tests/e2e/date-check-app.spec.ts · b49321a6
+- CLAUDE-UI-NAV-LAB · src/app-shell/navigation.ts · 71f3981f
+
+Estados cotejados: CODEX-CI-MOBILE-REVIEW-462: review; CODEX-TEAM-D8-R2-REVIEW-463: review; CLAUDE-CI-STEPS: working; CLAUDE-MOBILE-D5: working; CLAUDE-TEAM-D8: done; CLAUDE-TEAM-DEMO-NAMES: working; CLAUDE-CSV-IMPORT: working. Auditoría de reservas efectivas:0 solapes de reservas y 10 archivos cambiados después de presentar, detallados en este corte. Se conservaron las seis fuentes de esta reserva documental y los apuntes añadidos por el otro chat.
+
+
+
+## Registro 19/11/2026, 9:08:10, Europe/Madrid
+
+## Corte vigente · Radar y comparación coherentes durante cambios de la copia · 19/11/2026, 9:08:10, Europe/Madrid
+
+464 presentada con dos cambios de servidor. El radar comprueba la versión SQLite antes y después de leer la procedencia, el esquema y los registros. Si otra conexión confirma una restauración en ese intervalo, responde 409 sin tareas ni procedencia antiguas. La revisión ahora cambia también si cambia el portal conservando ID, fecha, esquema y registros. El comparador responde 409 si la poda retira una de las capturas entre las dos lecturas y 404 si se solicita de nuevo ese ID ya retirado. Se reutiliza la comprobación del estado y la búsqueda. Un cambio independiente en la misma base puede causar un 409 conservador. Tres regresiones fallaron antes y pasan después; 66 comprobaciones focales y TypeScript. SQLite cifrado recién creado y dos conexiones; el GET no escribe. Falta verificar el piloto instalado y el comportamiento entre peticiones separadas de una comparación paginada.
+
+465 presentada. El menú de Claude pasa 10 pruebas focales y, en una compilación aislada, cuatro recorridos de retorno con Chromium. Se cotejaron dos huellas de entrega más Sidebar, navigation y v6. La regla del menú conserva la sección activa y el repliegue en el destino. El cambio en navigation invalidó la huella que tenía presentada CLAUDE-UI-NAV-LAB. Se solicitó nueva presentación al titular de esa reserva. La entrega de retorno sigue en revisión: Sidebar y v6 cambiaron aunque solo figuraban como lectura. La suite v6 completa no se volvió a ejecutar; el informe de Claude registró 2/3. Los archivos se conservaron.
+
+QA052 sigue cerrada. CSV, CI, escáner móvil y nombres de Equipo seguían trabajando en el tablón. Siguiente paso: comprobar sus presentaciones y estudiar la continuidad de una paginación si los contenidos de capturas cambian entre peticiones.
+
+Huellas divergentes observadas en reservas presentadas durante la auditoría del corte.
+
+- CODEX-INTEGRATION-058 · tests/e2e/continuity.spec.ts · 39450efa
+- CODEX-INTEGRATION-058 · tests/e2e/v4.spec.ts · 78e67027
+- CODEX-RELATION-LABEL-063 · src/components.tsx · d4a3ae65
+- CODEX-HISTORY-064 · src/ChangesView.tsx · 052a4284
+- CODEX-AUTH-070 · tests/e2e/protection-review.spec.ts · 8a0e766f
+- CODEX-APP-READINESS-121 · tests/e2e/main-app-readiness.spec.ts · 19b1f9b6
+- CODEX-TASK-MOUNT-REVIEW-142 · tests/e2e/independent-task-mount.spec.ts · 5470f45a
+- CLAUDE-OPUS-DATE-CHECK-HOST-MOUNT · tests/e2e/date-check-app.spec.ts · b49321a6
+
+Estados cotejados: CODEX-CONTINUITY-READ-CONSISTENCY-464: review; CODEX-NAV-GROUP-REVIEW-465: review; CLAUDE-UI-NAV-LAB: working; CLAUDE-NAV-GROUP-RETURN: review; CLAUDE-QA-052: done; CLAUDE-CSV-IMPORT: working; CLAUDE-CI-STEPS: working; CLAUDE-MOBILE-D5: working; CLAUDE-TEAM-DEMO-NAMES: working. Auditoría de reservas efectivas:0 solapes de reservas y 8 archivos cambiados después de presentar, detallados en este corte. Se conservaron las seis fuentes de esta reserva documental y los apuntes añadidos por el otro chat.
+
+
+
+## Registro 19/11/2026, 9:16:11, Europe/Madrid
+
+## Corte vigente · Paginación sin mezclar capturas y revisión independiente de accesibilidad · 19/11/2026, 9:16:11, Europe/Madrid
+
+466 presentada. Cada paginación comprueba ambas huellas de la primera respuesta además de IDs y offset. Una página de contenido cambiado se descarta, conserva las selecciones y lleva el foco a Comparar capturas. Eso inicia una comparación nueva desde cero. También se valida la presencia de las huellas en el primer resultado. Las cuatro regresiones fallan antes y pasan después; 70/70 focales y TypeScript. En Chromium y con un servidor aislado, una segunda conexión ejecutó la poda real y reingresó contenido distinto con el mismo ID. HTTP 200 con huella nueva y 32 diferencias, página rechazada, reinicio y página siguiente válidas. Todos los datos eran ficticios. El piloto instalado queda sin verificar.
+
+467 presentada. Las huellas de CLAUDE-TEAM-AUDIT, siete unitarias y autoprueba son correctas. Su archivo muestra 96 vistas y cero hallazgos medidos. Chromium independiente encontró cuatro falsos negativos del auditor: referencia inexistente en la etiqueta, sombra permanente dada por foco, textarea de 22 px omitido y botón completamente fuera por el borde izquierdo. Se solicitó R2 al titular de los archivos. Son límites reproducidos del instrumento, no defectos comprobados en la app de Equipo.
+
+Se preservaron la nueva sección de la rama compartida y la entrada de las 09:11, incorporadas por otro chat. QA052 permanece cerrada. Las revisiones solicitadas de CSV, CI, móvil, nombres y navegación siguen abiertas en el tablón. Siguiente paso: contrastar nuevas presentaciones y comprobar la identidad de procedencia del radar cuando la copia cambie antes de iniciar la consulta con el mismo ID y fecha.
+
+Huellas divergentes observadas en reservas presentadas durante la auditoría del corte.
+
+- CODEX-LAB-035 · CONTEXTO-PROYECTO.md · 2cc981c6
+- CODEX-INTEGRATION-058 · tests/e2e/continuity.spec.ts · 39450efa
+- CODEX-INTEGRATION-058 · tests/e2e/v4.spec.ts · 78e67027
+- CODEX-RELATION-LABEL-063 · src/components.tsx · d4a3ae65
+- CODEX-HISTORY-064 · src/ChangesView.tsx · 052a4284
+- CODEX-AUTH-070 · tests/e2e/protection-review.spec.ts · 8a0e766f
+- CODEX-APP-READINESS-121 · tests/e2e/main-app-readiness.spec.ts · 19b1f9b6
+- CODEX-TASK-MOUNT-REVIEW-142 · tests/e2e/independent-task-mount.spec.ts · 5470f45a
+- CLAUDE-OPUS-DATE-CHECK-HOST-MOUNT · tests/e2e/date-check-app.spec.ts · b49321a6
+
+Estados cotejados: CODEX-COMPARISON-PAGE-PROVENANCE-466: review; CODEX-TEAM-AUDIT-REVIEW-467: review; CLAUDE-TEAM-AUDIT: working; CLAUDE-QA-052: done; CLAUDE-CSV-IMPORT: working; CLAUDE-CI-STEPS: working; CLAUDE-MOBILE-D5: working; CLAUDE-TEAM-DEMO-NAMES: working; CLAUDE-UI-NAV-LAB: working; CLAUDE-NAV-GROUP-RETURN: review. Auditoría de reservas efectivas:0 solapes de reservas y 9 archivos cambiados después de presentar, detallados en este corte. Se conservaron las seis fuentes de esta reserva documental y los apuntes añadidos por el otro chat.
+

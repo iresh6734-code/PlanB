@@ -42,6 +42,26 @@ test('loadRelated: con más registros de los que revisa, lo declara en scanned <
   assert.equal(tasks.records.length, 0, 'lo que queda fuera de lo revisado no se inventa');
 });
 
+test('loadRelated: cancelar durante la respuesta detiene la paginación aunque el transporte la entregue', async () => {
+  const controller = new AbortController();
+  const calls: string[] = [];
+  const result = loadRelated(spec, of('contacts')[0], async (entity, offset) => {
+    calls.push(entity + '@' + offset);
+    const page = await pager()(entity, offset, PAGE_SIZE);
+    controller.abort();
+    return { ...page, total: PAGE_SIZE * 2 };
+  }, controller.signal);
+
+  await assert.rejects(result, { name: 'AbortError' });
+  assert.deepEqual(calls, ['deals@0']);
+});
+
+test('loadRelated: una lectura ya cancelada no inicia ninguna petición', async () => {
+  const calls: string[] = [];
+  await assert.rejects(loadRelated(spec, of('contacts')[0], pager(calls), AbortSignal.abort()), { name: 'AbortError' });
+  assert.deepEqual(calls, []);
+});
+
 test('matchCommands: todas las palabras, sin acentos ni mayúsculas', () => {
   const commands: Command[] = [{ id: 'a', label: 'Ir a Preparación', group: 'Ir a', run() {} }, { id: 'b', label: 'Nueva tarea', group: 'Crear', run() {} }, { id: 'c', label: 'Ir a Tareas', group: 'Ir a', run() {} }];
   assert.deepEqual(matchCommands(commands, 'PREPARACION').map(command => command.id), ['a']);

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#14120f" />
+    <meta name="description" content="Plan B conserva una copia local de HubSpot para que tu equipo pueda prepararse, ensayar una interrupción y seguir trabajando con los datos disponibles." />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="es_ES" />
+    <meta property="og:title" content="Plan B · Cae la red. Sigue el trabajo." />
+    <meta property="og:description" content="Prepara tu copia local de HubSpot y ensaya qué hacer si pierdes el acceso al CRM." />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preload" href="/src/assets/landing/hero-relay.webp" as="image" media="(min-width: 721px)" fetchpriority="high" />
+    <link rel="preload" imagesrcset="/src/assets/landing/hero-relay-480.webp 480w, /src/assets/landing/hero-relay-840.webp 840w" imagesizes="100vw" as="image" media="(max-width: 720px)" fetchpriority="high" />
+    <link rel="preload" href="/src/assets/fonts/inter-latin-var.woff2" as="font" type="font/woff2" fetchpriority="low" crossorigin />
+    <link rel="stylesheet" href="/src/landing/styles.css" />
+    <title>Plan B · Continuidad local para HubSpot</title>
+  </head>
+  <body id="inicio">
+    <a class="skip-link" href="#contenido">Saltar al contenido</a>
+    <header class="site-header">
+      <div class="wrap header-inner">
+        <div class="header-brand">
+          <a class="brand" href="#inicio" aria-label="Plan B, inicio">Plan B<span aria-hidden="true"></span></a>
+          <span class="header-descriptor">Continuidad para HubSpot</span>
+        </div>
+        <nav class="main-nav" aria-label="Secciones">
+          <a href="#alcance" data-open-story>Qué recuperas</a>
+          <a href="#simulador" data-open-story>Cómo funciona</a>
+          <a href="#preparacion" data-open-story>Prepara tu plan</a>
+        </nav>
+        <a class="header-app" href="/inicio">Abrir Plan B <span class="arrow-diagonal" aria-hidden="true"></span></a>
+      </div>
+    </header>
+    <main id="contenido" tabindex="-1">
+      <section class="hero" id="hero-relay" aria-labelledby="hero-titulo">
+        <picture class="hero-art">
+          <source media="(max-width: 720px)" srcset="/src/assets/landing/hero-relay-480.webp 480w, /src/assets/landing/hero-relay-840.webp 840w" sizes="100vw" />
+          <img src="/src/assets/landing/hero-relay.webp" alt="" width="1260" height="840" fetchpriority="high" />
+        </picture>
+        <div class="hero-shade" aria-hidden="true"></div>
+        <div class="hero-shutter" aria-hidden="true"></div>
+        <svg class="hero-bypass" aria-hidden="true" viewBox="0 0 1440 790" preserveAspectRatio="none" fill="none">
+          <path pathLength="1" d="M1442 602H1182Q1152 602 1127 579L1028 489Q1007 470 979 470H921Q890 470 877 443L830 340Q817 313 785 313H738" />
+          <circle cx="738" cy="313" r="5" />
+        </svg>
+        <div class="wrap hero-inner">
+          <div class="hero-copy">
+            <h1 id="hero-titulo"><span>Cae la red.</span> <em>Sigue el trabajo.</em></h1>
+            <p>Una copia local de HubSpot, preparada para seguir trabajando si el CRM deja de responder.</p>
+            <div class="hero-actions">
+              <a class="action action-signal" href="#simulador" data-open-story>Probar la continuidad <span class="arrow-down" aria-hidden="true"></span></a>
+              <button type="button" class="action relay-button" id="relay-toggle" aria-pressed="false" hidden>Simular corte <span class="toggle-symbol" aria-hidden="true"></span></button>
+            </div>
+          </div>
+          <div class="hero-status">
+            <span class="relay-state" id="relay-state" role="status"><i aria-hidden="true"></i> <span>HubSpot disponible</span></span>
+          </div>
+        </div>
+      </section>
+      <div id="continuity-story"></div>
+      <div class="wrap no-script" id="story-unavailable" hidden>
+        <p>La simulación necesita volver a cargar. También puedes abrir la sección de Continuidad de Plan B.</p>
+        <a href="/continuidad">Abrir Continuidad en Plan B</a>
+      </div>
+      <noscript>
+        <section class="wrap no-script" id="simulador">
+          <h2>Continuidad con una copia local</h2>
+          <p>Si HubSpot deja de responder, puedes consultar los datos disponibles y seguir trabajando con las operaciones que admite la copia.</p>
+        </section>
+        <section class="wrap no-script" id="preparacion">
+          <h2>Preparación y simulacro</h2>
+          <p>Guarda una captura con los contactos, empresas, oportunidades y tareas compatibles de HubSpot y ensaya con una copia aislada.</p>
+          <a href="/continuidad">Abrir Continuidad en Plan B</a>
+        </section>
+        <section class="wrap no-script" id="alcance">
+          <h2>Qué puedes recuperar</h2>
+          <p>Consulta los contactos, empresas, oportunidades y tareas compatibles presentes en la captura.</p>
+        </section>
+        <section class="wrap no-script" id="recuperacion">
+          <h2>Recuperación</h2>
+          <p>Cuando vuelva HubSpot, revisa el trabajo realizado en la copia y prepara su devolución.</p>
+          <a href="/continuidad/cambios">Abrir Cambios en Plan B</a>
+        </section>
+        <section class="wrap no-script">
+          <h2>Que te encuentre preparado.</h2>
+          <a href="/ajustes/preparacion">Abrir Preparación</a>
+        </section>
+      </noscript>
+    </main>
+    <footer class="site-footer">
+      <div class="wrap footer-inner">
+        <a class="brand" href="#inicio" aria-label="Plan B, inicio">Plan B<span aria-hidden="true"></span></a>
+        <p>Continuidad local para HubSpot</p>
+        <a href="#inicio">Volver arriba <span aria-hidden="true">↑</span></a>
+      </div>
+    </footer>
+    <script type="module" src="/src/landing/start.ts"></script>
+  </body>
+</html>

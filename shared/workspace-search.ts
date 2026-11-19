@@ -1,4 +1,4 @@
-import { entityNames, MAX_RECORDS, type AppSpec, type CrmRecord, type EntityName } from './model.js';
+import { entityNames, MAX_RECORDS, type AppSpec, type CrmRecord, type Entity, type EntityName, type Field } from './model.js';
 import { z } from 'zod';
 
 const WorkspaceSearchContextSchema = z.object({
@@ -52,8 +52,42 @@ function preview(value: string, terms: string[]) {
 }
 const cmp = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
 
-/** Searches only the supplied active records and declared fields. No remote lookup, writes or hidden-field fallback. */
-export function searchWorkspace(input: { spec: AppSpec; records: CrmRecord[]; query: string; entities?: EntityName[]; offset?: number; limit?: number }): WorkspaceSearchResult {
+export interface PreparedSearchRecord {
+  readonly record: CrmRecord; readonly id: string; readonly name: string; readonly normalizedName: string;
+  readonly values: readonly { field: Field; text: string; normalized: string }[];
+}
+/** Searchable text of one spec + record list, normalized once. Only valid for exactly those two objects. */
+export interface PreparedWorkspaceSearch { readonly spec: AppSpec; readonly records: readonly CrmRecord[]; readonly items: readonly PreparedSearchRecord[] }
+
+/**
+ * Normalizes every searchable text once so that several queries over the same copy reuse it (CLAUDE-SEARCH-PERF-R).
+ * Pure: same fields, labels and normalization as a search without preparation. Records without a declared entity are skipped.
+ * `reuse` may return the item prepared earlier for a record with IDENTICAL content under an IDENTICAL spec; the caller guarantees it.
+ */
+export function prepareWorkspaceSearch(spec: AppSpec, records: readonly CrmRecord[], reuse?: (record: CrmRecord, index: number) => PreparedSearchRecord | undefined): PreparedWorkspaceSearch {
+  const definitions = new Map<string, Entity>(spec.entities.map(entity => [entity.id, entity]));
+  const items: PreparedSearchRecord[] = [];
+  for (const [index, record] of records.entries()) {
+    const definition = definitions.get(record.entity); if (!definition) continue;
+    const previous = reuse?.(record, index);
+    if (previous) { items.push(previous); continue; }
+    const values = definition.fields.flatMap(field => {
+      const value = record.values[field.key]; if (value === undefined || value === null || value === '') return [];
+      const text = typeof value === 'string' && field.type === 'enum' ? (field.options.find(option => option.id === value)?.label ?? '') + ' · ' + value : String(value);
+      return [{ field, text, normalized: normalizeSearch(text) }];
+    });
+    const display = record.values[definition.displayField];
+    const name = String(display === undefined || display === null || typeof display === 'string' && !display.trim() ? record.id : display) + (record.entity === 'contacts' && record.values.lastname && definition.fields.some(field => field.key === 'lastname') ? ' ' + record.values.lastname : '');
+    items.push({ record, id: normalizeSearch(record.id), values, name, normalizedName: normalizeSearch(name) });
+  }
+  return { spec, records, items };
+}
+
+/**
+ * Searches only the supplied active records and declared fields. No remote lookup, writes or hidden-field fallback.
+ * `prepared` is reused only when it was built from these same `spec` and `records` objects; otherwise it is rebuilt.
+ */
+export function searchWorkspace(input: { spec: AppSpec; records: CrmRecord[]; query: string; entities?: EntityName[]; offset?: number; limit?: number; prepared?: PreparedWorkspaceSearch }): WorkspaceSearchResult {
   const query = input.query.trim(), normalized = normalizeSearch(query), terms = [...new Set(normalized.split(' ').filter(Boolean))];
   const offset = input.offset ?? 0, limit = input.limit ?? 25, selected = input.entities ?? [...entityNames];
   if (query.length < 2 || query.length > 160 || !normalized || terms.length > 12) throw new RangeError('Escribe entre 2 y 160 caracteres, con un máximo de 12 términos.');
@@ -61,28 +95,23 @@ export function searchWorkspace(input: { spec: AppSpec; records: CrmRecord[]; qu
   if (!selected.length || new Set(selected).size !== selected.length || selected.some(entity => !entityNames.includes(entity))) throw new TypeError('Tipos de registros inválidos.');
   if (input.records.length > MAX_RECORDS) throw new RangeError('Máximo 10.000 registros.');
   const counts = Object.fromEntries(entityNames.map(entity => [entity, 0])) as Record<EntityName, number>;
-  const definitions = new Map(input.spec.entities.map(entity => [entity.id, entity]));
-  const found: { hit: WorkspaceSearchHit; score: number; name: string }[] = [];
-  for (const record of input.records) {
-    const definition = definitions.get(record.entity); if (!definition) continue;
-    const values = definition.fields.flatMap(field => {
-      const value = record.values[field.key]; if (value === undefined || value === null || value === '') return [];
-      const text = typeof value === 'string' && field.type === 'enum' ? (field.options.find(option => option.id === value)?.label ?? '') + ' · ' + value : String(value);
-      return [{ field, text, normalized: normalizeSearch(text) }];
-    });
-    const id = normalizeSearch(record.id);
+  const prepared = input.prepared && input.prepared.spec === input.spec && input.prepared.records === input.records
+    ? input.prepared : prepareWorkspaceSearch(input.spec, input.records);
+  const found: { item: PreparedSearchRecord; matching: PreparedSearchRecord['values']; score: number; name: string }[] = [];
+  for (const item of prepared.items) {
+    const { record, id, values, normalizedName } = item;
     if (!terms.every(term => id.includes(term) || values.some(value => value.normalized.includes(term)))) continue;
     counts[record.entity]++;
     if (!selected.includes(record.entity)) continue;
-    const display = record.values[definition.displayField];
-    const name = String(display === undefined || display === null || typeof display === 'string' && !display.trim() ? record.id : display) + (record.entity === 'contacts' && record.values.lastname && definition.fields.some(field => field.key === 'lastname') ? ' ' + record.values.lastname : '');
-    const normalizedName = normalizeSearch(name), matching = values.filter(value => terms.some(term => value.normalized.includes(term)));
+    const matching = values.filter(value => terms.some(term => value.normalized.includes(term)));
     const score = id === normalized ? 0 : normalizedName === normalized ? 1 : normalizedName.startsWith(normalized) ? 2 : terms.every(term => normalizedName.includes(term)) ? 3 : 4;
-    found.push({ score, name: normalizedName, hit: {
-      entity: record.entity, id: record.id, label: clip(name, 160).text, matchedId: terms.some(term => id.includes(term)),
-      totalMatchedFields: matching.length, matches: matching.slice(0, 3).map(value => ({ field: value.field.key, label: value.field.label, ...preview(value.text, terms) })),
-    } });
+    found.push({ item, matching, score, name: normalizedName });
   }
-  found.sort((a, b) => a.score - b.score || cmp(a.name, b.name) || entityNames.indexOf(a.hit.entity) - entityNames.indexOf(b.hit.entity) || cmp(a.hit.id, b.hit.id));
-  return { query, offset, limit, total: found.length, hasMore: offset + limit < found.length, counts, items: found.slice(offset, offset + limit).map(value => value.hit) };
+  found.sort((a, b) => a.score - b.score || cmp(a.name, b.name) || entityNames.indexOf(a.item.record.entity) - entityNames.indexOf(b.item.record.entity) || cmp(a.item.record.id, b.item.record.id));
+  // The order never depends on labels or previews, so they are built only for the returned page.
+  const items: WorkspaceSearchHit[] = found.slice(offset, offset + limit).map(({ item: { record, id, name }, matching }) => ({
+    entity: record.entity, id: record.id, label: clip(name, 160).text, matchedId: terms.some(term => id.includes(term)),
+    totalMatchedFields: matching.length, matches: matching.slice(0, 3).map(value => ({ field: value.field.key, label: value.field.label, ...preview(value.text, terms) })),
+  }));
+  return { query, offset, limit, total: found.length, hasMore: offset + limit < found.length, counts, items };
 }

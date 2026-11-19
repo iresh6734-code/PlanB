@@ -13,3 +13,8 @@ Corte privado `tests/.tmp/search207-d893c6b1`. Las dos regresiones nuevas fallan
 Pasaron 30 pruebas en cinco suites, sin omisiones y con typecheck focal limpio. Incluyen rutas normales de Fastify con inyección, autenticación local, identidad de App, búsqueda y paginación, apertura por revisión y el arnés de respuestas tardías. Las dos revisiones de una misma ficción coinciden exactamente con el baseline. Resultado y huellas en `result.json`. Logs `baseline.log`, `final.log` y `typecheck.log`.
 
 El ahorro acreditado es una enumeración completa de fichas activas en cada solicitud que ya se puede rechazar por identidad. La lectura de metadatos y el hash de la captura siguen siendo necesarios. La prueba sintética de error no modifica la base. El arnés de cliente comprueba comportamiento sin navegador. La demo 202 continúa mostrando el corte 193 hasta que se acepte y monte otro corte.
+# Integración con el índice de búsqueda de Claude
+
+Se conservó el índice de la entrega SEARCH-PERF-R. La protección verifica la versión de SQLite antes de identificar la copia y después de leer sus registros. Los tres casos incorporados a esta reserva fallan con el servidor anterior y devuelven 409 con la protección, tanto en búsqueda como en apertura. Las 70 pruebas de búsqueda y consumidores, incluida la medición de Claude, pasan. [Dictamen 457](../reviews/CODEX-SEARCH-PERF-REVIEW-457.md)
+
+La integración 459 comparte la lectura de versión con las rutas de estado. Las dos rutas de búsqueda conservan su control. Las regresiones de búsqueda y estado pasan en la misma batería. [Evidencia 459](CODEX-WORKSPACE-STATE-CONSISTENCY-459.md)

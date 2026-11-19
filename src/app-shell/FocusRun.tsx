@@ -4,8 +4,8 @@ import { api } from '../api.js';
 import { Modal, displayValue, recordName } from '../components.js';
 import { madridDay } from '../task-display.js';
 import { Skeleton } from '../ui/index.js';
-import { daysBetween, doneOption, overdueTasks } from './focus.js';
-import { MAX_PAGES, PAGE_SIZE } from './related.js';
+import { daysBetween, doneOption, loadFocusReview } from './focus.js';
+import { recordListPath } from './useRecordList.js';
 
 type Outcome = 'done' | 'tomorrow' | 'skipped';
 const LABEL: Record<Outcome, string> = { done: 'hecha', tomorrow: 'a mañana', skipped: 'saltada' };
@@ -13,27 +13,25 @@ const LABEL: Record<Outcome, string> = { done: 'hecha', tomorrow: 'a mañana', s
 /** «Despachar vencidas»: recorre las tareas vencidas una a una. Cada acción guarda con la validación de la ficha (saveField);
  *  «Saltar» no cambia nada. La lista se fija al abrir: lo que se resuelve no vuelve a aparecer. */
 export function FocusRun({ spec, saveField, onOpen, close }: { spec: AppSpec; saveField: (record: CrmRecord, key: string, value: string | null) => Promise<string | null>; onOpen: (record: CrmRecord) => void; close: () => void }) {
-  const [list, setList] = useState<CrmRecord[] | null>(null), [related, setRelated] = useState<CrmRecord[]>([]), [error, setError] = useState('');
+  const [review, setReview] = useState<Awaited<ReturnType<typeof loadFocusReview>> | null>(null);
+  const [error, setError] = useState(''), [attempt, setAttempt] = useState(0);
   const [index, setIndex] = useState(0), [results, setResults] = useState<Record<string, Outcome>>({}), [busy, setBusy] = useState(false), [problem, setProblem] = useState('');
   const panel = useRef<HTMLDivElement>(null);
   const today = madridDay(new Date()), tomorrow = madridDay(new Date(Date.now() + 86_400_000));
   const done = doneOption(spec), dueKey = spec.roles?.dueDate ?? 'due_date';
   const tasks = spec.entities.find(entity => entity.id === 'tasks');
   useEffect(() => {
-    let active = true;
-    (async () => {
-      const all: CrmRecord[] = [], extra: CrmRecord[] = [];
-      for (let page = 0; page < MAX_PAGES; page++) {
-        const data = await api<{ records: CrmRecord[]; related: CrmRecord[]; total: number }>('/v2/records/tasks?q=&offset=' + page * PAGE_SIZE + '&limit=' + PAGE_SIZE + '&pipeline=');
-        all.push(...data.records); extra.push(...data.related);
-        if (all.length >= data.total || !data.records.length) break;
-      }
-      if (active) { setList(overdueTasks(spec, all, today)); setRelated(extra); }
-    })().catch(failure => { if (active) setError(failure instanceof Error ? failure.message : 'No se pudieron leer las tareas.'); });
-    return () => { active = false; };
-    // Solo al abrir: guardar refresca la app (y cambia `spec`), pero la lista de la sesión debe quedar fija.
+    const controller = new AbortController();
+    loadFocusReview(spec, today, (offset, limit, signal) => api(recordListPath('tasks', '', offset, '', limit), { signal }), controller.signal)
+      .then(result => { if (!controller.signal.aborted) setReview(result); })
+      .catch(failure => {
+        if (!controller.signal.aborted) setError(failure instanceof Error ? failure.message : 'No se pudieron leer las tareas.');
+      });
+    return () => controller.abort();
+    // Guardar refresca el esquema, pero la lista queda fija desde la lectura inicial o el reintento.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [attempt]);
+  const list = review?.tasks;
   useEffect(() => { const timer = setTimeout(() => panel.current?.focus(), 40); return () => clearTimeout(timer); }, [index, list]);
   const current = list?.[index];
   const finished = !!list && index >= list.length;
@@ -57,12 +55,20 @@ export function FocusRun({ spec, saveField, onOpen, close }: { spec: AppSpec; sa
     else if (letter === 'a' && current) { event.preventDefault(); close(); onOpen(current); }
   };
   const counts = Object.values(results).reduce((sum, outcome) => ({ ...sum, [outcome]: (sum[outcome] ?? 0) + 1 }), {} as Partial<Record<Outcome, number>>);
-  const details = current && tasks ? tasks.columns.map(column => tasks.fields.find(field => field.key === column)!).filter(field => field && field.key !== tasks.displayField && field.key !== dueKey && (!done || field.key !== done.key))
-    .map(field => [field.label, displayValue(current.values[field.key], field, [...related, current], spec)] as const).filter(([, value]) => value) : [];
+  const details = review && current && tasks ? tasks.columns.map(column => tasks.fields.find(field => field.key === column)!).filter(field => field && field.key !== tasks.displayField && field.key !== dueKey && (!done || field.key !== done.key))
+    .map(field => [field.label, displayValue(current.values[field.key], field, [...review.related, current], spec)] as const).filter(([, value]) => value) : [];
   return <Modal title="Despachar vencidas" close={close}><div className="modal-body gx-focus" ref={panel} tabIndex={-1} onKeyDown={key}>
-    {error ? <p className="error-box" role="alert">{error}</p>
+    {review && !review.complete ? <p role="status">
+      {review.scanned < review.total ? `Se revisaron ${review.scanned} de ${review.total} tareas.` : 'El listado cambió durante la lectura.'} Puede haber más tareas vencidas.
+    </p> : null}
+    {error ? <><p className="error-box" role="alert">{error}</p>
+        <button type="button" className="button secondary" onClick={() => { setError(''); setAttempt(value => value + 1); }}>Reintentar</button></>
       : !list ? <Skeleton rows={4} label="Buscando tareas vencidas…" />
-      : !list.length ? <div className="gx-focus-end"><p className="gx-focus-big">Nada vencido.</p><p>No hay tareas abiertas con fecha anterior a hoy.</p><button type="button" className="button primary" onClick={close}>Cerrar</button></div>
+      : !list.length ? <div className="gx-focus-end">
+          <p className="gx-focus-big">{review?.complete ? 'Nada vencido.' : 'No hay tareas vencidas entre las revisadas.'}</p>
+          {review?.complete ? <p>No hay tareas abiertas con fecha anterior a hoy.</p> : null}
+          <button type="button" className="button primary" onClick={close}>Cerrar</button>
+        </div>
       : finished ? <div className="gx-focus-end" role="status"><p className="gx-focus-big">Listo: {list.length} {list.length === 1 ? 'tarea revisada' : 'tareas revisadas'}.</p>
           <p>{[counts.done ? counts.done + (counts.done === 1 ? ' hecha' : ' hechas') : '', counts.tomorrow ? counts.tomorrow + ' a mañana' : '', counts.skipped ? counts.skipped + (counts.skipped === 1 ? ' saltada' : ' saltadas') : ''].filter(Boolean).join(' · ')}. Todo lo cambiado está guardado en tu copia local y aparece en Cambios.</p>
           <button type="button" className="button primary" onClick={close}>Cerrar</button></div>

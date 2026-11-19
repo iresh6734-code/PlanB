@@ -3,13 +3,15 @@ import type { AppState, CrmRecord, FieldValue } from '../../shared/model.js';
 import { displayValue } from '../components.js';
 import { madridDay } from '../task-display.js';
 import { closeStatus, euros, stageKind } from './deal-insights.js';
+import { NewTaskButton } from './RecordSummary.js';
 
 type Spec = NonNullable<AppState['spec']>;
 /** Cabecera de la ficha de una oportunidad: importe, avance por el proceso y cierre de un vistazo.
  *  Pulsar un paso cambia la etapa del formulario (igual que el desplegable de abajo); no se guarda hasta «Guardar cambios».
  *  Evita la palabra «Etapa» en sus nombres accesibles: el desplegable de la ficha la usa como etiqueta. */
-export function DealSummary({ spec, values, set, records, disabled }: {
+export function DealSummary({ spec, values, set, records, disabled, onNewTask, newTaskBlocked }: {
   spec: Spec; values: Record<string, FieldValue>; set: (key: string, value: FieldValue) => void; records: CrmRecord[]; disabled?: boolean;
+  onNewTask?: () => void; newTaskBlocked?: boolean;
 }) {
   const entity = spec.entities.find(item => item.id === 'deals');
   if (!entity) return null;
@@ -38,5 +40,6 @@ export function DealSummary({ spec, values, set, records, disabled }: {
       {open.map((stage, index) => step(stage, stage.id === current?.id ? 'current' : index < reached ? 'done' : 'todo'))}
       {ends.map(stage => step(stage, stage.id === current?.id ? (stageKind(stage) === 'won' ? 'won' : 'lost') : 'todo'))}
     </ol></nav> : null}
+    {onNewTask || newTaskBlocked ? <div className="rs-actions"><NewTaskButton onNewTask={onNewTask} blocked={newTaskBlocked} /></div> : null}
   </section>;
 }

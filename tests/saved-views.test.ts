@@ -60,3 +60,19 @@ test('coincidencia y descripción de una vista', () => {
   assert.equal(describeView(view, { pick: () => 'Abiertas', sort: () => 'Fecha límite', smart: () => 'Vencidas' }), 'búsqueda «norte» · Vencidas · Abiertas · orden por fecha límite ↑');
   assert.equal(describeView({ query: '', pick: null, sort: null, smart: null }, {}), 'todos los registros');
 });
+
+test('un almacenamiento ausente o inaccesible no confirma ninguna escritura', () => {
+  assert.equal(writeSavedViews('contacts', [], null), false);
+  const original = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    get() { throw new Error('Acceso al almacenamiento bloqueado'); }
+  });
+  try {
+    assert.deepEqual(readSavedViews('contacts'), []);
+    assert.equal(writeSavedViews('contacts', []), false);
+  } finally {
+    if (original) Object.defineProperty(globalThis, 'localStorage', original);
+    else Reflect.deleteProperty(globalThis, 'localStorage');
+  }
+});

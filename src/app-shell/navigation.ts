@@ -68,6 +68,16 @@ export function groupOfPage(page: PageId): GroupId {
 }
 
 /** ¿Está activa esta entrada? Las de registros dependen también del tipo abierto. */
+/**
+ * Qué hace pulsar la cabecera de un grupo (CLAUDE-NAV-GROUP-RETURN, 19/11/2026): ir a su primer apartado si estás fuera
+ * del grupo o dentro pero en otro apartado (desde Propuestas, «Hoy» vuelve a la cola de Hoy); solo pliega o despliega
+ * si ya estás en ese primer apartado. Lógica pura.
+ */
+export function headerPress(group: NavGroup, page: PageId, entity: EntityName): 'go' | 'toggle' {
+  if (!group.items.length || groupOfPage(page) !== group.id) return 'go';
+  return itemActive(group.items[0], page, entity) ? 'toggle' : 'go';
+}
+
 export function itemActive(item: NavItem, page: PageId, entity: EntityName): boolean {
   if (item.target.kind === 'entity') return page === 'workspace' && entity === item.target.entity;
   if (item.target.kind === 'page') return page === item.target.page;

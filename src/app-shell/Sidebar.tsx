@@ -4,7 +4,7 @@ import type { AppState, EntityName } from '../../shared/model.js';
 import { APP_VERSION } from '../../shared/version.js';
 import { Brand } from '../components.js';
 import { PreparationNavigation } from '../PreparationNavigation.js';
-import { groupOfPage, itemActive, navigationGroups, type GroupId, type NavGroup, type NavItem, type NavTarget } from './navigation.js';
+import { groupOfPage, headerPress, itemActive, navigationGroups, type GroupId, type NavGroup, type NavItem, type NavTarget } from './navigation.js';
 import type { PageId } from './session.js';
 
 type Toggle = (update: (open: boolean) => boolean) => void;
@@ -55,8 +55,11 @@ export function Sidebar({ state, page, entityName, selected, signals, step, prep
     const Icon = GROUP_ICON[group.id], active = current === group.id;
     if (!group.items.length) return <button type="button" className={'nav-item ' + (active ? 'active' : '')} aria-current={active ? 'page' : undefined} onClick={() => go(group.target)}><Icon size={19} />{group.label}</button>;
     const expanded = open.has(group.id), id = 'nav-group-' + group.id;
-    // Pulsar el grupo abre su primer apartado; si ya estás dentro, solo pliega o despliega.
-    const press = () => active ? setOpen(previous => { const next = new Set(previous); if (next.has(group.id)) next.delete(group.id); else next.add(group.id); return next; }) : go(group.target);
+    // Fuera del grupo, o dentro pero en otro apartado, la cabecera lleva a su primer apartado y lo deja desplegado; ya en
+    // él, pliega o despliega (headerPress, CLAUDE-NAV-GROUP-RETURN).
+    const press = () => headerPress(group, page, entityName) === 'toggle'
+      ? setOpen(previous => { const next = new Set(previous); if (next.has(group.id)) next.delete(group.id); else next.add(group.id); return next; })
+      : (go(group.target), setOpen(previous => new Set([...previous, group.id])));
     return <>
       <button type="button" className={'nav-item work-toggle ' + (active ? 'active' : '')} aria-expanded={expanded} aria-controls={id} disabled={disabled(group)} onClick={press}>
         <Icon size={19} /><span>{group.label}</span>{!expanded ? badgeOf(group.badge) : null}<ChevronDown size={15} aria-hidden="true" className={expanded ? 'expanded' : ''} />

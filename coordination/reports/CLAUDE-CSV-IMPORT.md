@@ -123,3 +123,55 @@ Resultados:
 - **Reproducción:** sin la época en la marca, la nueva regresión falla.
 
 **Huellas R3:** `server/csv-import.ts` `1750aadd2185…` · `tests/csv-import-api.test.ts` `b1edf21e20bb…`.
+
+## R4 · Revisión 431 de Codex
+
+**Hallazgo (correcto).** Un CSV con una cita válida (09:30) y otra imposible (99:00) devolvía **500** en la vista previa. El conversor llamaba a `toISOString` sobre una fecha inválida (`RangeError: Invalid time value`) y se perdía el diagnóstico por fila.
+
+**Corrección** (`shared/csv-import.ts`, `convertValue` para `datetime`):
+
+- **Formatos aceptados:** `DD/MM/AAAA`, `DD/MM/AAAA HH:MM` y `AAAA-MM-DD[ T]HH:MM[:SS]`.
+- **Rango válido:** de 00:00 a 23:59, con segundos de 0 a 59.
+- **Valores rechazados en su fila**, sin normalizarlos ni tumbar la vista previa: una fecha imposible (31/02), una hora imposible (24:00, 9:60, 99:00) o un formato desconocido («9h30», «mañana»). El mensaje es, por ejemplo, «Hora imposible: 99:00 (de 00:00 a 23:59)».
+
+**Pruebas:**
+
+- `csv-import` 5/5. Comprueba los formatos aceptados y los seis valores rechazados.
+- `csv-import-api` 7/7. Añade el archivo mixto: la vista previa responde 200 con 1 fila válida y 1 con error explicado, y aplicar da de alta solo la válida. Se mantienen las regresiones de época R2 y R3.
+- **12/12** en total.
+
+**Reproducción:** con la conversión anterior, el archivo mixto da `500 RangeError: Invalid time value` (2 fallos).
+
+**Huellas R4:**
+
+| Archivo | Huella |
+| --- | --- |
+| `shared/csv-import.ts` | `326701e92517…` |
+| `tests/csv-import.test.ts` | `b506da9e51f6…` |
+| `tests/csv-import-api.test.ts` | `3da64e97f288…` |
+
+## R5 · Revisión 452 de Codex
+
+**Hallazgo (correcto).** Quedaba una carrera. Si otra conexión restauraba una copia en el hueco entre comprobar la marca y guardar la primera alta, la respuesta era 200 y el contacto quedaba enlazado a `company-1`, que en la copia nueva es otra empresa.
+
+**Corrección** (`server/csv-import.ts`). Cada `saveRecord` de la importación lleva una guarda que corre **dentro de su transacción**. Comprueba dos cosas:
+
+- que la copia es la misma: época (`copyEpoch`), captura y sesión;
+- que nadie más ha escrito desde la última alta propia, siguiendo el último cambio con `onChange`.
+
+Qué pasa si algo cambió:
+
+- **Antes de la primera alta:** el mismo 409 `STALE_PREVIEW` que una marca vieja, sin escribir nada.
+- **A mitad:** se detiene con 409, que dice cuántas altas se hicieron (`details.created` e `ids`) para revisarlas en Cambios.
+
+La época se crea, si aún no existe, antes de comparar. Si no, la primera alta la crearía y parecería otra copia; lo destapó la prueba de importación normal.
+
+**Pruebas** (`csv-import-api` 9/9 y `csv-import` 5/5, **14/14**):
+
+- **Restauración en el hueco exacto.** Se instrumenta `saveRecord` para restaurar una copia válida donde «Estudio Arce» es `company-2` justo antes de la transacción. Resultado: 409, ningún contacto nuevo y el historial de la copia restaurada vacío.
+- **Otra escritura entre la primera y la segunda alta.** Resultado: 409 con `created: 1`.
+- Se mantienen las regresiones de época, fecha y hora, archivo mixto y límites.
+
+**Reproducción:** con R4 sin la guarda, las dos pruebas nuevas fallan.
+
+**Huellas R5:** `server/csv-import.ts` `cc4878197ec3…` · `tests/csv-import-api.test.ts` `dec2083b5483…`.

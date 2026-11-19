@@ -117,6 +117,58 @@ test('R3 · la vista previa no escribe la época en una instalación que aún no
   assert.equal(store.get('copyEpoch', ''), '', 'sigue sin época: la vista previa solo lee');
 });
 
+test('R4 · una hora imposible en una fila no tumba la vista previa: esa fila explica el error y las demás siguen (revisión 431)', async t => {
+  const { store, app } = seeded(t);
+  // Los datos de prueba no tienen campos de fecha y hora: se añade uno a la definición ya activa, solo en esta prueba.
+  const spec = structuredClone(store.spec!); spec.entities.find(e => e.id === 'contacts')!.fields.push({ key: 'next_meeting', label: 'Próxima cita', type: 'datetime', required: false, readOnly: false, options: [], referenceEntity: null }); store.set('spec', spec);
+  const csv = ['Nombre;Correo;Próxima cita', 'Nora;nora@ejemplo.es;20/11/2026 09:30', 'Leo;leo@ejemplo.es;20/11/2026 99:00'].join('\n');
+  const preview = await post(app, '/api/v2/import/csv/preview', { entity: 'contacts', csv });
+  assert.equal(preview.statusCode, 200, preview.body);
+  const p = JSON.parse(preview.body);
+  assert.deepEqual([p.valid, p.invalid], [1, 1]);
+  assert.equal(p.preview[0].values.next_meeting, '2026-11-20T09:30:00.000Z');
+  assert.match(p.errors[0].errors.next_meeting, /Hora imposible: 99:00/);
+  const before = store.changesCount;
+  const apply = await post(app, '/api/v2/import/csv/apply', { entity: 'contacts', csv, token: p.token });
+  assert.equal(JSON.parse(apply.body).created, 1); assert.equal(store.changesCount, before + 1, 'solo la fila válida');
+});
+
+test('R5 · una restauración entre comprobar la marca y guardar la primera alta da 409 sin escribir (revisión 452)', async t => {
+  const { store, app } = seeded(t);
+  const one = 'Nombre;Correo;Empresa\nNora;nora@ejemplo.es;Estudio Arce';
+  const p = JSON.parse((await post(app, '/api/v2/import/csv/preview', { entity: 'contacts', csv: one })).body);
+  // Copia B válida donde «Estudio Arce» es company-2, restaurada JUSTO en el hueco: ya validada la marca, antes de la transacción del alta.
+  const bundle = structuredClone(store.bundle());
+  for (const list of [bundle.records, bundle.snapshot.records]) for (const r of list) {
+    if (r.entity === 'companies' && r.id === 'company-1') r.values.name = 'Norte Digital';
+    else if (r.entity === 'companies' && r.id === 'company-2') r.values.name = 'Estudio Arce';
+  }
+  const original = store.saveRecord.bind(store); let injected = false;
+  store.saveRecord = ((...args: Parameters<typeof original>) => { if (!injected) { injected = true; store.restoreBundle(bundle, { replace: true }); } return original(...args); }) as typeof original;
+  const contacts = () => store.records('contacts').length;
+  const before = contacts();
+  const response = await post(app, '/api/v2/import/csv/apply', { entity: 'contacts', csv: one, token: p.token });
+  store.saveRecord = original;
+  assert.ok(injected);
+  assert.equal(response.statusCode, 409, response.body); assert.equal(JSON.parse(response.body).details.code, 'STALE_PREVIEW');
+  assert.equal(contacts(), before, 'ninguna alta con la empresa de la otra copia');
+  assert.equal(store.changesCount, 0, 'la copia restaurada sigue sin historial');
+});
+
+test('R5 · otra escritura entre dos altas detiene la importación y dice cuántas se hicieron', async t => {
+  const { store, app } = seeded(t);
+  const csv = 'Nombre;Correo\nNora;nora@ejemplo.es\nLeo;leo@ejemplo.es\nAna;ana@ejemplo.es';
+  const p = JSON.parse((await post(app, '/api/v2/import/csv/preview', { entity: 'contacts', csv })).body);
+  const original = store.saveRecord.bind(store); let calls = 0;
+  const target = store.records('contacts')[0];
+  store.saveRecord = ((...args: Parameters<typeof original>) => { calls++; if (calls === 2) original('contacts', { ...target.values, phone: '600 999 000' }, target.id); return original(...args); }) as typeof original;
+  const response = await post(app, '/api/v2/import/csv/apply', { entity: 'contacts', csv, token: p.token });
+  store.saveRecord = original;
+  assert.equal(response.statusCode, 409, response.body);
+  const details = JSON.parse(response.body).details;
+  assert.deepEqual([details.code, details.created], ['STALE_PREVIEW', 1], 'se dio de alta la primera y se detuvo');
+});
+
 test('límites: cabecera obligatoria, filas máximas, campos desconocidos rechazados y nada sin activar la copia', async t => {
   const { app } = seeded(t);
   const rows = 'Nombre;Correo\n' + Array.from({ length: 1001 }, (_, i) => 'N' + i + ';n' + i + '@ejemplo.es').join('\n');

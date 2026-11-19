@@ -65,10 +65,30 @@ export function registerCsvImport(app: FastifyInstance, store: Store) {
     const valid = result.rows.filter(row => !Object.keys(row.errors).length);
     const count = Number((store.db.prepare('SELECT COUNT(*) AS n FROM records').get() as { n: number }).n);
     if (count + valid.length > MAX_RECORDS) throw new AppError(413, 'La importación superaría el máximo de ' + MAX_RECORDS.toLocaleString('es-ES') + ' registros de la copia.');
+    // R5 (revisión 452): la marca se comprobó arriba, pero otra conexión puede restaurar o escribir entre esa comprobación y
+    // cada alta. Cada saveRecord vuelve a comprobar DENTRO de su transacción que la copia es la misma (época, captura y
+    // sesión) y que nadie más ha escrito desde la última alta propia. Si algo cambió, se detiene con 409.
+    // Aquí ya se va a escribir: copyEpoch() crea la época si aún no existe (si no, la primera alta la crearía y parecería otra copia).
+    const identity = () => JSON.stringify([store.copyEpoch(), store.snapshot?.id ?? '', store.snapshot?.capturedAt ?? '', store.get<string>('sessionId', '')]);
+    const expectedIdentity = identity();
+    let expectedLatest = store.latestChange()?.id ?? 0;
     const created: string[] = [], failed: { line: number; error: string }[] = [];
     for (const row of valid) {
-      try { created.push(store.saveRecord(body.entity, row.values).id); }
-      catch (error) { failed.push({ line: row.line, error: error instanceof Error ? error.message : 'No se pudo guardar.' }); }
+      try {
+        created.push(store.saveRecord(body.entity, row.values, undefined, {
+          guard: () => {
+            if (identity() !== expectedIdentity || (store.latestChange()?.id ?? 0) !== expectedLatest)
+              throw new AppError(409, 'La copia cambió mientras se importaba. Vuelve a revisar la vista previa.', { code: 'STALE_PREVIEW', created: created.length });
+          },
+          onChange: change => { expectedLatest = change.id; },
+        }).id);
+      } catch (error) {
+        if (error instanceof AppError && (error.details as { code?: string } | undefined)?.code === 'STALE_PREVIEW') {
+          if (!created.length) throw error;   // nada escrito: el mismo 409 que una marca vieja
+          throw new AppError(409, 'La copia cambió a mitad de la importación: se dieron de alta ' + created.length + ' registros y se detuvo. Revisa Cambios y vuelve a revisar el resto.', { code: 'STALE_PREVIEW', created: created.length, ids: created });
+        }
+        failed.push({ line: row.line, error: error instanceof Error ? error.message : 'No se pudo guardar.' });
+      }
     }
     return { created: created.length, skipped: result.invalid, failed, ids: created };
   });

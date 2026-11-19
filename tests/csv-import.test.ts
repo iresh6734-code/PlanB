@@ -34,6 +34,10 @@ test('convierte cada tipo al formato de la App', () => {
   assert.deepEqual(convertValue(f('date'), '2026-03-07', none), { value: '2026-03-07' });
   assert.ok('error' in convertValue(f('date'), '31/02/2026', none), 'una fecha inexistente se rechaza');
   assert.deepEqual(convertValue(f('datetime'), '07/03/2026 9:30', none), { value: '2026-03-07T09:30:00.000Z' });
+  // R4 (revisión 431): formatos aceptados y valores imposibles rechazados sin normalizar.
+  assert.deepEqual(convertValue(f('datetime'), '2026-03-07T23:59:30', none), { value: '2026-03-07T23:59:30.000Z' });
+  assert.deepEqual(convertValue(f('datetime'), '07/03/2026', none), { value: '2026-03-07T00:00:00.000Z' });
+  for (const bad of ['07/03/2026 24:00', '07/03/2026 9:60', '07/03/2026 99:00', '31/02/2026 10:00', '07/03/2026 9h30', 'mañana']) assert.ok('error' in convertValue(f('datetime'), bad, none), bad);
   assert.deepEqual(convertValue(f('boolean'), 'Sí', none), { value: true });
   const options = [{ id: 'web', label: 'Diseño web' }, { id: 'brand', label: 'Identidad de marca' }];
   assert.deepEqual(convertValue(f('enum', { options }), 'diseño WEB', none), { value: 'web' });

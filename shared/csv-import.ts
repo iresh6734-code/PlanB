@@ -76,9 +76,14 @@ export function convertValue(field: Field, raw: string, references: (entity: Ent
     case 'number': { const value = parseNumber(text); return value === null ? { error: 'No es un número' } : { value }; }
     case 'date': { const value = parseDate(text); return value ? { value } : { error: 'Fecha no válida (usa DD/MM/AAAA)' }; }
     case 'datetime': {
-      const date = parseDate(text.split(/[ T]/)[0]), time = /(\d{1,2}):(\d{2})/.exec(text);
-      if (!date) return { error: 'Fecha y hora no válidas' };
-      return { value: new Date(date + 'T' + (time ? time[1].padStart(2, '0') + ':' + time[2] : '00:00') + ':00Z').toISOString() };
+      // Formatos aceptados (R4, revisión 431): «DD/MM/AAAA», «DD/MM/AAAA HH:MM» y «AAAA-MM-DD[ T]HH:MM[:SS]». La hora va de
+      // 00:00 a 23:59; una fecha o una hora imposibles se rechazan en SU fila, sin normalizarlas ni tumbar la vista previa.
+      const match = /^(\S+?)(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/.exec(text);
+      const date = match ? parseDate(match[1]) : null;
+      if (!match || !date) return { error: 'Fecha y hora no válidas (usa DD/MM/AAAA HH:MM)' };
+      const [hours, minutes, seconds] = [match[2] ?? '0', match[3] ?? '0', match[4] ?? '0'].map(Number);
+      if (hours > 23 || minutes > 59 || seconds > 59) return { error: 'Hora imposible: ' + text.slice(match[1].length).trim() + ' (de 00:00 a 23:59)' };
+      return { value: date + 'T' + String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0') + '.000Z' };
     }
     case 'boolean': {
       const n = normalize(text);

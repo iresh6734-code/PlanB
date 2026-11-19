@@ -1,8 +1,15 @@
 # Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026, 13:27, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1, V2, V3 y V5 hechas.
+Última revisión: **19/11/2026, 13:41, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1, V2, V3 y V5 hechas. Oleada 3: H2 y H4 hechas; H1 aplazada (requiere e2e).
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
+
+## Super plan H2 y H4 · Seguimiento y recordatorio · 19/11/2026, 13:41, Europe/Madrid
+
+- H1 (Hecha/Posponer en cada fila de Hoy) **aplazada a propósito**: el guardado de tareas de Hoy pasa por `LocalTaskFocus` → `submitManaged` → `TaskOutcomesHost` (barreras de identidad y contexto, modo condicionado, verificación de inciertos). No se debe saltar con un PATCH directo; hacerlo en línea exige reutilizar ese camino y validarlo con e2e en casa.
+- H2: `task-preset.ts` añade `followUpDates`, `followUpSubject` y `followUpTask` (hereda las referencias editables, estado abierto, sin copiar notas; null sin asunto, fecha o estado abierto). `FocusRun` muestra «¿Siguiente paso?» tras «Hecha» (teclas M, L, U; N salta) y `App.createTask` valida con `validateRecord` y hace POST a `/records/tasks`.
+- H4: `due-reminder.ts` (puro: `dueInstant`, `dueReminders`, `reminderKey`, `reminderText`; ventana 15 min, gracia 60 min, solo tareas con hora) y `DueReminder.tsx`, que lee las tareas al abrir, tras cada cambio y cada 5 min, recalcula cada 30 s con `pollWhileVisible` y guarda lo descartado en `sessionStorage`. Se pinta dentro de `TopBar` mediante la prop `reminder`.
+- Pruebas: `task-preset` ampliada, `due-reminder` nueva; `focus-run`, `design-tokens` y `ui-states` en verde; build correcto. Sin revisión visual: ver en casa.
 
 ## Super plan V3 · Cambio en bloque · 19/11/2026, 13:27, Europe/Madrid
 

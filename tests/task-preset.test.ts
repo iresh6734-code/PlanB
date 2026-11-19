@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { linkedPreset, taskPreset } from '../src/app-shell/task-preset.js';
+import { followUpDates, followUpSubject, followUpTask, linkedPreset, taskPreset } from '../src/app-shell/task-preset.js';
 import { makeDemoSpec, makeFixture } from '../shared/fixtures.js';
 import type { EntityName, Field } from '../shared/model.js';
 
@@ -62,4 +62,30 @@ test('un alias se hereda solo si ambos modelos tienen un campo hacia ese tipo', 
   assert.deepEqual(taskPreset(model,deal),{deal_id:'deal-1'});
   tasks.fields.at(-1)!.readOnly = true;
   assert.deepEqual(taskPreset(model,deal),{deal_id:'deal-1'});
+});
+
+test('seguimiento: fechas rápidas desde un jueves, un domingo y un lunes', () => {
+  assert.deepEqual(followUpDates('2026-11-19').map(item => item.date), ['2026-11-20', '2026-11-23', '2026-11-26']);
+  assert.equal(followUpDates('2026-11-22')[1].date, '2026-11-23');
+  assert.equal(followUpDates('2026-11-23')[1].date, '2026-11-30');
+  assert.equal(followUpDates('2026-12-28')[2].date, '2027-01-04');
+});
+
+test('seguimiento: asunto sin encadenar el prefijo', () => {
+  const model = makeDemoSpec(makeFixture());
+  assert.equal(followUpSubject(model, { entity: 'tasks', id: 't1', values: { subject: 'Llamar a Ana' } }), 'Seguimiento: Llamar a Ana');
+  assert.equal(followUpSubject(model, { entity: 'tasks', id: 't1', values: { subject: 'Seguimiento: Llamar a Ana' } }), 'Seguimiento: Llamar a Ana');
+  assert.equal(followUpSubject(model, { entity: 'tasks', id: 't1', values: { subject: '  ' } }), 'Seguimiento');
+});
+
+test('seguimiento: hereda enlaces, abre el estado y no copia notas', () => {
+  const model = makeDemoSpec(makeFixture());
+  const done = { entity: 'tasks' as const, id: 't1', values: { subject: 'Llamar', due_date: '2026-11-10', status: 'completed', contact_id: 'contact-3', deal_id: null, notes: 'privado' } };
+  assert.deepEqual(followUpTask(model, done, ' Enviar propuesta ', '2026-11-23'), { subject: 'Enviar propuesta', due_date: '2026-11-23', status: 'pending', contact_id: 'contact-3', deal_id: '', notes: '' });
+  assert.equal(followUpTask(model, done, '   ', '2026-11-23'), null);
+  assert.equal(followUpTask(model, done, 'Algo', 'mañana'), null);
+  assert.equal(followUpTask(model, { ...done, entity: 'deals' }, 'Algo', '2026-11-23'), null);
+  const closedOnly = makeDemoSpec(makeFixture());
+  closedOnly.entities.find(entity => entity.id === 'tasks')!.fields.find(field => field.key === 'status')!.options = [{ id: 'completed', label: 'Completada' }];
+  assert.equal(followUpTask(closedOnly, done, 'Algo', '2026-11-23'), null);
 });

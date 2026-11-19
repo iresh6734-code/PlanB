@@ -139,6 +139,19 @@ html body .gx-topbar .gx-copy b { padding-left: 8px; border-left: 1px solid var(
 html body .gx-topbar .gx-changes { display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg-surface); color: var(--primary-text); font: inherit; font-size: var(--fs-sm); font-weight: 600; font-variant-numeric: tabular-nums; cursor: pointer; white-space: nowrap; }
 html body .gx-topbar .gx-changes:hover { border-color: var(--border-control); }
 html body .gx-topbar .gx-changes:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+/* Recordatorio de tareas con hora (H4): una píldora ámbar; en rojo suave si ya venció. */
+html body .gx-topbar .gx-due-slot { display: contents; }
+html body .gx-topbar .gx-due-alert { display: inline-flex; align-items: stretch; height: 24px; max-width: 340px; border: 1px solid var(--warning-border); border-radius: 999px; background: var(--warning-bg); color: var(--warning); animation: gx-due-in 200ms cubic-bezier(.2, .7, .2, 1); }
+html body .gx-topbar .gx-due-alert[data-late="true"] { border-color: var(--danger-border); background: var(--danger-bg); color: var(--danger); }
+html body .gx-topbar .gx-due-alert button { display: inline-flex; align-items: center; gap: 5px; min-width: 0; padding: 0 4px 0 9px; border: 0; border-radius: 999px; background: transparent; color: inherit; font: inherit; font-size: var(--fs-sm); cursor: pointer; white-space: nowrap; }
+html body .gx-topbar .gx-due-alert .gx-due-close { padding: 0 8px 0 4px; opacity: .75; }
+html body .gx-topbar .gx-due-alert .gx-due-close:hover { opacity: 1; }
+html body .gx-topbar .gx-due-alert button:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
+html body .gx-topbar .gx-due-what { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--text-1); }
+html body .gx-topbar .gx-due-alert b { font-weight: 600; font-variant-numeric: tabular-nums; }
+html body .gx-topbar .gx-due-alert small { font-size: var(--fs-xs); font-weight: 600; opacity: .8; }
+@keyframes gx-due-in { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { html body .gx-topbar .gx-due-alert { animation: none; } }
 html body .gx-topbar .gx-mode { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border: 1px dashed var(--pencil); border-radius: var(--r-sm); color: var(--text-2); font-size: var(--fs-xs); font-weight: 600; white-space: nowrap; }
 html body .gx-topbar .gx-mode[data-mode="production"] { border-style: solid; border-color: var(--warning-border); background: var(--warning-bg); color: var(--warning); }
 html body .gx-topbar .gx-team-link { font-size: var(--fs-sm); }
@@ -379,6 +392,8 @@ html body .gx-mnav [aria-current="page"], html body .gx-mnav .active { color: va
   html body .gx-topbar .gx-copy b, html body .gx-topbar .gx-mode { display: none; }
   html body .gx-topbar .gx-changes { padding: 0 8px; }
   html body .gx-topbar .gx-changes .gx-changes-word { display: none; }
+  html body .gx-topbar .gx-due-alert { max-width: 46vw; }
+  html body .gx-topbar .gx-due-what { display: none; }
   html body .gx-mnav-item i[data-tone="info"] { background: var(--primary); color: var(--text-on-primary, #fff); }
   html body .oc-home-grid { grid-template-columns: minmax(0, 1fr); }
   html body .fx-next { grid-template-columns: minmax(0, 1fr); gap: 4px; }

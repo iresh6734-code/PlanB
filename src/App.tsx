@@ -24,6 +24,7 @@ import { linkedPreset, taskPreset } from './app-shell/task-preset.js';
 import { RecordTimeline } from './app-shell/RecordTimeline.js';
 import { CommandPalette } from './app-shell/CommandPalette.js';
 import { FocusRun, type FocusScope } from './app-shell/FocusRun.js';
+import { DueReminder } from './app-shell/DueReminder.js';
 import { MobileNav } from './app-shell/MobileNav.js';
 import type { Command } from './app-shell/commands.js';
 import { toggleTheme } from './app-shell/theme.js';
@@ -250,6 +251,17 @@ export default function App() {
     return result;
   };
   const moveDeal = (record: CrmRecord, stageId: string) => saveField(record, spec?.roles?.stage ?? 'dealstage', stageId);
+  // Crear una tarea desde Despachar (seguimiento, H2): misma validación y mismo alta que la ficha nueva.
+  const createTask = async (values: Record<string, FieldValue>): Promise<string | null> => {
+    if (!spec) return 'La aplicación todavía no está lista.';
+    const issues = validateRecord(spec, { entity: 'tasks', id: 'new', values }, null);
+    if (Object.keys(issues).length) return Object.values(issues)[0];
+    try { await api('/records/tasks', { method: 'POST', body: JSON.stringify({ values }) }); }
+    catch (failure) { return failure instanceof Error ? failure.message : 'No se pudo crear la tarea.'; }
+    setUndoable(null);
+    try { await refresh(); } catch { /* la lista se pondrá al día en el siguiente refresco */ }
+    setNotice('Tarea de seguimiento creada en tu copia local.'); return null;
+  };
   const undoLast = async () => {
     const target = undoable; if (!target) return;
     setUndoable(null); setNotice('');
@@ -297,7 +309,8 @@ export default function App() {
       setPage={setPage} setSelected={setSelected} setPreparationOpen={setPreparationOpen} setGlobalSearch={setGlobalSearch} setModal={setModal}
       openEntity={openEntity} openPreparation={openPreparation} />
     <div className="mobile-brand"><Brand /><span className="badge">{state.snapshot?.source.isTestData===false?'Producción · lectura':'Datos de prueba'}</span></div>
-    <main id="main-content" className="main-content" tabIndex={-1}><TopBar state={state} pageLabel={pageLabel} teamOrigin={teamOrigin} openContinuity={() => { setPage('continuity'); setSelected(null); }} openChanges={state.ready ? () => { setPage('changes'); setSelected(null); } : undefined} openHelp={() => setHelp(true)} openCommands={() => setCommandsOpen(true)} onProtect={() => void protect()} />
+    <main id="main-content" className="main-content" tabIndex={-1}><TopBar state={state} pageLabel={pageLabel} teamOrigin={teamOrigin} openContinuity={() => { setPage('continuity'); setSelected(null); }} openChanges={state.ready ? () => { setPage('changes'); setSelected(null); } : undefined} openHelp={() => setHelp(true)} openCommands={() => setCommandsOpen(true)} onProtect={() => void protect()}
+      reminder={<DueReminder active={auth === 'open' && !!state.ready} spec={state.spec} revision={dataRevision + ':' + (state.changes ?? 0)} onOpen={record => { openEntity('tasks'); setRecords([record]); setSelected(record); }} />} />
       {error ? <div role="alert" className="global-error"><span>{error}</span><button className="icon-button" aria-label="Cerrar aviso" onClick={() => setError('')}><X size={18} /></button></div> : null}
       <OutcomesLockNotice summary={lockedOutcomes} failed={lockFailed} onRetry={()=>void protect()} onDismiss={()=>{setLockedOutcomes(null);setLockFailed(false);}}/>
       {!state.runtime?<TaskOutcomesSurface/>:null}
@@ -333,7 +346,7 @@ export default function App() {
     {modal === 'csv' && spec && state.ready ? <CsvImport spec={spec} initialEntity={page === 'workspace' ? entityName : 'contacts'} close={() => setModal(null)} done={async (target, created) => { openEntity(target); setDataRevision(r => r + 1); await refresh(); setNotice(created + (created === 1 ? ' registro importado' : ' registros importados') + ' en tu copia local. Quedan en Cambios.'); }} /> : null}
     {help ? <ShortcutsHelp close={() => setHelp(false)} /> : null}
     <MobileNav page={page} entityName={entityName} runtime={!!state.runtime} ready={!!state.ready} overdue={signals.overdue} changes={state.changes ?? 0} go={next => { setPage(next); setSelected(null); }} openEntity={openEntity} openMore={() => setCommandsOpen(true)} />
-    {focusOpen && spec && state.ready ? <FocusRun spec={spec} saveField={saveField} initialScope={focusOpen} onOpen={record => { openEntity(record.entity); setRecords([record]); setSelected(record); }} close={() => setFocusOpen(false)} /> : null}
+    {focusOpen && spec && state.ready ? <FocusRun spec={spec} saveField={saveField} createTask={createTask} initialScope={focusOpen} onOpen={record => { openEntity(record.entity); setRecords([record]); setSelected(record); }} close={() => setFocusOpen(false)} /> : null}
     {drill ? <GuidedDrill state={drill} onGo={goDrillStep} onClose={() => setDrill(null)} onRestart={startGuidedDrill} /> : null}
     {commandsOpen ? <CommandPalette commands={commandList} close={() => setCommandsOpen(false)} findRecords={state.ready && spec ? findRecords : undefined} /> : null}
     {modal === 'coverage' ? <Modal title="Cobertura de tu copia" close={() => setModal(null)} wide><div className="modal-body">

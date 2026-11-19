@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
-import type { AppSpec, CrmRecord } from '../../shared/model.js';
+import type { AppSpec, CrmRecord, FieldValue } from '../../shared/model.js';
 import { api } from '../api.js';
 import { Modal, displayValue, recordName } from '../components.js';
 import { madridDay } from '../task-display.js';
 import { Skeleton } from '../ui/index.js';
 import { daysBetween, doneOption, loadFocusReview, nextMonday } from './focus.js';
+import { followUpDates, followUpSubject, followUpTask } from './task-preset.js';
 import { recordListPath } from './useRecordList.js';
 
 type Outcome = 'done' | 'tomorrow' | 'monday' | 'skipped';
@@ -13,18 +14,20 @@ const LABEL: Record<Outcome, string> = { done: 'hecha', tomorrow: 'a mañana', m
 
 /** «Despachar vencidas»: recorre las tareas vencidas una a una. Cada acción guarda con la validación de la ficha (saveField);
  *  «Saltar» no cambia nada. La lista se fija al abrir: lo que se resuelve no vuelve a aparecer.
- *  El modo «sweep» (barrido de la mañana) añade al final las que vencen hoy; se puede cambiar antes de empezar. */
-export function FocusRun({ spec, saveField, onOpen, close, initialScope = 'overdue' }: { spec: AppSpec; saveField: (record: CrmRecord, key: string, value: string | null) => Promise<string | null>; onOpen: (record: CrmRecord) => void; close: () => void; initialScope?: FocusScope }) {
+ *  El modo «sweep» (barrido de la mañana) añade al final las que vencen hoy; se puede cambiar antes de empezar.
+ *  Con `createTask`, al marcar una como hecha se propone el siguiente paso (H2): una tarea nueva con los mismos enlaces y una fecha rápida. */
+export function FocusRun({ spec, saveField, createTask, onOpen, close, initialScope = 'overdue' }: { spec: AppSpec; saveField: (record: CrmRecord, key: string, value: string | null) => Promise<string | null>; createTask?: (values: Record<string, FieldValue>) => Promise<string | null>; onOpen: (record: CrmRecord) => void; close: () => void; initialScope?: FocusScope }) {
   const [review, setReview] = useState<Awaited<ReturnType<typeof loadFocusReview>> | null>(null);
   const [error, setError] = useState(''), [attempt, setAttempt] = useState(0), [scope, setScope] = useState<FocusScope>(initialScope);
   const [index, setIndex] = useState(0), [results, setResults] = useState<Record<string, Outcome>>({}), [busy, setBusy] = useState(false), [problem, setProblem] = useState('');
+  const [follow, setFollow] = useState<CrmRecord | null>(null), [subject, setSubject] = useState(''), [followed, setFollowed] = useState(0);
   const panel = useRef<HTMLDivElement>(null);
   const today = madridDay(new Date()), tomorrow = madridDay(new Date(Date.now() + 86_400_000));
   const done = doneOption(spec), dueKey = spec.roles?.dueDate ?? 'due_date';
   const tasks = spec.entities.find(entity => entity.id === 'tasks');
   useEffect(() => {
     const controller = new AbortController();
-    setReview(null); setIndex(0); setResults({}); setError('');
+    setReview(null); setIndex(0); setResults({}); setError(''); setFollow(null); setFollowed(0);
     loadFocusReview(spec, today, (offset, limit, signal) => api(recordListPath('tasks', '', offset, '', limit), { signal }), controller.signal, scope === 'sweep')
       .then(result => { if (!controller.signal.aborted) setReview(result); })
       .catch(failure => {
@@ -35,7 +38,9 @@ export function FocusRun({ spec, saveField, onOpen, close, initialScope = 'overd
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attempt, scope]);
   const list = review?.tasks;
-  useEffect(() => { const timer = setTimeout(() => panel.current?.focus(), 40); return () => clearTimeout(timer); }, [index, list]);
+  useEffect(() => { const timer = setTimeout(() => panel.current?.focus(), 40); return () => clearTimeout(timer); }, [index, list, follow]);
+  const dates = followUpDates(today);
+  const offerFollow = !!createTask && !!done && !!tasks;
   const current = list?.[index];
   const finished = !!list && index >= list.length;
   const act = async (outcome: Outcome) => {
@@ -47,11 +52,35 @@ export function FocusRun({ spec, saveField, onOpen, close, initialScope = 'overd
       setBusy(false);
       if (issue) { setProblem(issue); return; }
     }
-    setResults(previous => ({ ...previous, [current.id]: outcome })); setIndex(position => position + 1);
+    setResults(previous => ({ ...previous, [current.id]: outcome }));
+    if (outcome === 'done' && offerFollow) { setSubject(followUpSubject(spec, current)); setFollow(current); return; }
+    setIndex(position => position + 1);
+  };
+  // Siguiente paso tras «Hecha»: crea la tarea o se salta; en ambos casos se pasa a la siguiente vencida.
+  const plan = async (due: string | null) => {
+    if (!follow || busy) return;
+    setProblem('');
+    if (due && createTask) {
+      const values = followUpTask(spec, follow, subject, due);
+      if (!values) { setProblem('Escribe un asunto para la tarea de seguimiento.'); return; }
+      setBusy(true);
+      const issue = await createTask(values);
+      setBusy(false);
+      if (issue) { setProblem(issue); return; }
+      setFollowed(count => count + 1);
+    }
+    setFollow(null); setIndex(position => position + 1);
   };
   const key = (event: KeyboardEvent) => {
     if (event.altKey || event.ctrlKey || event.metaKey || (event.target as HTMLElement).tagName === 'BUTTON' && (event.key === 'Enter' || event.key === ' ')) return;
     const letter = event.key.toLowerCase();
+    if (follow) {
+      if ((event.target as HTMLElement).tagName === 'INPUT') return;
+      const quick = dates.find(item => item.key.toLowerCase() === letter);
+      if (quick) { event.preventDefault(); void plan(quick.date); }
+      else if (letter === 'n' || letter === 's' || event.key === 'ArrowRight') { event.preventDefault(); void plan(null); }
+      return;
+    }
     if (letter === 'h' && done) { event.preventDefault(); void act('done'); }
     else if (letter === 'm') { event.preventDefault(); void act('tomorrow'); }
     else if (letter === 'l') { event.preventDefault(); void act('monday'); }
@@ -79,7 +108,7 @@ export function FocusRun({ spec, saveField, onOpen, close, initialScope = 'overd
           <button type="button" className="button primary" onClick={close}>Cerrar</button>
         </div>
       : finished ? <div className="gx-focus-end" role="status"><p className="gx-focus-big">Listo: {list.length} {list.length === 1 ? 'tarea revisada' : 'tareas revisadas'}.</p>
-          <p>{[counts.done ? counts.done + (counts.done === 1 ? ' hecha' : ' hechas') : '', counts.tomorrow ? counts.tomorrow + ' a mañana' : '', counts.monday ? counts.monday + ' al lunes' : '', counts.skipped ? counts.skipped + (counts.skipped === 1 ? ' saltada' : ' saltadas') : ''].filter(Boolean).join(' · ')}. Todo lo cambiado está guardado en tu copia local y aparece en Cambios.</p>
+          <p>{[counts.done ? counts.done + (counts.done === 1 ? ' hecha' : ' hechas') : '', counts.tomorrow ? counts.tomorrow + ' a mañana' : '', counts.monday ? counts.monday + ' al lunes' : '', counts.skipped ? counts.skipped + (counts.skipped === 1 ? ' saltada' : ' saltadas') : '', followed ? followed + (followed === 1 ? ' seguimiento creado' : ' seguimientos creados') : ''].filter(Boolean).join(' · ')}. Todo lo cambiado está guardado en tu copia local y aparece en Cambios.</p>
           <button type="button" className="button primary" onClick={close}>Cerrar</button></div>
       : current ? <>
           <div className="gx-focus-progress" aria-hidden="true"><span style={{ width: (index / list.length * 100) + '%' }} /></div>
@@ -89,14 +118,25 @@ export function FocusRun({ spec, saveField, onOpen, close, initialScope = 'overd
             <h3>{recordName(current, spec)}</h3>
             {details.length ? <dl>{details.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl> : null}
           </div>
-          {problem ? <p className="error-box" role="alert">No se guardó: {problem}</p> : null}
-          <div className="gx-focus-actions">
+          {problem ? <p className="error-box" role="alert">{follow ? 'No se creó: ' : 'No se guardó: '}{problem}</p> : null}
+          {follow ? <section className="gx-follow" aria-labelledby="gx-follow-title">
+            <p className="gx-follow-done" role="status"><span aria-hidden="true">✓</span> Marcada como {done!.label.toLowerCase()}.</p>
+            <h4 id="gx-follow-title">¿Siguiente paso?</h4>
+            <label className="field gx-follow-subject"><span>Asunto de la tarea nueva</span><input value={subject} maxLength={200} disabled={busy} onChange={event => setSubject(event.target.value)} /></label>
+            <div className="gx-focus-actions">
+              {dates.map((item, position) => <button key={item.id} type="button" className={'button ' + (position === 0 ? 'primary' : 'secondary')} disabled={busy || !subject.trim()} onClick={() => void plan(item.date)}
+                aria-label={item.label + ', ' + new Intl.DateTimeFormat('es-ES', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }).format(new Date(item.date + 'T12:00:00Z'))}>
+                {item.label} <small>{new Intl.DateTimeFormat('es-ES', { weekday: 'short', day: 'numeric', timeZone: 'UTC' }).format(new Date(item.date + 'T12:00:00Z'))}</small> <kbd>{item.key}</kbd></button>)}
+              <button type="button" className="text-button" disabled={busy} onClick={() => void plan(null)}>Sin seguimiento <kbd>N</kbd></button>
+            </div>
+            <p className="gx-follow-note">La tarea nueva hereda el cliente y la oportunidad de esta, y se guarda en tu copia local.</p>
+          </section> : <div className="gx-focus-actions">
             {done ? <button type="button" className="button primary" disabled={busy} onClick={() => void act('done')}>Marcar {done.label.toLowerCase()} <kbd>H</kbd></button> : null}
             <button type="button" className="button secondary" disabled={busy} onClick={() => void act('tomorrow')}>Pasar a mañana <kbd>M</kbd></button>
             <button type="button" className="button secondary" disabled={busy} onClick={() => void act('monday')}>Al lunes <kbd>L</kbd></button>
             <button type="button" className="button secondary" disabled={busy} onClick={() => { close(); onOpen(current); }}>Abrir ficha <kbd>A</kbd></button>
             <button type="button" className="text-button" disabled={busy} onClick={() => void act('skipped')}>Saltar <kbd>S</kbd></button>
-          </div>
+          </div>}
           {Object.keys(results).length ? <p className="gx-focus-trail">{list.slice(0, index).slice(-3).map(task => recordName(task, spec) + ': ' + LABEL[results[task.id]]).join(' · ')}</p> : null}
         </> : null}
   </div></Modal>;

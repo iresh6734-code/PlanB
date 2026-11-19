@@ -1475,6 +1475,17 @@ html body .oc-card-head .gx-dispatch { margin-left: auto; margin-right: 10px; mi
 .gx-focus-end p { margin: 0; font-size: var(--fs-sm); color: var(--text-2); }
 .gx-focus-big { font-family: var(--font-display); font-size: 22px !important; font-weight: 600; color: var(--text-1) !important; }
 .gx-focus-end .button { margin-top: 8px; }
+/* Siguiente paso tras «Hecha» (H2) */
+.gx-follow { display: grid; gap: 10px; padding: 12px 14px; border: 1px solid var(--success-border); border-radius: var(--r-lg); background: var(--bg-surface); animation: gx-follow-in 180ms cubic-bezier(.2, .7, .2, 1); }
+.gx-follow-done { display: flex; align-items: center; gap: 6px; margin: 0; font-size: var(--fs-sm); font-weight: 600; color: var(--success); }
+.gx-follow-done span { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 999px; background: var(--success-bg); font-size: 11px; }
+.gx-follow h4 { margin: 0; font-family: var(--font-display); font-size: 17px; font-weight: 600; color: var(--text-1); }
+.gx-follow-subject { margin: 0; }
+.gx-follow-subject input { width: 100%; }
+.gx-follow .gx-focus-actions small { margin-left: 4px; font-size: var(--fs-xs); font-weight: 400; opacity: .8; font-variant-numeric: tabular-nums; }
+.gx-follow-note { margin: 0; font-size: var(--fs-xs); color: var(--text-3); }
+@keyframes gx-follow-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .gx-follow { animation: none; } }
 @media (max-width: 760px) { .gx-focus-actions .text-button { margin-left: 0; } html body .oc-card-head .gx-dispatch { margin-right: 6px; } }
 
 /* =====================================================================================================

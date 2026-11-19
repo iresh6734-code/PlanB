@@ -2,6 +2,8 @@
 
 Preparado el 19/11/2026 sobre la rama `planb-v0.3-local` (commit `460beaa`). Se ha hecho leyendo el código, sin servidores, sin navegador y sin datos reales. Recoge lo pendiente de [plan-mejoras.md](plan-mejoras.md), lo que dejó a medias la auditoría del espacio de equipo ([CLAUDE-TEAM-AUDIT](../coordination/reports/CLAUDE-TEAM-AUDIT.md)) y funciones nuevas pensadas para que Plan B se pueda vender.
 
+> Continuación: [super-plan-2.md](super-plan-2.md) (19/11/2026), con lo pendiente de este plan, funciones nuevas, diseño y el modo contingencia.
+
 ## 0. Reglas que gobiernan todo el plan
 
 Ninguna tarea de este plan puede saltarse estas reglas. Si una tarea solo se puede comprobar rompiéndolas, se implementa aquí con pruebas unitarias y la comprobación visual se deja para el ordenador personal (ver 0.3).

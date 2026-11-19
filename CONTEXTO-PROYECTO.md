@@ -1,8 +1,12 @@
 ﻿# Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026, 19:00, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 a V7 hechas. Oleada 3: H2, H3, H4, H5 y H6 hechas; H1 aplazada (requiere e2e). Continuidad: C1 a C5 hechas. Negocio: M1 a M6 hechas. Datos: D1, D2 y D3 hechas. Rendimiento: P3 hecha.
+Última revisión: **19/11/2026, 16:10, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 a V7 hechas. Oleada 3: H2, H3, H4, H5 y H6 hechas; H1 aplazada (requiere e2e). Continuidad: C1 a C5 hechas. Negocio: M1 a M6 hechas. Datos: D1, D2 y D3 hechas. Rendimiento: P3 hecha.
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
+
+## Super plan 2 preparado · 19/11/2026, 16:10, Europe/Madrid
+
+Nuevo plan en `docs/super-plan-2.md` con las mismas reglas (sin excepciones) y un filtro de admisión de cinco condiciones. Diagnóstico: ~110 KB de pantallas construidas sin montar (`ContinuityLab`, `RescueRoom`, `RescueCapsule`, `ContinuityEvidence`, `SourceReadingHistory`, `SourceStatusRow`), unas 30 tareas sin revisión visual, CSS inicial de 380 KB en cinco capas, componentes gigantes y ninguna analítica de cierre. Oleadas: E (sacar a la luz lo hecho), R (modo contingencia, expediente del incidente, máquina del tiempo, pregunta a tu copia, sello, parte de la mañana), F (analítica, objetivo, agenda, secuencias, recientes, en riesgo, fusionar), K (Cuaderno 2: CSS único, gestos, vacíos dibujados, densidad, impresión, ficha, landing 2, móvil), T (pruebas seguras, partir componentes) y N (puertas Pro, marca de agencia, coste de una caída, kit de venta). Incluye la jornada en casa y las decisiones pendientes del usuario. Siguiente: T1 + E5 + E6.
 
 ## Super plan C1 · Asistente de devolución por pasos · 19/11/2026, 19:00, Europe/Madrid
 

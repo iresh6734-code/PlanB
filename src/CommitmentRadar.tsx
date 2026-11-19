@@ -1,11 +1,12 @@
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react';
 import { CheckCircle2, CircleAlert, CircleHelp, Download, RefreshCw, ShieldCheck } from 'lucide-react';
-import { commitmentRoles, type CommitmentDetail, type CommitmentEvent, type CommitmentEvidence, type CommitmentSummary } from '../shared/commitments.js';
-import { multisystemDisclosures, multisystemProviderLabels } from '../shared/commitment-multisystem-demo.js';
+import { type CommitmentDetail, type CommitmentEvent, type CommitmentEvidence, type CommitmentSummary } from '../shared/commitments.js';
+import { multisystemDisclosures } from '../shared/commitment-multisystem-demo.js';
 import { buildCommitmentTimeline, createCommitmentReport, type CommitmentTimelineEntry } from '../shared/commitment-report.js';
 import { simulateCommitment, type CommitmentSimulation, type SimulationAlternative } from '../shared/commitment-simulation.js';
 import { CommitmentError, decideCommitment, loadCommitment, loadCommitments, type CommitmentRequest } from './commitment-radar-client.js';
 import { Modal } from './components.js';
+import { BASIS_LABEL, CONDITION_LABEL, COVERAGE_LABEL, EFFECT, EVIDENCE_LABEL, GROUPS, ROLE_LABEL, STATUS_LABEL, causeText, dirty, emptyDraft, providerLabel, toLocalInput, when, type Draft, type Status } from './commitment-radar-text.js';
 import './commitment-radar.css';
 
 // RADAR DE COMPROMISOS · interfaz (unidad CLAUDE-COMMITMENT-RADAR-UI). Consume el contrato aceptado de `shared/commitments.ts` a través de `commitment-radar-client.ts`; no define otro modelo.
@@ -28,38 +29,8 @@ export interface CommitmentRadarProps {
   /** Reloj para evaluar la antigüedad de la evidencia al simular (por defecto, el del navegador). Solo para pruebas con un servidor de reloj fijo. */
   clock?: () => number;
 }
-type Status = CommitmentSummary['status'];
-type Role = (typeof commitmentRoles)[number];
-interface Draft { mode: 'assign' | 'close'; owner: string; nextStep: string; due: string; basis: 'observed' | 'manual'; note: string; from: { id: SimulationAlternative['id']; title: string; revision: string; evaluatedAt: string; missing: string[]; projectedDueAt: string | null } | null; generated: { nextStep: string; due: string } | null; confirmed: boolean }
 interface Attempt { request: CommitmentRequest; kind: Draft['mode'] }
-const GROUPS: { status: Status; title: string; hint: string }[] = [
-  { status: 'at-risk', title: 'En riesgo', hint: 'Una fuente observó un bloqueo o ya pasó la fecha sin entrega observada.' },
-  { status: 'unconfirmed', title: 'Sin confirmar', hint: 'Faltan datos para afirmar nada: una fuente parcial, antigua, caída o sin vincular no equivale a sano.' },
-  { status: 'no-risk-detected', title: 'Sin riesgo detectado con los datos disponibles', hint: 'No se observó ningún bloqueo en las fuentes vinculadas. No es una garantía de cumplimiento.' },
-  { status: 'resolved', title: 'Resuelto', hint: 'Cerrado por una persona, con evidencia observada o de forma manual.' },
-];
-const STATUS_LABEL: Record<Status, string> = { 'at-risk': 'En riesgo', unconfirmed: 'Sin confirmar', 'no-risk-detected': 'Sin riesgo detectado', resolved: 'Resuelto' };
 const STATUS_ICON = { 'at-risk': CircleAlert, unconfirmed: CircleHelp, 'no-risk-detected': ShieldCheck, resolved: CheckCircle2 } as const;
-const ROLE_LABEL: Record<Role, string> = { sale: 'Venta', delivery: 'Entrega', support: 'Soporte' };
-const CAUSE: Record<CommitmentSummary['cause'], string> = {
-  'source-blocked': 'Una fuente observó un bloqueo',
-  'deadline-passed': 'Pasó la fecha comprometida sin una entrega observada',
-  'coverage-incomplete': 'Faltan datos: alguna fuente es parcial, antigua, no responde o no está vinculada',
-  'no-blocker-observed': 'No se observó ningún bloqueo en las fuentes vinculadas',
-  'closed-observed': 'Cerrado con evidencia observada y confirmado por una persona',
-  'closed-manual': 'Cerrado manualmente por una persona',
-};
-const EVIDENCE_LABEL: Record<CommitmentEvidence['state'], string> = { observed: 'Observada', partial: 'Parcial', stale: 'Antigua', unavailable: 'No disponible', missing: 'Sin vincular', ambiguous: 'Ambigua: sin confirmar' };
-const CONDITION_LABEL = { clear: 'Sin bloqueo', blocked: 'Bloqueada', completed: 'Completada' } as const;
-const COVERAGE_LABEL = { complete: 'cobertura completa', partial: 'cobertura parcial', unavailable: 'fuente no disponible' } as const;
-const BASIS_LABEL = { explicit: 'referencia explícita', confirmed: 'confirmado por una persona' } as const;
-const when = (iso: string) => new Date(iso).toLocaleString('es-ES', { dateStyle: 'medium', timeStyle: 'short' });
-const emptyDraft = (): Draft => ({ mode: 'assign', owner: '', nextStep: '', due: '', basis: 'manual', note: '', from: null, generated: null, confirmed: false });
-const dirty = (draft: Draft) => !!(draft.owner.trim() || draft.nextStep.trim() || draft.due || draft.note.trim());
-const causeText = (item: CommitmentSummary) => CAUSE[item.cause] + (item.affectedRole ? ' (' + ROLE_LABEL[item.affectedRole].toLocaleLowerCase('es') + ')' : '');
-
-/** Rótulo de procedencia: SIEMPRE dato de ensayo y nunca «conectado» (la fuente es `multisystemProviderLabels`; un proveedor desconocido no se rotula como real). */
-const providerLabel = (provider: string): string | null => { const known = (multisystemProviderLabels as Record<string, { label: string; connected: boolean }>)[provider]; return known ? known.label + ' · no conectado' : null; };
 function StatusChip({ status }: { status: Status }) { const Icon = STATUS_ICON[status]; return <span className="cr-chip" data-status={status}><Icon size={14} aria-hidden="true" />{STATUS_LABEL[status]}</span>; }
 function Evidence({ source }: { source: CommitmentEvidence }) {
   const { linked, observation, candidates } = source;
@@ -84,9 +55,6 @@ function EventLine({ event }: { event: CommitmentEvent }) {
   </li>;
 }
 
-const pad = (n: number) => String(n).padStart(2, '0');
-const toLocalInput = (iso: string) => { const d = new Date(iso); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes()); };
-const EFFECT: Record<SimulationAlternative['deadlineEffect'], string> = { late: 'Sigue siendo posterior a la fecha comprometida original: el nuevo plazo hay que acordarlo con el cliente', 'within-window': 'Cae dentro de la ventana comprometida', unknown: 'Efecto sobre el plazo: desconocido' };
 function download(name: string, mime: string, content: string) { const url = URL.createObjectURL(new Blob([content], { type: mime })); const link = document.createElement('a'); link.href = url; link.download = name; document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
 function TimelineLine({ entry }: { entry: CommitmentTimelineEntry }) {
   if (entry.type === 'observation') { const o = entry.observation; return <li className="cr-tl" data-kind="observation"><span className="cr-kind">Evidencia observada</span> <time dateTime={entry.at}>{when(entry.at)}</time> · {ROLE_LABEL[entry.role]}: {o.label} · {o.condition ? CONDITION_LABEL[o.condition] : 'sin dato de estado'} · {COVERAGE_LABEL[o.coverage]}</li>; }

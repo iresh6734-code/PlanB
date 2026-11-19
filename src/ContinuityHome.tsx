@@ -38,8 +38,7 @@ import { readBrand } from './app-shell/brand-store.js';
 import { coveredHours, formatHours } from '../shared/downtime-cost.js';
 import './continuity-insights.css';
 import './continuity-evidence.css';
-const LEDGER_FILTERS:readonly {id:LedgerFilter;label:string}[]=[{id:'all',label:'Todas'},{id:'today',label:'Hoy'},{id:'week',label:'7 días'},{id:'shrink',label:'Más pequeñas'}];
-const LEDGER_PAGE=12;
+import { LEDGER_FILTERS, nextActionBlocked, pageLedger } from './app-shell/continuity-home-logic.js';
 const hourLabel=new Intl.DateTimeFormat('es-ES',{hour:'2-digit',minute:'2-digit'});
 export type ContinuityTab='estado'|'evidencia'|'copias'|'operaciones';
 const CONTINUITY_TABS=[{id:'estado',label:'Estado'},{id:'evidencia',label:'Evidencia e impacto'},{id:'copias',label:'Copias y archivo'},{id:'operaciones',label:'Operaciones'}] as const satisfies readonly {id:ContinuityTab;label:string}[];
@@ -113,7 +112,7 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
   const calendar=status&&!state.runtime?drillCalendar(status,now):null;
   const step=(id:StepId)=>readiness?.steps.find(item=>item.id===id);
   const stepDetail=(id:StepId)=>{const item=step(id);return item?<small className="ct-step-detail">{item.detail}</small>:null;};
-  const nextDisabled=(id:NextActionId)=>busy||(['refresh','resume','drill'].includes(id)&&!!active)||(id==='refresh'&&(!status?.connected||!!status?.session))||(id==='export'&&!state.ready)||(id==='drill'&&!latest);
+  const nextDisabled=(id:NextActionId)=>nextActionBlocked(id,{busy,jobRunning:!!active,connected:!!status?.connected,inSession:!!status?.session,ready:!!state.ready,hasCapture:!!latest});
   const runNext=(id:NextActionId)=>{
     if(id==='prepare')prepare();
     else if(id==='refresh')void run(()=>post('/v2/captures',{}));
@@ -124,9 +123,7 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
     else if(id==='export')exportCopy();
     else if(id==='confirm')document.getElementById('ct-confirm-copy')?.focus();
   };
-  let ledgerBudget=ledgerAll?Infinity:LEDGER_PAGE;
-  const ledgerDays=(ledger?.days??[]).map(day=>{const entries=day.entries.slice(0,Math.max(0,ledgerBudget));ledgerBudget-=entries.length;return {...day,entries};}).filter(day=>day.entries.length);
-  const ledgerHidden=(ledger?.shown??0)-ledgerDays.reduce((sum,day)=>sum+day.entries.length,0);
+  const {days:ledgerDays,hidden:ledgerHidden}=pageLedger(ledger?.days??[],ledger?.shown??0,ledgerAll);
   return <section className="continuity-home"><header className="page-header"><div><h1>Continuidad</h1><p className="page-subtitle">Una copia utilizable y la prueba que lo demuestra.</p></div><div className="ct-head-side"><div className="ct-head-actions"><button type="button" className="button secondary" disabled={!status} aria-describedby="ct-share-help" onClick={shareReport}><Download size={15}/>Parte para compartir</button><button type="button" className="button secondary" disabled={!status} aria-describedby="ct-share-help" onClick={shareMonthly}><CalendarRange size={15}/>Informe del mes</button><BrandPicker/></div><p id="ct-share-help" className="ct-share-help">Para enviar o imprimir, sin nombres de clientes ni identificadores.</p></div></header>
     {error?<p className="error-box" role="alert">{error}</p>:null}
     {readHealth.note&&!error?<p className="helper read-stale" role="status">{readHealth.note}</p>:null}

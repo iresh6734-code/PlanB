@@ -202,8 +202,8 @@ La identidad está decidida (ver [DESIGN.md](../DESIGN.md)). Esta oleada **la co
 |---|---|---|---|---|---|
 | T1 | **Índice de pruebas seguras.**<br>`tools/safe-tests.mjs` solo lee archivos: lista las `tests/*.test.ts` sin `.listen(`, `spawn(`, `child_process`, `playwright` ni `Get-CimInstance`, y las ejecuta en modo prueba de una en una.<br>Hace que respetar las reglas sea automático. | `tools/safe-tests.mjs` nuevo, `package.json` (`test:safe`) | Ejecución en seco del propio script | S | Hecha (19/11/2026) |
 | T2 | **`App.tsx` por porciones** (sustituye a P1).<br>Un gancho por commit: `useContinuityState`, `useNotices`, `useUndoStack` y `useNavigationState`. Cada paso compila y pasa las pruebas antes del siguiente. | `App.tsx`, `app-shell/use*.ts` | Pruebas de `app-shell` + build | 4 × S | Hecha (19/11/2026) |
-| T3 | **`LocalTaskFocus.tsx` por porciones** (sustituye a P2).<br>Sacar a módulos puros la lógica de orden, agrupación y textos; el componente solo pinta. | `LocalTaskFocus.tsx`, módulos nuevos | Pruebas existentes + nuevas | M–L | Pendiente |
-| T4 | **`CommitmentRadar.tsx` y `ContinuityHome.tsx`**: lo mismo que T3. | esos archivos | Pruebas existentes | M cada uno | Pendiente |
+| T3 | **`LocalTaskFocus.tsx` por porciones** (sustituye a P2).<br>Sacar a módulos puros la lógica de orden, agrupación y textos; el componente solo pinta. | `LocalTaskFocus.tsx`, módulos nuevos | Pruebas existentes + nuevas | M–L | Aplazada (reglas: esa lógica vive dentro de los cierres de guardado, conflicto y revisión y solo la cubren pruebas de navegador, que no se lanzan; además hay pruebas que fijan la huella del archivo; en casa) |
+| T4 | **`CommitmentRadar.tsx` y `ContinuityHome.tsx`**: lo mismo que T3. | esos archivos | Pruebas existentes | M cada uno | Hecha (19/11/2026) |
 | T5 | **Vistas guardadas en la copia** (P4 heredada): solo nombres y filtros. | `saved-views.ts`, servidor | `app.inject` | S–M, SRV | Hecha (19/11/2026) |
 | T6 | **Comprobar la devolución** (C6 heredada), solo con el proveedor falso. | `server/hubspot-read-check*.ts`, `ChangesView.tsx` | `app.inject` con proveedor falso | M, SRV | Hecha (19/11/2026) |
 

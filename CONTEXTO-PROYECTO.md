@@ -1,8 +1,26 @@
 # Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026, 12:16, Europe/Madrid**. Mejoras 6, 7, 8, 10, 12, 14 y 22 del plan (la 11 se descarta con motivo).
+Última revisión: **19/11/2026, 12:45, Europe/Madrid**. Rediseño de Continuidad con capas de lectura derivadas del estado de la copia.
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
+
+## Continuidad con más capas · 19/11/2026, 12:45, Europe/Madrid
+
+Mismas normas anti-alertas: sin DPAPI/PowerShell, sin Playwright, sin servidores y sin datos reales. Sin comprobación visual en navegador, por las mismas normas.
+
+- **Nuevo módulo puro** `src/app-shell/continuity-insights.ts`, que solo lee lo que ya devuelve `/v2/continuity` (sin rutas ni peticiones nuevas): `continuityReadiness`, `copyVitals`, `outageForecast`, `hourlyCaptures`, `captureLedger`, `jobStats`, `formatAge` y `formatBytes`. Pruebas en `tests/continuity-insights.test.ts`.
+- **Estado:**
+  - franja de preparación con el siguiente paso ejecutable;
+  - seis constantes de la copia;
+  - «Si HubSpot cae ahora»;
+  - cada paso de «Preparación de tu Plan B» con su explicación.
+- **Copias:**
+  - regla de 24 horas;
+  - libro de capturas por días, con filtros, variación de tamaño y aviso al encoger más del 15 %.
+- **Operaciones:** «Fiabilidad de los procesos».
+- **Estilos:** `src/continuity-insights.css`, solo con tokens; el modo oscuro sale de los tokens.
+- **Se conservan:** textos, ids (`ct-tab-*`), `data-testid`, `.history-section`, «Abrir copia», «Captura conciliada» y el montaje de `CopyInspection` fuera de runtime. Los botones nuevos usan nombres distintos de los que buscan las e2e («Actualizar la copia», «Probar esta copia», «Exportar copia cifrada»…).
+- **Verificación:** pruebas unitarias de continuidad, textos, tokens y estados en verde (modo test) y `npm run build` correcto.
 
 ## Más funciones: vistas, barrido, duplicados al importar · 19/11/2026, 12:16, Europe/Madrid
 

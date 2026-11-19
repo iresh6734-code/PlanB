@@ -32,6 +32,9 @@ Análisis del 19/11/2026 sobre la rama `planb-v0.3-local`. Se ha hecho leyendo e
 | (14) Nombres, grupos y tonos de las tareas de Hoy en una sola tabla (`TASK_BUCKETS`), usada por la lista de Hoy y las etiquetas. Los textos no cambian. | `task-display.ts`, `LocalOperations.tsx` |
 | (12) Atajos `G D` (despachar vencidas) y `G B` (barrido de la mañana), también en la ayuda «?». | `app-shell/useShortcuts.ts`, `App.tsx` |
 | (22) «Parte para compartir» explica debajo, a la vista, qué contiene (antes solo en el `title`). | `ContinuityHome.tsx`, `faro.css` |
+| Continuidad · Estado: franja de preparación (veredicto, «n de 5», cinco trazos y siguiente paso con botón que lo ejecuta), regla de seis constantes de la copia y «Si HubSpot cae ahora», que dice línea a línea qué tendrías (antigüedad, clientes/empresas/oportunidades/tareas, prueba, copia fuera del PC, cambios sin devolver). Cada paso de la preparación explica su estado. | `app-shell/continuity-insights.ts`, `ContinuityHome.tsx`, `continuity-insights.css` |
+| Continuidad · Copias: regla de las últimas 24 horas y libro de capturas agrupado por día, con filtros (Todas, Hoy, 7 días, Más pequeñas), variación de tamaño respecto a la anterior, aviso cuando encoge más del 15 % y «Mostrar N más» en lugar del corte fijo a 12. | `continuity-insights.ts` (`hourlyCaptures`, `captureLedger`), `ContinuityHome.tsx` |
+| Continuidad · Operaciones: «Fiabilidad de los procesos» con el porcentaje correcto por capturas, simulacros y devoluciones y el último fallo de cada uno (los cancelados no cuentan). | `continuity-insights.ts` (`jobStats`), `ContinuityHome.tsx` |
 
 (11) No se hace: la jornada es en memoria por decisión revisada (recargar o salir de Hoy la descarta, con barreras de identidad de la copia). Guardarla exigiría rediseñar esas barreras.
 

@@ -29,3 +29,6 @@ infrastructure/**/*.tfplan
 
 # Registros de depuración locales
 debug.log
+
+# Claves privadas de emisión de licencias (scripts/license-tool.ts)
+*.jwk

@@ -1,5 +1,5 @@
 import { useEffect, useState, type ComponentType } from 'react';
-import { ArrowRight, Building2, CalendarCheck, CalendarDays, ChevronDown, Download, FlaskConical, GitBranch, Home, Inbox, ListTodo, PlugZap, Radar, Search, Settings2, ShieldCheck, SlidersHorizontal, Users } from 'lucide-react';
+import { ArrowRight, BadgeCheck, Building2, CalendarCheck, CalendarDays, ChevronDown, Download, FlaskConical, GitBranch, Home, Inbox, ListTodo, PlugZap, Radar, Search, Settings2, ShieldCheck, SlidersHorizontal, Users } from 'lucide-react';
 import type { AppState, EntityName } from '../../shared/model.js';
 import { APP_VERSION } from '../../shared/version.js';
 import { Brand } from '../components.js';
@@ -23,7 +23,7 @@ type Props = {
 const GROUP_ICON: Record<GroupId, ComponentType<{ size?: number }>> = { home: Home, today: CalendarDays, clients: Users, continuity: ShieldCheck, settings: SlidersHorizontal, lab: FlaskConical };
 const ITEM_ICON: Record<string, ComponentType<{ size?: number }>> = {
   today: CalendarDays, agents: Inbox, contacts: Users, companies: Building2, deals: GitBranch, tasks: ListTodo,
-  continuity: ShieldCheck, changes: GitBranch, export: Download, 'team-sync': Building2, integrations: PlugZap, provider: Settings2, radar: Radar, 'date-check': CalendarCheck,
+  continuity: ShieldCheck, changes: GitBranch, export: Download, 'team-sync': Building2, integrations: PlugZap, provider: Settings2, radar: Radar, 'date-check': CalendarCheck, plan: BadgeCheck,
 };
 
 /**

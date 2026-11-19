@@ -16,6 +16,7 @@ export const ChangesView = deferred(() => import('../ChangesView.js').then(m => 
 export const PortableExport = deferred(() => import('../PortableExport.js').then(m => m.PortableExport), 'Abriendo Exportar…');
 export const LocalIntegrations = deferred(() => import('../LocalIntegrations.js').then(m => m.LocalIntegrations), 'Abriendo Integraciones…');
 export const TeamSync = deferred(() => import('../TeamSync.js').then(m => m.TeamSync), 'Abriendo la copia de equipo…');
+export const LicensePanel = deferred(() => import('../LicensePanel.js').then(m => m.LicensePanel), 'Abriendo tu plan…');
 export const RadarHost = deferred(() => import('../RadarHost.js').then(m => m.RadarHost), 'Abriendo el Radar…');
 export const OperationalRehearsal = deferred(() => import('../OperationalRehearsal.js').then(m => m.OperationalRehearsal), 'Abriendo el ensayo…');
 export const DateCheck = deferred(() => import('../DateCheck.js').then(m => m.DateCheck), 'Abriendo Comprobar una fecha…');

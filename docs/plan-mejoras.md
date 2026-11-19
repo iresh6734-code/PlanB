@@ -106,3 +106,4 @@ Esfuerzo: S = pequeño, M = medio, L = grande. «Interfaz» = solo cambia la int
 3. Datos correctos en grande: 2 y 3.
 4. Confianza en la continuidad: 16, 18 y 19.
 5. Funciones nuevas, empezando por N1 y N2.
+| Super plan M1 · Planes y licencia sin conexión: nuevo apartado «Ajustes › Plan y licencia» con el plan actual, la tabla de lo que incluye Personal, Pro y Equipo y un campo para pegar la licencia. La firma Ed25519 se comprueba en local con WebCrypto; caducada da 14 días de gracia y después vuelve a Personal sin bloquear datos. `scripts/license-tool.ts` genera la pareja de claves (fuera del repositorio) y emite licencias. | `shared/license.ts`, `LicensePanel.tsx`, `license-panel.css`, `navigation.ts`, `routes.ts`, `session.ts`, `Sidebar.tsx`, `App.tsx`, `scripts/license-tool.ts`, `tests/license.test.ts` |

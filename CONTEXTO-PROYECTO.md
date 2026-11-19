@@ -1,8 +1,14 @@
 ﻿# Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026, 13:52, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1, V2, V3 y V5 hechas. Oleada 3: H2 y H4 hechas; H1 aplazada (requiere e2e). Continuidad: C5 hecha. Negocio: M3 hecha.
+Última revisión: **19/11/2026, 14:02, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1, V2, V3 y V5 hechas. Oleada 3: H2 y H4 hechas; H1 aplazada (requiere e2e). Continuidad: C5 hecha. Negocio: M1 y M3 hechas.
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
+
+## Super plan M1 · Planes y licencia · 19/11/2026, 14:02, Europe/Madrid
+
+- `shared/license.ts` (puro): formato `PLANB1.<carga>.<firma>` en base64url, carga validada con zod (`v`, `id`, `plan` pro/team, `holder`, `seats`, `issuedAt`, `expiresAt`), firma Ed25519 con WebCrypto (igual en navegador y Node), `checkLicense` que nunca lanza y cae a Personal (`none`, `malformed`, `unverifiable`, `invalid`, `expired`), `grace` 14 días, `FEATURES` y `planAllows`.- `LICENSE_PUBLIC_KEY` está vacía a propósito: hasta generar la clave de venta con `npx tsx scripts/license-tool.ts keygen <carpeta-fuera-del-repo>` toda licencia da «unverifiable». La privada (`*.jwk`) está en `.gitignore` y la herramienta se niega a guardarla dentro del repositorio.
+- UI: página `plan` (`/ajustes/plan`) en Ajustes, no en la copia independiente; `LicensePanel.tsx` (perezosa) guarda la licencia en `localStorage` `planb.license`. Ninguna función se bloquea todavía: la decisión de qué limitar es del usuario.
+- Pruebas: `license.test.ts` (4, claves generadas en la prueba), `navigation-model` ampliada; `url-routes`, `design-tokens`, `ui-states` en verde; build correcto. Sin revisión visual: ver en casa.
 
 ## Super plan M3 · Informe del mes · 19/11/2026, 13:52, Europe/Madrid
 

@@ -25,7 +25,10 @@ test('con datos reales ninguna entrada lleva al Laboratorio ni al proveedor de I
 test('la copia independiente no ofrece Hoy, Propuestas, Integraciones, copia de equipo ni Preparación', () => {
   const runtime = ctx({ runtime: true, testData: false });
   assert.deepEqual(ids(runtime), ['home', 'clients', 'continuity']);
-  for (const id of ['today', 'agents', 'integrations', 'team-sync', 'prepare', 'provider']) assert.ok(!allItems(runtime).includes(id), id);
+  for (const id of ['today', 'agents', 'integrations', 'team-sync', 'prepare', 'provider', 'plan']) assert.ok(!allItems(runtime).includes(id), id);
+  assert.equal(fallbackPage('plan', runtime), 'home');
+  assert.equal(groupOfPage('plan'), 'settings');
+  assert.ok(allItems(ctx({ testData: false })).includes('plan'), 'Plan y licencia también con datos reales');
 });
 
 test('cada apartado de la App pertenece a un grupo, y el grupo existe cuando el apartado se puede abrir', () => {

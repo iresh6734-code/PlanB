@@ -46,6 +46,7 @@ export function navigationGroups(context: NavContext): NavGroup[] {
     ...(!context.runtime ? [{ id: 'integrations', label: 'Integraciones', target: { kind: 'page', page: 'integrations' } } satisfies NavItem] : []),
     ...(!context.runtime && context.testData ? [{ id: 'provider', label: 'Proveedor de IA', target: { kind: 'settings' } } satisfies NavItem] : []),
     ...(!context.runtime ? [{ id: 'prepare', label: 'Preparación', target: { kind: 'prepare' } } satisfies NavItem] : []),
+    ...(!context.runtime ? [{ id: 'plan', label: 'Plan y licencia', target: { kind: 'page', page: 'plan' } } satisfies NavItem] : []),
   ];
   if (settings.length) groups.push({ id: 'settings', label: 'Ajustes', target: settings[0].target, items: settings });
   if (labVisible(context)) groups.push({ id: 'lab', label: 'Laboratorio', target: { kind: 'page', page: 'radar' }, badge: 'atRisk', needsReady: true, items: [
@@ -62,7 +63,7 @@ export function groupOfPage(page: PageId): GroupId {
     case 'today': case 'agents': return 'today';
     case 'workspace': return 'clients';
     case 'continuity': case 'changes': case 'export': case 'team-sync': return 'continuity';
-    case 'integrations': case 'prepare': return 'settings';
+    case 'integrations': case 'prepare': case 'plan': return 'settings';
     case 'radar': case 'date-check': return 'lab';
   }
 }
@@ -91,6 +92,6 @@ export function itemActive(item: NavItem, page: PageId, entity: EntityName): boo
  */
 export function fallbackPage(page: PageId, context: NavContext): PageId | null {
   if (LAB_PAGES.includes(page) && !labVisible(context)) return 'home';
-  if (context.runtime && (page === 'today' || page === 'agents' || page === 'integrations' || page === 'team-sync')) return 'home';
+  if (context.runtime && (page === 'today' || page === 'agents' || page === 'integrations' || page === 'team-sync' || page === 'plan')) return 'home';
   return null;
 }

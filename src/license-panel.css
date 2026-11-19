@@ -1,0 +1,33 @@
+/* Plan y licencia (super plan M1). Solo tokens; la tabla de planes anula los estilos genéricos de tabla. */
+html body .license-page { display: grid; gap: 18px; }
+html body .lp-current { display: grid; grid-template-columns: auto 1fr auto; align-items: start; gap: 12px; padding: 14px 16px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--bg-surface); }
+html body .lp-current > svg { color: var(--text-3); margin-top: 2px; }
+html body .lp-current[data-tone="ok"] > svg { color: var(--success); }
+html body .lp-current[data-tone="warn"] > svg { color: var(--warning-text); }
+html body .lp-current[data-tone="danger"] > svg { color: var(--danger); }
+html body .lp-current p { margin: 0; }
+html body .lp-current-title { font-size: var(--fs-md); font-weight: 650; color: var(--text-1); }
+html body .lp-current-detail { margin-top: 2px; font-size: var(--fs-sm); color: var(--text-2); line-height: var(--lh-body); }
+html body .lp-current-meta { margin-top: 4px; font-size: var(--fs-xs); color: var(--text-3); font-variant-numeric: tabular-nums; }
+html body .lp-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr); gap: 18px; align-items: start; }
+html body .lp-plans { width: 100%; border: 1px solid var(--border); border-radius: var(--r-lg); border-collapse: separate; border-spacing: 0; background: var(--bg-surface); white-space: normal; overflow: hidden; }
+html body .lp-plans caption { padding: 0 0 8px; text-align: left; font-size: var(--fs-sm); font-weight: 650; color: var(--text-2); }
+html body .lp-plans th, html body .lp-plans td { width: auto; padding: 9px 12px; border: 0; border-top: 1px solid var(--rule); font-size: var(--fs-sm); text-align: center; vertical-align: middle; color: var(--text-1); }
+html body .lp-plans thead th { border-top: 0; font-size: var(--fs-xs); font-weight: 650; text-transform: uppercase; letter-spacing: .04em; color: var(--text-3); }
+html body .lp-plans thead th:first-child, html body .lp-plans tbody th { text-align: left; }
+html body .lp-plans tbody th { font-weight: 500; color: var(--text-2); }
+html body .lp-plans [data-current="true"] { background: var(--bg-subtle); color: var(--text-1); }
+html body .lp-plans thead small { display: block; margin-top: 2px; font-size: var(--fs-xs); font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--success); }
+html body .lp-plans td svg { color: var(--success); vertical-align: middle; }
+html body .lp-plans td svg.lp-no { color: var(--text-3); }
+html body .lp-plans tr:hover { background: transparent; }
+html body .lp-activate { display: grid; gap: 8px; padding: 14px 16px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--bg-surface); }
+html body .lp-activate h2 { margin: 0 0 2px; font-size: var(--fs-md); }
+html body .lp-activate label { font-size: var(--fs-sm); color: var(--text-2); }
+html body .lp-activate textarea { width: 100%; min-height: 104px; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--bg-canvas); color: var(--text-1); font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: var(--fs-xs); word-break: break-all; resize: vertical; }
+html body .lp-activate .button { justify-self: start; }
+html body .lp-help { margin: 0; font-size: var(--fs-xs); color: var(--text-3); line-height: var(--lh-body); }
+html body .lp-error { margin: 0; padding: 8px 10px; border: 1px solid var(--danger-border); border-radius: var(--r-md); background: var(--danger-bg); font-size: var(--fs-sm); color: var(--text-1); }
+html body .lp-ok { margin: 0; font-size: var(--fs-sm); color: var(--success); }
+@media (max-width: 860px) { html body .lp-grid { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { html body .lp-current { grid-template-columns: auto 1fr; } html body .lp-current .button { grid-column: 1 / -1; justify-self: start; } }

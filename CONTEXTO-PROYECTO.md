@@ -1,8 +1,14 @@
 ﻿# Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026, 14:39, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 a V6 hechas. Oleada 3: H2, H4 y H6 hechas; H1 aplazada (requiere e2e). Continuidad: C2 y C5 hechas. Negocio: M1, M2, M3 y M6 hechas. Datos: D1, D2 y D3 hechas.
+Última revisión: **19/11/2026, 14:45, Europe/Madrid**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 a V6 hechas. Oleada 3: H2, H4, H5 y H6 hechas; H1 aplazada (requiere e2e). Continuidad: C2 y C5 hechas. Negocio: M1, M2, M3 y M6 hechas. Datos: D1, D2 y D3 hechas.
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
+
+## Super plan H5 · Accesibilidad de la cola · 19/11/2026, 14:45, Europe/Madrid
+
+- Hoy: `.oc-table` con `role=table`; la cabecera ya no está oculta (`columnheader`, la última con «Acción» solo para lector); cada grupo es `rowgroup` con su nombre y su título sigue siendo `h3` dentro de una fila; cada `li` es `row` con 4 celdas (el botón va dentro de `.lop-cell-action`). Se conservan `ul`/`li` y clases porque las e2e usan `.lop-tasks li`.
+- Despachar: barra `progressbar` con `aria-valuenow`/`aria-valuetext` y anuncio `aria-atomic` con nombre de la tarea y vencimiento.
+- Sin probar con lector de pantalla ni e2e (ver en casa).
 
 ## Super plan D2 y D3 · Reglas por etapa y calidad con tendencia · 19/11/2026, 14:39, Europe/Madrid
 

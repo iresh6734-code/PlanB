@@ -304,6 +304,7 @@ html body .lop .lop-tasks .oc-task-title { font-size: var(--fs-md); }
 html body .lop .lop-tasks .oc-due { font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
 html body .lop .lop-tasks .lop-open-task { min-height: 24px; height: 24px; padding: 0 8px; gap: 4px; font-size: var(--fs-sm); border-color: transparent; background: transparent; box-shadow: none; color: var(--primary-text); }
 html body .lop .lop-tasks li:hover .lop-open-task, html body .lop .lop-tasks .lop-open-task:focus-visible { border-color: var(--border-strong); background: var(--bg-surface); }
+html body .lop .lop-tasks .lop-cell-action { display: inline-flex; justify-self: end; }
 html body .lop > section > .helper { order: 8; margin: 8px 0 0; font-size: var(--fs-xs); flex: 1 1 0; }
 html body .lop > .button.secondary { order: 8; flex: 0 0 auto; margin: 8px 0 0; min-height: 26px; font-size: var(--fs-sm); }
 html body .lop > .lop-details { order: 9; margin-top: 10px; padding-top: 6px; font-size: var(--fs-sm); }

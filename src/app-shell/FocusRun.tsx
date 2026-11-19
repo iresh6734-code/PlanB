@@ -111,8 +111,8 @@ export function FocusRun({ spec, saveField, createTask, onOpen, close, initialSc
           <p>{[counts.done ? counts.done + (counts.done === 1 ? ' hecha' : ' hechas') : '', counts.tomorrow ? counts.tomorrow + ' a mañana' : '', counts.monday ? counts.monday + ' al lunes' : '', counts.skipped ? counts.skipped + (counts.skipped === 1 ? ' saltada' : ' saltadas') : '', followed ? followed + (followed === 1 ? ' seguimiento creado' : ' seguimientos creados') : ''].filter(Boolean).join(' · ')}. Todo lo cambiado está guardado en tu copia local y aparece en Cambios.</p>
           <button type="button" className="button primary" onClick={close}>Cerrar</button></div>
       : current ? <>
-          <div className="gx-focus-progress" aria-hidden="true"><span style={{ width: (index / list.length * 100) + '%' }} /></div>
-          <p className="gx-focus-count" aria-live="polite">Tarea {index + 1} de {list.length}</p>
+          <div className="gx-focus-progress" role="progressbar" aria-label="Avance al despachar" aria-valuemin={0} aria-valuemax={list.length} aria-valuenow={index} aria-valuetext={index + ' de ' + list.length + ' revisadas'}><span style={{ width: (index / list.length * 100) + '%' }} /></div>
+          <p className="gx-focus-count" aria-live="polite" aria-atomic="true">Tarea {index + 1} de {list.length}<span className="sr-only">: {recordName(current, spec)}. {late <= 0 ? 'Vence hoy' : 'Vencida hace ' + late + (late === 1 ? ' día' : ' días')}.</span></p>
           <div className="gx-focus-card">
             <p className="gx-focus-late" data-today={late <= 0 ? 'true' : undefined}>{late <= 0 ? 'Vence hoy' : 'Vencida hace ' + late + (late === 1 ? ' día' : ' días')}</p>
             <h3>{recordName(current, spec)}</h3>

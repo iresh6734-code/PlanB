@@ -13,6 +13,9 @@ async function open(page: Page) {
   await page.getByRole('button', { name: 'Continuidad', exact: true }).click();
   // Desde el rediseño «Faro» (13/11/2026) las operaciones viven en su propia pestaña de Continuidad.
   await page.getByRole('tab', { name: 'Operaciones', exact: true }).click();
+  // Desde el rediseño de Continuidad el diagnóstico va dentro de «Consultar diagnóstico de tareas y cambios», cerrado al entrar.
+  const disclosure = page.getByText('Consultar diagnóstico de tareas y cambios', { exact: true });
+  if (await disclosure.isVisible()) await disclosure.click();
   const block = page.locator('.continuity-operations');
   await expect(block.getByRole('heading', { name: 'Operaciones de la copia' })).toBeVisible();
   return { external, errors, notFound, calls, block };

@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { resolve } from 'node:path';
+import { menuGroup, openSection } from './menu';
 
 test('CRM completo: conserva apartados y permite ir y volver del piloto con protección de borradores', async ({ page, baseURL }) => {
   // Nunca preparar datos sobre la instalación del usuario.
@@ -39,22 +40,25 @@ test('CRM completo: conserva apartados y permite ir y volver del piloto con prot
     return route.fulfill({ response });
   });
   await page.goto(origin);
-  const work = page.getByRole('button', { name: 'Trabajar', exact: true });
+  // Menú de cinco lugares (CLAUDE-UI-NAV-LAB): el grupo «Clientes» sustituye a «Trabajar».
+  const work = menuGroup(page, 'Clientes');
   await expect(work).toHaveAttribute('aria-expanded', 'false');
   await work.click();
   await expect(work).toHaveAttribute('aria-expanded', 'true');
   for (const name of ['Clientes', 'Empresas', 'Oportunidades', 'Tareas']) {
-    const button = page.getByRole('navigation', { name: 'Secciones de trabajo' }).getByRole('button', { name, exact: true });
+    const button = page.getByRole('navigation', { name: 'Clientes', exact: true }).getByRole('button', { name, exact: true });
     await button.click(); await expect(button).toHaveAttribute('aria-current', 'page');
     await expect(page.getByRole('heading', { name, exact: true }).first()).toBeVisible();
     await expect(page.locator(name === 'Oportunidades' ? '.kanban[aria-label="Tablero de oportunidades"]' : 'main table').first()).toBeVisible();
   }
-  for (const name of ['Hoy', 'Continuidad', 'Cambios', 'Agentes', 'Integraciones', 'Preparación', 'Exportar']) await expect(page.getByRole('button', { name, exact: true }).first()).toBeVisible();
-  const commercial = page.getByRole('link', { name: 'Espacio comercial', exact: true });
-  await expect(commercial).toHaveAttribute('href', pilot + '/team?view=company');
+  // Los otros lugares del menú; sus apartados (Cambios, Exportar, Integraciones, Preparación…) viven dentro de cada grupo.
+  for (const name of ['Inicio', 'Hoy', 'Continuidad', 'Ajustes']) await expect(page.locator('.sidebar').getByRole('button', { name, exact: true }).first()).toBeVisible();
+  // El enlace al espacio de equipo está en la barra superior y abre su apartado comercial.
+  const commercial = page.getByRole('link', { name: 'Espacio de equipo', exact: true });
+  await expect(commercial).toHaveAttribute('href', pilot + '/team?view=commercial');
   await page.screenshot({ path: resolve(process.env.PLANB_EVIDENCE_DIR || 'test-results', 'crm-completo-trabajar.png'), fullPage: true });
   await commercial.click();
-  await expect(page.getByRole('heading', { name: 'Tu empresa, de un vistazo.', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Cada seguimiento, preparado.', exact: true })).toBeVisible();
   const back = page.getByRole('link', { name: 'CRM completo', exact: true });
   await expect(back).toHaveAttribute('href', crm + '/');
   await page.getByRole('navigation', { name: 'Secciones del equipo' }).getByRole('button', { name: 'Comercial', exact: true }).click();
@@ -65,8 +69,8 @@ test('CRM completo: conserva apartados y permite ir y volver del piloto con prot
   page.once('dialog', dialog => void dialog.accept()); await back.click();
   await expect(page.getByRole('button', { name: 'Continuidad', exact: true })).toBeVisible();
   expect(page.url()).toBe(crm + '/');
-  await page.getByRole('button', { name: 'Trabajar', exact: true }).click();
-  await expect(page.getByRole('navigation', { name: 'Secciones de trabajo' })).toBeVisible();
+  await openSection(page, 'Clientes');
+  await expect(page.getByRole('navigation', { name: 'Clientes', exact: true })).toBeVisible();
   for (const width of [1440, 390, 320]) {
     await page.setViewportSize({ width, height: 950 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBeTruthy();

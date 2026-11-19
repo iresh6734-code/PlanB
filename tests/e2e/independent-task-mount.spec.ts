@@ -6,12 +6,14 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { build } from 'vite';
 import react from '@vitejs/plugin-react';
+import { openSection, place } from './menu';
 
 const root = process.env.PLANB_TASK142_ROOT!;
 let child: ChildProcess | undefined, origin = '', pid: number | undefined;
 let errors: string[], external: string[], consoleErrors: string[];
 const sha = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
-const nav = (page: Page, label: string) => page.locator('.sidebar').getByRole('button', { name: label, exact: true });
+// Lugares del menú en escritorio (menú lateral) o en el móvil (barra inferior): ver tests/e2e/menu.ts.
+const nav = (page: Page, label: string) => place(page, label);
 const opener = (page: Page, id = 'task-2', title = 'Llamar a Ana') => page.getByRole('button', { name: 'Abrir ' + title + ' (ID ' + id + ')', exact: true });
 test.setTimeout(90_000);
 
@@ -80,10 +82,10 @@ test('saving a task that remains queued restores focus to its updated button and
 test('Agentes keeps its review workflow, no task opening buttons, and a persisted receipt without CRM edits', async ({ page }) => {
   const before = await page.request.get(origin + '/api/records').then(r => r.json()); let posts = 0;
   page.on('request', r => { if (r.method() === 'POST' && new URL(r.url()).pathname.endsWith('/local-operations/reviews')) posts++; });
-  await nav(page, 'Agentes').click(); await expect(page.getByRole('heading', { name: 'Agentes y revisiones' })).toBeVisible();
+  await openSection(page, 'Propuestas'); await expect(page.getByRole('heading', { name: 'Agentes y revisiones' })).toBeVisible();
   await expect(page.locator('.lop-open-task')).toHaveCount(0); await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByRole('button', { name: 'Revisar mi copia', exact: true }).click(); await expect(page.locator('.lop-confirmation')).toContainText('Revisión local guardada');
-  await page.reload(); await nav(page, 'Agentes').click(); await expect(page.locator('.lop-confirmation')).toContainText('Revisión local guardada');
+  await page.reload(); await openSection(page, 'Propuestas'); await expect(page.locator('.lop-confirmation')).toContainText('Revisión local guardada');
   expect(posts).toBe(1); expect(sha(await page.request.get(origin + '/api/records').then(r => r.json()))).toBe(sha(before));
   expect(errors).toEqual([]); expect(external).toEqual([]); expect(consoleErrors).toEqual([]);
 });
@@ -96,7 +98,7 @@ test('navigation aborts the saved-task queue read; a late route cannot replace t
   await page.route('**/api/v7/local-operations', route => { if (hold && !captured) { captured = true; held = route; entered(); return; } return route.fallback(); });
   await opener(page).click(); const dialog = page.getByRole('dialog'); await dialog.locator('#ltf-f-status').selectOption('completed'); hold = true;
   await dialog.getByRole('button', { name: 'Guardar cambios', exact: true }).click(); await expect(dialog.getByRole('heading', { name: 'Cambios guardados' })).toBeVisible(); await pending;
-  await dialog.getByRole('button', { name: 'Volver a Hoy', exact: true }).click(); await nav(page, 'Agentes').click();
+  await dialog.getByRole('button', { name: 'Volver a Hoy', exact: true }).click(); await openSection(page, 'Propuestas');
   await expect(page.getByRole('heading', { name: 'Agentes y revisiones' })).toBeVisible();
   const current = await page.request.get(origin + '/api/v7/local-operations').then(r => r.json());
   expect(current.tasks.length).toBe(oldQueue.tasks.length - 1);

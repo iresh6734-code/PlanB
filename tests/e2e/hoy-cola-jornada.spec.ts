@@ -2,6 +2,7 @@ import { test, expect, type Page, type Route } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
 import { HoyHarness, gate, nav } from './hoy-recuperable-harness';
+import { openSection } from './menu';
 
 // «ORGANIZAR MI JORNADA» EN HOY (unidad CLAUDE-HOY-COLA-JORNADA-A3), en la App compilada contra un servidor real con revisiones y SQLite de archivo, 127.0.0.1 y red exterior bloqueada.
 // Reutiliza el arnés CLAUDE-HOY-APP-PROBES-A sin modificarlo: lo extiende por herencia para sembrar ESCENARIOS de copia (vacía, importada, activa, con relación ausente, con relación
@@ -255,7 +256,7 @@ test('GUARDADO SIN RESOLVER: la tarea con un guardado incierto no se planifica s
 });
 
 test('AGENTES: la vista de Agentes y revisiones no ofrece la jornada y «Revisar mi copia» sigue guardando una revisión local', async ({ page }) => {
-  await begin(page, 'day'); await nav(page, 'Agentes').click(); await expect(page.getByRole('heading', { name: 'Agentes y revisiones' })).toBeVisible(); await expect(entry(page)).toHaveCount(0);
+  await begin(page, 'day'); await openSection(page, 'Propuestas'); await expect(page.getByRole('heading', { name: 'Agentes y revisiones' })).toBeVisible(); await expect(entry(page)).toHaveCount(0);
   const reviews = writes(page); await page.getByRole('button', { name: /Revisar mi copia|Reintentar la misma revisión/ }).click(); await expect(page.locator('.lop-confirmation')).toContainText('Revisión local guardada');
   expect(reviews.filter(line => line.startsWith('POST') && line.endsWith('/api/v7/local-operations/reviews')), 'una sola revisión').toHaveLength(1);
 });

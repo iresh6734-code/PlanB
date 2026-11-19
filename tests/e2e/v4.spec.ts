@@ -1,6 +1,7 @@
 import { test, expect, type APIRequestContext, type BrowserContext } from '@playwright/test';
 import { resolve } from 'node:path';
 import { makeFixture } from '../../shared/fixtures.js';
+import { openSection } from './menu';
 const output=resolve(process.env.PLANB_EVIDENCE_DIR||'test-results');
 async function setup(request:APIRequestContext,context:BrowserContext) {
   const auth=await request.get('/api/v2/auth/status').then(r=>r.json());
@@ -35,7 +36,7 @@ test('v4: Hoy, revisión, simulación persistente, integraciones y móvil sin en
   await expect(page.getByText('Simulación verificada',{exact:true})).toBeVisible();
   expect(await request.get('/api/records').then(r=>r.json())).toEqual(before);
   expect((await request.get('/api/v2/changes').then(r=>r.json())).changes).toHaveLength(0);
-  await page.getByRole('button',{name:'Agentes',exact:true}).click();
+  await openSection(page, 'Propuestas');
   await expect(page.getByRole('heading',{name:'Trabajo preparado. Tú decides.'})).toBeVisible();
   await page.screenshot({path:resolve(output,'v0.4.0-agentes.png'),fullPage:true});
   await page.getByRole('button',{name:'Integraciones',exact:true}).click();
@@ -52,12 +53,12 @@ test('v4: Hoy, revisión, simulación persistente, integraciones y móvil sin en
     }
   }
   await request.patch('/api/records/contacts/contact-1',{data:{values:{phone:'600 555 555'}}});
-  await page.getByRole('button',{name:'Agentes',exact:true}).click();await page.getByRole('button',{name:'Cambios',exact:true}).click();
+  await openSection(page, 'Propuestas');await page.getByRole('button',{name:'Cambios',exact:true}).click();
   await expect(page.getByText('Datos posteriores · revisar de nuevo',{exact:true}).first()).toBeVisible();
   expect(errors).toEqual([]);expect(external).toEqual([]);
 });
 test('v4: exportación muestra revisión e invalida custodia al editar',async({page,request,context})=>{
-  await setup(request,context);await page.goto('/');await page.getByRole('button',{name:'Exportar',exact:true}).click();
+  await setup(request,context);await page.goto('/');await openSection(page,'Exportar');
   await expect(page.getByRole('heading',{name:'Qué contiene esta descarga',exact:true})).toBeVisible();
   const summary=await request.get('/api/v4/export-summary').then(r=>r.json());
   await page.getByLabel('Contraseña de recuperación',{exact:true}).fill('recuperacion-sintetica-2026');
@@ -69,6 +70,6 @@ test('v4: exportación muestra revisión e invalida custodia al editar',async({p
   await page.getByRole('button',{name:'Continuidad',exact:true}).click();await page.getByText('Preparación de tu Plan B',{exact:true}).click();
   await expect(page.getByText('La copia conservada corresponde a otra revisión. Exporta los cambios actuales.',{exact:true})).toBeVisible();
   expect((await request.post('/api/v3/recovery-copy/confirm',{data:{storedSeparately:true,revision:summary.revision}})).status()).toBe(409);
-  await page.getByRole('button',{name:'Exportar',exact:true}).click();await expect(page.getByText(/62 registros · 1 cambios locales incluidos/)).toBeVisible();
+  await openSection(page,'Exportar');await expect(page.getByText(/62 registros · 1 cambios locales incluidos/)).toBeVisible();
   await page.screenshot({path:resolve(output,'v0.4.0-exportacion-revision.png'),fullPage:true});
 });

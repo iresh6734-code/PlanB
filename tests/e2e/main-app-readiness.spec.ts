@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
 import { startMainApp, checkCandidate, type Candidate } from '../helpers/main-app-readiness-harness.js';
+import { openSection, place } from './menu';
 
 let candidate: Candidate, imported: Awaited<ReturnType<typeof startMainApp>>, active: Awaited<ReturnType<typeof startMainApp>>;
 const logs = new WeakMap<Page, { errors: string[]; outside: string[]; console: string[] }>();
@@ -29,16 +30,17 @@ async function open(page: Page, fixture = imported) {
   await expect(page.locator('#main-content')).not.toBeEmpty();
   return seen;
 }
-const nav = (page: Page, label: string) => page.locator('.sidebar').getByRole('button', { name: label, exact: true });
+// Lugares del menú en escritorio (menú lateral) o en el móvil (barra inferior): ver tests/e2e/menu.ts.
+const nav = (page: Page, label: string) => place(page, label);
 test('combined imported workflow: useful Hoy, persistent review, folded preparation and honest integrations', async ({ page }) => {
   const seen = await open(page); const posts: string[] = [];
   page.on('request', r => { if (r.method() === 'POST') posts.push(new URL(r.url()).pathname); });
   await nav(page, 'Hoy').click(); await expect(page.getByRole('heading', { name: 'Hoy', exact: true })).toBeVisible();
   await expect(page.getByText('Captura importada · pendiente de activar', { exact: true })).toBeVisible();
   await expect(page.locator('.lop-tasks li').first()).toBeVisible();
-  await nav(page, 'Agentes').click(); await page.getByRole('button', { name: 'Revisar mi copia', exact: true }).click();
+  await openSection(page, 'Propuestas'); await page.getByRole('button', { name: 'Revisar mi copia', exact: true }).click();
   await expect(page.locator('.lop-confirmation')).toContainText('Revisión local guardada');
-  await page.reload(); await nav(page, 'Agentes').click();
+  await page.reload(); await openSection(page, 'Propuestas');
   await expect(page.locator('.lop-confirmation')).toContainText('Revisión local guardada');
   await page.getByRole('button', { name: 'Continuar preparación', exact: true }).click();
   await expect(nav(page, 'Preparación')).toHaveAttribute('aria-expanded', 'true');
@@ -57,7 +59,7 @@ test('active-copy callbacks open actual task and opportunity workspaces', async 
   const seen = await open(page, active); await nav(page, 'Hoy').click();
   await page.getByRole('button', { name: 'Abrir tareas', exact: true }).click(); await expect(page.getByRole('heading', { name: 'Tareas', exact: true })).toBeVisible();
   await expect(page.locator('tbody tr').first()).toBeVisible();
-  await nav(page, 'Agentes').click(); await page.getByRole('button', { name: 'Abrir oportunidades', exact: true }).click();
+  await openSection(page, 'Propuestas'); await page.getByRole('button', { name: 'Abrir oportunidades', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Oportunidades', exact: true })).toBeVisible(); expect(seen.console).toEqual([]);
 });
 for (const width of [1440, 390, 320]) test('combined navigation and integrations fit at ' + width, async ({ page }) => {

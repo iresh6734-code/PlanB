@@ -6,6 +6,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { lockButton, menuItem, openSection, place } from './menu';
 
 // D7 EN LA APP REAL (unidad U2-171). La App se compila desde una COPIA CONGELADA de los fuentes del cliente (manifiesto de hashes en <root>/manifest.json; si un fuente
 // cambia mientras se copia, la prueba se niega a continuar) y se sirve desde el servidor REAL (createBaseApp, SQLite en memoria, 127.0.0.1, red externa bloqueada).
@@ -86,7 +87,8 @@ test.afterEach(async ({ page }) => {
 const counts = async () => (await (await fetch(origin + '/__h/counts', { method: 'POST' })).json()) as { patches: number; changes: { id: string; after: Record<string, unknown> }[]; task2: Record<string, unknown> | null; task3: Record<string, unknown> | null };
 const call = async (route: string, body: object) => (await fetch(origin + '/__h/' + route, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })).json();
 void call;
-const nav = (page: Page, name: string) => page.locator('.sidebar').getByRole('button', { name, exact: true });
+// Lugares del menú en escritorio (menú lateral) o en el móvil (barra inferior): ver tests/e2e/menu.ts.
+const nav = (page: Page, name: string) => place(page, name);
 const taskButton = (page: Page, id: string) => page.getByRole('button', { name: 'Abrir Llamar a Ana (ID ' + id + ')', exact: true });
 const dialog = (page: Page) => page.getByRole('dialog', { name: 'Llamar a Ana' });
 const surface = (page: Page) => page.locator('.toh');
@@ -217,7 +219,7 @@ test('RECHAZO con la ficha YA CERRADA (409 tardío): la superficie conserva lo e
   const item = surface(page).locator('.ltso-item'); await expect(item).toContainText('No se guardó'); await expect(item).toContainText('El servidor rechazó la petición y no cambió nada');
   await item.locator('summary').click(); await expect(item).toContainText('Estado: completed');
   await shot(page, 'u2-rechazo-tardio-1440', testInfo);
-  await nav(page, 'Agentes').click();                                                                                // «Abrir la tarea» navega a Hoy aunque estuviera en otra sección
+  await openSection(page, 'Propuestas');                                                                                // «Abrir la tarea» navega a Hoy aunque estuviera en otra sección
   await item.getByRole('button', { name: /Abrir la tarea/ }).click();
   await expect(page.getByRole('heading', { name: 'Hoy', exact: true })).toBeVisible(); await expect(dialog(page)).toContainText('task-2');
   await expect(surface(page)).toBeHidden();                                                                          // con la ficha abierta la superficie no duplica
@@ -262,7 +264,7 @@ test('BLOQUEAR DESPUÉS DEL DESPACHO: el PATCH ya salió y se aplica; al desbloq
   await start(page, { protectedSession: true }); await openToday(page); const held = await holdAck(page, true);
   await completeTask2(page); await saveButton(page).click(); await expect.poll(() => held.produced()).toBe(1); await leave(page);
   await expect(surface(page)).toContainText('1 guardado en curso');
-  await nav(page, 'Proteger / bloquear').click(); await expect(page.locator('.protection-page')).toBeVisible();
+  await lockButton(page).click(); await expect(page.locator('.protection-page')).toBeVisible();
   await unlock(page);
   await expect(lockNotice(page)).toContainText('1 guardado ya había salido'); await expect(lockNotice(page)).toContainText('no se canceló');
   await expect(lockNotice(page)).toContainText('no puedes comprobarlo ni aceptarlo desde aquí');                      // un recuento NO es seguimiento: se dice
@@ -299,8 +301,8 @@ test('NAVEGAR DURANTE LA RECARGA: Hoy se desmonta con la lectura de la cola rete
   await completeTask2(page); hold = true; await saveButton(page).click(); await expect.poll(() => held).toBe(1);
   await expect(dialog(page)).toContainText('Actualizando la cola de Hoy'); await dialog(page).getByRole('button', { name: 'Volver a Hoy' }).click().catch(() => leave(page));
   await leave(page).catch(() => undefined);
-  await nav(page, 'Agentes').click(); await expect(page.getByRole('heading', { name: 'Agentes y revisiones' })).toBeVisible();   // Hoy se desmonta con su lectura retenida
-  await nav(page, 'Hoy').click(); await expect(page.getByRole('heading', { name: 'Hoy', exact: true })).toBeVisible();
+  await openSection(page, 'Propuestas'); await expect(page.getByRole('heading', { name: 'Agentes y revisiones' })).toBeVisible();   // Hoy se desmonta con su lectura retenida
+  await openSection(page, 'Tareas de hoy');   // dentro del grupo Hoy su cabecera solo pliega: se vuelve por su apartado (CLAUDE-UI-NAV-LAB) await expect(page.getByRole('heading', { name: 'Hoy', exact: true })).toBeVisible();
   barrier.release();
   await expect(taskButton(page, 'task-2')).toHaveCount(0); await expect(taskButton(page, 'task-3')).toHaveCount(1);
   await openDetail(page).catch(() => undefined);
@@ -311,7 +313,7 @@ test('NAVEGAR DURANTE LA RECARGA: Hoy se desmonta con la lectura de la cola rete
 test('CONFIRMACIÓN MIENTRAS ESTOY EN OTRA SECCIÓN: el estado de la App se actualiza sin Hoy y al volver Hoy muestra la cola real (lee por su cuenta)', async ({ page }) => {
   await start(page); await openToday(page); const held = await holdAck(page, false);
   await completeTask2(page); await saveButton(page).click(); await expect.poll(() => held.produced()).toBe(1); await leave(page);
-  await nav(page, 'Cambios').click(); await expect(nav(page, 'Cambios')).toHaveAttribute('aria-current', 'page');
+  await openSection(page, 'Cambios'); await expect(menuItem(page, 'Cambios')).toHaveAttribute('aria-current', 'page');
   held.release(); await expect(surface(page)).toContainText('1 confirmado');
   await nav(page, 'Hoy').click(); await expect(page.getByRole('heading', { name: 'Hoy', exact: true })).toBeVisible(); await expect(page.locator('.lop-tasks li').first()).toBeVisible();
   await expect(taskButton(page, 'task-2')).toHaveCount(0); await expect(taskButton(page, 'task-3')).toHaveCount(1); expect((await counts()).patches).toBe(1);
@@ -356,7 +358,7 @@ test('SELLAR AL INICIAR EL BLOQUEO (209 F2): con la comprobación previa pendien
   await page.route('**/api/v2/auth/lock', async route => { if (route.request().method() === 'POST') { lockSeen++; await holdLock.promise; } await route.fallback().catch(() => undefined); });
   try {
     await completeTask2(page); watch = true; await saveButton(page).click(); await expect.poll(() => preflightSeen).toBeGreaterThan(0); await leave(page); expect((await counts()).patches).toBe(0);
-    await nav(page, 'Proteger / bloquear').click(); await expect.poll(() => lockSeen).toBe(1);
+    await lockButton(page).click(); await expect.poll(() => lockSeen).toBe(1);
     preflight.release(); await sleep(1500);                                                                   // la lectura previa termina MIENTRAS el bloqueo sigue sin llegar al servidor
     const before = await counts(); expect(patchSeen).toBe(0); expect(before.patches).toBe(0); expect(before.changes).toHaveLength(0); expect(before.task2?.status).toBe('pending');
     holdLock.release(); await expect(page.locator('.protection-page')).toBeVisible(); await unlock(page);
@@ -370,7 +372,7 @@ test('BLOQUEO QUE NO SE COMPLETA (209 F2): el propietario sellado no se reactiva
   await page.route('**/api/v2/state', async route => { if (watch && route.request().method() === 'GET') { preflightSeen++; await preflight.promise; } await route.fallback().catch(() => undefined); });
   await page.route('**/api/v2/auth/lock', route => { if (route.request().method() !== 'POST') return route.fallback(); lockCalls++; return failLock ? route.fulfill({ status: 500, contentType: 'application/json', body: '{"error":"fallo ficticio del bloqueo"}' }) : route.fallback(); });
   await completeTask2(page); watch = true; await saveButton(page).click(); await expect.poll(() => preflightSeen).toBeGreaterThan(0); await leave(page);
-  await nav(page, 'Proteger / bloquear').click(); await expect.poll(() => lockCalls).toBe(1);
+  await lockButton(page).click(); await expect.poll(() => lockCalls).toBe(1);
   await expect(lockNotice(page)).toContainText('No se completó el bloqueo'); await expect(lockNotice(page)).toHaveAttribute('data-failed', 'true'); await expect(lockNotice(page)).toContainText('1 guardado no llegó a enviarse porque se pidió bloquear');
   await expect(page.locator('.protection-page')).toHaveCount(0); await expect(surface(page)).toHaveCount(0); await shot(page, 'u2-r2-bloqueo-fallido-1440', testInfo);
   preflight.release(); await sleep(1500); expect((await counts()).patches).toBe(0);                            // la lectura vieja termina: el propietario sellado no reactiva nada

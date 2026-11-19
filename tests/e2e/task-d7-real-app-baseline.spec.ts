@@ -6,6 +6,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { openSection, place } from './menu';
 
 // D7 EN LA APP REAL, MISMOS ESCENARIOS QUE LA LÍNEA BASE 153 (invertida por U2-171). La línea base original observaba el comportamiento ANTERIOR a U2: cerrar la ficha con un
 // guardado en vuelo dejaba a Hoy sin ninguna mención al guardado (aserción `mentions` vacía, marcadas «U2 DEBE INVERTIR»). Tras U2 esas aserciones se INVIERTEN: la superficie fuera de
@@ -75,7 +76,7 @@ async function openToday(page: Page, size = { width: 1440, height: 900 }) {
   await page.setViewportSize(size);
   await page.route('**/*', route => new URL(route.request().url()).origin === origin ? route.fallback() : route.abort());
   await page.goto(origin); await expect(page).toHaveTitle('Plan B · Tu CRM sigue contigo');
-  await page.locator('.sidebar').getByRole('button', { name: 'Hoy', exact: true }).click();
+  await place(page, 'Hoy').click();
   await expect(page.getByRole('heading', { name: 'Hoy', exact: true })).toBeVisible(); await expect(page.locator('.lop-tasks li').first()).toBeVisible();
 }
 /** El servidor APLICA el PATCH; la respuesta se retiene y luego se pierde (`lose`) o se entrega. */
@@ -112,8 +113,8 @@ test('D7 (App real, línea base 153 invertida): al navegar a otra sección y vol
   await start(); await openToday(page); const held = await holdAck(page, true);
   await completeAndLeave(page); await dialog(page).getByRole('button', { name: 'Guardar cambios' }).click(); await expect.poll(() => held.produced()).toBe(1);
   await page.keyboard.press('Escape'); await expect(dialog(page)).toHaveCount(0); held.release(); await sleep(800);
-  await page.locator('.sidebar').getByRole('button', { name: 'Agentes', exact: true }).click(); await sleep(500);
-  await page.locator('.sidebar').getByRole('button', { name: 'Hoy', exact: true }).click(); await expect(page.getByRole('heading', { name: 'Hoy', exact: true })).toBeVisible(); await sleep(800);
+  await openSection(page, 'Propuestas'); await sleep(500);
+  await place(page, 'Hoy').click(); await expect(page.getByRole('heading', { name: 'Hoy', exact: true })).toBeVisible(); await sleep(800);
   const seen = await snapshot(page);
   // INVERTIDO (antes: ninguna explicación). Volver a Hoy recarga la cola (la fila desaparece, el estado ya es el real) Y el seguimiento sobrevivió a la navegación: el propietario es el de la sesión.
   expect(seen.row2).toBe(0); expect(seen.row3).toBe(1); expect(seen.mentions.length).toBeGreaterThan(0); await expect(page.locator('.toh')).toContainText('sin saber si se aplicó');

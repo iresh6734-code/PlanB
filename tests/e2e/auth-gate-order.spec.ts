@@ -6,13 +6,15 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
+import { lockButton, place } from './menu';
 
 const baseRoot = process.env.PLANB_AUTH158_ROOT!;
 let root = '';
 const password = 'fiction-only-auth-order158';
 let child: ChildProcess | undefined, origin = '', pid: number | undefined;
 const gate = () => { let release!: () => void; const promise = new Promise<void>(resolve => { release = resolve; }); return { promise, release }; };
-const nav = (page: Page, name: string) => page.locator('.sidebar').getByRole('button', { name, exact: true });
+// Lugares del menú en escritorio (menú lateral) o en el móvil (barra inferior): ver tests/e2e/menu.ts.
+const nav = (page: Page, name: string) => place(page, name);
 test.setTimeout(90_000);
 test.beforeAll(async () => {
   if (!baseRoot) throw Error('158 requires a private root');
@@ -54,7 +56,7 @@ for (const localButton of [false, true]) test('an old authenticated status canno
   });
   try {
     await page.evaluate(() => window.dispatchEvent(new Event('planb:locked'))); await entered.promise;
-    if (localButton) await nav(page, 'Proteger / bloquear').click();
+    if (localButton) await lockButton(page).click();
     else { expect((await page.request.post(origin + '/api/v2/auth/lock', { data: {} })).ok()).toBe(true); await page.evaluate(() => window.dispatchEvent(new Event('planb:locked'))); }
     await expect(page.locator('.protection-page').getByLabel('Contraseña local', { exact: true })).toBeVisible(); expect((await status(page)).authenticated).toBe(false);
     const blockedStatus = (await page.request.get(origin + '/api/v2/records/contacts/contact-1')).status(); expect(blockedStatus).toBe(401); await watchApp(page);
@@ -66,7 +68,7 @@ for (const localButton of [false, true]) test('an old authenticated status canno
 });
 
 test('an old locked status cannot revoke a newer successful login', async ({ page }) => {
-  await open(page); await nav(page, 'Proteger / bloquear').click(); await expect(page.locator('.protection-page')).toBeVisible();
+  await open(page); await lockButton(page).click(); await expect(page.locator('.protection-page')).toBeVisible();
   const held = gate(), entered = gate(); let statuses = 0;
   await page.route('**/api/v2/auth/status', async route => {
     if (++statuses !== 1) return route.fallback(); const response = await route.fetch(); expect((await response.json()).authenticated).toBe(false); entered.release(); await held.promise;
@@ -81,7 +83,7 @@ test('an old locked status cannot revoke a newer successful login', async ({ pag
 });
 
 test('a state response captured before a newer lock cannot complete an obsolete login', async ({ page }) => {
-  await open(page); await nav(page, 'Proteger / bloquear').click(); await expect(page.locator('.protection-page')).toBeVisible();
+  await open(page); await lockButton(page).click(); await expect(page.locator('.protection-page')).toBeVisible();
   const held = gate(), entered = gate(), reads = gate(); let states = 0, blockReads = false;
   await page.route('**/api/**', async route => { const p = new URL(route.request().url()).pathname; if (blockReads && !p.startsWith('/api/v2/auth/') && p !== '/api/health') await reads.promise; await route.fallback(); });
   await page.route('**/api/v2/state', async route => {

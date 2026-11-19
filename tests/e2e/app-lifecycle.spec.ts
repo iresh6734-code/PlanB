@@ -3,9 +3,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { makeLifecycleCopy, startLifecycleCopy } from '../helpers/app-lifecycle-harness.js';
+import { openSection, place } from './menu';
 
 test.setTimeout(120_000);
-const nav = (page: Page, label: string) => page.locator('.sidebar').getByRole('button', { name: label, exact: true });
+// Lugares del menú en escritorio (menú lateral) o en el móvil (barra inferior): ver tests/e2e/menu.ts.
+const nav = (page: Page, label: string) => place(page, label);
 const digest = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 async function observe(page: Page, origin: string) {
   const errors: string[] = [], consoleLogs: string[] = [], outside: string[] = [], writes: string[] = [];
@@ -74,7 +76,7 @@ test('empty -> import -> useful Hoy -> explicit activation -> disconnected edit 
     expect(server.pid).not.toBe(originalPid); expect(server.instanceId).toBe(originalInstance);
     expect(await request.get(server.url + '/api/v2/state').then(r => r.json())).toMatchObject({ ready: true, disconnected: true, changes: 1 });
     expect(digest(await request.get(server.url + '/api/records').then(r => r.json()))).toBe(digest(records));
-    await page.goto(server.url); await nav(page, 'Trabajar').click();
+    await page.goto(server.url); await openSection(page, 'Clientes');
     await expect(page.getByRole('cell', { name: '600 126 126', exact: true })).toBeVisible();
     await nav(page, 'Hoy').click(); await expect(page.locator('.lop-tasks li')).toHaveCount(14);
     await page.screenshot({ path: path.join(copy.root, 'after-restart-today.png'), fullPage: false });
@@ -97,7 +99,7 @@ test('a second empty installation prepares Distribution, shows its captured fiel
     await expect(page.getByLabel('Código de cliente', { exact: false })).toBeVisible();
     await expect(page.getByLabel('Servicio contratado', { exact: true })).toHaveCount(0);
     await page.getByRole('button', { name: 'Cerrar edición', exact: true }).click();
-    await page.getByRole('navigation', { name: 'Secciones de trabajo' }).getByRole('button', { name: 'Oportunidades', exact: true }).click();
+    await page.getByRole('navigation', { name: 'Clientes', exact: true }).getByRole('button', { name: 'Oportunidades', exact: true }).click();
     await expect(page.getByRole('heading', { name: /En entrega/ })).toBeVisible();
     await page.getByRole('button', { name: /Suministro · Estudio Arce/ }).first().click();
     const editor = page.getByRole('dialog');

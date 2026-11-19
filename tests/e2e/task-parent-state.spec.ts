@@ -5,10 +5,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { spawn, type ChildProcess } from 'node:child_process';
+import { openSection, place } from './menu';
 
 const root = process.env.PLANB_TASK151_ROOT!;
 let child: ChildProcess | undefined, origin = '', pid: number | undefined;
-const nav = (page: Page, name: string) => page.locator('.sidebar').getByRole('button', { name, exact: true });
+// Lugares del menú en escritorio (menú lateral) o en el móvil (barra inferior): ver tests/e2e/menu.ts.
+const nav = (page: Page, name: string) => place(page, name);
 const count = (page: Page) => page.locator('.workspace-footer span');
 test.setTimeout(90_000);
 test.beforeAll(async () => {
@@ -47,7 +49,7 @@ test('workspace count follows a task saved from Hoy without reloading the App', 
   const dialog = await edit(page); await dialog.getByRole('button', { name: 'Guardar cambios', exact: true }).click();
   await expect(dialog).toContainText('La cola de Hoy está actualizada.');
   expect((await page.request.get(origin + '/api/v2/state').then(r => r.json())).changes).toBe(1);
-  await dialog.getByRole('button', { name: 'Volver a Hoy', exact: true }).click(); await nav(page, 'Trabajar').click();
+  await dialog.getByRole('button', { name: 'Volver a Hoy', exact: true }).click(); await openSection(page, 'Clientes');
   await expect(count(page)).toHaveText(/^1 cambios? local(?:es)?$/);
 });
 
@@ -63,7 +65,7 @@ test('a failed parent-state read preserves the acknowledgement and retry reads w
   await expect(dialog).toContainText('El guardado está confirmado, pero la cola de Hoy no se actualizó'); expect(patches).toBe(1);
   fail = false; await dialog.getByRole('button', { name: 'Reintentar la actualización', exact: true }).click();
   await expect(dialog).toContainText('La cola de Hoy está actualizada.'); expect(patches).toBe(1);
-  await dialog.getByRole('button', { name: 'Volver a Hoy', exact: true }).click(); await nav(page, 'Trabajar').click(); await expect(count(page)).toHaveText(/^1 cambios? local(?:es)?$/);
+  await dialog.getByRole('button', { name: 'Volver a Hoy', exact: true }).click(); await openSection(page, 'Clientes'); await expect(count(page)).toHaveText(/^1 cambios? local(?:es)?$/);
 });
 
 test('a late parent-state reply cannot replace a newer App refresh or resend the saved task', async ({ page }) => {
@@ -84,7 +86,7 @@ test('a late parent-state reply cannot replace a newer App refresh or resend the
     const newer = page.waitForResponse(r => new URL(r.url()).pathname === '/api/v2/state' && r.status() === 200);
     await page.evaluate(() => window.dispatchEvent(new Event('planb:locked'))); await newer;
     release(); await expect(dialog).toContainText('El guardado está confirmado, pero la cola de Hoy no se actualizó');
-    expect(patches).toBe(1); await dialog.getByRole('button', { name: 'Volver a Hoy', exact: true }).click(); await nav(page, 'Trabajar').click();
+    expect(patches).toBe(1); await dialog.getByRole('button', { name: 'Volver a Hoy', exact: true }).click(); await openSection(page, 'Clientes');
     await expect(count(page)).toHaveText(/2 cambios locales/);
     await expect(page.getByRole('cell', { name: '600-151-002', exact: true })).toBeVisible();
   } finally { release(); }

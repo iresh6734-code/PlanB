@@ -103,7 +103,7 @@ test('de la ficha al ensayo, a una decisión confirmada y de vuelta tras reinici
   await page.getByRole('button', { name: 'Ensayar mi semana' }).click();
   const view = rehearsal(page);
   await expect(view.getByRole('heading', { name: 'Instalación de 12 equipos en Almacén Norte' })).toBeVisible();
-  await expect(view).toContainText('Ensayo · ficción');
+  await expect(view).toContainText('Datos de prueba');
   await expect(view).toContainText('12 instalaciones, 3 técnicos, 2 almacenes, 20 pedidos y 8 tickets');
   await expect(view.locator('.or-verdict').first()).toContainText('Llega tarde');
   await expect(view.locator('.or-chain li')).toHaveCount(3);

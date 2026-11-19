@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { resolve } from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { makeFixture } from '../../shared/fixtures.js';
+import { lockButton, openSection } from './menu';
 const output = resolve(process.env.PLANB_EVIDENCE_DIR || '../../outputs');
 test('preparación y continuidad con todo el tráfico externo bloqueado', async ({ page }) => {
   const errors: string[] = [], external: string[] = [];
@@ -35,7 +36,8 @@ test('preparación y continuidad con todo el tráfico externo bloqueado', async 
   await page.getByRole('button', { name: 'Editar Lucía Martín', exact: true }).click();
   const client = page.getByRole('dialog', { name: 'Lucía Martín', exact: true });
   await client.getByLabel('Teléfono', { exact: true }).fill('600 123 456');
-  await expect(page.getByRole('status')).toBeHidden({ timeout: 8000 });
+  // Espera a que se vaya el aviso («HubSpot e IA desconectados»); la ficha tiene además su propio estado para lectores de pantalla.
+  await expect(page.locator('.toast')).toBeHidden({ timeout: 8000 });
   await page.screenshot({ path: resolve(output, 'plan-b-v0.3.0-clientes.png') });
   await client.getByRole('button', { name: 'Guardar cambios', exact: true }).click();
   await expect(client).toBeHidden();
@@ -59,13 +61,13 @@ test('preparación y continuidad con todo el tráfico externo bloqueado', async 
   await expect(page.getByRole('button', { name: 'Llamar a Lucía sin conexión', exact: true })).toBeVisible();
   await page.reload();
   // Desde el rediseño «Faro», recargar conserva el apartado y la lista abiertos (aquí Tareas); se vuelve a Clientes de forma explícita.
-  await page.getByRole('button',{name:'Clientes',exact:true}).click();
+  await openSection(page,'Clientes');
   await expect(page.getByText('Modo independiente', { exact: true })).toBeVisible();
   await expect(page.getByRole('cell', { name: '600 123 456', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Ver cobertura', exact: true }).click();
   await expect(page.getByRole('dialog').getByText('Verificado', { exact: true })).toHaveCount(6);
   await page.getByRole('button', { name: 'Cerrar', exact: true }).click();
-  await page.getByRole('button', { name: 'Cambios', exact: true }).click();
+  await openSection(page, 'Cambios');
   const dl = page.waitForEvent('download');
   await page.getByRole('button', { name: 'CSV', exact: true }).click();
   await (await dl).saveAs(resolve(output, 'ejemplo-cambios-v0.3.0.csv'));
@@ -76,7 +78,7 @@ test('preparación y continuidad con todo el tráfico externo bloqueado', async 
   await expect(page.getByText('Prueba completada. Los cambios locales siguen pendientes de devolución real.',{exact:true})).toBeVisible({timeout:30000});
   await page.locator('.changes-page').evaluate(el=>el.parentElement?.scrollTo(0,0));
   await page.screenshot({path:resolve(output,'plan-b-v0.3.0-devolucion.png'),fullPage:true});
-  await page.getByRole('button', { name: 'Proveedor de IA', exact: true }).click();
+  await openSection(page, 'Proveedor de IA');
   await expect(page.getByRole('dialog', { name: 'Tu proveedor de IA' })).toBeVisible();
   await page.getByRole('combobox', { name: 'Proveedor', exact: true }).selectOption('deepseek');
   await expect(page.getByLabel('Dirección de la API', { exact: true })).toHaveValue('https://api.deepseek.com/v1');
@@ -88,7 +90,7 @@ test('segunda configuración cambia campos, etapas y regla requerida sin tocar l
   expect((await request.post('/api/generate', { data: { mode: 'demo' } })).ok()).toBeTruthy();
   expect((await request.post('/api/activate', { data: { reviewed: true } })).ok()).toBeTruthy();
   await page.goto('/');
-  await page.getByRole('button',{name:'Trabajar',exact:true}).click();
+  await openSection(page, 'Clientes');
   await page.getByRole('button', { name: 'Editar Lucía Martín', exact: true }).click();
   await expect(page.getByLabel('Código de cliente', { exact: false })).toBeVisible();
   await expect(page.getByLabel('Servicio contratado', { exact: true })).toHaveCount(0);
@@ -173,14 +175,15 @@ test('simulacro en proceso aislado y sesión de continuidad desde el historial',
 test('exportación cifrada y restauración desde navegador mantienen registros y rechazan contraseña errónea',async({page,request})=>{
   await page.goto('/');
   const before=await request.get('/api/records').then(r=>r.json());
-  await page.getByRole('button',{name:'Exportar',exact:true}).click();
+  await openSection(page,'Exportar');
   await page.getByLabel('Contraseña de recuperación',{exact:true}).fill('recuperacion-de-prueba-2026');
   await page.getByLabel('Repite la contraseña',{exact:true}).fill('recuperacion-de-prueba-2026');
   await page.getByLabel('He revisado la captura y los cambios incluidos en esta descarga.',{exact:true}).check();
   await page.screenshot({path:resolve(output,'plan-b-v0.3.0-exportar.png')});
   const download=page.waitForEvent('download');await page.getByRole('button',{name:'Solo copia cifrada',exact:true}).click();
   const file=await (await download).path();if(!file)throw new Error('No se recibió la descarga.');
-  await page.getByRole('button',{name:'Continuidad',exact:true}).click();
+  // Exportar ya está dentro del grupo Continuidad: su cabecera solo pliega; se vuelve a su inicio con «Estado» (CLAUDE-UI-NAV-LAB).
+  await openSection(page,'Estado');
   await page.getByRole('tab',{name:'Copias y archivo',exact:true}).click();
   await page.getByRole('button',{name:'Restaurar archivo',exact:true}).click();
   const dialog=page.getByRole('dialog',{name:'Restaurar una copia'});
@@ -225,12 +228,12 @@ test('cada copia muestra su contenido y exige su propio simulacro aunque la ante
 test('protección local, cierre de sesión y recuperación del acceso',async({page})=>{
   await page.goto('/');
   await page.getByRole('button',{name:'Continuidad',exact:true}).click();
-  await page.getByRole('button',{name:'Proteger / bloquear',exact:true}).click();
+  await lockButton(page).click();
   await page.getByLabel('Contraseña local',{exact:true}).fill('solo-prueba-local-2026');
   await page.getByLabel('Repite la contraseña',{exact:true}).fill('solo-prueba-local-2026');
   await page.getByRole('button',{name:'Guardar protección',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Tu negocio puede seguir.',exact:true})).toBeVisible();
-  await page.getByRole('button',{name:'Proteger / bloquear',exact:true}).click();
+  await lockButton(page).click();
   await expect(page.getByRole('heading',{name:'Tu copia está protegida',exact:true})).toBeVisible();
   await page.getByLabel('Contraseña local',{exact:true}).fill('solo-prueba-local-2026');
   await page.getByRole('button',{name:'Desbloquear',exact:true}).click();

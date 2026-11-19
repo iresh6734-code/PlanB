@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { menuItem } from './menu';
 import react from '@vitejs/plugin-react';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
@@ -96,7 +97,7 @@ test('desde Hoy: aviso del compromiso que no llega → «Ensayar mi semana» →
   await expect(card(page)).toContainText(TITLE);
   await expect(card(page)).toContainText('no llega a tiempo con el plan de hoy');
   await expect(card(page)).toHaveAttribute('data-projection', 'late');
-  await expect(nav(page, 'Hoy')).toHaveAttribute('aria-current', 'page');
+  await expect(menuItem(page, 'Tareas de hoy')).toHaveAttribute('aria-current', 'page');
   await page.screenshot({ path: path.join(SHOTS, 'hoy-1440-01-aviso.png') });
   expect(writes()).toEqual(['POST /api/v7/commitment-radar/activate 201']);
   const open = card(page).getByRole('button', { name: 'Ensayar mi semana' });

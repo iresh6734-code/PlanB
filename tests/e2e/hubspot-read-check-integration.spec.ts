@@ -11,6 +11,7 @@ import { Store } from '../../server/store.js';
 import { seal } from '../../server/crypto.js';
 import { makeDemoSpec, makeFixture } from '../../shared/fixtures.js';
 import { READ_CHECK_ROUTE } from '../../shared/hubspot-read-check-api.js';
+import { lockButton, openSection } from './menu';
 
 process.env.NODE_ENV = 'test';
 // Normal main entry, App navigation and file-backed Store. Only the provider is fictional.
@@ -124,7 +125,7 @@ async function open(page: Page, mode: Parameters<typeof start>[0] = 'test') {
   expect(setup.status()).toBe(200);
   await page.goto(base);
   await expect(page).toHaveTitle('Plan B · Tu CRM sigue contigo');
-  await page.locator('.sidebar').getByRole('button', { name: 'Integraciones', exact: true }).click();
+  await openSection(page, 'Integraciones');
   await expect(page.getByRole('heading', { name: 'Integraciones', exact: true })).toBeVisible();
   await expect(page.locator('.hrc')).toBeVisible();
   await expect(page.locator('.hrc')).toHaveAttribute('aria-busy', 'false');
@@ -182,7 +183,7 @@ test('navegación normal y consentimiento: cinco GET exactos, resultado persisti
   await page.goto(base);
   await page.getByLabel('Contraseña local', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Desbloquear', exact: true }).click();
-  await page.locator('.sidebar').getByRole('button', { name: 'Integraciones', exact: true }).click();
+  await openSection(page, 'Integraciones');
   await expect(page.locator('.hrc-status')).toContainText('Lectura comprobada');
   expect(seen).toHaveLength(5);
   expect(errors).toEqual([]);
@@ -197,7 +198,7 @@ test('doble clic y navegación durante una comprobación no inician otra; consul
   await page.getByRole('button', { name: 'Autorizar cinco lecturas' }).evaluate(button => { (button as HTMLButtonElement).click(); (button as HTMLButtonElement).click(); });
   await expect.poll(() => seen.length).toBe(1);
   await page.locator('.sidebar').getByRole('button', { name: 'Continuidad', exact: true }).click();
-  await page.locator('.sidebar').getByRole('button', { name: 'Integraciones', exact: true }).click();
+  await openSection(page, 'Integraciones');
   await expect(page.locator('.hrc')).toContainText('Hay una comprobación en curso');
   await expect(page.getByRole('button', { name: 'Comprobar lectura', exact: true })).toBeDisabled();
   hold.release();
@@ -222,12 +223,12 @@ test('cancelar con identidad retenida detiene el recorrido y una respuesta tard�
 test('bloquear mientras se espera identidad revoca la autorización y no salen lecturas de objetos', async ({ page }) => {
   await open(page); hold = gate();
   await authorize(page); await expect.poll(() => seen.length).toBe(1);
-  await page.locator('.sidebar').getByRole('button', { name: 'Proteger / bloquear', exact: true }).click();
+  await lockButton(page).click();
   await expect(page.locator('.protection-page')).toBeVisible();
   hold.release();
   await page.getByLabel('Contraseña local', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Desbloquear', exact: true }).click();
-  await page.locator('.sidebar').getByRole('button', { name: 'Integraciones', exact: true }).click();
+  await openSection(page, 'Integraciones');
   await expect(page.locator('.hrc')).not.toHaveAttribute('aria-busy', 'true');
   await expect(page.locator('.hrc-status')).not.toContainText('Lectura comprobada');
   expect(seen).toHaveLength(1);

@@ -3,6 +3,7 @@ import { makeFixture } from '../../shared/fixtures.js';
 import { mkdirSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
+import { openSection } from './menu';
 
 // QA073 · Recorridos en navegador real (Chromium headless de caché) con CSS global real. QA079: orígenes y carpeta de capturas configurables (QA079_MAIN, QA079_AUTH, QA079_SHOTS, QA079_E2E_RUN);
 // se ejecutan con una configuración propia de Playwright (puertos 4461-4469 en QA079, nunca 4331/4334): las pruebas se niegan a correr contra 4331/4334 o contra un origen que no sea loopback. Datos ficticios, contraseña ficticia nueva en cada ejecución, red externa bloqueada.
@@ -58,11 +59,11 @@ test('B1 relación en un Modal real: nombre accesible exacto, ID fuera de los 50
     snapshot.links = snapshot.records.flatMap(r => snapshot.entities.find(e => e.id === r.entity)!.fields.filter(f => f.type === 'reference' && r.values[f.key]).map(f => ({ fromEntity: r.entity, fromId: r.id, toEntity: f.referenceEntity!, toId: String(r.values[f.key]), label: f.key })));
     snapshot.manifest.expectedCounts.contacts = 164; snapshot.manifest.expectedLinks = snapshot.links.length;
   });
-  await page.goto(MAIN + '/'); await page.getByRole('button', { name: 'Trabajar', exact: true }).click(); await page.getByRole('button', { name: 'Tareas', exact: true }).click(); await page.getByRole('button', { name: 'Tarea principal073', exact: true }).click();
+  await page.goto(MAIN + '/'); await openSection(page, 'Clientes'); await page.getByRole('button', { name: 'Tareas', exact: true }).click(); await page.getByRole('button', { name: 'Tarea principal073', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Tarea principal073', exact: true });
   const select = dialog.getByRole('combobox', { name: 'Cliente', exact: true });
   await expect(select, 'Modal real: el nombre accesible es field.label exactamente').toBeVisible(); await expect(select).toHaveValue(chosen);
-  await expect(select.locator('option:checked')).toHaveText('Elegida073 Última · ID ' + chosen); await expect(select).toHaveAccessibleName('Cliente');
+  await expect(select).toHaveValue(chosen); await expect(select.locator('option:checked')).toHaveText('Elegida073 Última'); // nombre único: sin ID (CLAUDE-UI-FIXES-D4) await expect(select).toHaveAccessibleName('Cliente');
   await expect(dialog.getByText('Se muestran 50 de 164 resultados. Escribe para afinar la búsqueda.', { exact: true })).toBeVisible();
   const search = dialog.getByRole('searchbox', { name: 'Buscar relación cliente', exact: true }); await expect(search).toBeVisible();
   // Teclado: Tab llega a la búsqueda y al selector; Escape cierra el diálogo sin guardar nada.

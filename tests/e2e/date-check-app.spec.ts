@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { menuGroup, menuItem, openSection } from './menu';
 import react from '@vitejs/plugin-react';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
@@ -84,7 +85,9 @@ test('desde la navegación de la App: comprobar el viernes, confirmar, revisar e
   page.on('pageerror', error => consoleErrors.push(String(error)));
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(origin + '/');
-  const nav = page.getByRole('button', { name: 'Comprobar una fecha', exact: true });
+  // «Comprobar una fecha» vive en el grupo Laboratorio (CLAUDE-UI-NAV-LAB): se despliega primero.
+  await menuGroup(page, 'Laboratorio').click();
+  const nav = menuItem(page, 'Comprobar una fecha');
   await expect(nav).toBeEnabled();
   await nav.click();
   await expect(nav).toHaveAttribute('aria-current', 'page');
@@ -121,7 +124,7 @@ test('desde la navegación de la App: comprobar el viernes, confirmar, revisar e
   await stopServer(); await startServer();
   await page.goto(origin + '/');
   const before = writes().length;
-  await page.getByRole('button', { name: 'Comprobar una fecha', exact: true }).click();
+  await openSection(page, 'Comprobar una fecha');
   await expect(screen.locator('.dc-saved')).toContainText('con siguiente paso · vigente');
   await review.getByRole('button', { name: 'Instalar 12 equipos VRF · Oficinas Lumen' }).click();
   await expect(review.locator('.drv-residual')).toHaveText('Quedan 40 min por comprobar: ningún hecho registrado los explica.');

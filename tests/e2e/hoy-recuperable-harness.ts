@@ -1,4 +1,5 @@
 import { expect, type Page } from '@playwright/test';
+import { place } from './menu';
 import { build } from 'vite';
 import react from '@vitejs/plugin-react';
 import { spawn, type ChildProcess } from 'node:child_process';
@@ -223,7 +224,8 @@ export class HoyHarness {
 }
 
 // ── Localizadores compartidos por las sondas (la App real: barra lateral, Hoy, ficha) ───────────────────────────────────────────────────────────────────────────────────────────
-export const nav = (page: Page, name: string) => page.locator('.sidebar').getByRole('button', { name, exact: true });
+// Lugares del menú en escritorio (menú lateral) o en el móvil (barra inferior): ver tests/e2e/menu.ts.
+export const nav = (page: Page, name: string) => place(page, name);
 export const taskButton = (page: Page, id: string) => page.getByRole('button', { name: 'Abrir Llamar a Ana (ID ' + id + ')', exact: true });
 export const ficha = (page: Page) => page.getByRole('dialog', { name: 'Llamar a Ana' });
 export const resultados = (page: Page) => page.locator('.toh');

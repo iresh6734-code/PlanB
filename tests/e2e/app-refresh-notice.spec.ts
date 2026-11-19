@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { spawn, type ChildProcess } from 'node:child_process';
+import { menuGroup, openSection } from './menu';
 
 const root = process.env.PLANB_APP155_ROOT!;
 let child: ChildProcess | undefined, origin = '', pid: number | undefined;
@@ -43,8 +44,8 @@ for (const oldFails of [false, true]) test('a superseded startup ' + (oldFails ?
     await page.goto(origin); await entered.promise;
     const control = await page.request.patch(origin + '/api/records/contacts/contact-1', { data: { values: { phone: '155-newer-fiction' } } }); expect(control.ok()).toBe(true);
     await page.evaluate(() => window.dispatchEvent(new Event('planb:locked')));
-    await expect(page.locator('.sidebar').getByRole('button', { name: 'Trabajar', exact: true })).toBeVisible();
-    await page.locator('.sidebar').getByRole('button', { name: 'Trabajar', exact: true }).click(); await expect(page.locator('.workspace-footer span')).toHaveText('1 cambio local');
+    await expect(menuGroup(page, 'Clientes')).toBeVisible();
+    await openSection(page, 'Clientes'); await expect(page.locator('.workspace-footer span')).toHaveText('1 cambio local');
     const oldResponse = page.waitForResponse(r => r.headers()['x-app155'] === 'old'); release.release(); await oldResponse;
     // The response has reached the browser; allow its catch/render to settle before asserting absence.
     await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));

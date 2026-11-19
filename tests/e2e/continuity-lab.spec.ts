@@ -70,7 +70,7 @@ test('aislamiento: banner visible, solo peticiones locales, sin enlaces ni almac
 
 test('pérdida del equipo sin restauración no está preparada y el simulacro local no la sustituye', async ({ page }) => {
   await open(page, 'Pérdida del equipo sin restauración');
-  await expect(status(page)).toHaveText('Sin demostrar');
+  await expect(status(page)).toHaveText('Sin comprobar');
   await expect(page.getByTestId('cause')).toContainText('Restauración en otro equipo');
   await expect(page.getByTestId('next-step')).toContainText('Ensayar restauración en otro equipo');
   // Las tres evidencias están separadas y solo cuentan las del escenario.
@@ -84,7 +84,7 @@ test('pérdida del equipo sin restauración no está preparada y el simulacro lo
   await restore.getByLabel('Resultado del ensayo').selectOption('failed');
   await expect(status(page)).toHaveText('Bloqueado');
   await restore.getByLabel('Resultado del ensayo').selectOption('none');
-  await expect(status(page)).toHaveText('Sin demostrar');
+  await expect(status(page)).toHaveText('Sin comprobar');
   await expect(result(page).locator('[data-measure="recovery"]')).toHaveAttribute('data-state', 'missing');
 });
 
@@ -94,14 +94,14 @@ test('comparar escenarios muestra qué evidencia falta al cambiar', async ({ pag
   await expect(page.getByTestId('comparison-diff')).toContainText('Pasar a «Pérdida del equipo» añade estas pruebas pendientes');
   await expect(page.getByTestId('comparison-diff')).toContainText('Restauración en otro equipo');
   await page.getByRole('radio', { name: /Pérdida del equipo/ }).check();
-  await expect(status(page)).toHaveText('Sin demostrar');
+  await expect(status(page)).toHaveText('Sin comprobar');
   await expect(result(page).getByRole('heading', { level: 2 })).toHaveText('Resultado: Pérdida del equipo');
   await expect(page.getByTestId('comparison').locator('[data-scenario="crm-outage"]')).toContainText('Preparado según estas entradas');
 });
 
 test('dato ausente no es cero: sin captura ni inventario no hay cifras, y el orden de los datos importa', async ({ page }) => {
   await open(page, 'Sin evidencia');
-  await expect(status(page)).toHaveText('Sin demostrar');
+  await expect(status(page)).toHaveText('Sin comprobar');
   for (const key of ['age', 'recovery']) await expect(result(page).locator('[data-measure="' + key + '"]')).toHaveAttribute('data-state', 'missing');
   await expect(page.getByTestId('exposure-missing')).toContainText('no equivale a 0 tareas');
   for (const id of ['overdue', 'during', 'undated', 'open']) await expect(page.getByTestId(id)).toHaveCount(0);
@@ -145,7 +145,7 @@ test('editar la captura invalida la evidencia anterior sin reetiquetarla', async
   await open(page, 'Pérdida del equipo con restauración');
   await expect(status(page)).toHaveText('Preparado según estas entradas');
   await setNum(page, 'Antigüedad de la captura', '40');
-  await expect(status(page)).toHaveText('Sin demostrar');
+  await expect(status(page)).toHaveText('Sin comprobar');
   await expect(page.getByText('Generación actual:')).toContainText('demo-capture-r2');
   const stale = page.getByTestId('stale-evidence');
   for (const item of ['Copia (demo-capture)', 'Simulacro local (demo-capture)', 'Restauración en otro equipo (demo-capture)', 'Inventario de tareas (demo-capture)']) await expect(stale).toContainText(item);
@@ -156,7 +156,7 @@ test('editar la captura invalida la evidencia anterior sin reetiquetarla', async
   await restore.getByRole('button', { name: 'Descartar este registro' }).click();
   await page.getByRole('group', { name: 'Copia para otro equipo' }).getByRole('button', { name: 'Descartar esta copia' }).click();
   await page.getByRole('group', { name: 'Tareas de la captura' }).getByRole('button', { name: 'Descartar este inventario' }).click();
-  await expect(status(page)).toHaveText('Sin demostrar');
+  await expect(status(page)).toHaveText('Sin comprobar');
   await page.getByLabel('Copia', { exact: true }).selectOption('present');
   await restore.getByLabel('Resultado del ensayo').selectOption('passed');
   await page.getByLabel('Inventario', { exact: true }).selectOption('present');
@@ -186,7 +186,7 @@ test('objetivos, duración medida y ensayo fallido cambian el veredicto por caus
   // Un ensayo que empieza antes de verificar la captura no cuenta, aunque salga bien.
   await local.getByLabel('Resultado del ensayo').selectOption('passed');
   await setNum(page, /Empezó hace/, '50');
-  await expect(status(page)).toHaveText('Sin demostrar');
+  await expect(status(page)).toHaveText('Sin comprobar');
 });
 
 test('entradas inválidas se explican, bloquean el resultado y no quedan como éxito', async ({ page }) => {
@@ -228,7 +228,7 @@ test('teclado: el escenario cambia con flechas, los campos tienen nombre y el fo
   await page.getByRole('radio', { name: /Caída del CRM/ }).focus();
   await page.keyboard.press('ArrowDown');
   await expect(page.getByRole('radio', { name: /Pérdida del equipo/ })).toBeChecked();
-  await expect(status(page)).toHaveText('Sin demostrar');
+  await expect(status(page)).toHaveText('Sin comprobar');
   // Todo control tiene un nombre accesible.
   const unnamed = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('.clab input, .clab select, .clab button')]
     .filter(el => !((el as HTMLInputElement).labels?.length || el.getAttribute('aria-label') || el.textContent?.trim()))

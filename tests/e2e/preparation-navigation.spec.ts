@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { resolve } from 'node:path';
+import { menuGroup, openSection } from './menu';
 
 const readyOrigin = 'http://127.0.0.1:4581';
 const emptyOrigin = 'http://127.0.0.1:4582';
@@ -80,7 +81,7 @@ for (const width of [390, 320]) test(`preparation navigation at${width} fits, ke
     expect(box!.height).toBeGreaterThanOrEqual(44); expect(box!.x).toBeGreaterThanOrEqual(0); expect(box!.x + box!.width).toBeLessThanOrEqual(width);
     expect(await control.evaluate(element => element.scrollWidth <= element.clientWidth + 1), 'el texto del control no sobresale de su propia caja').toBe(true);
   }
-  const controls = [prep(page), ...await sections(page).getByRole('button').all(), page.locator('.sidebar').getByRole('button', { name: 'Abrir aplicación', exact: true }), page.locator('.sidebar').getByRole('button', { name: 'Exportar', exact: true })];
+  const controls = [prep(page), ...await sections(page).getByRole('button').all(), page.locator('.sidebar').getByRole('button', { name: 'Abrir aplicación', exact: true }), menuGroup(page, 'Continuidad')] /* Exportar vive dentro del grupo Continuidad (CLAUDE-UI-NAV-LAB) */;
   const boxes = await Promise.all(controls.map(control => control.boundingBox()));
   for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
     const a = boxes[i]!, b = boxes[j]!;
@@ -90,9 +91,9 @@ for (const width of [390, 320]) test(`preparation navigation at${width} fits, ke
   await page.screenshot({ path: resolve(evidence!, `preparation-open-${width}.png`), fullPage: false });
   await prep(page).focus(); await page.keyboard.press('Space');
   await expect(sections(page)).toHaveCount(0); await expect(prep(page)).toBeFocused();
-  await page.locator('.sidebar').getByRole('button', { name: 'Trabajar', exact: true }).click();
+  await openSection(page, 'Clientes');
   await expect(page.getByRole('heading', { name: 'Clientes', exact: true })).toBeVisible();
-  await expect(page.getByRole('navigation', { name: 'Secciones de trabajo' }).getByRole('button', { name: 'Clientes', exact: true })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Clientes', exact: true }).getByRole('button', { name: 'Clientes', exact: true })).toBeVisible();
   await expect(prep(page)).toHaveAttribute('aria-expanded', 'false');
   expect(seen.mutations).toEqual([]); expect(seen.errors).toEqual([]); expect(seen.outside).toEqual([]);
 });
@@ -118,7 +119,7 @@ test('main App: imported tasks appear in Hoy and a saved review survives a faile
   await expect(page.getByText('Captura importada · pendiente de activar', { exact: true })).toBeVisible();
   await expect(page.locator('.lop-tasks li')).toHaveCount(14);
   await expect(page.getByRole('button', { name: 'Abrir tareas', exact: true })).toHaveCount(0);
-  await page.locator('.sidebar').getByRole('button', { name: 'Agentes', exact: true }).click();
+  await openSection(page, 'Propuestas');
   await expect(page.getByRole('heading', { name: 'Agentes y revisiones', exact: true })).toBeVisible();
   let posts = 0, failRead = false;
   await page.route('**/api/v7/local-operations/reviews', async route => {
@@ -154,7 +155,7 @@ test('main App: active Hoy opens the actual task and opportunity workspaces; emp
   await page.getByRole('button', { name: 'Abrir tareas', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Tareas', exact: true })).toBeVisible();
   await expect(page.locator('.workspace tbody tr')).toHaveCount(18);
-  await page.locator('.sidebar').getByRole('button', { name: 'Agentes', exact: true }).click();
+  await openSection(page, 'Propuestas');
   await page.getByRole('button', { name: 'Abrir oportunidades', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Oportunidades', exact: true })).toBeVisible();
   await page.locator('.sidebar').getByRole('button', { name: 'Buscar en toda la copia', exact: true }).click();

@@ -1,4 +1,4 @@
-import { ArrowRight, Clock3, Command, GitBranch, Lock, Moon, Sun } from 'lucide-react';
+import { ArrowRight, Clock3, Command, GitBranch, Lock, Moon, Siren, Sun } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTheme } from './theme.js';
 import type { AppState } from '../../shared/model.js';
@@ -6,7 +6,8 @@ import { describeCapture } from './workspace-copy.js';
 import './mobile-copy-alert.css';
 
 /** Barra superior: dónde estás, antigüedad de la copia (ámbar a partir de 75 minutos, el mismo umbral que avisa Continuidad) y modo de datos. */
-export function TopBar({ state, pageLabel, teamOrigin, openContinuity, openChanges, openHelp, openCommands, onProtect, reminder }: { state: AppState; pageLabel: string; teamOrigin: string | null; openContinuity: () => void; openHelp: () => void; openCommands: () => void;
+export function TopBar({ state, pageLabel, teamOrigin, openContinuity, openChanges, openHelp, openCommands, onProtect, reminder, onContingency }: { state: AppState; pageLabel: string; teamOrigin: string | null; openContinuity: () => void; openHelp: () => void; openCommands: () => void;
+  /** R1 · «HubSpot no responde»: la persona activa el modo contingencia. Sin función (ya activo o sin copia), no se muestra. */ onContingency?: () => void;
   /** Recordatorio de tareas con hora (H4): un componente con su propio reloj, para no repintar la barra entera. */ reminder?: ReactNode;
   /** Los cambios locales pendientes llevan a Cambios, donde se revisan; sin esta función se muestran dentro de la copia. */ openChanges?: () => void;
   /** Proteger o bloquear Plan B: una acción, no un lugar, así que vive aquí y no en el menú (CLAUDE-UI-NAV-LAB). */ onProtect?: () => void }) {
@@ -29,6 +30,7 @@ export function TopBar({ state, pageLabel, teamOrigin, openContinuity, openChang
       <span className="gx-mode" data-mode={production ? 'production' : 'test'}>{production ? 'Producción · lectura' : 'Datos de prueba'}</span>
       {teamOrigin ? <a className="text-button gx-team-link" href={teamOrigin + '/team?view=commercial'}>Espacio de equipo <ArrowRight size={13} /></a> : null}
       <span className="gx-tools">
+        {onContingency ? <button type="button" className="gx-contingency" title="Activar el modo contingencia: Hoy se centra en lo urgente y Plan B cronometra el incidente" onClick={onContingency}><Siren size={14} aria-hidden="true" /><span>HubSpot no responde</span></button> : null}
         <button type="button" className="gx-help gx-cmd gx-theme" aria-pressed={theme === 'dark'} aria-label="Modo oscuro" title={theme === 'dark' ? 'Volver al modo claro' : 'Cambiar a modo oscuro'} onClick={toggleTheme}>
           {theme === 'dark' ? <Sun size={15} aria-hidden="true" /> : <Moon size={15} aria-hidden="true" />}
         </button>

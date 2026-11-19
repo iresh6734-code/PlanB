@@ -11,7 +11,6 @@ import { pathOf, pendingStillWanted, placeOf } from './app-shell/routes.js';
 import { useBoardLoader, useRecordListLoader, useRecordListState } from './app-shell/useRecordList.js';
 import { useDealPulse } from './app-shell/useDealPulse.js';
 import { runBulk, type BulkItem, type BulkResult } from './app-shell/bulk-edit.js';
-import { ShortcutsHelp } from './app-shell/ShortcutsHelp.js';
 import { RecordsPage } from './app-shell/RecordsPage.js';
 import { Sidebar } from './app-shell/Sidebar.js';
 import { TopBar } from './app-shell/TopBar.js';
@@ -20,7 +19,6 @@ import { RelatedPanel } from './app-shell/RelatedPanel.js';
 import { DealSummary } from './app-shell/DealSummary.js';
 import { RecordSummary } from './app-shell/RecordSummary.js';
 import { linkedPreset, taskPreset } from './app-shell/task-preset.js';
-import { RecordTimeline } from './app-shell/RecordTimeline.js';
 import { QuickActivity } from './app-shell/QuickActivity.js';
 import { canLogActivity } from './app-shell/quick-activity.js';
 import { CommandPalette, type PaletteAsk } from './app-shell/CommandPalette.js';
@@ -29,6 +27,8 @@ import { useRecordShortcuts } from './app-shell/useRecordShortcuts.js';
 import { PINNED_MAX } from './app-shell/recents.js';
 import type { FocusScope } from './app-shell/FocusRun.js';
 import { DueReminder } from './app-shell/DueReminder.js';
+import { endContingency, startContingency, type IncidentWindow } from './app-shell/contingency.js';
+import { useContingency } from './app-shell/useContingency.js';
 import { MobileNav } from './app-shell/MobileNav.js';
 import type { Command } from './app-shell/commands.js';
 import { toggleTheme } from './app-shell/theme.js';
@@ -37,14 +37,13 @@ import { OutcomesLockNotice, TaskOutcomesHost, TaskOutcomesSurface, addLockSumma
 import { WorkspaceSearch } from './WorkspaceSearch.js';
 import { RehearsalTodayEntry } from './RehearsalTodayEntry.js';
 import { HomeOverview } from './HomeOverview.js';
-import { GuidedDrill } from './app-shell/GuidedDrill.js';
 import { advanceDrill, drillHandoffNote, startDrill, type DrillState, type DrillStepId } from './app-shell/guided-drill.js';
 import { continuityAlerts, type AlertTarget, type ContinuityAlert } from './app-shell/continuity-alerts.js';
 import { readinessFor } from './app-shell/continuity-insights.js';
 import type { ContinuityTab } from './ContinuityHome.js';
 import type { ContinuityStatus } from '../shared/operations.js';
 // Apartados que se descargan al visitarlos por primera vez (misma interfaz de uso que los originales).
-import { ChangesView, ContinuityHome, CsvImport, DateCheck, DecisionReview, FocusRun, LicensePanel, LocalIntegrations, OperationalRehearsal, OutageLab, PortableExport, Preparation, RadarHost, Settings, TeamSync, WeeklyReview } from './app-shell/lazy-pages.js';
+import { ChangesView, ContingencyBand, ContinuityHome, CsvImport, DateCheck, DecisionReview, FocusRun, GuidedDrill, LicensePanel, LocalIntegrations, OperationalRehearsal, OutageLab, PortableExport, Preparation, RadarHost, RecordTimeline, Settings, ShortcutsHelp, TeamSync, WeeklyReview } from './app-shell/lazy-pages.js';
 import type { WorkspaceSearchContext } from '../shared/workspace-search.js';
 
 type LocalAppState = AppState & { workspaceSearchContext?: WorkspaceSearchContext | null };
@@ -106,6 +105,9 @@ export default function App() {
   const recordShortcuts = useRecordShortcuts(shortcutScope, auth === 'open', String(dataRevision) + ':' + String(state?.changes ?? 0));
   const rememberRecord = recordShortcuts.remember;
   useEffect(() => { if (selected && selected !== 'new' && shortcutScope) rememberRecord({ entity: selected.entity, id: selected.id }); }, [selected && selected !== 'new' ? selected.entity + ':' + selected.id : '', shortcutScope]);
+  // R1 · Modo contingencia (lo activa la persona) y R2 · aviso de cierre con el expediente del incidente.
+  const contingency = useContingency();
+  const [closedIncident, setClosedIncident] = useState<IncidentWindow | null>(null);
   const refreshSequence = useRef(0);
   const accessSequence = useRef(0);
   useEffect(() => {
@@ -328,6 +330,11 @@ export default function App() {
     setNotice(result.full ? 'Ya tienes ' + PINNED_MAX + ' fichas ancladas: desancla alguna para anclar esta.' : result.pinned ? 'Ficha anclada: la tienes en el menú y en Ctrl J.' : 'Ficha desanclada.');
   };
   if (selected && selected !== 'new' && spec) commandList.push({ id: 'pin-current', label: (pinnedCurrent ? 'Desanclar' : 'Anclar') + ' esta ficha: ' + recordName(selected, spec), group: 'Acción', run: () => togglePinned(selected) });
+  const canContingency = !!state.snapshot && !state.runtime;
+  const beginContingency = () => { startContingency(new Date()); setClosedIncident(null); };
+  const finishContingency = () => setClosedIncident(endContingency(new Date()));
+  const entityLabels = Object.fromEntries((spec?.entities ?? []).map(item => [item.id, item.label]));
+  if (canContingency) commandList.push(contingency ? { id: 'contingency-end', label: 'Terminar el modo contingencia (HubSpot ya responde)', group: 'Acción', run: finishContingency } : { id: 'contingency', label: 'HubSpot no responde: activar el modo contingencia', group: 'Acción', run: beginContingency });
   const sidebarPins = spec ? recordShortcuts.entries.filter(entry => entry.pinned).map(entry => { const name = recordName(entry.record, spec); return { key: entry.ref.entity + ':' + entry.ref.id, label: name, title: singularOf(entry.ref.entity) + ' · ' + name, open: () => openRecord(entry.record) }; }) : [];
   const date = describeCapture(state.snapshot?.capturedAt).date ?? '';
   return <TaskOutcomesHost refreshState={refresh} onOpenTask={openTaskFromOutcomes} onClosed={(summary,reason)=>{setLockedOutcomes(previous=>addLockSummary(previous,summary));if(summary.dispatched+summary.notDispatched>0)setLockFailed(reason==='lock-not-completed');}} controlRef={outcomesControl}><div className={'app-shell ' + (selected ? 'has-drawer' : '')}>
@@ -336,8 +343,9 @@ export default function App() {
       setPage={setPage} setSelected={setSelected} setPreparationOpen={setPreparationOpen} setGlobalSearch={setGlobalSearch} setModal={setModal}
       openEntity={openEntity} openPreparation={openPreparation} />
     <div className="mobile-brand"><Brand /><span className="badge">{state.snapshot?.source.isTestData===false?'Producción · lectura':'Datos de prueba'}</span></div>
-    <main id="main-content" className="main-content" tabIndex={-1}><TopBar state={state} pageLabel={pageLabel} teamOrigin={teamOrigin} openContinuity={() => { setPage('continuity'); setSelected(null); }} openChanges={state.ready ? () => { setPage('changes'); setSelected(null); } : undefined} openHelp={() => setHelp(true)} openCommands={() => setCommandsOpen(true)} onProtect={() => void protect()}
+    <main id="main-content" className="main-content" tabIndex={-1}><TopBar state={state} pageLabel={pageLabel} teamOrigin={teamOrigin} openContinuity={() => { setPage('continuity'); setSelected(null); }} openChanges={state.ready ? () => { setPage('changes'); setSelected(null); } : undefined} openHelp={() => setHelp(true)}     openCommands={() => setCommandsOpen(true)} onProtect={() => void protect()} onContingency={canContingency && !contingency ? beginContingency : undefined}
       reminder={<DueReminder active={auth === 'open' && !!state.ready} spec={state.spec} revision={dataRevision + ':' + (state.changes ?? 0)} onOpen={record => { openEntity('tasks'); setRecords([record]); setSelected(record); }} />} />
+          {canContingency && (contingency || closedIncident) ? <ContingencyBand active={contingency} closed={closedIncident} copyAt={state.snapshot?.capturedAt} onOpenContinuity={() => { setPage('continuity'); setSelected(null); }} onOpenToday={() => { setPage('today'); setSelected(null); }} onEnd={finishContingency} onDismiss={() => setClosedIncident(null)} onDownload={(window, format) => import('./app-shell/incident-download.js').then(module => module.downloadIncident(window, format, entityLabels))} /> : null}
       {error ? <div role="alert" className="global-error"><span>{error}</span><button className="icon-button" aria-label="Cerrar aviso" onClick={() => setError('')}><X size={18} /></button></div> : null}
       <OutcomesLockNotice summary={lockedOutcomes} failed={lockFailed} onRetry={()=>void protect()} onDismiss={()=>{setLockedOutcomes(null);setLockFailed(false);}}/>
       {!state.runtime?<TaskOutcomesSurface/>:null}

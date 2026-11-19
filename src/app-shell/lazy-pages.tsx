@@ -9,6 +9,12 @@ function deferred<T extends ComponentType<any>>(load: () => Promise<T>, label: s
   const Page = (props: ComponentProps<T>) => <PageErrorBoundary label={name}><Suspense fallback={<Skeleton rows={6} label={label} />}><Lazy {...props} /></Suspense></PageErrorBoundary>;
   return Page as unknown as T;
 }
+/** Piezas que solo aparecen en momentos concretos (la banda de contingencia): mismo límite de error, pero sin esqueleto mientras llegan. */
+function quiet<T extends ComponentType<any>>(load: () => Promise<T>, name: string) {
+  const Lazy = lazy(() => load().then(component => ({ default: component })));
+  const Piece = (props: ComponentProps<T>) => <PageErrorBoundary label={name}><Suspense fallback={null}><Lazy {...props} /></Suspense></PageErrorBoundary>;
+  return Piece as unknown as T;
+}
 
 export const ContinuityHome = deferred(() => import('../ContinuityHome.js').then(m => m.ContinuityHome), 'Abriendo Continuidad…');
 export const Preparation = deferred(() => import('../Preparation.js').then(m => m.Preparation), 'Abriendo la preparación…');
@@ -28,3 +34,7 @@ export const WeeklyReview = deferred(() => import('./WeeklyReview.js').then(m =>
 export const CsvImport = deferred(() => import('../CsvImport.js').then(m => m.CsvImport), 'Abriendo la importación…');
 export const FocusRun = deferred(() => import('./FocusRun.js').then(m => m.FocusRun), 'Abriendo la cola de foco…');
 export const ContinuityEvidence = deferred(() => import('../ContinuityEvidence.js').then(m => m.ContinuityEvidence), 'Abriendo los escenarios…');
+export const ContingencyBand = quiet(() => import('./ContingencyBand.js').then(m => m.ContingencyBand), 'Modo contingencia');
+export const GuidedDrill = quiet(() => import('./GuidedDrill.js').then(m => m.GuidedDrill), 'Práctica guiada');
+export const ShortcutsHelp = quiet(() => import('./ShortcutsHelp.js').then(m => m.ShortcutsHelp), 'Atajos de teclado');
+export const RecordTimeline = quiet(() => import('./RecordTimeline.js').then(m => m.RecordTimeline), 'Historial de la ficha');

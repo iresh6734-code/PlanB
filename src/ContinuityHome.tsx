@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, CalendarClock, CalendarRange, CheckCircle2, Clock3, Database, Download, LockKeyhole, Play, RefreshCw, ShieldCheck, Unplug } from 'lucide-react';
+import { ArrowRight, CalendarClock, CalendarRange, CheckCircle2, Clock3, Database, Download, FileDown, LockKeyhole, Play, RefreshCw, ShieldCheck, Siren, Unplug } from 'lucide-react';
 import type { AppState } from '../shared/model.js';
 import type { ContinuityStatus } from '../shared/operations.js';
 import { api, post, download } from './api.js';
@@ -23,6 +23,10 @@ import { monthlyReport, monthlyReportHtml } from './app-shell/monthly-report.js'
 import { captureAutomation } from './app-shell/copy-timeline.js';
 import { pollWhileVisible, useReadHealth } from './app-shell/poll.js';
 import { captureRecordCount, describeCapture, workspaceCopy } from './app-shell/workspace-copy.js';
+import { startContingency } from './app-shell/contingency.js';
+import { clockTime, durationText } from './app-shell/contingency-text.js';
+import { useContingency, useLastIncident } from './app-shell/useContingency.js';
+import { downloadIncident } from './app-shell/incident-download.js';
 import { captureLedger, continuityReadiness, copyVitals, drillCalendar, DRILL_EVERY_DAYS, DRILL_SOON_DAYS, formatBytes, hourlyCaptures, jobStats, outageForecast, type LedgerFilter, type NextActionId, type StepId } from './app-shell/continuity-insights.js';
 import './continuity-home-hub.css';
 import './continuity-insights.css';
@@ -43,6 +47,9 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
   // Cada lectura se entrega también a la App (avisos del menú); la referencia evita usar una función antigua desde el temporizador.
   const statusOut=useRef(onStatus);statusOut.current=onStatus;
   const readHealth=useReadHealth();
+  // R1/R2 · Modo contingencia y expediente del último incidente (solo horas en este navegador).
+  const contingency=useContingency(),lastIncident=useLastIncident(),[incidentNote,setIncidentNote]=useState(''),[incidentBusy,setIncidentBusy]=useState(false);
+  const saveIncident=(format:'html'|'json')=>{if(!lastIncident)return;setIncidentBusy(true);setIncidentNote('');const labels=Object.fromEntries((state.spec?.entities??[]).map(item=>[item.id,item.label]));void downloadIncident(lastIncident,format,labels).then(setIncidentNote,f=>setIncidentNote(f instanceof Error?f.message:'No se pudo generar el expediente.')).finally(()=>setIncidentBusy(false));};
   const load=()=>api<ContinuityStatus>('/v2/continuity').then(value=>{setStatus(value);statusOut.current?.(value);readHealth.ok();});
   // Remount the evidence consumer when the authorized App context changes, retiring its pending reads and visible results together.
   const hubRef=useRef<HTMLDetailsElement|null>(null),[returnNote,setReturnNote]=useState<'integrations'|'drill'|null>(null);
@@ -117,6 +124,15 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
     {status?.recoveryIntegrity?.state==='invalid'?<p className="error-box" role="alert">{INVALID_RECOVERY_MESSAGE}</p>:null}
     <TabList label="Secciones de Continuidad" prefix="ct" tabs={CONTINUITY_TABS} value={tab} onChange={setTab}/>
     <div className="ct-panel ct-estado" {...tabPanelProps('ct','estado')} hidden={tab!=='estado'}>
+      {state.snapshot&&!state.runtime?<section className="ct-contingency" data-active={contingency?'true':undefined} aria-labelledby="ct-contingency-title">
+        <span className="ct-contingency-icon" aria-hidden="true"><Siren size={18}/></span>
+        <div className="ct-contingency-body"><h2 id="ct-contingency-title">{contingency?'Contingencia en curso desde las '+clockTime(contingency.startedAt):'¿HubSpot no responde?'}</h2>
+          <p>{contingency?'La banda de arriba lleva el reloj y los primeros pasos. Termínala cuando HubSpot vuelva para guardar el expediente.':'Activa el modo contingencia: Hoy se centra en lo vencido y lo que vence en 24 horas, Cambios te recuerda no devolver todavía y Plan B cronometra el incidente.'}</p>
+          {!contingency&&lastIncident?<p className="ct-contingency-last">Último incidente: {describeCapture(lastIncident.startedAt).date??clockTime(lastIncident.startedAt)} · {durationText(lastIncident.startedAt,lastIncident.endedAt)}</p>:null}
+          {incidentNote?<p className="ct-contingency-note" role="status">{incidentNote}</p>:null}</div>
+        <div className="ct-contingency-actions">{contingency?null:<button type="button" className="button primary ct-contingency-start" onClick={()=>startContingency(new Date())}><Siren size={15}/>Activar modo contingencia</button>}
+          {!contingency&&lastIncident?<><button type="button" className="button secondary" disabled={incidentBusy} onClick={()=>saveIncident('html')}><FileDown size={15}/>Expediente</button><button type="button" className="text-button" disabled={incidentBusy} onClick={()=>saveIncident('json')}>JSON con huella</button></>:null}</div>
+      </section>:null}
       {readiness?<section className="ct-ready" data-level={readiness.level} aria-labelledby="ct-ready-title">
         <div className="ct-ready-verdict"><h2 id="ct-ready-title">{readiness.title}</h2>
           <p><span className="ct-ready-count">{readiness.done} de {readiness.total}</span> pasos de preparación hechos</p>

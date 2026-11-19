@@ -1,8 +1,15 @@
 ﻿# Plan B · Contexto y continuidad del proyecto
 
-Última revisión: **19/11/2026**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 a V7 hechas. Oleada 3: H2, H3, H4, H5 y H6 hechas; H1 aplazada (requiere e2e). Continuidad: C1 a C5 hechas. Negocio: M1 a M6 hechas. Datos: D1, D2 y D3 hechas. Rendimiento: P3 hecha. Super plan 2: T1, E1, E2, E5, E6, R4 y F5 hechas; E3 y E4 aplazadas por las reglas.
+Última revisión: **19/11/2026**. Oleada 1 del super plan: A1, A2 y A4 hechas; A3 aplazada. Oleada 2: V1 a V7 hechas. Oleada 3: H2, H3, H4, H5 y H6 hechas; H1 aplazada (requiere e2e). Continuidad: C1 a C5 hechas. Negocio: M1 a M6 hechas. Datos: D1, D2 y D3 hechas. Rendimiento: P3 hecha. Super plan 2: T1, E1, E2, E5, E6, R4, F5, R1 y R2 hechas; E3 y E4 aplazadas por las reglas.
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
+
+## Super plan 2 · Bloque 4 (R1 + R2) · 19/11/2026
+
+- **R1 · Modo contingencia**: lógica en `src/app-shell/contingency.ts` (claves `planb:contingency` y `planb:contingency:last`, inicio, pasos, fin con ventana) y textos en `contingency-text.ts`; `useContingency.ts` con `useSyncExternalStore`. Banda `ContingencyBand.tsx` (diferida con `quiet()` en `lazy-pages`), botón en `TopBar`, filtro de urgentes en `LocalOperations`, aviso en `ChangesView` y tarjeta en `ContinuityHome`.
+- **R2 · Expediente**: `incident-report.ts` (lógica pura: totales, tipos, horas en Madrid, copias, devolución, huella SHA-256, HTML imprimible) e `incident-download.ts` (se carga con `import()` al descargar).
+- Presupuesto: `GuidedDrill`, `ShortcutsHelp` y `RecordTimeline` pasan a cargarse a petición para que el JS inicial siga dentro del límite.
+- Pruebas: `tests/contingency.test.ts`, `tests/incident-report.test.ts`. Build y presupuesto correctos.
 
 ## Super plan 2 · Bloque 3 (R4 + F5) · 19/11/2026
 

@@ -2285,3 +2285,59 @@ html body .kanban-column h2 .gx-col-add { display: inline-grid; place-items: cen
 html body .kanban-column h2 .gx-col-add:hover { border-color: var(--border-strong); background: var(--bg-surface); color: var(--primary-text); }
 html body .kanban-column h2 .gx-col-add:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
 @media (max-width: 600px) { html body .kanban-column h2 .gx-col-add { width: 44px; height: 44px; } }
+
+/* R1 · Modo contingencia: botón lacre en la barra, banda con reloj y primeros pasos, avisos en Hoy, Cambios y Continuidad (19/11). */
+html body .gx-topbar .gx-contingency { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border: 1px solid var(--danger-border); border-radius: 999px; background: transparent; color: var(--danger); font-size: var(--fs-xs); font-weight: 600; cursor: pointer; transition: background-color 120ms, border-color 120ms; }
+html body .gx-topbar .gx-contingency:hover { background: var(--danger-bg); border-color: var(--danger); }
+html body .gx-topbar .gx-contingency:focus-visible { outline: 2px solid var(--danger); outline-offset: 2px; }
+html body .cg-band { display: grid; grid-template-columns: minmax(240px, 1fr) minmax(0, 1.6fr) auto; gap: 14px 22px; align-items: start; margin: 0 0 16px; padding: 14px 16px 14px 18px; border: 1px solid var(--danger-border); border-left: 4px solid var(--danger); border-radius: var(--r-lg); background: var(--danger-bg); color: var(--text-1); }
+html body .cg-band[data-state="closed"] { grid-template-columns: minmax(0, 1fr) auto; border-color: var(--border); border-left-color: var(--success, var(--primary)); background: var(--bg-surface); }
+html body .cg-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 12px; align-items: start; }
+html body .cg-icon { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--danger); color: var(--bg-surface); }
+html body .cg-band:not([data-state="closed"]) .cg-icon { animation: cg-pulse 2.4s ease-in-out infinite; }
+html body .cg-band[data-state="closed"] .cg-icon { background: var(--success-bg, var(--bg-subtle)); color: var(--success, var(--primary-text)); }
+@keyframes cg-pulse { 0%, 100% { box-shadow: 0 0 0 0 var(--danger-border); } 50% { box-shadow: 0 0 0 6px transparent; } }
+@media (prefers-reduced-motion: reduce) { html body .cg-band .cg-icon { animation: none; } }
+html body .cg-title h2 { margin: 0; font-size: var(--fs-lg); color: var(--danger); letter-spacing: .01em; }
+html body .cg-band[data-state="closed"] .cg-title h2 { color: var(--text-1); }
+html body .cg-title p { margin: 3px 0 0; font-size: var(--fs-sm); color: var(--text-2); line-height: 1.45; white-space: normal; }
+html body .cg-clock { padding: 2px 10px; border-radius: var(--r-md); background: var(--bg-surface); border: 1px solid var(--danger-border); color: var(--danger); font: 650 22px/1.2 ui-monospace, "Cascadia Mono", Consolas, monospace; font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+html body .cg-steps-wrap { min-width: 0; }
+html body .cg-steps-title { display: flex; justify-content: space-between; gap: 8px; margin: 0 0 6px; font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); }
+html body .cg-steps-title strong { color: var(--text-2); font-weight: 650; }
+html body .cg-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 6px; margin: 0; padding: 0; list-style: none; }
+html body .cg-steps button { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; width: 100%; min-height: 44px; padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--bg-surface); color: var(--text-1); text-align: left; cursor: pointer; transition: border-color 120ms, background-color 120ms; }
+html body .cg-steps button:hover { border-color: var(--danger-border); }
+html body .cg-steps button:focus-visible { outline: 2px solid var(--danger); outline-offset: 1px; }
+html body .cg-step-mark { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--danger-border); color: var(--danger); font-size: var(--fs-xs); font-weight: 700; font-variant-numeric: tabular-nums; }
+html body .cg-steps li[data-done="true"] .cg-step-mark { border-color: var(--danger); background: var(--danger); color: var(--bg-surface); }
+html body .cg-steps li[data-done="true"] .cg-step-text strong { color: var(--text-2); }
+html body .cg-step-text { display: grid; min-width: 0; }
+html body .cg-step-text strong { font-size: var(--fs-sm); font-weight: 600; }
+html body .cg-step-text small { font-size: var(--fs-xs); color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html body .cg-message { display: grid; gap: 6px; margin-top: 8px; font-size: var(--fs-sm); color: var(--text-2); }
+html body .cg-message span { display: inline-flex; align-items: center; gap: 6px; }
+html body .cg-message textarea { width: 100%; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--bg-surface); color: var(--text-1); font: inherit; resize: vertical; }
+html body .cg-end { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; font-size: var(--fs-sm); color: var(--text-2); }
+html body .cg-band[data-state="closed"] .cg-end { grid-column: 1 / -1; justify-content: flex-start; }
+html body .cg-end-button { border-color: var(--danger-border); color: var(--danger); }
+html body .cg-note { flex-basis: 100%; margin: 2px 0 0; font-size: var(--fs-sm); color: var(--text-2); }
+html body .cg-dismiss { align-self: start; }
+@media (max-width: 1100px) { html body .cg-band { grid-template-columns: minmax(0, 1fr); } html body .cg-end { justify-content: flex-start; } }
+@media (max-width: 760px) { html body .gx-topbar .gx-contingency span { display: none; } html body .gx-topbar .gx-contingency { width: 32px; padding: 0; justify-content: center; } html body .cg-head { grid-template-columns: auto minmax(0, 1fr); } html body .cg-clock { grid-column: 2; justify-self: start; } }
+html body .lop-contingency { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin: 0 0 10px; padding: 8px 12px; border: 1px solid var(--danger-border); border-left: 3px solid var(--danger); border-radius: var(--r-md); background: var(--danger-bg); font-size: var(--fs-sm); color: var(--text-1); }
+html body .lop-contingency[data-showing="all"] { border-left-color: var(--border-strong); background: var(--bg-surface); border-color: var(--border); }
+html body .lop-contingency strong { color: var(--danger); }
+html body .changes-contingency { margin: 0 0 14px; padding: 10px 14px; border: 1px solid var(--danger-border); border-left: 3px solid var(--danger); border-radius: var(--r-md); background: var(--danger-bg); font-size: var(--fs-sm); color: var(--text-1); line-height: 1.5; }
+html body .changes-contingency strong { color: var(--danger); }
+html body .ct-contingency { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px 16px; align-items: center; margin: 0 0 16px; padding: 14px 16px; border: 1px dashed var(--danger-border); border-radius: var(--r-lg); background: var(--bg-surface); }
+html body .ct-contingency[data-active="true"] { border-style: solid; border-left: 4px solid var(--danger); background: var(--danger-bg); }
+html body .ct-contingency-icon { display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--danger-bg); color: var(--danger); }
+html body .ct-contingency[data-active="true"] .ct-contingency-icon { background: var(--danger); color: var(--bg-surface); }
+html body .ct-contingency-body h2 { margin: 0; font-size: var(--fs-lg); }
+html body .ct-contingency-body p { margin: 3px 0 0; font-size: var(--fs-sm); color: var(--text-2); line-height: 1.5; }
+html body .ct-contingency-last { color: var(--text-3); font-variant-numeric: tabular-nums; }
+html body .ct-contingency-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
+html body .ct-contingency-start { background: var(--danger); border-color: var(--danger); color: var(--bg-surface); }
+html body .ct-contingency-start:hover { filter: brightness(1.08); }
+@media (max-width: 760px) { html body .ct-contingency { grid-template-columns: auto minmax(0, 1fr); } html body .ct-contingency-actions { grid-column: 1 / -1; justify-content: flex-start; } }

@@ -11,10 +11,13 @@ import { Spinner } from './components.js';
 import { ManualRecovery } from './ManualRecovery.js';
 import { SalesWorkspace } from './SalesWorkspace.js';
 import { ChangeHistory } from './ChangeHistory.js';
+import { useContingency } from './app-shell/useContingency.js';
+import { clockTime } from './app-shell/contingency-text.js';
 export function ChangesView({runtime,production=false,spec=null}:{runtime:boolean;production?:boolean;spec?:AppState['spec']|null}) {
   const [changes,setChanges]=useState<Change[]>([]),[plan,setPlan]=useState<RecoveryPlan|null>(null),[simulation,setSimulation]=useState(true);
   const [busy,setBusy]=useState(false),[error,setError]=useState(''),[reviewed,setReviewed]=useState(false),[token,setToken]=useState('');
   const [uncertainId,setUncertainId]=useState('');
+  const contingency=useContingency();
   const [revision,setRevision]=useState(''),[pending,setPending]=useState(0),[watermark,setWatermark]=useState(0),[manualReport,setManualReport]=useState<{verifiedAt:string}|null>(null);
   const [integrity,setIntegrity]=useState<RecoveryIntegrity|null>(null),[loadError,setLoadError]=useState(''),[checking,setChecking]=useState(true),[hasRead,setHasRead]=useState(false);
   const alive=useRef(true),sequence=useRef(0),controller=useRef<AbortController|null>(null),trusted=useRef(false),action=useRef(false);
@@ -48,6 +51,7 @@ export function ChangesView({runtime,production=false,spec=null}:{runtime:boolea
   const wizard=returnSteps({changes:changes.length,plan,blocked,reviewed}),wizardPercent=returnProgress(wizard.steps);
   return <section className="changes-page"><header className="page-header"><div><h1>Cambios</h1><p className="page-subtitle">{hasRead?changes.length+' operaciones guardadas en este ordenador.':'Leyendo las operaciones guardadas…'}</p></div>
     <div className="button-row"><button className="button secondary" onClick={()=>run(()=>download('/export/changes?format=csv','plan-b-cambios.csv'))}><Download size={16}/>CSV</button><button className="button secondary" onClick={()=>run(()=>download('/export/changes','plan-b-cambios.json'))}>JSON</button></div></header>
+    {contingency?<p className="changes-contingency" role="note"><strong>Contingencia en curso desde las {clockTime(contingency.startedAt)}.</strong> Lo que guardes se queda en este ordenador y aparece aquí. Devuélvelo cuando HubSpot vuelva a responder y hayas terminado la contingencia.</p>:null}
     {error||loadError?<p role="alert" className="error-box">{error||loadError}</p>:null}
     {blocked?<div className="error-box" role={checking&&!hasRead?'status':'alert'}><strong>{checking&&!hasRead?'Comprobando el estado de devolución…':'Devolución bloqueada hasta revisar el estado guardado'}</strong><p>{integrity?.state==='invalid'?INVALID_RECOVERY_MESSAGE:!checking||hasRead?'No se ha podido confirmar la integridad del plan. No se enviarán cambios desde esta pantalla.':'Los controles se habilitarán cuando termine la lectura.'}</p><button type="button" className="button secondary" style={{minHeight:44}} aria-disabled={busy||checking} onClick={()=>{if(action.current||controller.current)return;setError('');void load().catch(()=>{});}}>Actualizar estado guardado</button></div>:null}
     {!runtime&&!production?<SalesWorkspace view="proposals"/>:null}

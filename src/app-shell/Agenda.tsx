@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState, type DragEvent } from 'react';
-import { Check, ChevronLeft, ChevronRight, Copy, RefreshCw } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Copy, Download, RefreshCw } from 'lucide-react';
 import type { AppSpec, CrmRecord } from '../../shared/model.js';
 import { api } from '../api.js';
 import { recordName } from '../components.js';
 import { madridDay } from '../task-display.js';
 import { ErrorState, Skeleton } from '../ui/index.js';
-import { agendaDayLabel, agendaItems, agendaText, agendaWeekday, buildAgenda, canMoveClose, closeFieldFor, compareItems, itemOnDay, shiftDay, stepAnchor, type AgendaItem, type AgendaView } from './agenda-grid.js';
+import { agendaDayLabel, agendaIcs, agendaIcsName, agendaItems, agendaText, agendaWeekday, buildAgenda, canMoveClose, closeFieldFor, compareItems, itemOnDay, shiftDay, stepAnchor, type AgendaItem, type AgendaView } from './agenda-grid.js';
+import { downloadText } from './csv.js';
 import { euros } from './deal-insights.js';
 import { BOARD_MAX_PAGES, readPages, type ListPage } from './pager.js';
 import { recordListPath } from './useRecordList.js';
@@ -90,6 +91,11 @@ export function Agenda({ spec, revision, saveField, onOpenRecord }: Props) {
     try { await navigator.clipboard.writeText(agendaText(agenda)); setCopied(agenda.title); }
     catch { setCopied(null); setNote({ tone: 'error', text: 'No se pudo copiar: el navegador no dejó usar el portapapeles.' }); }
   };
+  const saveIcs = () => {
+    const { text, count } = agendaIcs(agenda, new Date());
+    downloadText(agendaIcsName(agenda), text, 'text/calendar;charset=utf-8');
+    setNote({ tone: 'ok', text: (count === 1 ? '1 evento' : count + ' eventos') + ' en el archivo .ics. Ábrelo con Outlook o Google Calendar para añadirlos; si lo importas otra vez, se actualizan en lugar de duplicarse.' });
+  };
 
   const head = <header className="page-header"><div><h1 id="ag-title">Agenda</h1>
       <p className="page-subtitle">Tareas pendientes con fecha y cierres previstos de tu copia. Hoy va en lacre; lo vencido lleva sello.</p></div>
@@ -117,7 +123,8 @@ export function Agenda({ spec, revision, saveField, onOpenRecord }: Props) {
     <div className="ag-bar">
       <div className="ag-period"><h2>{agenda.title}</h2>
         <p>{agenda.busiest ? 'Lo más cargado: ' + agendaDayLabel(agenda.busiest.day).toLocaleLowerCase('es') + ' (' + agenda.busiest.count + ')' : view === 'week' ? 'Semana sin nada previsto' : 'Mes sin nada previsto'}{read.complete ? '' : ' · copia leída en parte'}
-          <button type="button" className="text-button ag-copy" title={'Copia ' + (view === 'week' ? 'la semana' : 'el mes') + ' como texto para pegar en un correo o un chat'} onClick={() => void copyPeriod()}>{copied === agenda.title ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}{copied === agenda.title ? (view === 'week' ? 'Semana copiada' : 'Mes copiado') : view === 'week' ? 'Copiar semana' : 'Copiar mes'}</button></p></div>
+                  <span className="ag-actions"><button type="button" className="text-button ag-copy" title={'Copia ' + (view === 'week' ? 'la semana' : 'el mes') + ' como texto para pegar en un correo o un chat'} onClick={() => void copyPeriod()}>{copied === agenda.title ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}{copied === agenda.title ? (view === 'week' ? 'Semana copiada' : 'Mes copiado') : view === 'week' ? 'Copiar semana' : 'Copiar mes'}</button>
+          <button type="button" className="text-button ag-copy" disabled={!totals.tasks && !totals.closes} title="Descarga el periodo como calendario .ics para Outlook o Google Calendar" onClick={saveIcs}><Download size={13} aria-hidden="true" />Al calendario</button></span></p></div>
       <dl className="ag-figures">
         <div><dt>Tareas</dt><dd>{totals.tasks}</dd></div>
         {close ? <div><dt>Cierres</dt><dd>{totals.closes}{totals.amount ? <small>{euros(totals.amount)}</small> : null}</dd></div> : null}

@@ -395,26 +395,27 @@ html body .main-content .gx-statusbar .button { min-height: 24px !important; }
 html body .main-content :is(.or-today, .lop-tasks, .oc-task-list) .button { min-height: 24px !important; }
 html body .checkbox-label { display: flex; align-items: center; gap: 8px; font-size: var(--fs-sm); }
 
-/* ---------- Exportar: revisar y descargar a la izquierda; custodia y pasos a la derecha ---------- */
-html body .export-page { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(280px, 1fr); gap: 12px; align-items: start; }
+/* ---------- Exportar: lo que contiene y lo que consta a la izquierda; contraseña y descarga a la derecha ---------- */
+html body .export-page { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(0, 1.25fr); gap: 12px; align-items: start; }
 html body .export-page > * { margin: 0; min-width: 0; max-width: none; }
-html body .export-page > :is(.page-header, .export-review-tools) { grid-column: 1 / -1; }
+html body .export-page > :is(.page-header, .export-review-tools) { grid-column: 1 / -1; margin: 0; }
 html body .export-page > .page-header > svg { width: 18px; height: 18px; color: var(--text-3); }
 html body .export-review-tools { display: flex; align-items: center; gap: 10px; }
 html body .export-review-tools .helper { margin: 0; }
 html body .export-page > :is(.export-revision, .export-custody, .export-instructions) { padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--bg-surface); box-shadow: var(--shadow-1); font-size: var(--fs-sm); }
-html body .export-page > .export-revision { grid-column: 1; }
-html body .export-page > .export-instructions { grid-column: 1; border-top: 1px solid var(--border); }
-html body .export-page > .export-custody { grid-column: 2; grid-row: 3 / span 2; background: var(--bg-subtle); }
+html body .export-page > .export-revision { grid-column: 1; grid-row: 3; }
+html body .export-page > .export-custody { grid-column: 1; grid-row: 4; background: var(--bg-subtle); }
+html body .export-page > .export-instructions { grid-column: 2; grid-row: 3 / span 2; border-top: 1px solid var(--border); }
 html body .export-page h2 { margin: 0 0 6px; font-size: var(--fs-h2); }
-html body .export-page p { margin: 0 0 4px; }
+html body .export-page p { margin: 0 0 4px; line-height: var(--lh-body); }
 html body .export-revision small { display: block; margin: 4px 0; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 10.5px; color: var(--text-3); }
 html body .export-review-check { margin: 8px 0 0; padding: 8px 10px; border-radius: var(--r-md); color: var(--text-1); font-weight: 600; }
 html body .export-instructions .settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 8px 0 2px; }
 html body .export-instructions .button-row { margin: 4px 0 10px; }
-html body .export-instructions .plain-list { margin: 0; padding: 8px 0 0 18px; border-top: 1px solid var(--border); font-size: var(--fs-sm); color: var(--text-2); }
+html body .export-instructions .plain-list { margin: 0; padding: 8px 0 0 18px; border-top: 1px solid var(--border); font-size: var(--fs-sm); line-height: var(--lh-body); color: var(--text-2); }
 html body .export-instructions .plain-list li { margin: 2px 0; padding: 0; }
-@media (max-width: 900px) { html body .export-page { grid-template-columns: minmax(0, 1fr); } html body .export-page > .export-custody { grid-column: 1; grid-row: auto; } }
+html body .export-instructions .plain-list + p { margin-top: 8px; }
+@media (max-width: 900px) { html body .export-page { grid-template-columns: minmax(0, 1fr); } html body .export-page > :is(.export-revision, .export-custody, .export-instructions) { grid-column: 1; grid-row: auto; } }
 @media (max-width: 600px) { html body .export-instructions .settings-grid { grid-template-columns: minmax(0, 1fr); } }
 
 /* ---------- Preparación ---------- */
@@ -460,7 +461,7 @@ html body .drawer-header { padding: 10px 14px; min-height: 48px; border-bottom: 
 html body .drawer-header :is(h2, h3) { font-size: 15px; font-weight: 650; margin: 0; }
 html body .drawer-form { padding: 0; }
 html body .drawer-fields { padding: 12px 14px; }
-html body .drawer-fields .field { margin: 0; }
+html body .drawer-fields .field { margin: 0; align-content: start; }
 html body .drawer-footer { position: sticky; bottom: 0; padding: 10px 14px; gap: 8px; border-top: 1px solid var(--border); background: var(--bg-subtle); }
 html body .record-drawer :is(input:not([type="checkbox"]):not([type="radio"]), select) { min-height: var(--control-h); height: var(--control-h); }
 html body .field-error { font-size: var(--fs-xs); color: var(--danger); }

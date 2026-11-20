@@ -87,7 +87,7 @@ test('341 · la candidata compilada conserva decisión y desenlace al reabrir SQ
     };
     await page.route('**/*', bridge);
 
-    const nav = page.getByRole('button', { name: 'Comprobar una fecha', exact: true });
+    const nav = page.getByRole('button', { name: 'Comprobar fecha', exact: true });
     const screen = page.locator('.dc');
     const review = page.locator('.drv');
     await page.goto(origin);

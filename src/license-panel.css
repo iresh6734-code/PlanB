@@ -13,7 +13,7 @@ html body .lp-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minm
 html body .lp-plans { width: 100%; border: 1px solid var(--border); border-radius: var(--r-lg); border-collapse: separate; border-spacing: 0; background: var(--bg-surface); white-space: normal; overflow: hidden; }
 html body .lp-plans caption { padding: 0 0 8px; text-align: left; font-size: var(--fs-sm); font-weight: 650; color: var(--text-2); }
 html body .lp-plans th, html body .lp-plans td { width: auto; height: auto; padding: 8px 12px; border: 0; border-top: 1px solid var(--rule); font-size: var(--fs-sm); text-align: center; vertical-align: middle; color: var(--text-1); }
-html body .lp-plans thead th { border-top: 0; font-size: var(--fs-xs); font-weight: 650; text-transform: uppercase; letter-spacing: .04em; color: var(--text-3); }
+html body .lp-plans thead th { border-top: 0; font-size: var(--fs-sm); font-weight: 650; color: var(--text-2); }
 html body .lp-plans thead th:first-child, html body .lp-plans tbody th { text-align: left; }
 html body .lp-plans tbody th { font-weight: 500; color: var(--text-2); }
 html body .lp-plans [data-current="true"] { background: var(--bg-subtle); color: var(--text-1); }
@@ -33,7 +33,7 @@ html body .lp-ok { margin: 0; font-size: var(--fs-sm); color: var(--success); }
 @media (max-width: 600px) { html body .lp-current { grid-template-columns: auto 1fr; } html body .lp-current .button { grid-column: 1 / -1; justify-self: start; } }
 
 /* N1 · Prueba de Pro (14 días, solo la fecha de inicio en este navegador). */
-html body .lp-trial { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; margin-top: 12px; padding: 14px 16px; border: 1px dashed var(--border-strong); border-radius: var(--r-lg); background: var(--bg-subtle); }
+html body .lp-trial { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; margin-top: 0; padding: 14px 16px; border: 1px dashed var(--border-strong); border-radius: var(--r-lg); background: var(--bg-subtle); }
 html body .lp-trial > svg { color: var(--primary); align-self: start; margin-top: 2px; }
 html body .lp-trial[data-status="active"] { border-style: solid; border-color: var(--info-border); background: var(--info-bg); }
 html body .lp-trial[data-status="ended"] > svg { color: var(--text-3); }

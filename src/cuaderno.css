@@ -46,7 +46,7 @@
   --oc-ok: #2c6643; --oc-ok-bg: #e2eee3; --oc-ok-bar: #4c8a62;
   color-scheme: light;
 }
-@media (max-width: 1150px) { :root { --sidebar-width: 188px; --page-gutter: 16px; } }
+@media (max-width: 1150px) { :root { --sidebar-width: 192px; --page-gutter: 16px; } }
 @media (max-width: 600px) { :root { --page-gutter: 12px; --control-h: 40px; --control-h-sm: 36px; --row-h: 44px; } }
 /* K4 · Densidad «cómoda» (html[data-density], Órdenes → Densidad): filas de 40 px y controles de 32 px.
  * Solo por encima de 600 px: en móvil siguen mandando los objetivos táctiles de 40–44 px. */
@@ -122,7 +122,7 @@ html body .sidebar .nav-item.work-toggle.active { color: var(--sb-text-strong); 
 html body .sidebar .nav-item.work-toggle.active svg:first-child { color: var(--primary-text); }
 html body .sidebar .nav-item.work-toggle > svg:last-child { width: 13px; height: 13px; color: var(--sb-muted); }
 html body .sidebar .work-subnav { margin: 0 0 4px 15px; padding-left: 8px; border-left: 1px solid var(--sb-border); }
-html body .sidebar .work-subnav .nav-item { min-height: 26px; }
+html body .sidebar .work-subnav .nav-item { min-height: 26px; gap: 6px; }
 html body .sidebar .gx-nav-lab { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--sb-border); }
 html body .sidebar .gx-badge { min-width: 18px; height: 16px; padding: 0 4px; border-radius: 2px; background: transparent; color: var(--sb-muted); font-size: 11px; font-weight: 650; box-shadow: inset 0 -1.5px 0 currentColor; }
 html body .sidebar .gx-badge[data-tone="danger"] { color: var(--danger); }

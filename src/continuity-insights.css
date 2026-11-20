@@ -82,7 +82,11 @@ html body .ct-brand-logo > span { font-size: var(--fs-xs); color: var(--text-3);
 html body .ct-brand-pop > small { font-size: var(--fs-xs); color: var(--text-3); }
 html body .ct-brand-problem { margin: 0; font-size: var(--fs-xs); color: var(--danger); }
 html body .ct-brand-clear { justify-self: start; }
-@media (max-width: 600px) { html body .ct-brand-pop { right: auto; left: 0; } }
+@media (max-width: 600px) {
+  html body .ct-brand { position: static; }
+  html body .continuity-home > .page-header .ct-head-actions { position: relative; align-self: stretch; }
+  html body .ct-brand-pop { left: 0; right: 0; width: auto; }
+}
 
 /* Calendario de simulacros (C5): treinta días como una regla; la muesca marca la última semana. */
 html body .ct-verify .ct-cal { display: grid; gap: 4px; margin: 10px 0 12px; padding: 10px 12px; border: 1px solid var(--rule); border-radius: var(--r-md); background: var(--bg-subtle); }

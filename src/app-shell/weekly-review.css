@@ -17,7 +17,7 @@ html body .wr-summary[data-clear] .wr-figures { border-top-color: color-mix(in s
 html body .wr-figures > div { display: grid; gap: 2px; min-width: 0; padding: 0 12px; }
 html body .wr-figures > div:first-child { padding-left: 0; }
 html body .wr-figures > div + div { border-left: 1px solid var(--rule); }
-html body .wr-figures dt { font-size: var(--fs-xs); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-3); }
+html body .wr-figures dt { font-size: var(--fs-xs); font-weight: 600; color: var(--text-3); }
 html body .wr-figures dd { display: flex; align-items: baseline; gap: 6px; margin: 0; font-family: var(--font-display); font-size: 24px; font-weight: 600; line-height: 1.15; font-variant-numeric: tabular-nums; color: var(--text-1); }
 html body .wr-figures dd small { font-size: var(--fs-sm); font-weight: 500; color: var(--text-3); }
 html body .wr-figures [data-tone="danger"] dd { color: var(--oc-danger-fg); }

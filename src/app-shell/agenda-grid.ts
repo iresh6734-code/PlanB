@@ -156,3 +156,44 @@ export function agendaText(agenda: Agenda): string {
 
 /** ¿Se puede mover este elemento a ese día? Solo cierres, a un día válido distinto del actual. */
 export const canMoveClose = (item: Pick<AgendaItem, 'kind' | 'day'>, day: string, editable: boolean) => editable && item.kind === 'close' && isDay(day) && day !== item.day;
+
+// iCalendar (RFC 5545): texto escapado, líneas CRLF de 75 octetos como máximo (se pliegan sin partir un carácter UTF-8).
+const icsText = (value: string) => value.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+const utf8 = new TextEncoder();
+function foldIcs(line: string): string {
+  const parts: string[] = [];
+  let current = '', size = 0, limit = 75;
+  for (const char of line) {
+    const bytes = utf8.encode(char).length;
+    if (size + bytes > limit) { parts.push(current); current = ''; size = 0; limit = 74; }
+    current += char; size += bytes;
+  }
+  parts.push(current);
+  return parts.join('\r\n ');
+}
+const icsDay = (day: string) => day.replace(/-/g, '');
+const icsStamp = (now: Date) => now.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+
+/** Nombre del archivo .ics del periodo visible. */
+export const agendaIcsName = (agenda: Pick<Agenda, 'days'>) => {
+  const days = agenda.days.filter(day => day.inPeriod);
+  return 'agenda-planb-' + days[0].day + '_' + days[days.length - 1].day + '.ics';
+};
+
+/** El periodo visible como calendario .ics para importarlo en Outlook o Google Calendar: un evento de día completo por
+ *  tarea o cierre, sin ocupar la jornada. El UID sale del registro, así que importar otra vez actualiza en lugar de duplicar. */
+export function agendaIcs(agenda: Agenda, now: Date): { text: string; count: number } {
+  const stamp = icsStamp(now);
+  const items = agenda.days.filter(day => day.inPeriod).flatMap(day => day.items);
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Plan B//Agenda//ES', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'X-WR-CALNAME:' + icsText('Plan B · ' + agenda.title)];
+  for (const item of items) {
+    const close = item.kind === 'close';
+    const summary = (close ? 'Cierre: ' : 'Tarea: ') + item.name + (close && item.amount !== null ? ' · ' + euros(item.amount) : '');
+    const detail = [close ? item.stage ?? 'Oportunidad abierta' : 'Tarea pendiente', item.tone === 'late' ? 'vencida' : null].filter(Boolean).join(' · ');
+    lines.push('BEGIN:VEVENT', 'UID:planb-' + item.key.replace(/[^\w-]/g, '-') + '@agenda.planb', 'DTSTAMP:' + stamp,
+      'DTSTART;VALUE=DATE:' + icsDay(item.day), 'DTEND;VALUE=DATE:' + icsDay(shiftDay(item.day, 1)),
+      'SUMMARY:' + icsText(summary), 'DESCRIPTION:' + icsText(detail + '. Desde la agenda de Plan B.'), 'CATEGORIES:' + (close ? 'Cierre' : 'Tarea'), 'TRANSP:TRANSPARENT', 'END:VEVENT');
+  }
+  lines.push('END:VCALENDAR');
+  return { text: lines.map(foldIcs).join('\r\n') + '\r\n', count: items.length };
+}

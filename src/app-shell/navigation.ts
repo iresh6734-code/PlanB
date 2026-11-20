@@ -53,7 +53,7 @@ export function navigationGroups(context: NavContext): NavGroup[] {
   if (settings.length) groups.push({ id: 'settings', label: 'Ajustes', target: settings[0].target, items: settings });
   if (labVisible(context)) groups.push({ id: 'lab', label: 'Laboratorio', target: { kind: 'page', page: 'radar' }, badge: 'atRisk', needsReady: true, items: [
     { id: 'radar', label: 'Radar', target: { kind: 'page', page: 'radar' }, badge: 'atRisk', needsReady: true },
-    { id: 'date-check', label: 'Comprobar una fecha', target: { kind: 'page', page: 'date-check' }, needsReady: true },
+    { id: 'date-check', label: 'Comprobar fecha', target: { kind: 'page', page: 'date-check' }, needsReady: true },
     // Solo casos ficticios en el navegador: no necesita copia activa.
     { id: 'outage-lab', label: '¿Y si cae…?', target: { kind: 'page', page: 'outage-lab' } },
   ] });

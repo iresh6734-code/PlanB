@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { makeDemoSpec, makeFixture } from '../shared/fixtures.js';
 import type { CrmRecord } from '../shared/model.js';
-import { agendaItems, agendaRange, agendaText, agendaTitle, buildAgenda, canMoveClose, closeFieldFor, itemOnDay, stepAnchor, weekStart } from '../src/app-shell/agenda-grid.js';
+import { agendaIcs, agendaIcsName, agendaItems, agendaRange, agendaText, agendaTitle, buildAgenda, canMoveClose, closeFieldFor, itemOnDay, stepAnchor, weekStart } from '../src/app-shell/agenda-grid.js';
 import { euros } from '../src/app-shell/deal-insights.js';
 import { pathOf, placeOf } from '../src/app-shell/routes.js';
 import { groupOfPage, navigationGroups } from '../src/app-shell/navigation.js';
@@ -104,6 +104,39 @@ test('B2 · «Copiar» deja el periodo en texto plano, agrupado por día y solo 
     '– Tarea: Tarea b',
   ].join('\n') + '\n');
   assert.equal(agendaText(buildAgenda({ view: 'month', anchor: '2027-03-10', today, items })), 'Agenda · Marzo de 2027\n0 tareas\n\nNada previsto este mes.\n');
+});
+
+test('C2 · «Al calendario» genera un .ics de días completos, escapado y plegado según RFC 5545', () => {
+  const { items } = agendaItems({
+    spec, today, nameOf,
+    tasks: [task('a', '2026-11-18'), { ...task('b', '2026-11-22'), values: { ...task('b', '2026-11-22').values, subject: 'Llamar a Pérez; revisar, firmar\\ok' } }, task('fuera', '2026-11-30')],
+    deals: [deal('x', 'proposal', '2026-11-20', 2500)],
+  });
+  const agenda = buildAgenda({ view: 'week', anchor: today, today, items });
+  const { text, count } = agendaIcs(agenda, new Date('2026-11-20T08:30:15.123Z'));
+  assert.equal(count, 3, 'solo lo del periodo visible');
+  assert.ok(text.startsWith('BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Plan B//Agenda//ES\r\n') && text.endsWith('END:VCALENDAR\r\n'));
+  assert.ok(!/[^\r]\n/.test(text), 'todas las líneas acaban en CRLF');
+  const events = text.split('BEGIN:VEVENT').slice(1);
+  assert.equal(events.length, 3);
+  const unfolded = text.replace(/\r\n /g, '');
+  assert.match(unfolded, /UID:planb-tasks-a@agenda\.planb\r\nDTSTAMP:20261120T083015Z\r\nDTSTART;VALUE=DATE:20261118\r\nDTEND;VALUE=DATE:20261119\r\nSUMMARY:Tarea: Tarea a\r\nDESCRIPTION:Tarea pendiente · vencida\./);
+  assert.match(unfolded, /DTSTART;VALUE=DATE:20261122\r\nDTEND;VALUE=DATE:20261123\r\nSUMMARY:Tarea: Llamar a Pérez\\; revisar\\, firmar\\\\ok\r\n/, 'el domingo cierra en el lunes y se escapan ; , \\');
+  assert.ok(unfolded.includes('SUMMARY:Cierre: Op x · ' + euros(2500).replace(/,/g, '\\,') + '\r\n'));
+  assert.ok(unfolded.includes('DTEND;VALUE=DATE:20261121'));
+  for (const line of text.split('\r\n')) assert.ok(new TextEncoder().encode(line).length <= 75, 'ninguna línea pasa de 75 octetos: ' + line);
+  assert.equal(agendaIcsName(agenda), 'agenda-planb-2026-11-16_2026-11-22.ics');
+  const month = buildAgenda({ view: 'month', anchor: '2027-03-10', today, items });
+  assert.equal(agendaIcsName(month), 'agenda-planb-2027-03-01_2027-03-31.ics', 'el mes no incluye los días de relleno');
+  assert.equal(agendaIcs(month, new Date('2026-11-20T00:00:00Z')).count, 0);
+});
+
+test('C2 · las líneas largas se pliegan sin partir caracteres', () => {
+  const { items } = agendaItems({ spec, today, nameOf, tasks: [{ ...task('l', '2026-11-19'), values: { ...task('l', '2026-11-19').values, subject: 'Revisión ñ '.repeat(12) } }], deals: [] });
+  const { text } = agendaIcs(buildAgenda({ view: 'week', anchor: today, today, items }), new Date('2026-11-20T00:00:00Z'));
+  assert.ok(text.includes('\r\n '), 'hay pliegue');
+  assert.ok(text.replace(/\r\n /g, '').includes('SUMMARY:Tarea: ' + 'Revisión ñ '.repeat(12)), 'al desplegar sale el texto íntegro');
+  assert.ok(!text.includes('\uFFFD'));
 });
 
 test('F3 · la Agenda tiene dirección, vive en el grupo Hoy y se carga bajo demanda', () => {

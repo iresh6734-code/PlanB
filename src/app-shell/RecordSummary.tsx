@@ -9,10 +9,11 @@ import { FollowUpTemplates } from './FollowUpTemplates.js';
 export { taskPreset } from './task-preset.js';
 
 type Spec = NonNullable<AppState['spec']>;
-/** Botón «Nueva tarea» de las fichas: deshabilitado (y explicado) si la ficha tiene cambios sin guardar. */
-export function NewTaskButton({ onNewTask, blocked, label = 'Nueva tarea' }: { onNewTask?: () => void; blocked?: boolean; label?: string }) {
+/** Botón «Nueva tarea» de las fichas: deshabilitado (y explicado) si la ficha tiene cambios sin guardar.
+ *  `short` acorta el texto visible (la ficha de cliente cabe en una fila); el nombre accesible sigue siendo `label`. */
+export function NewTaskButton({ onNewTask, blocked, label = 'Nueva tarea', short }: { onNewTask?: () => void; blocked?: boolean; label?: string; short?: string }) {
   if (!onNewTask && !blocked) return null;
-  return <button type="button" className="button secondary" disabled={!onNewTask} onClick={onNewTask} title={blocked ? 'Guarda o cancela los cambios de esta ficha antes' : 'Abre una ficha nueva ya enlazada'}>{label === 'Nueva tarea' ? <ListPlus size={15} aria-hidden="true" /> : <Plus size={15} aria-hidden="true" />}{label}</button>;
+  return <button type="button" className="button secondary" disabled={!onNewTask} onClick={onNewTask} aria-label={short ? label : undefined} title={blocked ? 'Guarda o cancela los cambios de esta ficha antes' : short ? label + ': abre una ficha nueva ya enlazada' : 'Abre una ficha nueva ya enlazada'}>{label === 'Nueva tarea' ? <ListPlus size={15} aria-hidden="true" /> : <Plus size={15} aria-hidden="true" />}{short ?? label}</button>;
 }
 /** Cabecera de la ficha de un cliente, una empresa o una tarea: lo que se usa a diario, a un clic.
  *  Escribir y llamar abren la aplicación de correo o de teléfono del equipo (enlaces mailto: / tel:); no se envía nada.
@@ -69,11 +70,11 @@ export function RecordSummary({ entityName, spec, values, set, records, disabled
     </div>
     {email || phone || web || onNewTask || newTaskBlocked || onNewDeal || newDealBlocked ? <div className="rs-actions">
       {email ? <a className="button secondary" href={'mailto:' + email}><Mail size={15} aria-hidden="true" />Escribir</a> : null}
-      {email ? <button type="button" className="button secondary" onClick={() => void copy()}>{copied ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}{copied ? 'Copiado' : 'Copiar dirección'}</button> : null}
+      {email ? <button type="button" className="button secondary" aria-label={copied ? 'Copiado' : 'Copiar dirección'} title="Copiar la dirección de correo" onClick={() => void copy()}>{copied ? <Check size={15} aria-hidden="true" /> : <Copy size={15} aria-hidden="true" />}{copied ? 'Copiado' : 'Copiar'}</button> : null}
       {phone ? <a className="button secondary" href={'tel:' + phone.replace(/[^\d+]/g, '')}><Phone size={15} aria-hidden="true" />Llamar</a> : null}
       {href ? <a className="button secondary" href={href} target="_blank" rel="noopener noreferrer"><ExternalLink size={15} aria-hidden="true" />Abrir web</a> : null}
-      <NewTaskButton onNewTask={onNewTask} blocked={newTaskBlocked} />
-      <NewTaskButton onNewTask={onNewDeal} blocked={newDealBlocked} label="Nueva oportunidad" />
+      <NewTaskButton onNewTask={onNewTask} blocked={newTaskBlocked} short="Tarea" />
+      <NewTaskButton onNewTask={onNewDeal} blocked={newDealBlocked} label="Nueva oportunidad" short="Oportunidad" />
     </div> : null}
     {tidy.length ? <div className="rs-tidy">
       <p><Wand2 size={14} aria-hidden="true" />{tidy.length === 1 ? 'Un dato admite un formato más limpio' : tidy.length + ' datos admiten un formato más limpio'}: {tidy.map(item => item.label + ' «' + item.after + '»').join(' · ')}.</p>

@@ -11,7 +11,7 @@ const SECTIONS: Record<string, [string, string]> = {
   Clientes: ['Clientes', 'Clientes'], Empresas: ['Clientes', 'Empresas'], Oportunidades: ['Clientes', 'Oportunidades'], Tareas: ['Clientes', 'Tareas'],
   Estado: ['Continuidad', 'Estado'], Cambios: ['Continuidad', 'Cambios'], Exportar: ['Continuidad', 'Exportar'], 'Copia de equipo': ['Continuidad', 'Copia de equipo'],
   Integraciones: ['Ajustes', 'Integraciones'], 'Proveedor de IA': ['Ajustes', 'Proveedor de IA'], Preparación: ['Ajustes', 'Preparación'],
-  Radar: ['Laboratorio', 'Radar'], 'Comprobar una fecha': ['Laboratorio', 'Comprobar una fecha'],
+  Radar: ['Laboratorio', 'Radar'], 'Comprobar una fecha': ['Laboratorio', 'Comprobar fecha'],
 };
 
 /** Botón de cabecera de un grupo del menú lateral (`.work-toggle`; su apartado homónimo, p. ej. «Clientes», no cuenta). */

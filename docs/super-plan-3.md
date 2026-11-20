@@ -63,6 +63,13 @@ La quinta condición cambia: la revisión visual ya no se deja para casa, se hac
 
 **Revisión visual en vivo (20/11/2026).** Escritorio, móvil a 390 y 335 px y modo oscuro: etiquetas en minúscula inicial (resumen de la mañana, Inicio, Agenda), «Hoy» visible en la Agenda móvil, cabecera de la Agenda en una sola fila, huecos vacíos de Cambios con su marco discontinuo, Inicio móvil apilado, Preparación sin repetir el origen de cada regla y el aviso del Radar legible en oscuro.
 
+## Ronda C (20/11/2026)
+
+| ID | Tarea | Archivos | Prueba segura | Estado |
+|---|---|---|---|---|
+| C1 | **Orden y compactación.**<br>Selector de marca de Continuidad dentro de la pantalla en móvil; «Comprobar fecha» (antes «Comprobar una fecha») cabe en una línea del menú; acciones de la ficha en una fila («Escribir · Copiar · Llamar · Tarea · Oportunidad», con su nombre completo para lectores de pantalla); campos del cajón alineados arriba; etiquetas en minúscula inicial en Revisión semanal, Plan y Fusionar; Exportar reequilibrado en dos columnas (solo la disposición, sin tocar sus campos). | CSS de cada página, `navigation.ts`, `RecordSummary.tsx` | `css-unused`, `ui-copy`, `record-sheet`, `bundle-budget` | Hecha |
+| C2 | **Agenda «Al calendario».**<br>Descarga el periodo visible como archivo .ics (días completos, sin ocupar la jornada) para importarlo en Outlook o Google Calendar. Se genera en el navegador, sin red; el UID sale del registro, así que importar otra vez actualiza en lugar de duplicar. | `agenda-grid.ts` (`agendaIcs`), `csv.ts` (`downloadText`), `Agenda.tsx`, `agenda.css` | `agenda` | Hecha |
+
 ## 2. Orden
 
 1. Bloque A completo, una construcción, pruebas de guardia y una ronda visual en escritorio y móvil, más el modo oscuro de Inicio y Continuidad.

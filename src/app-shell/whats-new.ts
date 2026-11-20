@@ -13,6 +13,7 @@ export const WHATS_NEW: readonly WhatsNewEntry[] = [
   {
     version: '0.6.0', date: '2026-11-19', items: [
       { title: 'Agenda', text: 'La semana o el mes con tareas y cierres previstos. Un cierre se mueve arrastrándolo.', page: 'agenda' },
+      { title: 'Reprogramar cierres pasados', text: 'En Oportunidades › «Cierre pasado»: reparte esas fechas en los próximos días laborables, con vista previa y deshacer.' },
       { title: 'Secuencias de seguimiento', text: 'En la ficha: «llamar hoy, correo a 3 días…» crea de una vez las tareas enlazadas.' },
       { title: 'Modo contingencia', text: '«HubSpot no responde» pone el reloj en marcha, centra Hoy en lo urgente y guarda el expediente.', page: 'continuity' },
       { title: '¿Cuánto costaría parar?', text: 'En «Si HubSpot cae ahora», con tus cifras y los cierres previstos de la copia.', page: 'continuity' },

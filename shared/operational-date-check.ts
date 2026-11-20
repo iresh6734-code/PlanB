@@ -149,7 +149,8 @@ export type Blocker =
   | { code: 'material'; demandId: string; pool: string; quantity: number; neededBy: string; availableAt: string | null; enabledBy: string | null; shortAtNeed: number; pendingInbound: string[] }
   | { code: 'staffing'; resourceIds: string[]; windowStart: string; requestedAt: string; neededMinutes: number; freeMinutes: number; occupiedBy: { jobId: string; commitmentId: string | null; protected: boolean; minutes: number }[] }
   | { code: 'protection'; commitmentId: string; protectedAt: string; projectedAt: string | null; projection: Projection; causes: Cause[] }
-  | { code: 'horizon'; horizonEnd: string };
+  | { code: 'horizon'; horizonEnd: string }
+  | { code: 'window'; windowEnd: string };
 
 export type AffectedCommitment = {
   commitmentId: string; title: string; protected: boolean;
@@ -211,6 +212,7 @@ type Steps<T> = Generator<void, T, void>;
 // ── Mundo de una alternativa ────────────────────────────────────────────────────────────────────────────────────────────────────────
 type Prepared = {
   input: DateCheckInput; nowMs: number; horizon: number; windowStart: number; windowEnd: number; requestedMinute: number;
+  /** Cierre de la ventana de la solicitud en minutos (sin recortar al horizonte); null si la ventana no se cierra. */ windowLimit: number | null;
   toMinute: (iso: string) => number; at: (minute: number) => string;
   capable: string[];
 };
@@ -237,10 +239,11 @@ function prepare(raw: DateCheckInput): Prepared {
   const toMinute = (iso: string) => Math.ceil((Date.parse(iso) - nowMs) / 60_000);
   const at = (minute: number) => new Date(nowMs + minute * 60_000).toISOString();
   const windowStart = Math.max(0, toMinute(input.request.window.start));
-  const windowEnd = input.request.window.end ? Math.min(horizon, Math.floor((Date.parse(input.request.window.end) - nowMs) / 60_000)) : horizon;
+  const windowLimit = input.request.window.end ? Math.floor((Date.parse(input.request.window.end) - nowMs) / 60_000) : null;
+  const windowEnd = windowLimit !== null ? Math.min(horizon, windowLimit) : horizon;
   const requestedMinute = Math.floor((Date.parse(input.request.requestedAt) - nowMs) / 60_000);
   const capable = input.base.resources.filter(item => item.executesJobs && input.request.skills.every(skill => item.skills.includes(skill))).map(item => item.id).sort(byId);
-  return { input, nowMs, horizon, windowStart, windowEnd, requestedMinute, toMinute, at, capable };
+  return { input, nowMs, horizon, windowStart, windowEnd, windowLimit, requestedMinute, toMinute, at, capable };
 }
 
 type Interval = [number, number];
@@ -320,6 +323,18 @@ function withBaseMaterials(p: Prepared, base: TwinModel, stock: Inventory): Twin
   return model;
 }
 
+// Línea base sin escenario: fija qué se protege y a qué fecha. Un escenario (p. ej., una baja) no puede rebajar la vara: si deja tarde algo protegido, eso es incumplirlo.
+const references = new WeakMap<Prepared, SimulationResult>();
+function referenceBaseline(p: Prepared): SimulationResult {
+  let found = references.get(p);
+  if (!found) {
+    const { base, stock } = applyScenario(p, null);
+    found = simulatePlan(withBaseMaterials(p, base, stock), base.currentPlan!.plan);
+    references.set(p, found);
+  }
+  return found;
+}
+
 function buildWorld(p: Prepared, offerIds: string[], scenario: DateCheckScenario | null, withCandidate: boolean, variant: Variant = {}): World {
   const { base, stock, withdrawn, fixedArrivals } = applyScenario(p, scenario);
   const offers = p.input.offers.filter(item => offerIds.includes(item.id));
@@ -329,6 +344,7 @@ function buildWorld(p: Prepared, offerIds: string[], scenario: DateCheckScenario
   // Línea base del escenario: plan actual completo, sin cambios declarados ni solicitud, CON el material de las demandas existentes. Fija qué se puede mover, qué ocupa la
   // agenda, las fechas de antes y lo que ya llegaba tarde por falta de material.
   const baseline = simulatePlan(withBaseMaterials(p, base, stock), base.currentPlan!.plan);
+  const reference = scenario === null ? baseline : referenceBaseline(p);
   const busy = busyIntervals(baseline, p.horizon);
   const outcome = new Map(baseline.jobs.map(item => [item.jobId, item]));
   const resourceOf = new Map(base.currentPlan!.plan.sequences.flatMap(seq => seq.jobIds.map(jobId => [jobId, seq.resourceId] as const)));
@@ -507,11 +523,12 @@ function buildWorld(p: Prepared, offerIds: string[], scenario: DateCheckScenario
 
   // Fechas de antes, de la simulación completa del plan actual (los compromisos fijos no cambian por construcción).
   const before = new Map(baseline.commitments.map(item => [item.commitmentId, { projection: item.projection, completionMinute: item.completionMinute }]));
+  const guardBefore = reference === baseline ? before : new Map(reference.commitments.map(item => [item.commitmentId, { projection: item.projection, completionMinute: item.completionMinute }]));
   const protectedDue = new Map<string, { due: number; basis: 'due' | 'projected' }>(), protectedLate: string[] = [];
   const commitments: TwinModel['commitments'] = base.commitments.filter(item => commitmentIds.has(item.id)).map(item => {
     const copy = structuredClone(item);
     if (p.input.policy.protected.includes(item.id)) {
-      const prior = before.get(item.id)!, due = Math.floor((Date.parse(item.dueAt) - p.nowMs) / 60_000);
+      const prior = guardBefore.get(item.id)!, due = Math.floor((Date.parse(item.dueAt) - p.nowMs) / 60_000);
       // Proteger lo que ya llega tarde = no empeorar su fecha proyectada. Lo indeterminado no se puede proteger con una fecha: queda sin nivel y se informa.
       if (prior.projection === 'late' && prior.completionMinute !== null) {
         protectedDue.set(item.id, { due: prior.completionMinute, basis: 'projected' }); protectedLate.push(item.id); copy.dueAt = p.at(prior.completionMinute);
@@ -563,8 +580,10 @@ function* run(model: TwinModel, objectives: Objectives, control: DateCheckContro
 }
 
 type Verdict = { meets: boolean; complete: boolean; result: PlanResult; protectedMissed: number };
+// El trabajo tiene que terminar dentro de su ventana: si la ventana se cierra antes, ese cierre es el plazo real aunque la fecha pedida sea posterior.
+const deadlineOf = (p: Prepared, minute: number) => p.windowLimit === null ? minute : Math.min(minute, p.windowLimit);
 function* tryDue(p: Prepared, world: World, minute: number, protectedFloor: number, control: DateCheckControl, tally: Tally): Steps<Verdict> {
-  const model = withDue(world.model, p.input.request.id, minute, p.at);
+  const model = withDue(world.model, p.input.request.id, deadlineOf(p, minute), p.at);
   const objectives = tiersFor(world, p.input.request.id, p.input.policy);
   const result = yield* run(model, objectives, control, tally);
   const guarded = world.protectedDue.size ? 1 : 0;
@@ -639,7 +658,7 @@ function* evaluateAlternative(p: Prepared, offerIds: string[], scenario: DateChe
   }
   const work = (() => { const job = world.model.jobs.find(item => item.id === p.input.request.id)!; return job.duration.state === 'known' && job.travel.state === 'known' ? job.duration.value + job.travel.value : null; })();
   const requestAllocations = world.allocations.filter(item => world.demandJob.get(item.demandId) === p.input.request.id);
-  const latestStart = work === null ? null : p.requestedMinute - work;
+  const latestStart = work === null ? null : deadlineOf(p, p.requestedMinute) - work;
   const demands: AlternativeResult['material']['demands'] = p.input.request.materials.map((item, index) => {
     const demandId = `${p.input.request.id}-m${index}`.slice(0, 64), parts = requestAllocations.filter(entry => entry.demandId === demandId);
     const pool = parts[0]?.pool ?? poolKey(item.warehouseId, item.sku);
@@ -664,7 +683,7 @@ function* evaluateAlternative(p: Prepared, offerIds: string[], scenario: DateChe
     }
     if (staffingOk === false && staffingRun && work !== null) {
       // Capacidad de los recursos habilitados entre el inicio de la ventana y la fecha pedida, y quién la ocupa en el mejor plan sin restricción de material.
-      const span: Interval = [p.windowStart, p.requestedMinute];
+      const span: Interval = [p.windowStart, deadlineOf(p, p.requestedMinute)];
       let freeMinutes = 0;
       const occupied = new Map<string, number>();
       for (const resourceId of p.capable) {
@@ -687,7 +706,10 @@ function* evaluateAlternative(p: Prepared, offerIds: string[], scenario: DateChe
       blockers.push({ code: 'staffing', resourceIds: p.capable, windowStart: p.at(p.windowStart), requestedAt: p.input.request.requestedAt, neededMinutes: work, freeMinutes: freeMinutes - occupiedBy.reduce((sum, item) => sum + item.minutes, 0), occupiedBy });
     }
     // Sin fecha sustentada: si el plan con el horizonte como plazo ya rompía una protección, la causa es la protección (se lista abajo), no el horizonte.
-    if (supportedMinute === null && !indeterminate && supportedProven && !protectionBound) blockers.push({ code: 'horizon', horizonEnd: p.input.base.clock.horizonEnd });
+    // Si la ventana de la solicitud se cierra antes que el horizonte, el límite que no se alcanza es la ventana.
+    if (supportedMinute === null && !indeterminate && supportedProven && !protectionBound) {
+      blockers.push(p.windowLimit !== null && p.windowLimit < p.horizon ? { code: 'window', windowEnd: p.at(p.windowLimit) } : { code: 'horizon', horizonEnd: p.input.base.clock.horizonEnd });
+    }
   }
   for (const protection of protections) if (protection.kept === false) {
     const outcome = simulation.commitments.find(item => item.commitmentId === protection.commitmentId)!;
@@ -801,13 +823,23 @@ export function* checkDateSteps(raw: DateCheckInput, control: DateCheckControl =
   for (const subset of subsets(offerIds)) alternatives.push(yield* evaluateAlternative(p, subset, null, control, true));
   const ranking = rank(alternatives);
 
-  // Matriz por escenarios declarados: solo la fecha pedida y las protecciones.
+  // Matriz por escenarios declarados: solo la fecha pedida y las protecciones. Sus búsquedas (y las de «qué confirmar primero») cuentan en el total: si se cancelan,
+  // el resultado no se puede certificar como completo.
+  const extra: Tally = { runs: 0, nodes: 0, complete: true, stoppedBy: null };
+  const fold = (search: Tally) => {
+    extra.runs += search.runs; extra.nodes += search.nodes;
+    if (!search.complete) { extra.complete = false; if (extra.stoppedBy === null) extra.stoppedBy = search.stoppedBy; }
+  };
   const scenarios: ScenarioCell[] = [];
   for (const scenario of p.input.scenarios) for (const subset of subsets(offerIds)) {
     const result = yield* evaluateAlternative(p, subset, scenario, control, false);
+    fold(result.search);
+    // Un «no llega» o una protección rota de una búsqueda incompleta no está demostrado: se informa como desconocido.
+    const broken = result.protections.some(item => item.kept === false), incomplete = !result.search.complete;
     scenarios.push({
-      scenarioId: scenario.id, alternativeId: result.id, outcome: result.available ? result.requested.outcome : 'not-available',
-      protectionsKept: result.available ? result.protections.every(item => item.kept !== false) : null, supportedAt: result.supported.at,
+      scenarioId: scenario.id, alternativeId: result.id,
+      outcome: !result.available ? 'not-available' : incomplete && result.requested.outcome === 'misses' ? 'unknown' : result.requested.outcome,
+      protectionsKept: !result.available ? null : !broken ? true : incomplete ? null : false, supportedAt: result.supported.at,
     });
   }
 
@@ -828,8 +860,8 @@ export function* checkDateSteps(raw: DateCheckInput, control: DateCheckControl =
         while (lo <= hi) {
           const mid = Math.floor((lo + hi) / 2);
           const world = buildWorld(p, others, null, true, { arrivalOverride: { inboundId: offer.inboundId, arrivalAt: p.at(mid) } });
-          const floor = (yield* run(buildWorld(p, others, null, false).model, tiersFor(world, null, p.input.policy), control, { runs: 0, nodes: 0, complete: true, stoppedBy: null })).key.missedByTier[0] ?? 0;
-          const probe = yield* tryDue(p, world, p.requestedMinute, world.protectedDue.size ? floor : 0, control, { runs: 0, nodes: 0, complete: true, stoppedBy: null });
+          const floor = (yield* run(buildWorld(p, others, null, false).model, tiersFor(world, null, p.input.policy), control, extra)).key.missedByTier[0] ?? 0;
+          const probe = yield* tryDue(p, world, p.requestedMinute, world.protectedDue.size ? floor : 0, control, extra);
           if (probe.meets) { found = mid; lo = mid + 1; } else hi = mid - 1;
         }
         entries.push({ kind: 'inbound-arrival', inboundId: offer.inboundId, alternativeId: best.id, neededBy: found === null ? null : p.at(found), dependents, weight: dependents.length * 2 + 1 });
@@ -847,15 +879,15 @@ export function* checkDateSteps(raw: DateCheckInput, control: DateCheckControl =
       const mid = Math.floor((lo + hi) / 2);
       const world = buildWorld(p, [], null, true, { durationOverride: mid });
       const floorWorld = buildWorld(p, [], null, false);
-      const floor = (yield* run(floorWorld.model, tiersFor(floorWorld, null, p.input.policy), control, { runs: 0, nodes: 0, complete: true, stoppedBy: null })).key.missedByTier[0] ?? 0;
-      const probe = yield* tryDue(p, world, p.requestedMinute, world.protectedDue.size ? floor : 0, control, { runs: 0, nodes: 0, complete: true, stoppedBy: null });
+      const floor = (yield* run(floorWorld.model, tiersFor(floorWorld, null, p.input.policy), control, extra)).key.missedByTier[0] ?? 0;
+      const probe = yield* tryDue(p, world, p.requestedMinute, world.protectedDue.size ? floor : 0, control, extra);
       if (probe.meets) { found = mid; lo = mid + 1; } else hi = mid - 1;
     }
     checkFirst.push({ kind: 'duration', subject: p.input.request.id, maxMinutes: found });
   }
 
-  const tally = alternatives.reduce((sum, item) => ({
-    runs: sum.runs + item.search.runs, nodes: sum.nodes + item.search.nodes, complete: sum.complete && item.search.complete, stoppedBy: sum.stoppedBy ?? item.search.stoppedBy,
+  const tally = [...alternatives.map(item => item.search), extra].reduce((sum, item) => ({
+    runs: sum.runs + item.runs, nodes: sum.nodes + item.nodes, complete: sum.complete && item.complete, stoppedBy: sum.stoppedBy ?? item.stoppedBy,
   }), { runs: 0, nodes: 0, complete: true, stoppedBy: null as Tally['stoppedBy'] });
   const reference = buildWorld(p, [], null, true);
   return {

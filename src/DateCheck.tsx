@@ -371,5 +371,6 @@ function blockerText(item: DateCheckAlternativeView['blockers'][number], view: D
     case 'staffing': return `${item.resources.join(', ')}: quedan ${minutes(Math.max(0, item.freeMinutes))} entre ${short(item.windowStart)} y ${short(view.request.requestedAt)}; hacen falta ${minutes(item.neededMinutes)}.${item.occupiedBy.length ? ` Lo ocupa ${item.occupiedBy.map(entry => `${entry.title} (${minutes(entry.minutes)}${entry.protected ? ', protegida' : ''})`).join(', ')}.` : ''}`;
     case 'protection': return `Rompería la fecha protegida de ${item.title} (${short(item.protectedAt)}): ${item.projectedAt ? `pasaría a ${short(item.projectedAt)}` : 'no terminaría'}.`;
     case 'horizon': return `No cabe dentro de la semana de ensayo (hasta ${short(item.horizonEnd)}).`;
+    case 'window': return `No cabe dentro de la ventana de la solicitud (hasta ${short(item.windowEnd)}).`;
   }
 }

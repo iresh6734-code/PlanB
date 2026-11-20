@@ -14,7 +14,7 @@ import { formatRecordSort } from '../../shared/record-order.js';
 import { InlineSelect } from './InlineSelect.js';
 import { BulkBar } from './BulkBar.js';
 import { bulkFields, type BulkItem, type BulkResult } from './bulk-edit.js';
-import { PipelineStats } from './lazy-pages.js';
+import { PipelineStats, RescheduleBar } from './lazy-pages.js';
 import { ProBadge } from './ProBadge.js';
 
 const singular: Record<EntityName, string> = { contacts: 'Nuevo cliente', companies: 'Nueva empresa', deals: 'Nueva oportunidad', tasks: 'Nueva tarea' };
@@ -233,6 +233,7 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
     {moveNote ? <p className="gx-move-note" data-tone={moveNote.tone} role={moveNote.tone === 'error' ? 'alert' : 'status'}>{moveNote.text}{moveNote.undo && canUndo && onUndo ? <button type="button" className="gx-move-undo" onClick={() => { setMoveNote(null); onUndo(); }}>Deshacer</button> : null}<button type="button" className="icon-button" aria-label="Cerrar aviso" onClick={() => setMoveNote(null)}>×</button></p> : null}
     {entityName === 'deals' && board?.error ? <p className="gx-board-note" data-tone="error" role="status">No se pudo leer todo el proceso; el tablero muestra las {rows.length} oportunidades de esta página.</p>
       : live && (live.loading || partial) ? <p className="gx-board-note" role="status">{pagedLabel(live, live.loading, DEAL_NOUN)}{!live.loading && partial ? '. Busca o elige un proceso para ver el resto.' : ''}</p> : null}
+    {entityName === 'deals' && activeSmart?.id === 'close-late' && saveMany && closeField && !closeField.readOnly ? <RescheduleBar spec={spec} closeKey={closeField.key} amountKey={amountKey} today={today} late={filtered} partial={partial} fresh={freshRecord} reloading={recordsLoading || !!live?.loading} saveMany={saveMany} /> : null}
     {entityName === 'deals' ? <div className="kanban" aria-label="Tablero de oportunidades" aria-busy={live?.loading ? 'true' : undefined}>{stages.map((stage, stageIndex) => {
       const deals = filtered.filter(r => r.values[stageKey] === stage.id);
       const open = expanded.has(stage.id), cards = open ? deals : deals.slice(0, CARD_CAP);

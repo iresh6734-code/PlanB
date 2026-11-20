@@ -70,6 +70,14 @@ La quinta condición cambia: la revisión visual ya no se deja para casa, se hac
 | C1 | **Orden y compactación.**<br>Selector de marca de Continuidad dentro de la pantalla en móvil; «Comprobar fecha» (antes «Comprobar una fecha») cabe en una línea del menú; acciones de la ficha en una fila («Escribir · Copiar · Llamar · Tarea · Oportunidad», con su nombre completo para lectores de pantalla); campos del cajón alineados arriba; etiquetas en minúscula inicial en Revisión semanal, Plan y Fusionar; Exportar reequilibrado en dos columnas (solo la disposición, sin tocar sus campos). | CSS de cada página, `navigation.ts`, `RecordSummary.tsx` | `css-unused`, `ui-copy`, `record-sheet`, `bundle-budget` | Hecha |
 | C2 | **Agenda «Al calendario».**<br>Descarga el periodo visible como archivo .ics (días completos, sin ocupar la jornada) para importarlo en Outlook o Google Calendar. Se genera en el navegador, sin red; el UID sale del registro, así que importar otra vez actualiza en lugar de duplicar. | `agenda-grid.ts` (`agendaIcs`), `csv.ts` (`downloadText`), `Agenda.tsx`, `agenda.css` | `agenda` | Hecha |
 
+## Ronda D (20/11/2026)
+
+| ID | Tarea | Archivos | Prueba segura | Estado |
+|---|---|---|---|---|
+| D1 | **«Comprobar fecha» fiable.**<br>Un trabajo que se pasa de la ventana pedida ya no cuenta como que cabe; las protecciones se juzgan frente a la base sin escenario, así que una ausencia de técnico no las rebaja; una búsqueda de escenarios cancelada o incompleta da resultado «desconocido» en vez de certificar; la decisión y el cierre exigen que coincidan alternativa y solicitud. | `shared/operational-date-check.ts`, `shared/date-check-outcome.ts`, `shared/date-check-api.ts`, `DateCheck.tsx` | `date-check`, `decision-review`, `operational-rehearsal` | Hecha |
+| D2 | **Modo oscuro y ventanas.**<br>Fuera los verdes azulados fijos del tablero, cajones y esqueletos (ahora con tokens); títulos de Novedades legibles; «Atajos» sin barra de desplazamiento. | `faro.css`, `whats-new.css` | `color-guard`, `css-unused`, `design-tokens` | Hecha |
+| D3 | **Reprogramar cierres pasados.**<br>En Oportunidades › «Cierre pasado», reparte las fechas vencidas en los próximos días laborables (1, 2, 3 o 5 al día; primero las de más importe; sin fines de semana), con vista previa, progreso, «Detener» y deshacer el lote. Todo local y anotado en Cambios. | `reschedule.ts`, `RescheduleBar.tsx`, `RecordsPage.tsx`, `lazy-pages.tsx`, `faro.css`, `whats-new.ts` | `reschedule`, `bulk-edit`, `whats-new` | Hecha |
+
 ## 2. Orden
 
 1. Bloque A completo, una construcción, pruebas de guardia y una ronda visual en escritorio y móvil, más el modo oscuro de Inicio y Continuidad.

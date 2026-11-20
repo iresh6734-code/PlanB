@@ -74,6 +74,7 @@ const blocker = z.discriminatedUnion('code', [
   z.object({ code: z.literal('staffing'), resources: z.array(short).max(8), windowStart: at, neededMinutes: z.number().int(), freeMinutes: z.number().int(), occupiedBy: z.array(z.object({ title: short, protected: z.boolean(), minutes: z.number().int() }).strict()).max(16) }).strict(),
   z.object({ code: z.literal('protection'), title: short, protectedAt: at, projectedAt: at.nullable(), projection }).strict(),
   z.object({ code: z.literal('horizon'), horizonEnd: at }).strict(),
+  z.object({ code: z.literal('window'), windowEnd: at }).strict(),
 ]);
 const condition = z.object({ code: z.string().max(40), label: text }).strict();
 

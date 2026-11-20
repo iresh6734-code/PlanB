@@ -58,9 +58,11 @@ function evaluate(input: DateCheckInput, offerIds: string[]) {
 export function reviewDecision(input: DateCheckInput, decision: DecisionRef, observations: Observation[]): DecisionReview {
   const parsed = dateCheckInput.parse(input);
   if (dateCheckRevision(parsed) !== decision.inputRevision) throw new RangeError('La entrada no es la revisión exacta de la decisión.');
+  if (decision.alternativeId !== altId(decision.offerIds)) throw new RangeError('El ID de la alternativa no corresponde a las ofertas de la decisión.');
   const planned = evaluate(parsed, decision.offerIds);
   const offers = parsed.offers.filter(item => decision.offerIds.includes(item.id));
-  const finishObservation = observations.find(item => item.kind === 'finish') ?? null;
+  // Solo cuenta el acta de esta solicitud: la de otro trabajo no dice nada de esta decisión.
+  const finishObservation = observations.find(item => item.kind === 'finish' && item.subject === parsed.request.id) ?? null;
 
   const conditions: ConditionReview[] = offers.map(offer => {
     if (offer.type === 'confirm-arrival') {
@@ -109,8 +111,10 @@ export function reviewDecision(input: DateCheckInput, decision: DecisionRef, obs
 export function withFinish(review: DecisionReview, finish: Observation | null, all: Observation[] = []): DecisionReview {
   const partialEvidence = [...all, ...(finish ? [finish] : [])].some(item => item.scope === 'partial');
   if (!finish) return { ...review, observed: { finishAt: null, met: null, observation: null }, attribution: { ...review.attribution, partialEvidence }, verdict: 'pending' };
-  const met = finish.happenedAt !== null && review.offeredAt !== null && Date.parse(finish.happenedAt) <= Date.parse(review.offeredAt);
-  const planned = review.planned.finishAt, cf = review.counterfactual?.finishAt ?? null;
+  // Sin fecha ofrecida no hay contra qué juzgar: el desenlace queda por comprobar en lugar de darse por incumplido.
+  const met = review.offeredAt === null ? null : finish.happenedAt !== null && Date.parse(finish.happenedAt) <= Date.parse(review.offeredAt);
+  // Una proyección no probada (búsqueda incompleta) no acredita ninguna parte del retraso.
+  const planned = review.planned.finishAt, cf = review.counterfactual?.proven ? review.counterfactual.finishAt : null;
   let delay: number | null = null, explained: number | null = null, residual: number | null = null;
   if (planned && finish.happenedAt) {
     delay = Math.max(0, minutesBetween(finish.happenedAt, planned));
@@ -123,7 +127,7 @@ export function withFinish(review: DecisionReview, finish: Observation | null, a
   return {
     ...review, observed: { finishAt: finish.happenedAt, met, observation: finish },
     attribution: { delayMinutes: delay, explainedMinutes: explained, residualMinutes: residual, explainedBy, partialEvidence },
-    verdict: !met ? 'missed' : allHeld ? 'met-as-offered' : 'met-differently',
+    verdict: met === null ? 'pending' : !met ? 'missed' : allHeld ? 'met-as-offered' : 'met-differently',
   };
 }
 

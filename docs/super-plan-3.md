@@ -78,6 +78,21 @@ La quinta condición cambia: la revisión visual ya no se deja para casa, se hac
 | D2 | **Modo oscuro y ventanas.**<br>Fuera los verdes azulados fijos del tablero, cajones y esqueletos (ahora con tokens); títulos de Novedades legibles; «Atajos» sin barra de desplazamiento. | `faro.css`, `whats-new.css` | `color-guard`, `css-unused`, `design-tokens` | Hecha |
 | D3 | **Reprogramar cierres pasados.**<br>En Oportunidades › «Cierre pasado», reparte las fechas vencidas en los próximos días laborables (1, 2, 3 o 5 al día; primero las de más importe; sin fines de semana), con vista previa, progreso, «Detener» y deshacer el lote. Todo local y anotado en Cambios. | `reschedule.ts`, `RescheduleBar.tsx`, `RecordsPage.tsx`, `lazy-pages.tsx`, `faro.css`, `whats-new.ts` | `reschedule`, `bulk-edit`, `whats-new` | Hecha |
 
+## Rediseño «Consola de operaciones» (20/11/2026)
+
+El usuario rechazó el aspecto de Agenda y Oportunidades («horroroso»). La identidad «Cuaderno» se sustituye entera por **«Consola de operaciones»**: bastidor grafito para el menú, mesa gris lisa, bahías con su regla superior y tiras claras, cobalto para actuar, señal para vencido y ámbar para revisar. El sistema está descrito en `DESIGN.md` y el contrato de dirección en `.impeccable/surfaces/src-app-shell.md`. No cambia ningún texto, función, prueba de copia ni pantalla de acceso.
+
+| Pieza | Qué cambia | Archivos | Prueba segura |
+|---|---|---|---|
+| Capa global | `src/consola.css` sustituye a `src/cuaderno.css` (borrado) y se importa la última. `css-unused --dedupe` quitó de `faro.css` 21 declaraciones pisadas. | `consola.css`, `main.tsx`, `faro.css` | `design-tokens`, `color-guard`, `css-unused`, `bundle-budget`, `design-k-block`, `record-sheet` |
+| Agenda | A toda altura en escritorio, sin desplazar el documento. La regla de cifras, la de más carga y las acciones van dentro del calendario. La semana son carriles con línea de capacidad y el mes reparte el alto. El panel del día se desplaza por dentro, con el recuento de lo vencido. En móvil, las cifras forman una regla de cuatro columnas. Tipo de elemento con sello, sin franja lateral. | `Agenda.tsx`, `agenda.css` | `agenda` |
+| Oportunidades | Cada etapa es una bahía hundida con la regla de su etapa arriba, y las fichas son tiras de tres filas. | `consola.css` | `record-list` |
+| Barra superior móvil | La copia se queda en su antigüedad con elipsis (el rótulo completo sigue para lectores de pantalla). La ayuda «?» pasa a la paleta. | `TopBar.tsx`, `consola.css` | `ui-copy` |
+| Listas en móvil | Correo y web ocupan la fila entera de la tarjeta. El título de la página no se recorta por las acciones. | `consola.css` | `record-list` |
+| Inicio | Mismo hueco entre bloques, rótulos de tarjeta alineados a 16 px y el rombo del Radar también en la leyenda. | `consola.css` | `continuity-home-hub` |
+
+**Comprobado en el navegador** a 1440 y 1366 px en claro y oscuro y a 390 px. Resultado: 51/51 pruebas seguras y CSS inicial dentro del presupuesto. El detector de diseño solo marcó la franja lateral de la Agenda, ya quitada.
+
 ## 2. Orden
 
 1. Bloque A completo, una construcción, pruebas de guardia y una ronda visual en escritorio y móvil, más el modo oscuro de Inicio y Continuidad.

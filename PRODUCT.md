@@ -19,7 +19,7 @@ La fuente 0.4 añade Hoy, Agentes e Integraciones y propuestas de seguimiento en
 
 La 0.5 prepara un servicio de equipos independiente: roles, empresas aisladas mediante PostgreSQL/RLS, trabajos persistentes, OAuth HubSpot de lectura y vinculación de réplica local con revisiones/conflictos. La demo utiliza dos empresas ficticias y PostgreSQL embebido; identidad gestionada y despliegue GCP requieren aceptación real. El CRM local sigue siendo un operador/portal por carpeta; la réplica no reemplaza sus datos y no devuelve cambios a HubSpot. Infraestructura y estimación se revisan antes de contratar.
 
-Nombre Plan B, español, papel de cuaderno de papelería (identidad «Cuaderno · tinta y papel», ver DESIGN.md): papel marfil, menú de cartón kraft, texto oscuro y tinta ultramar. Conservar tablas legibles y edición lateral de la demo.
+Nombre Plan B, español, consola de operaciones de una oficina comercial (identidad «Consola de operaciones», ver DESIGN.md): bastidor grafito para el menú, mesa gris lisa, bahías y tiras claras, cobalto para actuar. Conservar tablas legibles y edición lateral de la demo.
 
 La fuente 0.6 añade un espacio comercial con borradores y aprobaciones ligadas a la revisión, tareas internas, adaptadores Google de permisos acotados y evidencia de resultados. La demo no accede a cuentas. Documentos autorizados vinculados y Sheets con vista previa amplían el contexto comercial; HubSpot mantiene lectura. Una aceptación de Gmail no se presenta como entrega y las operaciones inciertas no se repiten automáticamente. El submenú de Trabajar y los logos oficiales conservan el lenguaje visual aprobado.
 ## Evidence on Hand

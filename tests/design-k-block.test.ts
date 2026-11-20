@@ -26,12 +26,12 @@ test('K4 · densidad: solo «comfortable» activa la cómoda; cualquier otro val
 });
 
 test('K4 · la densidad cómoda sube las filas a 40 px solo en escritorio', () => {
-  const css = read('cuaderno.css');
+  const css = read('consola.css');
   assert.match(css, /@media \(min-width: 601px\) \{ html\[data-density="comfortable"\] \{[^}]*--row-h: 40px/);
 });
 
 test('K2 · tachado y sello animados, y quietos con movimiento reducido', () => {
-  const css = read('cuaderno.css');
+  const css = read('consola.css');
   assert.match(css, /@keyframes k2-strike/);
   assert.match(css, /@keyframes k2-stamp/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{ html body \.gx-focus-card\[data-done\] h3::after, html body \.ct-seal-mark \.seal-badge \{ animation: none; \} \}/);

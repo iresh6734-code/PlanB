@@ -4,6 +4,30 @@
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
 
+## Rediseño «Consola de operaciones» · 20/11/2026, 13:40, Europe/Madrid
+
+El usuario rechazó el aspecto de Agenda y Oportunidades («horroroso») y pidió diseño de experto. La identidad «Cuaderno» se sustituye entera por **«Consola de operaciones»**: bastidor grafito para el menú, mesa gris lisa, bahías con regla superior y tiras claras, cobalto para actuar (`#2853d0`, oscuro `#3d63db`), señal para vencido y ámbar para revisar. Se usó la dirección A porque el formulario de dirección quedó sin respuesta. El catálogo de impeccable se consultó una vez en línea, sin enviar datos del proyecto.
+
+- **Capa global:** `src/consola.css` sustituye a `src/cuaderno.css` (borrado) y se importa la última en `src/main.tsx`. Las variables heredadas del cuaderno se siguen definiendo. `css-unused --dedupe --write` quitó 21 declaraciones pisadas de `faro.css`. Las pruebas `design-tokens`, `design-k-block` y `record-sheet` leen ahora `consola.css`, y `color-guard` pierde la clave `cuaderno.css` de su línea base.
+- **Agenda:** `Agenda.tsx` y `agenda.css` reestructurados.
+  - A toda altura en escritorio: `calc(100dvh - 90px)`, igual al alto de la ventana.
+  - La regla de cifras, la de más carga y las acciones van dentro del calendario.
+  - Los carriles de la semana llevan una línea de capacidad.
+  - El panel del día se desplaza por dentro, con el recuento de lo vencido y su nota al pie.
+  - El tipo de elemento se marca con un sello de 6 px (gris tarea, cobalto cierre, señal si vence), sin franja lateral.
+- **Oportunidades:** etapas como bahías hundidas con la regla de su etapa y fichas como tiras.
+- **Móvil:**
+  - La barra superior deja la copia en su antigüedad (`.gx-copy-text` / `.gx-copy-what` en `TopBar.tsx`; el rótulo sigue para lectores de pantalla) y la ayuda «?» pasa a la paleta.
+  - Las cifras de la Agenda forman una regla de cuatro columnas.
+  - Correo y web ocupan la fila entera en las tarjetas de lista.
+  - El título de la lista no se recorta.
+- **Inicio:** un solo hueco entre bloques, rótulos de tarjeta a 16 px y el rombo del Radar en la leyenda.
+- **Documentación:** `DESIGN.md` reescrito para la Consola. También se actualizaron la línea de marca de `PRODUCT.md`, la nota de `docs/super-plan-3.md` y el brief `.impeccable/surfaces/src-app-shell.md`.
+- **Comprobación:**
+  - En la pestaña de la app: 1440 y 1366 px en claro y oscuro, y 390 px.
+  - 51/51 pruebas seguras y CSS inicial dentro de 380.928 B.
+  - El detector de diseño solo marcó la franja lateral de la Agenda, ya quitada.
+
 ## Super plan 2 · Bloque 8, décima parte (T4, T3 aplazada) · 19/11/2026
 
 - **T4 · `CommitmentRadar.tsx` y `ContinuityHome.tsx` por porciones.** `src/commitment-radar-text.ts` reúne los tipos `Status`, `Role` y `Draft`, los rótulos (`GROUPS`, `STATUS_LABEL`, `ROLE_LABEL`, `EVIDENCE_LABEL`, `CONDITION_LABEL`, `COVERAGE_LABEL`, `BASIS_LABEL`, `EFFECT`) y los ayudantes `when`, `emptyDraft`, `dirty`, `causeText`, `providerLabel` y `toLocalInput`; en el componente quedan los iconos y las piezas que pintan. `src/app-shell/continuity-home-logic.ts` reúne `LEDGER_FILTERS`, `LEDGER_PAGE`, `pageLedger` (cupo de capturas repartido entre días, sin días vacíos, y cuántas quedan ocultas) y `nextActionBlocked` (cuándo no se puede pulsar la acción recomendada). Las cadenas que fijan `continuity-home-hub` e `independent-copy-inspection-api` siguen en `ContinuityHome.tsx`. Pruebas: `tests/commitment-radar-text.test.ts` y `tests/continuity-home-logic.test.ts`.
@@ -47,23 +71,23 @@ El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](C
 
 ## Super plan 2 · Bloque 8, segunda parte (K10) · 19/11/2026
 
-- **K10 · Hoja inferior**: bloque `K10` al final de `cuaderno.css` (`@media (max-width: 760px)`, `@keyframes k10-sheet-in`; quieto con `prefers-reduced-motion` por la regla global). Sin cambios de JS.
+- **K10 · Hoja inferior**: bloque `K10` al final de `consola.css` (antes `cuaderno.css`) (`@media (max-width: 760px)`, `@keyframes k10-sheet-in`; quieto con `prefers-reduced-motion` por la regla global). Sin cambios de JS.
 - Prueba estática en `tests/record-sheet.test.ts`.
 
 ## Super plan 2 · Bloque 8, primera parte (K7, K8) y CSS diferido · 19/11/2026
 
-- **K7 · Ficha como hoja**: `src/app-shell/record-sheet.ts` (puro: `recordStamp` con `closeStatus`/`dueStatus`/`stageKind` de `deal-insights.ts`; `isWideField`). `RecordDrawer` pinta `.drawer-stamp[data-tone]` en la cabecera y `data-wide` en los campos largos; estilos al final de `cuaderno.css` (solo tokens).
+- **K7 · Ficha como hoja**: `src/app-shell/record-sheet.ts` (puro: `recordStamp` con `closeStatus`/`dueStatus`/`stageKind` de `deal-insights.ts`; `isWideField`). `RecordDrawer` pinta `.drawer-stamp[data-tone]` en la cabecera y `data-wide` en los campos largos; estilos al final de `consola.css` (antes `cuaderno.css`) (solo tokens).
 - **K8**: `HomeOverview.tsx`, `FirstRun.tsx` (`FirstRunStrip`), `PipelineCard.tsx`.
 - **CSS diferido**: bloques `wr-*`, sello (R5) y `mb-*` (R6) salen de `faro.css` a hojas importadas por `WeeklyReview.tsx`, `ContinuitySeal.tsx` y `MorningBrief.tsx`. Conservan la especificidad `html body`.
 - Pruebas: `tests/record-sheet.test.ts` (K7, K8). `tests/ui-journeys.test.ts` resuelve ahora cada importación respecto al archivo que la hace (antes, respecto a `src/`), así que ya se pueden montar módulos de `app-shell/` con dependencias propias.
 
 ## Super plan 2 · Bloque 7, segunda parte (K4, K2, K3, K5) y revisión de diseño · 19/11/2026
 
-- **K4 · Densidad**: `theme.ts` + `cuaderno.css` (`html[data-density="comfortable"]`, solo ≥ 601 px). Paleta → «Densidad».
-- **K2 · Gestos**: `@keyframes k2-strike` / `k2-stamp` en `cuaderno.css`, con su regla de `prefers-reduced-motion`.
+- **K4 · Densidad**: `theme.ts` + `consola.css` (antes `cuaderno.css`) (`html[data-density="comfortable"]`, solo ≥ 601 px). Paleta → «Densidad».
+- **K2 · Gestos**: `@keyframes k2-strike` / `k2-stamp` en `consola.css` (antes `cuaderno.css`), con su regla de `prefers-reduced-motion`.
 - **K3 · `EmptyArt`**: `ui/index.tsx`, estilos `.ui-empty-art` en `faro.css`.
-- **K5 · `print.css`**: importada tras `design-system.css` (las cuatro últimas capas siguen siendo `planb-ui`, `operaciones-claras`, `faro`, `cuaderno`); cabecera puesta en `beforeprint` desde `main.tsx`.
-- **Revisión de diseño**: arreglos por apartado en `faro.css`, `cuaderno.css`, `continuity-insights.css`, `continuity-lab.css`, `license-panel.css`, `team-sync.css`, `WeeklyReview.tsx` (`data-wide`), `ContinuityHome.tsx`.
+- **K5 · `print.css`**: importada tras `design-system.css` (las cuatro últimas capas siguen siendo `planb-ui`, `operaciones-claras`, `faro`, `consola`); cabecera puesta en `beforeprint` desde `main.tsx`.
+- **Revisión de diseño**: arreglos por apartado en `faro.css`, `consola.css` (antes `cuaderno.css`), `continuity-insights.css`, `continuity-lab.css`, `license-panel.css`, `team-sync.css`, `WeeklyReview.tsx` (`data-wide`), `ContinuityHome.tsx`.
 - Pruebas: `tests/design-k-block.test.ts` (K2–K5). `css-unused --dedupe --write` quitó 5 declaraciones pisadas; línea base de colores rebajada.
 - CSS inicial 388,9 kB de 389,1 kB: lo nuevo del bloque 8 va en hojas diferidas o se compensa podando.
 

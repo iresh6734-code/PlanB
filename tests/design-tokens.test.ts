@@ -65,10 +65,10 @@ test('estilo: sin gradientes ni cristal esmerilado en la capa nueva', () => {
 });
 
 // 11/11/2026 · «Operaciones claras» (CLAUDE-OPUS-UI-OPERACIONES-CLARAS) va DESPUÉS de planb-ui.css: redefine sus tokens y debe ganar la cascada.
-test('orden de carga: planb-ui.css, operaciones-claras.css, faro.css y cuaderno.css son las últimas hojas globales de main.tsx', () => {
+test('orden de carga: planb-ui.css, operaciones-claras.css, faro.css y consola.css son las últimas hojas globales de main.tsx', () => {
   const main = readFileSync(new URL('../src/main.tsx', import.meta.url), 'utf8');
   const imports = [...main.matchAll(/import '\.\/([a-z-]+\.css)'/g)].map(m => m[1]);
-  assert.deepEqual(imports.slice(-4), ['planb-ui.css', 'operaciones-claras.css', 'faro.css', 'cuaderno.css']);
+  assert.deepEqual(imports.slice(-4), ['planb-ui.css', 'operaciones-claras.css', 'faro.css', 'consola.css']);
   const claras = readFileSync(new URL('../src/operaciones-claras.css', import.meta.url), 'utf8');
   const own = new Map([...(/:root\s*\{([\s\S]*?)\n\}/.exec(claras)?.[1] ?? '').matchAll(/--([a-z0-9-]+)\s*:\s*([^;]+);/g)].map(m => [m[1], m[2].trim()]));
   for (const text of ['text-1', 'text-2', 'text-3']) for (const surface of ['bg-surface', 'bg-canvas', 'bg-subtle'])
@@ -93,15 +93,15 @@ test('grafito: la paleta efectiva cumple AA en texto, barra lateral, acción y e
   assert.match(grafito, /@media \(max-width: 600px\) \{ :root \{[^}]*--control-h: 40px/, 'en móvil los controles suben a 40 px');
 });
 
-// Rediseño «Cuaderno» (21/11/2026): cuaderno.css es la capa final; se verifican los tokens EFECTIVOS en claro y en oscuro.
-test('cuaderno: la paleta efectiva cumple AA en claro y en oscuro y fija la densidad de escritorio', () => {
+// Rediseño «Consola de operaciones» (22/11/2026): consola.css es la capa final; se verifican los tokens EFECTIVOS en claro y en oscuro.
+test('consola: la paleta efectiva cumple AA en claro y en oscuro y fija la densidad de escritorio', () => {
   const read = (file: string) => readFileSync(new URL('../src/' + file, import.meta.url), 'utf8');
   const apply = (into: Map<string, string>, source: string, selector: RegExp) => { for (const block of source.matchAll(selector)) for (const m of block[1].matchAll(/--([a-z0-9-]+)\s*:\s*([^;]+);/g)) into.set(m[1], m[2].trim()); };
   const rootBlocks = /^:root\s*\{([^}]*)\}/gm, darkBlocks = /^html\[data-theme="dark"\]\s*\{([^}]*)\}/gm;
-  const faro = read('faro.css'), cuaderno = read('cuaderno.css');
-  const light = new Map(tokens); apply(light, faro, rootBlocks); apply(light, cuaderno, rootBlocks);
-  const dark = new Map(light); apply(dark, faro, darkBlocks); apply(dark, cuaderno, darkBlocks);
-  assert.equal(light.get('primary'), '#2f3e9e', 'se están comprobando los tokens del Cuaderno (tinta ultramar)');
+  const faro = read('faro.css'), consola = read('consola.css');
+  const light = new Map(tokens); apply(light, faro, rootBlocks); apply(light, consola, rootBlocks);
+  const dark = new Map(light); apply(dark, faro, darkBlocks); apply(dark, consola, darkBlocks);
+  assert.equal(light.get('primary'), '#2853d0', 'se están comprobando los tokens de la Consola (cobalto)');
   for (const [name, eff] of [['claro', light], ['oscuro', dark]] as const) {
     const c = (fg: string, bg: string) => { const a = eff.get(fg) ?? '', b = eff.get(bg) ?? ''; assert.match(a + b, /^#[0-9a-f]{6}#[0-9a-f]{6}$/i, `${name}: --${fg}/--${bg} deben ser #rrggbb`); return contrast(a, b); };
     for (const text of ['text-1', 'text-2', 'text-3']) for (const surface of ['bg-surface', 'bg-canvas', 'bg-subtle', 'bg-hover', 'bg-active']) assert.ok(c(text, surface) >= 4.5, `${name}: ${text} sobre ${surface}: ${c(text, surface).toFixed(2)}`);
@@ -112,5 +112,5 @@ test('cuaderno: la paleta efectiva cumple AA en claro y en oscuro y fija la dens
     assert.ok(c('primary', 'bg-surface') >= 3, `${name}: anillo de foco`);
   }
   assert.equal(light.get('control-h'), '28px'); assert.equal(light.get('row-h'), '32px'); assert.equal(light.get('fs-h1'), '20px');
-  assert.match(cuaderno, /@media \(max-width: 600px\) \{ :root \{[^}]*--control-h: 40px/, 'en móvil los controles suben a 40 px');
+  assert.match(consola, /@media \(max-width: 600px\) \{ :root \{[^}]*--control-h: 40px/, 'en móvil los controles suben a 40 px');
 });

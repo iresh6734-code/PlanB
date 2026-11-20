@@ -21,7 +21,7 @@ export function TopBar({ state, pageLabel, teamOrigin, openContinuity, openChang
   return <>
     <div className="workspace-context gx-topbar">
       {state.snapshot ? <button type="button" className={'gx-copy ' + (state.disconnected ? 'independent' : '')} data-stale={copyStale ? 'true' : undefined} title={copyLabel + ': ' + (copy.date ?? 'fecha no disponible') + '. Abrir Continuidad'} onClick={openContinuity}>
-        <i className="dot" />{copyLabel} · {copy.age ?? 'fecha no disponible'}
+        <i className="dot" /><span className="gx-copy-text"><span className="gx-copy-what">{copyLabel} · </span>{copy.age ?? 'fecha no disponible'}</span>
         {changes > 0 && !openChanges ? <b>{changesText}</b> : null}
       </button> : null}
       {state.snapshot && changes > 0 && openChanges && pageLabel !== 'Cambios' ? <button type="button" className="gx-changes" aria-label={changesText + ' locales: revisar en Cambios'} title="Cambios locales pendientes de devolver. Revisarlos en Cambios" onClick={openChanges}>

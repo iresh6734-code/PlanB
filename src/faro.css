@@ -835,7 +835,7 @@ html body th[aria-sort="ascending"] .gx-sort, html body th[aria-sort="descending
 html body th[aria-sort="ascending"] .gx-sort::after { opacity: 1; transform: rotate(180deg); }
 html body th[aria-sort="descending"] .gx-sort::after { opacity: 1; }
 html body .gx-total strong { color: var(--text-1); font-weight: 650; font-variant-numeric: tabular-nums; }
-html body .kanban-column .gx-sum { font-size: var(--fs-sm); font-weight: 650; font-variant-numeric: tabular-nums; }
+html body .kanban-column .gx-sum { font-weight: 650; font-variant-numeric: tabular-nums; }
 html body .record-link:focus-visible { outline-offset: 3px; }
 html body .table-container tbody tr:focus-within td { background: var(--bg-row-hover); }
 
@@ -1629,17 +1629,17 @@ html body .oc-copy-alerts strong { font-weight: 600; color: var(--text-1); }
 html body .oc-copy-alerts .oc-link { flex: none; white-space: nowrap; }
 @media (max-width: 600px) { html body .oc-copy-alerts li { flex-wrap: wrap; } }
 /* ---- Vistas de las listas: inteligentes (destello), guardadas (marcador) y «Guardar vista» ---- */
-html body .gx-views { display: flex; flex-wrap: wrap; align-items: center; margin: -4px 0 12px; }
+html body .gx-views { display: flex; align-items: center; }
 html body .gx-view, html body .gx-view-add { display: inline-flex; align-items: center; gap: 5px; min-height: 28px; padding: 0 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg-surface); font: inherit; font-size: var(--fs-sm); font-weight: 550; color: var(--text-2); cursor: pointer; transition: background-color 110ms, border-color 110ms, color 110ms; }
 html body .gx-view:hover, html body .gx-view-add:hover:not(:disabled) { border-color: var(--border-strong); color: var(--text-1); }
 html body .gx-view svg { color: var(--text-3); }
-html body .gx-view > span { min-width: 18px; padding: 0 5px; border-radius: 9px; background: var(--bg-subtle); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; color: var(--text-2); text-align: center; }
+html body .gx-view > span { min-width: 18px; padding: 0 5px; background: var(--bg-subtle); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; color: var(--text-2); text-align: center; }
 html body .gx-view[aria-pressed="true"] { border-color: var(--primary); background: var(--primary-subtle); color: var(--primary-text); }
 html body .gx-view[aria-pressed="true"] svg { color: var(--primary-text); }
 html body .gx-view[aria-pressed="true"] > span { background: var(--primary); color: var(--text-inverse); }
 html body .gx-view-saved { display: inline-flex; align-items: center; }
 html body .gx-view-saved .gx-view { border-top-right-radius: 0; border-bottom-right-radius: 0; }
-html body .gx-view-remove { display: inline-grid; place-items: center; width: 26px; min-height: 28px; margin-left: -1px; border: 1px solid var(--border); border-radius: 0 999px 999px 0; background: var(--bg-surface); color: var(--text-3); cursor: pointer; }
+html body .gx-view-remove { display: inline-grid; place-items: center; margin-left: -1px; border: 1px solid var(--border); background: var(--bg-surface); color: var(--text-3); cursor: pointer; }
 html body .gx-view-remove:hover { color: var(--danger); border-color: var(--border-strong); }
 html body .gx-view-add { border-style: dashed; color: var(--primary-text); background: transparent; }
 html body .gx-view-add:disabled { color: var(--text-3); cursor: default; opacity: .75; }
@@ -1655,7 +1655,7 @@ html body .gx-col-more { width: 100%; min-height: 32px; margin-top: 2px; border:
 html body .gx-col-more:hover { background: var(--bg-surface); border-style: solid; }
 html body .gx-col-more:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 @media (max-width: 600px) {
-  html body .gx-views { flex-wrap: nowrap; overflow-x: auto; margin-inline: calc(var(--page-gutter) * -1); padding: 2px var(--page-gutter) 4px; scrollbar-width: none; }
+  html body .gx-views { margin-inline: calc(var(--page-gutter) * -1); }
   html body .gx-view, html body .gx-view-add, html body .gx-view-remove { min-height: 44px; flex: none; }
   html body .gx-view-form { flex-wrap: nowrap; }
   html body .main-content .gx-view-form input { width: 160px; min-height: 44px !important; height: 44px !important; }
@@ -1941,9 +1941,8 @@ html body .sidebar .oc-search::after { display: none; }
 html body .kanban-column { background: var(--bg-subtle); border: 1px solid var(--border); border-top: 3px solid var(--stage, var(--border-strong)); padding: 8px; gap: 7px; }
 html body .kanban-column[data-kind="won"] { border-top-color: var(--success); background: color-mix(in srgb, var(--success-bg) 60%, var(--bg-surface)); }
 html body .kanban-column[data-kind="lost"] { border-top-color: var(--text-3); }
-html body .kanban-column h2 .dot { display: none; }
 html body .kanban-column h2 small { background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-2); }
-html body .kanban-column .gx-sum { display: flex; align-items: center; gap: 8px; margin: -3px 0 1px; padding: 0 4px; color: var(--text-2); }
+html body .kanban-column .gx-sum { display: flex; align-items: center; gap: 8px; }
 html body .gx-share { flex: 1 1 auto; max-width: 90px; height: 4px; border-radius: 2px; background: var(--border); overflow: hidden; }
 html body .gx-share i { display: block; height: 100%; border-radius: 2px; background: var(--stage, var(--primary)); }
 html body .kanban-column[data-empty="true"] .column-empty { padding: 8px; border-color: var(--border-strong); background: transparent; }
@@ -2119,10 +2118,9 @@ html body .gx-due-rel[data-tone="late"] { background: var(--danger-bg); color: v
 html body .gx-due-rel[data-tone="soon"] { background: var(--warning-bg); color: var(--warning); }
 
 /* Tablero: «+» en la cabecera de cada etapa abierta para crear una oportunidad ya en ella (18/11). */
-html body .kanban-column h2 .gx-col-add { display: inline-grid; place-items: center; width: 24px; height: 24px; margin-left: 2px; padding: 0; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--text-2); cursor: pointer; }
-html body .kanban-column h2 .gx-col-add:hover { border-color: var(--border-strong); background: var(--bg-surface); color: var(--primary-text); }
+html body .kanban-column h2 .gx-col-add { display: inline-grid; place-items: center; margin-left: 2px; padding: 0; border: 1px solid transparent; background: transparent; color: var(--text-2); cursor: pointer; }
+html body .kanban-column h2 .gx-col-add:hover { border-color: var(--border-strong); color: var(--primary-text); }
 html body .kanban-column h2 .gx-col-add:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
-@media (max-width: 600px) { html body .kanban-column h2 .gx-col-add { width: 44px; height: 44px; } }
 
 /* R1 · Modo contingencia: botón lacre en la barra, banda con reloj y primeros pasos, avisos en Hoy, Cambios y Continuidad (19/11). */
 html body .gx-topbar .gx-contingency { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border: 1px solid var(--danger-border); border-radius: 999px; background: transparent; color: var(--danger); font-size: var(--fs-xs); font-weight: 600; cursor: pointer; transition: background-color 120ms, border-color 120ms; }

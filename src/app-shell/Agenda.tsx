@@ -19,7 +19,8 @@ type Props = {
 };
 type Read = { key: string } & ({ items: AgendaItem[]; undated: number; complete: boolean; error?: never } | { error: string; items?: never });
 const VIEW_KEY = 'planb:agenda-view';
-const SHOWN: Record<AgendaView, number> = { week: 7, month: 3 };
+const SHOWN: Record<AgendaView, number> = { week: 10, month: 3 };
+const OVERDUE_SHOWN = 8;
 const TONE_LABEL = { late: 'Vencida', today: 'Hoy', soon: 'Esta semana', later: 'Más adelante' } as const;
 const storedView = (): AgendaView => { try { return sessionStorage.getItem(VIEW_KEY) === 'month' ? 'month' : 'week'; } catch { return 'week'; } };
 const lateBy = (day: string, today: string) => { const days = Math.round((Date.parse(today + 'T12:00:00Z') - Date.parse(day + 'T12:00:00Z')) / 86_400_000); return days === 1 ? 'hace 1 día' : 'hace ' + days + ' días'; };
@@ -98,7 +99,7 @@ export function Agenda({ spec, revision, saveField, onOpenRecord }: Props) {
   };
 
   const head = <header className="page-header"><div><h1 id="ag-title">Agenda</h1>
-      <p className="page-subtitle">Tareas pendientes con fecha y cierres previstos de tu copia. Hoy va en lacre; lo vencido lleva sello.</p></div>
+      <p className="page-subtitle" title="Tareas pendientes con fecha y cierres previstos de tu copia">{agenda.title}</p></div>
     <div className="ag-head-actions">
       <div className="oc-filters" role="group" aria-label="Vista de la agenda">
         <button type="button" className="oc-filter" aria-pressed={view === 'week'} onClick={() => changeView('week')}>Semana</button>
@@ -120,21 +121,20 @@ export function Agenda({ spec, revision, saveField, onOpenRecord }: Props) {
   return <section className="ag" aria-labelledby="ag-title" aria-busy={loading || busy !== null}>
     {head}
     <p className="oc-sr" role="status">{note?.text ?? ''}</p>
-    <div className="ag-bar">
-      <div className="ag-period"><h2>{agenda.title}</h2>
-        <p>{agenda.busiest ? 'Lo más cargado: ' + agendaDayLabel(agenda.busiest.day).toLocaleLowerCase('es') + ' (' + agenda.busiest.count + ')' : view === 'week' ? 'Semana sin nada previsto' : 'Mes sin nada previsto'}{read.complete ? '' : ' · copia leída en parte'}
-                  <span className="ag-actions"><button type="button" className="text-button ag-copy" title={'Copia ' + (view === 'week' ? 'la semana' : 'el mes') + ' como texto para pegar en un correo o un chat'} onClick={() => void copyPeriod()}>{copied === agenda.title ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}{copied === agenda.title ? (view === 'week' ? 'Semana copiada' : 'Mes copiado') : view === 'week' ? 'Copiar semana' : 'Copiar mes'}</button>
-          <button type="button" className="text-button ag-copy" disabled={!totals.tasks && !totals.closes} title="Descarga el periodo como calendario .ics para Outlook o Google Calendar" onClick={saveIcs}><Download size={13} aria-hidden="true" />Al calendario</button></span></p></div>
-      <dl className="ag-figures">
-        <div><dt>Tareas</dt><dd>{totals.tasks}</dd></div>
-        {close ? <div><dt>Cierres</dt><dd>{totals.closes}{totals.amount ? <small>{euros(totals.amount)}</small> : null}</dd></div> : null}
-        <div data-tone={totals.late ? 'danger' : undefined}><dt>Vencidas aquí</dt><dd>{totals.late}</dd></div>
-        <div data-tone={read.undated ? 'warn' : undefined}><dt>Sin fecha</dt><dd>{read.undated}</dd></div>
-      </dl>
-    </div>
     {note ? <p className="ag-note" data-tone={note.tone}>{note.text}</p> : null}
     <div className="ag-layout">
       <div className="ag-cal" data-view={view} data-dragging={dragging ? 'true' : undefined}>
+        <div className="ag-bar">
+          <dl className="ag-figures">
+            <div><dt>Tareas</dt><dd>{totals.tasks}</dd></div>
+            {close ? <div><dt>Cierres</dt><dd>{totals.closes}{totals.amount ? <small>{euros(totals.amount)}</small> : null}</dd></div> : null}
+            <div data-tone={totals.late ? 'danger' : undefined}><dt>Vencidas aquí</dt><dd>{totals.late}</dd></div>
+            <div data-tone={read.undated ? 'warn' : undefined}><dt>Sin fecha</dt><dd>{read.undated}</dd></div>
+          </dl>
+          <p className="ag-busiest" title={agenda.busiest ? 'Lo más cargado: ' + agendaDayLabel(agenda.busiest.day).toLocaleLowerCase('es') : undefined}>{agenda.busiest ? 'Más carga: ' + agendaWeekday(agenda.busiest.day) + ' ' + Number(agenda.busiest.day.slice(8)) + ' · ' + agenda.busiest.count : view === 'week' ? 'Semana sin nada previsto' : 'Mes sin nada previsto'}{read.complete ? '' : ' · copia leída en parte'}</p>
+          <span className="ag-actions"><button type="button" className="text-button ag-copy" title={'Copia ' + (view === 'week' ? 'la semana' : 'el mes') + ' como texto para pegar en un correo o un chat'} onClick={() => void copyPeriod()}>{copied === agenda.title ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}{copied === agenda.title ? (view === 'week' ? 'Semana copiada' : 'Mes copiado') : view === 'week' ? 'Copiar semana' : 'Copiar mes'}</button>
+            <button type="button" className="text-button ag-copy" disabled={!totals.tasks && !totals.closes} title="Descarga el periodo como calendario .ics para Outlook o Google Calendar" onClick={saveIcs}><Download size={13} aria-hidden="true" />Al calendario</button></span>
+        </div>
         <div className="ag-weekdays" aria-hidden="true">{agenda.days.slice(0, 7).map(day => <span key={day.day}>{agendaWeekday(day.day)}</span>)}</div>
         <ol className="ag-grid" aria-label={agenda.title}>
           {agenda.days.map(day => {
@@ -171,8 +171,8 @@ export function Agenda({ spec, revision, saveField, onOpenRecord }: Props) {
           </div>
         </li>)}</ul> : <p className="ag-empty">Nada previsto este día.{editable ? ' Arrastra aquí el cierre de una oportunidad desde el calendario.' : ''}</p>}
         {agenda.overdue.length ? <section className="ag-overdue" aria-labelledby="ag-overdue-title">
-          <h3 id="ag-overdue-title">Vencido sin resolver <span className="oc-count">{agenda.overdue.length}</span></h3>
-          <ul className="ag-list ag-list-compact">{agenda.overdue.slice(0, 5).map(item => <li key={item.key} data-tone="late">
+          <h3 id="ag-overdue-title"><span>Vencido sin resolver</span><span className="ag-overdue-n">{agenda.overdue.length}</span></h3>
+          <ul className="ag-list ag-list-compact">{agenda.overdue.slice(0, OVERDUE_SHOWN).map(item => <li key={item.key} data-tone="late">
             <span className="ag-kind" data-kind={item.kind}>{item.kind === 'close' ? 'Cierre' : 'Tarea'}</span>
             <div className="ag-what"><strong title={item.name}>{item.name}</strong><span>{lateBy(item.day, today)}</span></div>
             <div className="ag-acts">
@@ -180,10 +180,10 @@ export function Agenda({ spec, revision, saveField, onOpenRecord }: Props) {
               <button type="button" className="oc-small-button" onClick={() => onOpenRecord(item.record)} aria-label={'Abrir «' + item.name + '»'}>Abrir</button>
             </div>
           </li>)}</ul>
-          {agenda.overdue.length > 5 ? <p className="ag-empty">Y {agenda.overdue.length - 5} más: la revisión semanal las ordena por antigüedad.</p> : null}
+          {agenda.overdue.length > OVERDUE_SHOWN ? <p className="ag-empty">Y {agenda.overdue.length - OVERDUE_SHOWN} más: la revisión semanal las ordena por antigüedad.</p> : null}
         </section> : null}
+        <p className="gx-pipe-note ag-foot">{editable ? 'Solo se mueve la fecha de cierre de las oportunidades, con el guardado de siempre: se deshace desde el aviso o desde Cambios. Las tareas se abren en su ficha.' : 'Las tareas y oportunidades se abren en su ficha; esta copia no permite mover el cierre desde aquí.'}</p>
       </aside>
     </div>
-    <p className="gx-pipe-note ag-foot">{editable ? 'Solo se mueve la fecha de cierre de las oportunidades, con el guardado de siempre: se deshace desde el aviso o desde Cambios. Las tareas se abren en su ficha.' : 'Las tareas y oportunidades se abren en su ficha; esta copia no permite mover el cierre desde aquí.'}</p>
   </section>;
 }

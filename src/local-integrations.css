@@ -57,7 +57,7 @@ body .lint .lint-next .button{min-height:var(--control-h,32px);height:auto;paddi
 }
 @media (prefers-reduced-motion:reduce){.lint *{transition:none!important;animation:none!important}}
 
-/* Capa compacta de Integraciones (antes en faro.css). Esta hoja carga después de cuaderno.css: no repite lo que las reglas globales ya fijan. */
+/* Capa compacta de Integraciones (antes en faro.css). Esta hoja carga después de consola.css: no repite lo que las reglas globales ya fijan. */
 html body .lint { display: grid; gap: 10px; }
 html body .lint > * { margin: 0; min-width: 0; }
 html body .lint .lint-scope { font-size: var(--fs-sm); color: var(--text-3); }

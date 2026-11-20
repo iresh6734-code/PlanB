@@ -45,7 +45,7 @@ test('K8 · Inicio tiene un solo botón relleno: «Tu siguiente paso»; el de la
 });
 
 test('K10 · en el móvil la ficha es una hoja inferior a todo el ancho y los controles miden 44 px', () => {
-  const css = read('cuaderno.css');
+  const css = read('consola.css');
   const sheet = css.slice(css.indexOf('/* K10'));
   const mobile = sheet.slice(sheet.indexOf('@media (max-width: 760px)'), sheet.indexOf('@keyframes k10-sheet-in'));
   assert.match(mobile, /\.record-drawer\[data-entity="deals"\] \{ inset: 32px 0 0 0; width: 100vw; max-width: none;/);

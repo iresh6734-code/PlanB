@@ -10,9 +10,14 @@ const record = (values: Record<string, unknown>) => ({ id: 'r', entity: 'tasks',
 const context = { today: '2026-11-13', looksDone: (item: { values: Record<string, unknown> }) => item.values.status === 'done' } as never;
 const pick = (views: ReturnType<typeof smartViews>, id: string) => views.find(view => view.id === id)!;
 
-test('tareas: vencidas, para hoy y sin fecha, sin contar las cerradas', () => {
+test('tareas: vencidas, para hoy, esta semana y sin fecha, sin contar las cerradas', () => {
   const views = smartViews('tasks', entity([field('due_date', 'date'), field('status', 'enum')]), spec);
-  assert.deepEqual(views.map(view => view.id), ['overdue', 'today', 'no-date']);
+  assert.deepEqual(views.map(view => view.id), ['overdue', 'today', 'week', 'no-date']);
+  assert.equal(pick(views, 'week').test(record({ due_date: '2026-11-13' }), context), true);
+  assert.equal(pick(views, 'week').test(record({ due_date: '2026-11-20' }), context), true);
+  assert.equal(pick(views, 'week').test(record({ due_date: '2026-11-21' }), context), false);
+  assert.equal(pick(views, 'week').test(record({ due_date: '2026-11-12' }), context), false, 'lo vencido no es de esta semana');
+  assert.equal(pick(views, 'week').test(record({ due_date: '2026-11-15', status: 'done' }), context), false);
   assert.equal(pick(views, 'overdue').test(record({ due_date: '2026-11-10' }), context), true);
   assert.equal(pick(views, 'overdue').test(record({ due_date: '2026-11-10', status: 'done' }), context), false);
   assert.equal(pick(views, 'overdue').test(record({ due_date: '2026-11-13' }), context), false);
@@ -25,7 +30,15 @@ test('las vistas inteligentes solo existen si la especificación tiene el campo'
   assert.deepEqual(smartViews('tasks', entity([field('status', 'enum')]), spec), []);
   assert.deepEqual(smartViews('deals', entity([field('amount', 'number')]), spec).map(view => view.id), ['big', 'no-amount']);
   assert.deepEqual(smartViews('contacts', entity([field('email', 'email', 'Correo'), field('phone', 'text', 'Teléfono')]), spec).map(view => view.id), ['no-email', 'no-phone']);
-  assert.deepEqual(smartViews('companies', entity([field('domain', 'text', 'Sitio web')]), spec), []);
+  assert.deepEqual(smartViews('companies', entity([field('name', 'text', 'Nombre')]), spec), []);
+  const companies = smartViews('companies', entity([field('domain', 'text', 'Sitio web')]), spec);
+  assert.deepEqual(companies.map(view => [view.id, view.label]), [['no-web', 'Sin sitio web']]);
+  assert.equal(pick(companies, 'no-web').test(record({ domain: ' ' }), context), true);
+  assert.equal(pick(companies, 'no-web').test(record({ domain: 'https://arce.example.com' }), context), false);
+  const linkedContacts = smartViews('contacts', entity([{ ...(field('company_id', 'reference', 'Empresa') as object), referenceEntity: 'companies' }]), spec);
+  assert.deepEqual(linkedContacts.map(view => [view.id, view.label]), [['no-company', 'Sin empresa']]);
+  assert.equal(pick(linkedContacts, 'no-company').test(record({ company_id: null }), context), true);
+  assert.equal(pick(linkedContacts, 'no-company').test(record({ company_id: 'company-1' }), context), false);
   const deals = smartViews('deals', entity([field('amount', 'number')]), spec);
   assert.equal(pick(deals, 'big').test(record({ amount: '3500' }), context), true);
   assert.equal(pick(deals, 'big').test(record({ amount: 3000 }), context), false);

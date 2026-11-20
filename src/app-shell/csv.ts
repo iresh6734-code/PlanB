@@ -10,3 +10,9 @@ export function downloadCsv(name: string, text: string) {
   const anchor = document.createElement('a'); anchor.href = url; anchor.download = name; anchor.click();
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
+/** Lista en texto plano para pegar en un correo o un chat: un título y una línea por registro (nombre primero, sin valores vacíos). */
+export function toPlainList(title: string, rows: string[][]): string {
+  const clean = (value: string) => (value ?? '').replace(/\s+/g, ' ').trim();
+  const lines = rows.map(row => { const [name, ...rest] = row.map(clean); return '– ' + [name || 'Sin nombre', ...rest.filter(value => value && value !== '—')].join(' · '); });
+  return [clean(title), ...(lines.length ? lines : ['Nada en esta vista.'])].join('\n') + '\n';
+}

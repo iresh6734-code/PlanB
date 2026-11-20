@@ -1,6 +1,6 @@
 import type { AppSpec, CrmRecord } from '../../shared/model.js';
 import { dueDay } from '../task-display.js';
-import { stageKind } from './deal-insights.js';
+import { euros, stageKind } from './deal-insights.js';
 import { doneOption } from './focus.js';
 
 /**
@@ -136,6 +136,23 @@ export function buildAgenda({ view, anchor, today, items }: { view: AgendaView; 
 
 /** El mismo elemento en otro día (para reflejar un cierre movido mientras la copia se vuelve a leer). */
 export const itemOnDay = (item: AgendaItem, day: string, today: string): AgendaItem => ({ ...item, day, tone: toneOf(day, today) });
+
+const count = (value: number, one: string, many: string) => value + ' ' + (value === 1 ? one : many);
+/** El periodo visible en texto plano, agrupado por día, para pegarlo en un correo o en un chat interno. Solo días con algo. */
+export function agendaText(agenda: Agenda): string {
+  const { totals } = agenda;
+  const figures = [count(totals.tasks, 'tarea', 'tareas')];
+  if (totals.closes) figures.push(count(totals.closes, 'cierre', 'cierres') + (totals.amount ? ' (' + euros(totals.amount) + ')' : ''));
+  if (totals.late) figures.push(count(totals.late, 'vencida', 'vencidas'));
+  const lines = ['Agenda · ' + agenda.title, figures.join(' · ')];
+  const days = agenda.days.filter(day => day.inPeriod && day.items.length);
+  for (const day of days) {
+    lines.push('', agendaDayLabel(day.day) + (day.today ? ' (hoy)' : ''));
+    for (const item of day.items) lines.push('– ' + (item.kind === 'close' ? 'Cierre: ' + item.name + (item.amount !== null ? ' · ' + euros(item.amount) : '') : 'Tarea: ' + item.name) + (item.tone === 'late' ? ' (vencida)' : ''));
+  }
+  if (!days.length) lines.push('', agenda.view === 'week' ? 'Nada previsto esta semana.' : 'Nada previsto este mes.');
+  return lines.join('\n') + '\n';
+}
 
 /** ¿Se puede mover este elemento a ese día? Solo cierres, a un día válido distinto del actual. */
 export const canMoveClose = (item: Pick<AgendaItem, 'kind' | 'day'>, day: string, editable: boolean) => editable && item.kind === 'close' && isDay(day) && day !== item.day;

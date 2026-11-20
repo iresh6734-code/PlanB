@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState, type DragEvent } from 'react';
-import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Copy, RefreshCw } from 'lucide-react';
 import type { AppSpec, CrmRecord } from '../../shared/model.js';
 import { api } from '../api.js';
 import { recordName } from '../components.js';
 import { madridDay } from '../task-display.js';
 import { ErrorState, Skeleton } from '../ui/index.js';
-import { agendaDayLabel, agendaItems, agendaWeekday, buildAgenda, canMoveClose, closeFieldFor, compareItems, itemOnDay, shiftDay, stepAnchor, type AgendaItem, type AgendaView } from './agenda-grid.js';
+import { agendaDayLabel, agendaItems, agendaText, agendaWeekday, buildAgenda, canMoveClose, closeFieldFor, compareItems, itemOnDay, shiftDay, stepAnchor, type AgendaItem, type AgendaView } from './agenda-grid.js';
 import { euros } from './deal-insights.js';
 import { BOARD_MAX_PAGES, readPages, type ListPage } from './pager.js';
 import { recordListPath } from './useRecordList.js';
@@ -36,6 +36,7 @@ export function Agenda({ spec, revision, saveField, onOpenRecord }: Props) {
   const [note, setNote] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
   const [dragging, setDragging] = useState<AgendaItem | null>(null);
   const [over, setOver] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
   const close = closeFieldFor(spec), editable = !!close?.editable;
   const key = revision + ':' + attempt;
   const loading = read?.key !== key;
@@ -84,6 +85,11 @@ export function Agenda({ spec, revision, saveField, onOpenRecord }: Props) {
     onDrop: (event: DragEvent) => { event.preventDefault(); const item = dragging; setDragging(null); setOver(null); setPicked(day); if (item) void move(item, day); },
   } : {};
   const describe = (item: AgendaItem) => (item.kind === 'close' ? 'Cierre' + (item.amount !== null ? ' · ' + euros(item.amount) : '') : 'Tarea') + ' · ' + item.name + (item.tone === 'late' ? ' · vencida' : '');
+  // «Copiado» vale para el periodo copiado: al cambiar de semana o de mes, el botón vuelve a ofrecer la copia.
+  const copyPeriod = async () => {
+    try { await navigator.clipboard.writeText(agendaText(agenda)); setCopied(agenda.title); }
+    catch { setCopied(null); setNote({ tone: 'error', text: 'No se pudo copiar: el navegador no dejó usar el portapapeles.' }); }
+  };
 
   const head = <header className="page-header"><div><h1 id="ag-title">Agenda</h1>
       <p className="page-subtitle">Tareas pendientes con fecha y cierres previstos de tu copia. Hoy va en lacre; lo vencido lleva sello.</p></div>
@@ -110,7 +116,8 @@ export function Agenda({ spec, revision, saveField, onOpenRecord }: Props) {
     <p className="oc-sr" role="status">{note?.text ?? ''}</p>
     <div className="ag-bar">
       <div className="ag-period"><h2>{agenda.title}</h2>
-        <p>{agenda.busiest ? 'Lo más cargado: ' + agendaDayLabel(agenda.busiest.day).toLocaleLowerCase('es') + ' (' + agenda.busiest.count + ')' : view === 'week' ? 'Semana sin nada previsto' : 'Mes sin nada previsto'}{read.complete ? '' : ' · copia leída en parte'}</p></div>
+        <p>{agenda.busiest ? 'Lo más cargado: ' + agendaDayLabel(agenda.busiest.day).toLocaleLowerCase('es') + ' (' + agenda.busiest.count + ')' : view === 'week' ? 'Semana sin nada previsto' : 'Mes sin nada previsto'}{read.complete ? '' : ' · copia leída en parte'}
+          <button type="button" className="text-button ag-copy" title={'Copia ' + (view === 'week' ? 'la semana' : 'el mes') + ' como texto para pegar en un correo o un chat'} onClick={() => void copyPeriod()}>{copied === agenda.title ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}{copied === agenda.title ? (view === 'week' ? 'Semana copiada' : 'Mes copiado') : view === 'week' ? 'Copiar semana' : 'Copiar mes'}</button></p></div>
       <dl className="ag-figures">
         <div><dt>Tareas</dt><dd>{totals.tasks}</dd></div>
         {close ? <div><dt>Cierres</dt><dd>{totals.closes}{totals.amount ? <small>{euros(totals.amount)}</small> : null}</dd></div> : null}

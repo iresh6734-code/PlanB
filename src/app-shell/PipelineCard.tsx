@@ -38,6 +38,11 @@ const RISK_WORDS: Record<RiskKind, [string, string]> = {
   stalled: ['parada', 'paradas'],
 };
 
+/** «noviembre, diciembre ni enero»: enumeración negativa en castellano. */
+function listNi(items: string[]) {
+  return items.length < 2 ? items.join('') : items.slice(0, -1).join(', ') + ' ni ' + items[items.length - 1];
+}
+
 /** F2 · Objetivo del mes: la cifra vive en este navegador; lo ganado, lo comprometido y lo probable salen de la copia. */
 function GoalStrip({ goal, onChange, won, committed, probable, today, undatedWon }: {
   goal: number | null; onChange: (goal: number | null) => void; won: number; committed: number; probable: number; today: string; undatedWon: number;
@@ -172,14 +177,18 @@ export function PipelineCard({ spec, revision, onOpenRecord, onOpenDeals }: {
         <GoalStrip goal={goal} onChange={setGoal} won={wonMonth.amount} committed={thisMonth?.committed ?? 0} probable={thisMonth?.probable ?? 0} today={today} undatedWon={wonMonth.undated} />
         {forecast ? <section className="gx-fc" aria-labelledby="gx-fc-title">
           <h3 id="gx-fc-title">Previsión por mes de cierre</h3>
-          <ol className="gx-fc-months">{forecast.months.map(month => <li key={month.month} data-empty={month.deals ? undefined : 'true'}>
-            <span className="gx-fc-month">{month.label}</span>
-            <strong title="Importe × probabilidad de la etapa">{euros(month.probable)}</strong>
-            <span className="gx-fc-range">{month.deals ? euros(month.committed) + ' seguro · ' + euros(month.optimistic) + ' si cierran todas' : 'Nada previsto'}</span>
-            <span className="gx-fc-count">{month.deals === 1 ? '1 oportunidad' : month.deals + ' oportunidades'}{month.missingAmount ? ', ' + month.missingAmount + ' sin importe' : ''}</span>
-          </li>)}</ol>
-          {outside.length ? <p className="gx-pipe-note">Fuera de estos meses: {outside.join(' · ')}.</p> : null}
-          <p className="gx-pipe-note">«Seguro» suma las etapas desde el {Math.round(COMMITTED_FROM * 100)} %. Probabilidad por etapa: {probabilities.map(item => item.label + ' ' + Math.round(item.probability * 100) + ' %').join(' · ')}.{byPosition ? ' Estimada por su orden; escribe el porcentaje en el nombre de la etapa (por ejemplo «Propuesta 40 %») para fijarla.' : ''}</p>
+          {forecast.months.every(month => !month.deals) ? <p className="gx-fc-quiet">Nada previsto en {listNi(forecast.months.map(month => month.label.toLowerCase()))}.{outside.length ? ' Fuera de estos meses: ' + outside.join(' · ') + '.' : ''}</p> : <>
+            <ol className="gx-fc-months">{forecast.months.map(month => <li key={month.month} data-empty={month.deals ? undefined : 'true'}>
+              <span className="gx-fc-month">{month.label}</span>
+              <strong title="Importe × probabilidad de la etapa">{euros(month.probable)}</strong>
+              <span className="gx-fc-range">{month.deals ? euros(month.committed) + ' seguro · ' + euros(month.optimistic) + ' si cierran todas' : 'Nada previsto'}</span>
+              <span className="gx-fc-count">{month.deals === 1 ? '1 oportunidad' : month.deals + ' oportunidades'}{month.missingAmount ? ', ' + month.missingAmount + ' sin importe' : ''}</span>
+            </li>)}</ol>
+            {outside.length ? <p className="gx-pipe-note">Fuera de estos meses: {outside.join(' · ')}.</p> : null}
+          </>}
+          <details className="gx-fc-how"><summary>Cómo se calcula</summary>
+            <p className="gx-pipe-note">«Seguro» suma las etapas desde el {Math.round(COMMITTED_FROM * 100)} %. Probabilidad por etapa: {probabilities.map(item => item.label + ' ' + Math.round(item.probability * 100) + ' %').join(' · ')}.{byPosition ? ' Estimada por su orden; escribe el porcentaje en el nombre de la etapa (por ejemplo «Propuesta 40 %») para fijarla.' : ''}</p>
+          </details>
         </section> : null}
         {risks.length ? <section className="gx-need gx-risk" aria-labelledby="gx-risk-title">
           <h3 id="gx-risk-title">En riesgo <span>{risks.length}</span></h3>

@@ -59,9 +59,11 @@ export function LocalIntegrations({ onConnectHubspot }: { onConnectHubspot: () =
 
   // Si todas las herramientas del equipo comparten el mismo siguiente paso (sin acción propia), se dice una vez para el grupo, no en cada fila.
   const sharedNext = view.team.length > 1 && view.team.every(item => !!item.next && item.next === view.team[0].next && !item.action && !item.retry) ? view.team[0].next : null;
+  // Y si además comparten estado y hechos, la nota común los lleva y las filas quedan como una rejilla de herramientas.
+  const sharedState = sharedNext && view.team.every(item => item.stateLabel === view.team[0].stateLabel && item.facts.join('\n') === view.team[0].facts.join('\n')) ? view.team[0] : null;
   const teamOrigin = view.teamOrigin?.ok && view.team.every(item => item.state === 'unchecked') ? view.teamOrigin.origin : null;
-  const teamRows = <ul className="lint-rows" data-shared={sharedNext ? 'true' : undefined}>{view.team.map(item =>
-    <Row key={item.id} item={sharedNext || teamOrigin ? { ...item, next: '' } : item} onConnect={onConnectHubspot} onRetry={source => reload[source]()} />)}</ul>;
+  const teamRows = <ul className="lint-rows" data-shared={sharedState ? 'all' : sharedNext ? 'true' : undefined}>{view.team.map(item =>
+    <Row key={item.id} item={sharedState ? { ...item, next: '', facts: [] } : sharedNext || teamOrigin ? { ...item, next: '' } : item} onConnect={onConnectHubspot} onRetry={source => reload[source]()} />)}</ul>
   return <section className="lint" aria-labelledby="lint-title" aria-busy={busy}>
     <header className="page-header"><div><h1 id="lint-title">Integraciones</h1><p className="page-subtitle">Qué está conectado, qué falta y el siguiente paso en cada herramienta.</p></div>
       <button type="button" className="button secondary" onClick={refresh}><RefreshCw size={14} aria-hidden="true" />Actualizar estado</button></header>
@@ -82,7 +84,10 @@ export function LocalIntegrations({ onConnectHubspot }: { onConnectHubspot: () =
       {continuity.data && !continuity.data.runtime ? <HubspotReadCheck portalId={continuity.data.connection?.accountId ?? null} mode={continuity.data.connection?.mode ?? 'unknown'} reloadKey={reloadKey} /> : null}</section>
     <section aria-labelledby="lint-team-h"><h3 id="lint-team-h" className="lint-group">Google Workspace · espacio de equipo</h3>
       <p className="lint-muted lint-explain">Gmail, Calendar, Drive, Docs y Sheets se autorizan en el espacio de equipo, que es otro servicio: guarda sus propios datos y las autorizaciones de Google no se comparten con esta copia local.</p>
-      {sharedNext ? <p className="lint-shared-next"><strong>Siguiente paso para todas.</strong> {sharedNext}</p> : null}
+      {sharedNext ? <div className="lint-shared-next">
+        {sharedState ? <span className={'lint-badge lint-' + sharedState.tone}>{sharedState.stateLabel}</span> : null}
+        <p>{sharedState?.facts.length ? sharedState.facts.join(' ') + ' ' : ''}<strong>Siguiente paso para todas.</strong> {sharedNext}</p>
+      </div> : null}
       {teamOrigin ? <>
         <div className="lint-next"><a className="button secondary" href={teamOrigin + '/team?view=connections'} target="_blank" rel="noopener noreferrer">
           Abrir Integraciones del equipo <ArrowRight size={14} aria-hidden="true" /><span className="lint-sr"> (se abre en una pestaña nueva)</span>

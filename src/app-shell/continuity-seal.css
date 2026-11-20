@@ -5,12 +5,11 @@ html body :is(.ct-seal, .oc-seal)[data-level="checked"] { --seal-ink: var(--succ
 html body :is(.ct-seal, .oc-seal)[data-level="constant"] { --seal-ink: var(--info); --seal-wash: var(--info-bg); --seal-line: var(--info-border); }
 html body .seal-badge { color: var(--seal-ink); flex: none; display: block; }
 html body .seal-badge text { font-family: var(--font-display); }
-html body .ct-seal { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(200px, 260px); gap: 20px; align-items: start; margin: 16px 0; padding: 20px 22px; border: 1px solid var(--border); border-left: 4px solid var(--seal-ink); border-radius: var(--r-lg); background: linear-gradient(135deg, var(--seal-wash) 0%, transparent 46%), var(--bg-surface); }
-html body .ct-seal-mark { padding: 6px; border-radius: 50%; background: var(--bg-surface); box-shadow: 0 0 0 1px var(--seal-line); }
-html body .ct-seal-kicker { margin: 0; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--seal-ink); }
-html body .ct-seal h2 { margin: 2px 0 4px; font-family: var(--font-display); font-size: var(--fs-lg); line-height: 1.2; color: var(--text-1); }
-html body .ct-seal-headline { margin: 0 0 12px; color: var(--text-2); }
-html body .ct-seal-criteria { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; }
+html body .ct-seal { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(200px, 250px); gap: 16px; align-items: start; margin: 12px 0; padding: 16px 18px; border: 1px solid var(--seal-line); border-radius: var(--r-lg); background: linear-gradient(135deg, var(--seal-wash) 0%, transparent 46%), var(--bg-surface); }
+html body .ct-seal-mark { padding: 5px; border-radius: 50%; background: var(--bg-surface); box-shadow: 0 0 0 1px var(--seal-line); }
+html body .ct-seal h2 { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 0 0 2px; font-family: var(--font-display); font-size: var(--fs-lg); line-height: 1.25; color: var(--text-1); }
+html body .ct-seal-headline { margin: 0 0 10px; color: var(--text-2); }
+html body .ct-seal-criteria { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 16px; }
 html body .ct-seal-criteria li { display: flex; gap: 8px; align-items: flex-start; min-width: 0; }
 html body .ct-seal-criteria li strong { display: block; font-size: 13px; color: var(--text-1); }
 html body .ct-seal-criteria li small { display: block; font-size: 12px; color: var(--text-3); overflow-wrap: anywhere; }
@@ -31,9 +30,10 @@ html body .ct-seal-months li[data-partial="true"]:not([data-ok="true"]) { border
 html body .ct-seal-months li[data-partial="true"]:not([data-ok="true"]) > i { border-style: dashed; border-color: var(--seal-ink); }
 html body .ct-seal-note { margin: 0; font-size: 11.5px; line-height: 1.4; color: var(--text-3); }
 html body .ct-seal-note span { display: block; margin-top: 4px; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .04em; color: var(--text-2); }
-html body .oc-seal { display: flex; align-items: center; gap: 10px; margin: 10px 0 0; padding: 8px 10px 8px 8px; border-radius: var(--r-md); background: var(--seal-wash); border: 1px solid var(--seal-line); font-size: 13px; color: var(--text-2); }
-html body .oc-seal > span { min-width: 0; flex: 1; }
+html body .oc-seal { display: flex; align-items: center; gap: 10px; margin: 10px 0 0; padding: 6px 10px 6px 6px; border-radius: var(--r-md); background: var(--seal-wash); border: 1px solid var(--seal-line); font-size: 13px; color: var(--text-2); }
+html body .oc-seal > span { display: grid; min-width: 0; flex: 1; line-height: 1.35; }
 html body .oc-seal strong { color: var(--text-1); }
+html body .oc-seal small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-xs); color: var(--text-2); }
 html body .oc-seal .oc-link { flex: none; }
 html[data-theme="dark"] body .ct-seal { background: linear-gradient(135deg, var(--seal-wash) 0%, transparent 52%), var(--bg-surface); }
 html[data-theme="dark"] body .ct-seal-criteria li[data-met="true"] .ct-seal-tick { color: var(--bg-surface); }

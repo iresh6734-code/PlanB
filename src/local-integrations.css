@@ -8,7 +8,7 @@ body .lint .button{display:inline-flex;align-items:center;justify-content:center
 .lint-group{font-size:14px;margin:28px 0 8px;color:var(--text-1,#0f1a2b)}
 .lint-muted{color:var(--text-2,#394659);line-height:1.5;margin:0}
 .lint-explain{max-width:72ch;margin-bottom:8px}
-.lint-alert{padding:8px 12px;margin:0 0 16px;border:1px solid var(--warning-border,#e6cf92);border-left-width:3px;border-radius:6px;background:var(--warning-bg,#fbefd2);color:var(--warning,#80510a)}
+.lint-alert{padding:8px 12px;margin:0 0 16px;border:1px solid var(--warning-border,#e6cf92);border-radius:6px;background:var(--warning-bg,#fbefd2);color:var(--warning,#80510a)}
 .lint-alert p{margin:4px 0}
 
 .lint-space{padding:12px 16px;border:1px solid var(--border,#e0e5ee);border-radius:10px;background:var(--bg-surface,#fff)}
@@ -56,3 +56,51 @@ body .lint .lint-next .button{min-height:var(--control-h,32px);height:auto;paddi
   body .lint .page-header .button{width:auto;min-height:44px;font-size:13px;padding:0 14px}
 }
 @media (prefers-reduced-motion:reduce){.lint *{transition:none!important;animation:none!important}}
+
+/* Capa compacta de Integraciones (antes en faro.css). Esta hoja carga después de cuaderno.css: no repite lo que las reglas globales ya fijan. */
+html body .lint { display: grid; gap: 10px; }
+html body .lint > * { margin: 0; min-width: 0; }
+html body .lint .lint-scope { font-size: var(--fs-sm); color: var(--text-3); }
+html body .lint .lint-h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+html body .lint .lint-space { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; padding: 10px 14px; border-radius: var(--r-lg); }
+html body .lint .lint-space h3 { margin: 0; font-size: var(--fs-h2); }
+html body .lint .lint-space dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(136px, 1fr)); gap: 6px 16px; margin: 0; }
+html body .lint .lint-space dt { font-weight: 600; color: var(--text-3); }
+html body .lint .lint-space dd { margin: 0; font-size: var(--fs-sm); font-weight: 600; }
+html body .lint .lint-space > p { grid-column: 1 / -1; margin: 0; font-size: var(--fs-xs); }
+html body .lint .lint-group { margin: 6px 0; font-family: var(--font-sans); color: var(--text-3); }
+html body .lint section > p { margin: 0 0 6px; max-width: none; font-size: var(--fs-sm); color: var(--text-3); }
+html body .lint .lint-row { grid-template-columns: minmax(200px, 1fr) minmax(0, 1.4fr) minmax(0, 1.4fr); gap: 4px 18px; padding: 9px 14px; align-items: center; font-size: var(--fs-sm); }
+html body .lint .lint-who { gap: 10px; align-items: center; }
+html body .lint .lint-who :is(svg, img) { width: 22px; height: 22px; flex: none; }
+html body .lint .lint-who h4 { margin: 0; font-family: var(--font-sans); font-size: var(--fs-md); font-weight: 600; }
+html body .lint .lint-who p { margin: 0; font-size: var(--fs-xs); color: var(--text-3); }
+html body .lint .lint-badge { height: 20px; padding: 0 7px; border-radius: 5px; font-size: var(--fs-xs); line-height: 18px; }
+html body .lint .lint-facts { margin: 3px 0 0; font-size: var(--fs-xs); color: var(--text-2); }
+html body .lint .lint-facts li { margin: 0; }
+html body .lint .lint-next p { margin: 0 0 4px; font-size: var(--fs-xs); line-height: 1.4; color: var(--text-2); }
+html body .lint > :is(details, section) > summary { font-size: var(--fs-sm); }
+@media (max-width: 900px) { html body .lint .lint-row { grid-template-columns: minmax(0, 1fr); } html body .lint .lint-space { grid-template-columns: minmax(0, 1fr); } }
+html body .lint .lint-shared-next { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; margin: 0 0 8px; padding: 8px 12px; border: 1px solid var(--info-border); border-radius: var(--r-md); background: var(--primary-subtle); font-size: var(--fs-sm); color: var(--text-1); max-width: none; }
+html body .lint .lint-shared-next > .lint-badge { flex: none; }
+html body .lint .lint-shared-next > p { flex: 1 1 320px; margin: 0; max-width: none; font-size: var(--fs-sm); line-height: 1.45; color: var(--text-1); }
+html body .lint .lint-rows[data-shared] .lint-next { display: none; }
+html body .lint .lint-rows[data-shared="true"] .lint-status { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+html body .lint .lint-rows[data-shared="true"] .lint-facts { margin: 0; }
+/* Estado y hechos comunes: la nota los dice una vez y las herramientas quedan en una sola franja. */
+html body .lint .lint-rows[data-shared="all"] { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
+html body .lint .lint-rows[data-shared="all"] .lint-row { display: block; padding: 10px 12px; border: 0; border-left: 1px solid var(--rule); }
+html body .lint .lint-rows[data-shared="all"] .lint-row:first-child { border-left: 0; }
+html body .lint .lint-rows[data-shared="all"] .lint-status { display: none; }
+html body .lint .lint-rows[data-shared="all"] .lint-who { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 4px 8px; }
+html body .lint .lint-rows[data-shared="all"] .lint-who > div { display: contents; }
+html body .lint .lint-rows[data-shared="all"] .lint-who :is(svg, img) { width: 18px; height: 18px; }
+html body .lint .lint-rows[data-shared="all"] .lint-who h4 { font-size: var(--fs-sm); }
+html body .lint .lint-rows[data-shared="all"] .lint-who p { grid-column: 1 / -1; line-height: 1.4; }
+@media (max-width: 900px) {
+  html body .lint .lint-rows[data-shared="all"] { grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  html body .lint .lint-rows[data-shared="all"] .lint-row:nth-child(odd) { border-left: 0; }
+  html body .lint .lint-rows[data-shared="all"] .lint-row:nth-child(n + 3) { border-top: 1px solid var(--rule); }
+}
+html body .lint .lint-rows[data-shared="true"] .lint-row { grid-template-columns: minmax(240px, 340px) minmax(0, 1fr); }
+@media (max-width: 900px) { html body .lint .lint-rows[data-shared="true"] .lint-row { grid-template-columns: minmax(0, 1fr); } }

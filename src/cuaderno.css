@@ -216,6 +216,12 @@ html body .ui-empty.ui-empty-ok::before, html[data-theme="dark"] body .ui-empty.
 /* ---------- Listas de registros ---------- */
 html body .gx-records-head { gap: 12px; margin-bottom: 8px; }
 html body .gx-records-head h1 { white-space: nowrap; }
+/* La regla flex de .page-header (arriba) anulaba la rejilla de faro: título y acciones en la primera fila, búsqueda y filtros a todo el ancho debajo. */
+html body .page-header.gx-records-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "title actions" "tools tools"; align-items: center; gap: 10px 16px; margin-bottom: 10px; }
+html body .page-header.gx-records-head > div:first-child { grid-area: title; }
+html body .page-header.gx-records-head > .table-toolbar { grid-area: tools; flex-wrap: wrap; row-gap: 6px; min-width: 0; }
+html body .page-header.gx-records-head > .gx-head-actions { grid-area: actions; display: flex; align-items: center; gap: 8px; }
+html body .page-header.gx-records-head > .table-toolbar > .muted:not(.gx-total) { margin-left: auto; }
 html body .gx-views { gap: 4px; margin-bottom: 8px; }
 html body .gx-view, html body .gx-view-add { height: 24px; padding: 0 8px; border-radius: var(--r-md); font-size: var(--fs-sm); }
 html body .gx-view[aria-pressed="true"], html body .gx-view.active { background: var(--primary-subtle); color: var(--primary-text); }
@@ -428,6 +434,13 @@ html body :is(.cr-item[data-status], .cr-source[data-state], .cr-error, .cr-done
   html body .fx-line-head > div:first-child { grid-column: 1; flex-direction: column; gap: 2px; }
   html body .fx-line-head .fx-report-open { grid-column: 2; grid-row: 1; height: 32px; margin: 0; white-space: nowrap; }
   html body .fx-line-head .fx-counts { grid-column: 1 / -1; gap: 2px 12px; }
+}
+@media (max-width: 600px) {
+  html body .fx-line-head { grid-template-columns: minmax(0, 1fr); }
+  html body .fx-line-head .fx-report-open { grid-column: 1; grid-row: 2; justify-self: start; }
+  html body .fx-line-head .fx-counts { grid-row: 3; }
+  /* En columna (design-system ≤600 px), la base de 220 px del texto se volvía altura y dejaba un hueco. */
+  html body .inline-empty > div:first-child { flex-basis: auto; }
 }
 
 /* ---------- Tinta y papel: jerarquía y etapas (19/11/2026) ---------- */

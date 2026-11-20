@@ -25,10 +25,9 @@ export function SealBadge({ level, label, size = 88 }: { level: SealLevel; label
 export function SealCard({ seal }: { seal: ContinuitySeal }) {
   const months = [...seal.months].reverse();
   return <section className="ct-seal" data-level={seal.level} aria-labelledby="ct-seal-title">
-    <div className="ct-seal-mark"><SealBadge level={seal.level} label={seal.label} /></div>
+    <div className="ct-seal-mark"><SealBadge level={seal.level} label={seal.label} size={72} /></div>
     <div className="ct-seal-body">
-      <p className="ct-seal-kicker">Sello de continuidad <ProBadge feature="continuity-seal" /></p>
-      <h2 id="ct-seal-title">{seal.label}</h2>
+      <h2 id="ct-seal-title">Sello de continuidad: {seal.label} <ProBadge feature="continuity-seal" /></h2>
       <p className="ct-seal-headline">{seal.headline}</p>
       <ul className="ct-seal-criteria">{seal.criteria.map(item => <li key={item.id} data-met={item.met ? 'true' : 'false'}>
         <span className="ct-seal-tick" aria-hidden="true">{item.met ? <Check size={13} strokeWidth={3} /> : <Circle size={11} />}</span>
@@ -49,7 +48,7 @@ export function SealCard({ seal }: { seal: ContinuitySeal }) {
 export function SealLine({ seal, onOpen }: { seal: ContinuitySeal; onOpen?: () => void }) {
   return <p className="oc-seal" data-level={seal.level}>
     <SealBadge level={seal.level} label={seal.label} size={30} />
-    <span><strong>Sello: {seal.label}</strong>{seal.next ? ' · Falta: ' + seal.next.label.charAt(0).toLowerCase() + seal.next.label.slice(1) : ' · Todo cumplido'}</span>
+    <span><strong>Sello: {seal.label}</strong><small>{seal.next ? 'Falta: ' + seal.next.label.charAt(0).toLowerCase() + seal.next.label.slice(1) : 'Todo cumplido'}</small></span>
     {onOpen ? <button type="button" className="oc-link" onClick={onOpen}>Ver criterios</button> : null}
   </p>;
 }

@@ -3,7 +3,8 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { makeDemoSpec, makeFixture } from '../shared/fixtures.js';
 import type { CrmRecord } from '../shared/model.js';
-import { agendaItems, agendaRange, agendaTitle, buildAgenda, canMoveClose, closeFieldFor, itemOnDay, stepAnchor, weekStart } from '../src/app-shell/agenda-grid.js';
+import { agendaItems, agendaRange, agendaText, agendaTitle, buildAgenda, canMoveClose, closeFieldFor, itemOnDay, stepAnchor, weekStart } from '../src/app-shell/agenda-grid.js';
+import { euros } from '../src/app-shell/deal-insights.js';
 import { pathOf, placeOf } from '../src/app-shell/routes.js';
 import { groupOfPage, navigationGroups } from '../src/app-shell/navigation.js';
 
@@ -82,6 +83,27 @@ test('F3 · solo se mueve el cierre de una oportunidad, a otro día válido, si 
   const moved = itemOnDay(items[0], '2026-11-26', today);
   assert.equal(moved.day, '2026-11-26');
   assert.equal(moved.tone, 'soon', 'al moverlo deja de estar vencido');
+});
+
+test('B2 · «Copiar» deja el periodo en texto plano, agrupado por día y solo con los días que tienen algo', () => {
+  const { items } = agendaItems({
+    spec, today, nameOf,
+    tasks: [task('a', '2026-11-18'), task('b', '2026-11-20')],
+    deals: [deal('x', 'proposal', '2026-11-18', 2500)],
+  });
+  const text = agendaText(buildAgenda({ view: 'week', anchor: today, today, items }));
+  assert.equal(text, [
+    'Agenda · Del 16 al 22 de noviembre',
+    '2 tareas · 1 cierre (' + euros(2500) + ') · 2 vencidas',
+    '',
+    'Miércoles, 18 de noviembre',
+    '– Cierre: Op x · ' + euros(2500) + ' (vencida)',
+    '– Tarea: Tarea a (vencida)',
+    '',
+    'Viernes, 20 de noviembre (hoy)',
+    '– Tarea: Tarea b',
+  ].join('\n') + '\n');
+  assert.equal(agendaText(buildAgenda({ view: 'month', anchor: '2027-03-10', today, items })), 'Agenda · Marzo de 2027\n0 tareas\n\nNada previsto este mes.\n');
 });
 
 test('F3 · la Agenda tiene dirección, vive en el grupo Hoy y se carga bajo demanda', () => {

@@ -1,7 +1,23 @@
 .preparation-review-tools { display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin-block:18px; }
 .preparation-review-tools p { margin:0; }
-.preparation-review-identity { border-left:3px solid var(--primary,#3155bd); padding:10px 14px; background:var(--bg-subtle,#f1f4fa); font-size:12px; line-height:1.8; overflow-wrap:anywhere; margin-block:14px 20px; }
+.preparation-review-identity { background:var(--bg-subtle,#f1f4fa); font-size:12px; overflow-wrap:anywhere; margin-block:14px 20px; }
 body .preparation .preparation-review-tools .button { min-height:44px; }
 body .preparation .review-approval { min-height:44px; align-items:center; }
 
 body .preparation .prepare-footer .button { min-height:44px; }
+
+/* Revisión compacta: identidad, motivos, reglas en filas (texto · origen) y cobertura pendiente sin aire de documento. */
+html body .preparation-review-identity { padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--r-md); line-height: 1.55; }
+html body .preparation-review-reasons { margin: 0; padding: 8px 12px; list-style: none; border: 1px solid var(--warning-border); border-radius: var(--r-md); background: var(--warning-bg); color: var(--text-1); font-size: var(--fs-sm); line-height: 1.45; }
+html body .preparation-review-reasons li + li { margin-top: 3px; }
+html body .process-grid { gap: 12px 24px; margin: 0; }
+html body .process-grid h3 { margin: 0 0 6px; font-size: var(--fs-h2); }
+html body .process-grid .rule-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
+html body .process-grid .rule-list article { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 2px 12px; margin: 0; padding: 7px 0; border: 0; border-top: 1px solid var(--rule); }
+html body .process-grid .rule-list article:first-child { padding-top: 0; border-top: 0; }
+html body .process-grid .rule-list article > p { margin: 0; font-size: var(--fs-sm); color: var(--text-1); }
+html body .process-grid .rule-list .provenance { grid-column: 2; grid-row: 1; padding: 1px 6px; font-size: var(--fs-xs); white-space: nowrap; }
+html body .process-grid .rule-list small { grid-column: 1 / -1; margin: 0; font-size: var(--fs-xs); color: var(--text-3); }
+html body .rule-list-common { margin: 0; padding-top: 7px; border-top: 1px solid var(--rule); font-size: var(--fs-xs); color: var(--text-3); }
+html body .process-grid .plain-list { margin: 0; padding-left: 18px; font-size: var(--fs-sm); line-height: 1.5; color: var(--text-2); }
+html body .process-grid .plain-list li { margin: 0 0 3px; padding-left: 2px; }

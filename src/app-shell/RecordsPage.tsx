@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, Bookmark, ChartColumn, ChevronRight, Database, Download, PlugZap, Plus, Search, Sparkles, Unplug, X } from 'lucide-react';
+import { ArrowRight, Bookmark, ChartColumn, ChevronRight, Copy, Database, Download, PlugZap, Plus, Search, Sparkles, Unplug, X } from 'lucide-react';
 import type { AppState, CrmRecord, EntityName } from '../../shared/model.js';
 import { displayValue, recordName } from '../components.js';
 import { EmptyArt, EmptyState, ErrorState, Skeleton } from '../ui/index.js';
-import { downloadCsv, toCsv } from './csv.js';
+import { downloadCsv, toCsv, toPlainList } from './csv.js';
 import { madridDay } from '../task-display.js';
 import { closeStatus, dealSignal, dueStatus, euros, stageKind, type DealPulse } from './deal-insights.js';
 import { addSavedView, describeView, readSavedViews, sameView, smartViews, writeSavedViews, type SavedView } from './saved-views.js';
@@ -153,16 +153,29 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
   };
   const freshRecord = (id: string) => loaded.find(record => record.id === id);
   // Exportar la vista: lo que se ve en la tabla (búsqueda, filtro y orden aplicados), con los valores tal como se muestran.
-  const exportView = () => {
+  const viewTable = () => {
     const columns = entity.columns.map(key => entity.fields.find(field => field.key === key)!).filter(Boolean);
     const list = entityName === 'deals' ? filtered : visible;
-    const text = toCsv(columns.map(field => field.label), list.map(record => columns.map(field => field.key === entity.displayField ? recordName(record, spec) : displayValue(record.values[field.key], field, lookup, spec))));
+    return { columns, list, rows: list.map(record => columns.map(field => field.key === entity.displayField ? recordName(record, spec) : displayValue(record.values[field.key], field, lookup, spec))) };
+  };
+  const exportView = () => {
+    const { columns, list, rows: table } = viewTable();
+    const text = toCsv(columns.map(field => field.label), table);
     downloadCsv(entity.label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') + '-' + new Date().toISOString().slice(0, 10) + '.csv', text);
     if (partial) setMoveNote({ tone: 'ok', text: 'CSV con ' + list.length + ' ' + (list.length === 1 ? 'registro' : 'registros') + (boardOn ? ' de las ' + loaded.length + ' cargadas' : ' de esta página') + ' (' + total + ' en total). Para la copia completa, usa Exportar.' });
   };
   const current = { query, pick, sort, smart };
   const isDefault = !query.trim() && !pick && !sort && !smart;
   const labels = { pick: (id: string) => pickField?.options.find(option => option.id === id)?.label, sort: (key: string) => entity.fields.find(field => field.key === key)?.label, smart: (id: string) => smarts.find(view => view.id === id)?.label };
+  // Copiar la vista como texto: lo mismo que el CSV, pero listo para pegar en un correo o un chat.
+  const copyView = async () => {
+    const { list, rows: table } = viewTable();
+    const title = entity.label + (isDefault ? '' : ' · ' + describeView(current, labels)) + ' (' + list.length + ')';
+    try {
+      await navigator.clipboard.writeText(toPlainList(title, table));
+      setMoveNote({ tone: 'ok', text: list.length + ' ' + (list.length === 1 ? 'registro copiado' : 'registros copiados') + ' como texto' + (partial ? ', de los cargados.' : '.') });
+    } catch { setMoveNote({ tone: 'error', text: 'No se pudo copiar: el navegador no dejó usar el portapapeles.' }); }
+  };
   /** Guarda la lista en la copia; si la copia no responde, al menos en este navegador (y lo dice). */
   const persistViews = async (next: SavedView[]): Promise<'copy' | 'browser' | null> => {
     const target = entityName;
@@ -204,6 +217,7 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
   {pickField && (rows.length || (server && pick)) ? <div className="gx-picks" role="group" aria-label={'Filtrar por ' + pickField.label.toLowerCase()}><button type="button" aria-pressed={pick === null} onClick={() => choosePick(null)}>Todo</button>{pickField.options.map(option => { const count = pickCount(option.id); return <button key={option.id} type="button" aria-pressed={pick === option.id} onClick={() => choosePick(pick === option.id ? null : option.id)}>{option.label}{count === undefined ? null : <span>{count}</span>}</button>; })}</div> : null}
           <span className="muted">{pageOnly ? (entityName === 'deals' ? filtered : visible).length + ' de ' + loaded.length + ' cargados (' + total + ' en total)' : server && pickActive && !activeSmart ? total + ' ' + entity.label.toLowerCase() + ' con este filtro' : <>{filterActive ? (entityName === 'deals' ? filtered : visible).length + ' de ' : ''}{total} {entity.label.toLowerCase()}</>}</span>{entityName==='deals'&&loaded.length?<span className="muted gx-total" title={partial ? 'Suma de las ' + loaded.length + ' oportunidades cargadas' : 'Suma de todo el proceso con la búsqueda y la vista aplicadas'}><strong>{euros(dealsSum)}</strong> {partial ? 'en lo cargado' : 'en esta vista'}</span>:null}</div>
   <div className="gx-head-actions">{entityName === 'deals' ? <button type="button" className="button secondary" aria-pressed={analytics} aria-controls={analytics ? 'gx-stats-panel' : undefined} title="Tasa de cierre, ciclo y conversión por etapa con tu copia local" onClick={() => setAnalytics(value => !value)}><ChartColumn size={15} />Analítica<ProBadge feature="pipeline-analytics" decorative /></button> : null}<button type="button" className="button secondary" disabled={recordsLoading || !loaded.length} title={partial ? 'Exporta los ' + loaded.length + ' registros cargados, con la búsqueda y el filtro aplicados' : 'Exporta lo que ves, con la búsqueda y el filtro aplicados'} onClick={exportView}><Download size={15} />CSV</button>
+      <button type="button" className="button secondary" disabled={recordsLoading || !loaded.length} title="Copia lo que ves como texto para pegar en un correo o un chat" onClick={() => void copyView()}><Copy size={15} />Copiar</button>
     <button className="button primary" onClick={() => setSelected('new')}><Plus size={16} />{singular[entityName]}</button></div></header>
     {entityName === 'deals' && analytics ? <div id="gx-stats-panel"><PipelineStats spec={spec} revision={(state.snapshot?.capturedAt ?? '') + ':' + (state.changes ?? 0)} /></div> : null}
     {smarts.length || saved.length || !isDefault ? <div className="gx-views" role="group" aria-label="Vistas">

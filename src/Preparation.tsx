@@ -87,7 +87,7 @@ export function Preparation({ state:sourceState, step, setStep, refresh, openWor
       {!review?(reviewError?.key===reviewKey?<p className="error-box" role="alert">{reviewError.message}</p>:<Spinner text="Leyendo la versión que se activará…"/>):<>
       <p className="preparation-review-identity">{review.kind==='candidate'?'Versión candidata · todavía no sustituye la copia activa':review.kind==='initial'?'Primera activación':'Versión activa'} · {review.target.snapshot?.name??'Sin captura'}<br/>Revisión {review.revision.slice(0,12)} · {review.records} registros{review.replacesRecords?' · sustituirá los registros del espacio activo':' · conservará los registros del espacio activo'}</p>
       {review.replacesRecords&&review.localChanges>0?<p className="warning-text">Hay {review.localChanges} operaciones locales en el espacio activo. Esta candidata sustituirá sus registros e historial; conserva una exportación antes de continuar.</p>:null}
-      {review.reasons.length?<div className="info-box"><ul>{review.reasons.map((reason,index)=><li key={index}>{reason}</li>)}</ul></div>:null}
+      {review.reasons.length?<ul className="preparation-review-reasons" role="note">{review.reasons.map((reason,index)=><li key={index}>{reason}</li>)}</ul>:null}
       <div className="section-heading"><div><h2>{state.spec ? 'Revisa tu aplicación.' : 'Prepara primero una especificación.'}</h2><p className="muted">{state.generation?.provider === 'ai' ? 'Generada con ' + state.generation.model : production?'Configuración importada · sin llamada a una IA':'Especificación de ensayo · sin llamada a una IA'}</p></div><ShieldCheck className="blue" size={28} /></div>
       {state.lastError ? <div className="error-box" role="alert">{state.lastError}</div> : null}
       {state.spec ? <><div className="review-grid">{state.spec.entities.map(entity => <article key={entity.id}><h3>{entity.label}</h3><p>{entity.fields.length} campos · {entity.columns.length} columnas</p><small>{entity.fields.map(f => f.label).join(' · ')}</small></article>)}</div>
@@ -100,6 +100,18 @@ export function Preparation({ state:sourceState, step, setStep, refresh, openWor
     </>}
   </section>;
 }
+/** El origen de la regla sin repetir su descripción: «Configuración de ensayo: <descripción>» queda en «Configuración de ensayo». */
+function ruleSource(rule: { description: string; evidence: string }) {
+  const evidence = rule.evidence.trim(), description = rule.description.trim();
+  return description && evidence.endsWith(description) ? evidence.slice(0, -description.length).replace(/[\s:·—-]+$/, '') : evidence;
+}
+
+const originLabel = (origin: string) => origin === 'configuration' ? 'Configuración importada' : 'Instrucción del usuario';
+
 function RuleList({ rules }: { rules: NonNullable<AppState['spec']>['rules'] }) {
-  return <div className="rule-list">{rules.length ? rules.map(rule => <article key={rule.id}><p>{rule.description}</p><span className={'provenance ' + rule.origin}>{rule.origin === 'configuration' ? 'Configuración importada' : 'Instrucción del usuario'}</span><small>{rule.evidence}</small></article>) : <p className="muted">No se han recuperado reglas adicionales.</p>}</div>;
+  const sources = rules.map(ruleSource);
+  // Si todas las reglas comparten origen y procedencia, se dice una vez al pie en lugar de repetirlo en cada fila.
+  const shared = rules.length > 1 && rules.every((rule, index) => rule.origin === rules[0].origin && sources[index] === sources[0]);
+  return <div className="rule-list">{rules.length ? <>{rules.map((rule, index) => <article key={rule.id}><p>{rule.description}</p>{shared ? null : <><span className={'provenance ' + rule.origin}>{originLabel(rule.origin)}</span>{sources[index] ? <small>{sources[index]}</small> : null}</>}</article>)}
+    {shared ? <p className="rule-list-common">Origen de las {rules.length} reglas: {originLabel(rules[0].origin)}{sources[0] ? ' · ' + sources[0] : ''}</p> : null}</> : <p className="muted">No se han recuperado reglas adicionales.</p>}</div>;
 }

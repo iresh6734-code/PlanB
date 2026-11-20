@@ -34,6 +34,7 @@ export function smartViews(entityName: EntityName, entity: Entity, spec: Spec): 
       // Mismo día de Madrid que Hoy y «Despachar vencidas» (dueDay), también cuando la fecha trae hora.
       views.push({ id: 'overdue', label: 'Vencidas', hint: 'Fecha límite anterior a hoy y sin cerrar', test: (record, context) => { const day = dueDay(record.values[due]); return day !== null && day < context.today && !context.looksDone(record); } });
       views.push({ id: 'today', label: 'Para hoy', hint: 'Fecha límite hoy y sin cerrar', test: (record, context) => dueDay(record.values[due]) === context.today && !context.looksDone(record) });
+      views.push({ id: 'week', label: 'Esta semana', hint: 'Fecha límite entre hoy y dentro de 7 días, sin cerrar', test: (record, context) => { const day = dueDay(record.values[due]); return day !== null && day >= context.today && day <= addDays(context.today, 7) && !context.looksDone(record); } });
       views.push({ id: 'no-date', label: 'Sin fecha', hint: 'Tareas abiertas sin fecha límite', test: (record, context) => empty(record.values[due]) && !context.looksDone(record) });
     }
   }
@@ -69,6 +70,15 @@ export function smartViews(entityName: EntityName, entity: Entity, spec: Spec): 
     const phone = entity.fields.find(field => /phone|tel[eé]fono|m[oó]vil/i.test(field.key + ' ' + field.label));
     if (email) views.push({ id: 'no-email', label: 'Sin correo', hint: 'Sin ' + email.label.toLowerCase(), test: record => empty(record.values[email.key]) });
     if (phone) views.push({ id: 'no-phone', label: 'Sin teléfono', hint: 'Sin ' + phone.label.toLowerCase(), test: record => empty(record.values[phone.key]) });
+  }
+  // Higiene de la ficha: el cliente sin empresa enlazada y la empresa sin web no se pueden situar ni investigar.
+  if (entityName === 'contacts') {
+    const company = entity.fields.find(field => field.type === 'reference' && field.referenceEntity === 'companies');
+    if (company) views.push({ id: 'no-company', label: 'Sin ' + company.label.toLowerCase(), hint: 'Clientes sin ' + company.label.toLowerCase() + ' en su ficha', test: record => empty(record.values[company.key]) });
+  }
+  if (entityName === 'companies') {
+    const web = entity.fields.find(field => field.type === 'text' && /domain|website|web|sitio/i.test(field.key + ' ' + field.label));
+    if (web) views.push({ id: 'no-web', label: 'Sin ' + web.label.toLowerCase(), hint: 'Empresas sin ' + web.label.toLowerCase(), test: record => empty(record.values[web.key]) });
   }
   return views;
 }

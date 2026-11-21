@@ -45,11 +45,11 @@ for (const oldFails of [false, true]) test('a superseded startup ' + (oldFails ?
     const control = await page.request.patch(origin + '/api/records/contacts/contact-1', { data: { values: { phone: '155-newer-fiction' } } }); expect(control.ok()).toBe(true);
     await page.evaluate(() => window.dispatchEvent(new Event('planb:locked')));
     await expect(menuGroup(page, 'Clientes')).toBeVisible();
-    await openSection(page, 'Clientes'); await expect(page.locator('.workspace-footer span')).toHaveText('1 cambio local');
+    await openSection(page, 'Clientes'); await expect(page.locator('.gx-topbar .gx-changes')).toHaveAttribute('aria-label', /^1 cambio local:/);
     const oldResponse = page.waitForResponse(r => r.headers()['x-app155'] === 'old'); release.release(); await oldResponse;
     // The response has reached the browser; allow its catch/render to settle before asserting absence.
     await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
-    await expect(page.locator('.global-error')).toHaveCount(0); await expect(page.locator('.workspace-footer span')).toHaveText('1 cambio local');
+    await expect(page.locator('.global-error')).toHaveCount(0); await expect(page.locator('.gx-topbar .gx-changes')).toHaveAttribute('aria-label', /^1 cambio local:/);
     await expect(page.getByRole('cell', { name: '155-newer-fiction', exact: true })).toBeVisible(); expect(reads).toBeGreaterThanOrEqual(2);
   } finally { release.release(); }
 });

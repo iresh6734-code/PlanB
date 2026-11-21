@@ -75,7 +75,6 @@ button, a, input, select, textarea, summary {
 .status-strip .text-button { font-size: 11px; }
 .status-label { font-weight: 500; }
 .status-label.independent { color: #38765e; }
-.copy-date { font-size: 11px; color: #738099; }
 .demo-caption { margin-top: 11px; }
 .table-toolbar > .muted { font-size: 12px; }
 .search-field svg { stroke-width: 1.7; }

@@ -15,7 +15,7 @@ export function TopBar({ state, pageLabel, teamOrigin, openContinuity, openChang
   const [theme, toggleTheme] = useTheme();
   const copy = describeCapture(state.snapshot?.capturedAt);
   const copyStale = state.ready && !state.runtime && copy.stale;
-  const copyLabel = state.ready ? 'Copia activa' : 'Captura importada';
+  const copyLabel = !state.ready ? 'Captura importada' : state.disconnected ? 'Modo independiente' : 'Copia activa';
   const production = state.snapshot?.source.isTestData === false;
   const changes = state.changes ?? 0, changesText = changes + (changes === 1 ? ' cambio' : ' cambios');
   return <>
@@ -24,7 +24,7 @@ export function TopBar({ state, pageLabel, teamOrigin, openContinuity, openChang
         <i className="dot" /><span className="gx-copy-text"><span className="gx-copy-what">{copyLabel} · </span>{copy.age ?? 'fecha no disponible'}</span>
         {changes > 0 && !openChanges ? <b>{changesText}</b> : null}
       </button> : null}
-      {state.snapshot && changes > 0 && openChanges && pageLabel !== 'Cambios' ? <button type="button" className="gx-changes" aria-label={changesText + ' locales: revisar en Cambios'} title="Cambios locales pendientes de devolver. Revisarlos en Cambios" onClick={openChanges}>
+      {state.snapshot && changes > 0 && openChanges && pageLabel !== 'Cambios' ? <button type="button" className="gx-changes" aria-label={(changes === 1 ? '1 cambio local' : changes + ' cambios locales') + ': revisar en Cambios'} title="Cambios locales pendientes de devolver. Revisarlos en Cambios" onClick={openChanges}>
         <GitBranch size={13} aria-hidden="true" /><span>{changes}</span><span className="gx-changes-word">{changes === 1 ? 'cambio' : 'cambios'}</span>
       </button> : null}
       {reminder}

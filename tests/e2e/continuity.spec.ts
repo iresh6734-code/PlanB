@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { resolve } from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { makeFixture } from '../../shared/fixtures.js';
-import { lockButton, openSection } from './menu';
+import { copyMode, lockButton, openSection, runCommand } from './menu';
 const output = resolve(process.env.PLANB_EVIDENCE_DIR || '../../outputs');
 test('preparación y continuidad con todo el tráfico externo bloqueado', async ({ page }) => {
   const errors: string[] = [], external: string[] = [];
@@ -24,15 +24,13 @@ test('preparación y continuidad con todo el tráfico externo bloqueado', async 
   await page.getByRole('button', { name: 'Crear especificación de ensayo', exact: true }).click();
   await page.getByRole('checkbox', { name: 'He revisado los campos, las reglas y las funciones pendientes.' }).check();
   await page.getByRole('button', { name: 'Activar y abrir aplicación', exact: true }).click();
-  const reconnect = page.getByRole('button', { name: 'Habilitar servicios', exact: true });
-  const disconnect = page.getByRole('button', { name: 'Desconectar servicios', exact: true });
-  await expect(reconnect.or(disconnect)).toBeVisible();
-  if (await reconnect.isVisible()) {
-    await reconnect.click();
-    await expect(page.getByText('Copia local activa', { exact: true })).toBeVisible();
+  await expect(copyMode(page)).toBeVisible();
+  if (/Modo independiente/.test(await copyMode(page).innerText())) {
+    await runCommand(page, 'Habilitar servicios');
+    await expect(copyMode(page)).toContainText('Copia activa');
   }
-  await disconnect.click();
-  await expect(page.getByText('Modo independiente', { exact: true })).toBeVisible();
+  await runCommand(page, 'Desconectar servicios');
+  await expect(copyMode(page)).toContainText('Modo independiente');
   await page.getByRole('button', { name: 'Editar Lucía Martín', exact: true }).click();
   const client = page.getByRole('dialog', { name: 'Lucía Martín', exact: true });
   await client.getByLabel('Teléfono', { exact: true }).fill('600 123 456');
@@ -62,9 +60,9 @@ test('preparación y continuidad con todo el tráfico externo bloqueado', async 
   await page.reload();
   // Desde el rediseño «Faro», recargar conserva el apartado y la lista abiertos (aquí Tareas); se vuelve a Clientes de forma explícita.
   await openSection(page,'Clientes');
-  await expect(page.getByText('Modo independiente', { exact: true })).toBeVisible();
+  await expect(copyMode(page)).toContainText('Modo independiente');
   await expect(page.getByRole('cell', { name: '600 123 456', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Ver cobertura', exact: true }).click();
+  await runCommand(page, 'Ver la cobertura de la copia');
   await expect(page.getByRole('dialog').getByText('Verificado', { exact: true })).toHaveCount(6);
   await page.getByRole('button', { name: 'Cerrar', exact: true }).click();
   await openSection(page, 'Cambios');
@@ -168,7 +166,7 @@ test('simulacro en proceso aislado y sesión de continuidad desde el historial',
   } finally { await offline.close(); }
   await page.screenshot({path:resolve(output,'plan-b-v0.3.0-continuidad.png')});
   await page.getByRole('button',{name:'Continuar trabajando',exact:true}).click();
-  await expect(page.getByText('Modo independiente',{exact:true})).toBeVisible();
+  await expect(copyMode(page)).toContainText('Modo independiente');
   await page.getByRole('button',{name:'Continuidad',exact:true}).click();
   await expect(page.getByText('Sesión de continuidad abierta',{exact:true})).toBeVisible();
 });

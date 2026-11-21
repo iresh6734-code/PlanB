@@ -240,8 +240,13 @@ html body .table-container td:first-child, html body .record-link { color: var(-
 html body .record-link:hover { color: var(--primary-text); text-decoration: underline; text-decoration-thickness: 1px; }
 html body .avatar, html[data-theme="dark"] body .avatar { width: 20px; height: 20px; border-radius: 2px; font-size: 10px; background: var(--primary-subtle); color: var(--primary-text); }
 html body .gx-statusbar, html[data-theme="dark"] body .gx-statusbar { min-height: 32px; padding: 4px var(--page-gutter); background: color-mix(in srgb, var(--bg-canvas) 96%, transparent); backdrop-filter: none; border-top: 1px solid var(--border); }
-/* La copia y el modo ya están en la barra superior: la barra de estado solo lleva lo propio de la lista. */
-html body .gx-statusbar .status-label, html body .gx-statusbar .copy-date, html body .gx-statusbar .demo-caption { display: none; }
+/* B4.5 · Con pocas columnas la tabla no se estira a todo el ancho; cada columna pesa según su dato y los importes van a la derecha. */
+html body .workspace > .table-container[data-narrow="true"] { max-width: 1040px; }
+html body .table-container col.gx-col-open { width: 44px; }
+html body .table-container :is(th, td)[data-align="end"] { text-align: right; font-variant-numeric: tabular-nums; }
+/* Vistas a 0: siguen a mano, al final y sin peso. */
+html body .gx-view[data-zero="true"] { color: var(--text-3); }
+html body .gx-view[data-zero="true"] > span { background: transparent; color: var(--text-3); }
 
 /* Tablero: cada etapa es una bahía hundida con la regla de su etapa arriba; las fichas son tiras claras encima. */
 html body .kanban { gap: 8px; }

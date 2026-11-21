@@ -62,6 +62,18 @@ export const place = (page: Page, name: string): Locator =>
 /** Botón «Bloquear Plan B» (antes «Proteger / bloquear» en el menú). */
 export const lockButton = (page: Page): Locator => page.locator('.gx-topbar').getByRole('button', { name: 'Bloquear Plan B', exact: true });
 
+/** Ejecuta una orden de la paleta («Órdenes» en escritorio, «Más» en el móvil). Desde B4.5, servicios y cobertura viven aquí y no en la barra de las listas. */
+export async function runCommand(page: Page, label: string) {
+  const desktop = await page.locator('.sidebar').isVisible();
+  if (desktop) await page.locator('.gx-topbar').getByRole('button', { name: 'Órdenes', exact: true }).click();
+  else await page.locator('.gx-mnav').getByRole('button', { name: 'Más', exact: true }).click();
+  await page.getByRole('combobox', { name: 'Escribe una orden o un nombre' }).fill(label);
+  await page.locator('#gx-commands-list [role="option"]').filter({ hasText: label }).first().click();
+}
+
+/** Estado de la copia en la barra superior: «Copia activa» o «Modo independiente» (solo escritorio). */
+export const copyMode = (page: Page): Locator => page.locator('.gx-topbar .gx-copy-what');
+
 /** Direcciones de cada apartado (src/app-shell/routes.ts), para recorrer vistas en el móvil sin depender del menú. */
 export const sectionPath: Record<string, string> = {
   Inicio: '/inicio', Hoy: '/hoy', 'Revisión semanal': '/hoy/semana', Agenda: '/hoy/agenda', Propuestas: '/hoy/propuestas', Clientes: '/clientes', Empresas: '/empresas', Oportunidades: '/oportunidades', Tareas: '/tareas',

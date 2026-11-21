@@ -4,6 +4,14 @@
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
 
+## Misión maestra · B4.5 Listas · 21/11/2026, Europe/Madrid
+
+Alcance anotado en el registro antes de editar. Cada columna pesa según su dato (`src/app-shell/record-columns.ts`): el campo principal, el correo y la web valen 2 y el resto 1. Los importes van a la derecha. Con 4 columnas de datos o menos, la tabla no pasa de 1.040 px. Las vistas a 0 van al final, atenuadas; la activa no se atenúa. La barra inferior solo tiene «Guardado en este ordenador» y la paginación. La cobertura pasa a Continuidad y sigue en la paleta. Desconectar o habilitar servicios pasa a la paleta, con la misma llamada, y sigue en Continuidad. La barra superior escribe «Modo independiente» en texto. Las pruebas de navegador se adaptaron sin ejecutarlas.
+
+Medición con el mismo arnés y datos ficticios, `HEAD` frente al actual: los botones de la barra inferior pasan de 4 a 2. El estado, la fecha y el recuento de cambios ya no se repiten abajo. En negocios, 3 vistas a 0 quedan al final. `tests/listas-ui.test.ts` falla en `HEAD` y pasa ahora. Tipos correctos. Fallan `auth-parent` e `independent-interface-contexts`, igual que en `HEAD`, por el arnés sin `useContinuityState`. La línea base de colores fijos baja (faro 103, refinements 41). La poda CSS quitó unos 1,7 kB de la barra antigua. No se comprobaron la geometría ni el navegador, por las restricciones.
+
+Siguiente: A0-L, código sin montar.
+
 ## Misión maestra · B4.4 Hoy y Agenda · 21/11/2026, Europe/Madrid
 
 Decisiones de la usuaria anotadas antes de editar: se conserva la regla de Hoy (fecha sin hora vence por día de Madrid; instante con hora, cuando pasa) y la cifra global de Agenda cuenta solo tareas. `shared/overdue.ts` es la única definición y la usan la cola de Hoy, Agenda, despacho y revisión semanal. En Hoy hay un botón relleno por fase, Despachar va junto al filtro Vencidas y estado y fecha comparten celda (3 columnas, sin chip). En Agenda la lista lateral de vencidas desaparece: la cifra global abre Hoy filtrado, y los cierres pasados se muestran como «fecha pasada» en su día. La revisión semanal atenúa los ceros.

@@ -37,12 +37,12 @@ Encargo de la usuaria del 21/11/2026: terminar, potenciar, perfeccionar y hacer 
 5. B4.3 Cambios: vacío de una línea tras lectura válida, sin Propuestas ni asistente sin pendientes; historial, planes guardados y justificantes conservados. Tipos y 9/9 archivos seguros focales correctos. Medición estructural antes/después; comparación visual pendiente del equipo autorizado.
 6. B3.1 Menú: sin Propuestas en Hoy; Copia de equipo solo con servicio configurado; Configurar Plan B en Continuidad, conservando su ruta y pasos; sin Abrir aplicación en el menú. Tipos y 7/7 archivos seguros focales correctos. Medición estructural 19 → 17 entradas sin servicio y con datos de prueba; revisión visual pendiente.
 7. B4.4 Hoy y Agenda: una sola regla de vencido (`shared/overdue.ts`) en Hoy, Agenda, despacho y revisión semanal; la cifra global de Agenda cuenta solo tareas y abre Hoy filtrado por Vencidas. Hoy tiene un botón relleno, Despachar junto al filtro, y estado y fecha en una sola celda. Tipos y 23/24 archivos seguros focales correctos; el fallo restante ya existía en `HEAD` (`independent-interface-contexts`, arnés sin `useContinuityState`). Revisión visual pendiente.
+8. B4.5 Listas: columnas proporcionales por tipo de dato (`src/app-shell/record-columns.ts`), con un máximo de 1.040 px cuando hay 4 columnas o menos; vistas a 0 atenuadas y al final; la barra inferior solo tiene «Guardado en este ordenador» y la paginación. La cobertura y los servicios están en Continuidad y en la paleta; «Modo independiente» aparece en texto en la barra superior. Tipos y pruebas focales correctos; los dos fallos que quedan ya existían en `HEAD` (`auth-parent`, `independent-interface-contexts`, mismo arnés sin `useContinuityState`). Pendiente: «Guardar vista» en «Más», tarjetas móviles de dos líneas y revisión visual.
 
 **Siguiente, en este orden** (tabla completa en `05-hoja-de-ruta.md`):
 
-1. **B4.5 Listas:** columnas proporcionales con ancho máximo; vistas a 0 atenuadas; acciones globales fuera de la barra inferior.
-2. **A0-L:** retirar o montar el código sin montar (`MorningBrief.tsx`, `FirstRunStrip`, `HomeSeal`, sala y cápsula de rescate) y sacar `server/recovery-rehearsal.ts` del instalable.
-3. **Decisiones de la usuaria pendientes:** A7 (clave sin DPAPI/PowerShell) y custodia de la clave de licencias (A6).
+1. **A0-L:** retirar o montar el código sin montar (`MorningBrief.tsx`, `FirstRunStrip`, `HomeSeal`, sala y cápsula de rescate) y sacar `server/recovery-rehearsal.ts` del instalable.
+2. **Decisiones de la usuaria pendientes:** A7 (clave sin DPAPI/PowerShell) y custodia de la clave de licencias (A6).
 
 **Reglas que han funcionado en esta misión:**
 

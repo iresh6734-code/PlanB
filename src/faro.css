@@ -114,19 +114,9 @@ html body .record-link { gap: 9px; font-weight: 600; color: var(--text-1); }
 html body .avatar { width: 22px; height: 22px; font-size: 10px; font-weight: 700; letter-spacing: .02em; }
 html body .enum-label { display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 5px; background: var(--bg-subtle); border: 1px solid var(--border); font-size: var(--fs-xs); font-weight: 600; color: var(--text-2); }
 html body .gx-statusbar { position: sticky; bottom: 0; z-index: 3; display: flex; align-items: center; gap: 6px 14px; margin: 10px calc(var(--page-gutter) * -1) -28px; padding: 5px var(--page-gutter); min-height: 36px; border-top: 1px solid var(--border); background: color-mix(in srgb, var(--bg-canvas) 92%, transparent); backdrop-filter: blur(10px); font-size: var(--fs-xs); color: var(--text-3); max-width: none; }
-html body .gx-statusbar .status-strip { display: flex; align-items: center; gap: 12px; margin: 0; padding: 0; border: 0; background: none; box-shadow: none; min-height: 0; font-size: var(--fs-xs); }
-html body .gx-statusbar .status-label { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: var(--fs-xs); color: var(--text-2); }
-html body .gx-statusbar .status-label .dot { width: 6px; height: 6px; border-radius: 50%; background: #2e9d6b; }
-html body .gx-statusbar .status-label.independent .dot { background: #c98a16; }
-html body .gx-statusbar .copy-date { font-size: var(--fs-xs); color: var(--text-3); }
-html body .gx-statusbar .text-button { font-size: var(--fs-xs); display: inline-flex; align-items: center; gap: 3px; min-height: 24px; }
-html body .gx-statusbar .text-button.disconnect { color: var(--text-2); }
-html body .gx-statusbar .demo-caption { margin: 0; padding: 0; border: 0; background: none; font-size: var(--fs-xs); color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 html body .gx-statusbar .workspace-footer { display: inline-flex; align-items: center; gap: 6px; margin: 0 0 0 auto; padding: 0; border: 0; font-size: var(--fs-xs); color: var(--text-3); }
-html body .gx-statusbar .workspace-footer span { color: var(--text-2); font-weight: 600; }
 html body .gx-statusbar .pagination { display: flex; align-items: center; gap: 6px; margin: 0; padding: 0 0 0 14px; border: 0; border-left: 1px solid var(--border); font-size: var(--fs-xs); color: var(--text-2); }
 html body .gx-statusbar .pagination .button { min-height: 24px; height: 24px; padding: 0 8px; font-size: var(--fs-xs); }
-@media (max-width: 1100px) { html body .gx-statusbar .demo-caption, html body .gx-statusbar .copy-date { display: none; } }
 
 /* ---------- Tablero de oportunidades ---------- */
 html body .kanban { align-items: stretch; flex: 1 1 auto; margin: 0; padding: 0; }
@@ -271,7 +261,6 @@ html body .lop > .page-header > div { flex-wrap: nowrap; white-space: nowrap; mi
 html body .lop > .page-header .page-subtitle { overflow: hidden; text-overflow: ellipsis; }
 html body .lop > .page-header > .button { order: 2; }
 html body .gx-statusbar { white-space: nowrap; }
-html body .gx-statusbar .demo-caption { flex: 0 1 auto; min-width: 0; max-width: none; }
 html body .gx-statusbar > * { flex-shrink: 0; }
 
 /* ---------- Pestañas de sección (un único nivel, estilo subrayado) ---------- */
@@ -1469,11 +1458,6 @@ html body:has([role="dialog"][aria-modal="true"], .record-drawer, .modal-backdro
 /* La revisión de copia también es una superficie de edición: controles de 44 px. */
 html body .copy-inspection { --control-h: 44px; --control-h-sm: 44px; }
 html body .copy-inspection .button { min-height: 44px !important; }
-/* Barra de estado de los registros a 320 px: la franja (modo independiente, cambios, sincronía) se parte en líneas en vez de desbordar. */
-@media (max-width: 600px) {
-  html body .gx-statusbar .status-strip { flex-wrap: wrap; min-width: 0; max-width: 100%; gap: 2px 10px; }
-  html body .gx-statusbar .status-strip > * { min-width: 0; overflow-wrap: anywhere; }
-}
 /* Preparación en móvil: el indicador de pasos no cabía (405 px a 390). Los pasos que no son el actual muestran solo su número
    (el nombre sigue en el texto para lectores de pantalla); el actual conserva su nombre. */
 @media (max-width: 520px) {
@@ -1829,11 +1813,8 @@ html body .sidebar .oc-search { gap: 6px; }
 /* D7 · Accesibilidad (CLAUDE-A11Y-D7, 17/11/2026): todo control de una celda de tabla mide al menos 24 px de alto
    (WCAG 2.2 · 2.5.8). Antes, el nombre de cada registro medía 17–22 px y el selector de estado de las tareas 22 px. */
 html body td .record-link { min-height: 24px; } /* el selector de estado: 24 px en su propia regla (arriba, «gx-inline») */
-/* Barra de estado de las listas con la tipografía nueva: a 1280 px empujaba «Anterior / Siguiente» fuera de la pantalla.
-   Se recorta antes (hasta 1360 px se ocultan la nota de especificación y la fecha de copia, que ya están en la barra superior)
-   y, si aun así no cabe, pasa a una segunda línea. */
+/* Barra de estado de las listas: si «Anterior / Siguiente» no caben, pasan a una segunda línea. */
 html body .gx-statusbar { flex-wrap: wrap; row-gap: 4px; }
-@media (max-width: 1360px) { html body .gx-statusbar .demo-caption, html body .gx-statusbar .copy-date { display: none; } }
 /* Buscador del menú lateral: sin la pista «Ctrl K» (sigue en la ayuda y en la paleta) para que el texto quepa entero. */
 html body .sidebar .oc-search::after { display: none; }
 

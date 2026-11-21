@@ -4,6 +4,7 @@ import path from 'node:path';
 import { randomUUID, createHash } from 'node:crypto';
 import { startLifecycleCopy } from '../helpers/app-lifecycle-harness.js';
 import { makePortableProducer, extractPortable, startExtractedPortable, databaseDigest } from '../helpers/portable-lifecycle-harness.js';
+import { runCommand } from './menu';
 
 // The real ZIP extraction copies thousands of dependency files on Windows.
 test.setTimeout(480_000);
@@ -92,7 +93,7 @@ test('UI downloads a real encrypted package; its bundled Node restores edited re
     await page.getByRole('button', { name: 'Crear especificación de ensayo', exact: true }).click();
     await page.getByRole('checkbox', { name: 'He revisado los campos, las reglas y las funciones pendientes.' }).check();
     await page.getByRole('button', { name: 'Activar y abrir aplicación', exact: true }).click();
-    await page.getByRole('button', { name: 'Desconectar servicios', exact: true }).click();
+    await runCommand(page, 'Desconectar servicios');
     await page.getByRole('button', { name: 'Editar Lucía Martín', exact: true }).click();
     const editor = page.getByRole('dialog', { name: 'Lucía Martín', exact: true });
     await editor.getByLabel('Teléfono', { exact: true }).fill('600 137 137');

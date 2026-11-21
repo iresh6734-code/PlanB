@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { makeLifecycleCopy, startLifecycleCopy } from '../helpers/app-lifecycle-harness.js';
-import { openSection, place } from './menu';
+import { copyMode, openSection, place, runCommand } from './menu';
 
 test.setTimeout(120_000);
 // Lugares del menú en escritorio (menú lateral) o en el móvil (barra inferior): ver tests/e2e/menu.ts.
@@ -50,8 +50,8 @@ test('empty -> import -> useful Hoy -> explicit activation -> disconnected edit 
     await page.getByRole('button', { name: 'Continuar preparación', exact: true }).click();
     await page.getByRole('navigation', { name: 'Secciones de preparación' }).getByRole('button', { name: 'Procesos', exact: true }).click();
     await generateAndActivate(page);
-    await page.getByRole('button', { name: 'Desconectar servicios', exact: true }).click();
-    await expect(page.getByText('Modo independiente', { exact: true })).toBeVisible();
+    await runCommand(page, 'Desconectar servicios');
+    await expect(copyMode(page)).toContainText('Modo independiente');
     await page.getByRole('button', { name: 'Editar Lucía Martín', exact: true }).click();
     const editor = page.getByRole('dialog', { name: 'Lucía Martín', exact: true });
     await editor.getByLabel('Teléfono', { exact: true }).fill('600 126 126');

@@ -26,8 +26,8 @@ test.beforeAll(async () => {
           state={{ snapshot, spec, changes: 0 }} spec={spec} entity={entity} entityName="contacts"
           rows={[]} records={[]} total={0} offset={0} setOffset={noop}
           query="Norte" setQuery={noop} pipeline="" setPipeline={noop}
-          selected={null} setSelected={noop} recordsLoading={false} recordsError="" busy={false} date=""
-          viewCoverage={noop} toggleServices={noop} moveDeal={async () => null} saveField={async () => null}
+          selected={null} setSelected={noop} recordsLoading={false} recordsError=""
+          moveDeal={async () => null} saveField={async () => null}
         />);
       `,
     },

@@ -33,16 +33,16 @@ Encargo de la usuaria del 21/11/2026: terminar, potenciar, perfeccionar y hacer 
    - Un índice con los cinco pasos y sus acciones, y una sola acción principal.
    - Informes en un menú.
    - Sello y coste de una caída en «Evidencia e impacto».
+4. Revisión cruzada de los dos Superplanes por GitHub Copilot, por propuesta, con prioridades contrastadas.
+5. B4.3 Cambios: vacío de una línea tras lectura válida, sin Propuestas ni asistente sin pendientes; historial, planes guardados y justificantes conservados. Tipos y 9/9 archivos seguros focales correctos. Medición estructural antes/después; comparación visual pendiente del equipo autorizado.
 
 **Siguiente, en este orden** (tabla completa en `05-hoja-de-ruta.md`):
 
-1. **Revisión cruzada** de los Superplanes A y B: rellenar la tabla de `registro-colaboracion.md`.
-2. **B4.3 Cambios:** estado vacío de una línea y asistente de devolución solo con cambios; fuera «Propuestas de agentes».
-3. **B3.1 Menú:** Propuestas fuera de Hoy; Copia de equipo solo con servicio de equipo; Preparación a Continuidad como «Configurar Plan B».
-4. **B4.4 Hoy y Agenda:** una sola acción principal en Hoy; una sola definición de «vencido» (`shared/overdue.ts`, A8), porque la Agenda dice 2 y 23 a la vez.
-5. **B4.5 Listas:** columnas proporcionales con ancho máximo; vistas a 0 atenuadas; acciones globales fuera de la barra inferior.
-6. **A0-L:** retirar o montar el código sin montar (`MorningBrief.tsx`, `FirstRunStrip`, `HomeSeal`, sala y cápsula de rescate) y sacar `server/recovery-rehearsal.ts` del instalable.
-7. **Decisiones de la usuaria pendientes:** A7 (clave sin DPAPI/PowerShell) y custodia de la clave de licencias (A6).
+1. **B3.1 Menú:** Propuestas fuera de Hoy; Copia de equipo solo con servicio de equipo; Preparación a Continuidad como «Configurar Plan B».
+2. **B4.4 Hoy y Agenda:** una sola acción principal en Hoy; una sola definición de «vencido» (`shared/overdue.ts`, A8), porque la Agenda dice 2 y 23 a la vez.
+3. **B4.5 Listas:** columnas proporcionales con ancho máximo; vistas a 0 atenuadas; acciones globales fuera de la barra inferior.
+4. **A0-L:** retirar o montar el código sin montar (`MorningBrief.tsx`, `FirstRunStrip`, `HomeSeal`, sala y cápsula de rescate) y sacar `server/recovery-rehearsal.ts` del instalable.
+5. **Decisiones de la usuaria pendientes:** A7 (clave sin DPAPI/PowerShell) y custodia de la clave de licencias (A6).
 
 **Reglas que han funcionado en esta misión:**
 

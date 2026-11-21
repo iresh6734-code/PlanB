@@ -4,6 +4,14 @@
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
 
+## Misión maestra · B4.3 Cambios · 21/11/2026, Europe/Madrid
+
+Alcance anotado antes de editar en `docs/mision/registro-colaboracion.md`. Cambios ya no monta Propuestas; el vacío válido es una línea, sin asistente ni descargas vacías. El asistente aparece con pendientes o plan guardado; no se ocultan bloqueos de integridad, historial exportable, planes enviados ni el último justificante manual. El total ya no se repite en la cabecera.
+
+Comprobación antes/después en arnés sin DOM real: asistente vacío 1 → 0, línea vacía 0 → 1 y exportaciones vacías 2 → 0. Regresiones observadas fallando antes del cambio y pasando después. Máximo un botón relleno en los cinco estados de plan. Tipos correctos (`npx.cmd tsc --noEmit -p tsconfig.json`), 9/9 archivos focales con `safe-tests`; ambas podas CSS sin cambios; detector mecánico sin hallazgos. No se midieron geometría/scroll ni se hizo revisión visual. No se modificó ninguna protección del sistema; `.cmd` es el lanzador Windows de npx.
+
+Siguiente: B3.1 Menú; las restricciones corporativas siguen intactas.
+
 ## Misión maestra · Revisión cruzada · 21/11/2026, Europe/Madrid
 
 GitHub Copilot actualizó `planb-v0.3-local` con `git pull --ff-only` hasta `441f42e`, partiendo de un árbol limpio, y leyó el relevo y los cinco documentos de misión. Revisión por propuesta y contraste de prioridades en `docs/mision/registro-colaboracion.md`: A1 debe distinguir evidencia/caducidad y no acreditar meses sin histórico; A4 no marca devuelto al exportar; A6/A7 requieren decisiones de la usuaria. Consola se conserva. No se usó Codex ni su tablón.

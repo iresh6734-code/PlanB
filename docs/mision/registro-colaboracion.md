@@ -30,6 +30,13 @@ No hay comunicación directa en tiempo real con el agente del otro ordenador. La
 | 21/11/2026 | Usuaria | «Si ves que se va a acabar el consumo, haz commits para que desde el otro ordenador haga pull y traiga todos los cambios». Autoriza commit y push de todo, incluido el trabajo presentado sin commit de «planb-rendimiento» (en commit aparte) | Instrucción en el chat de la sesión |
 | 21/11/2026 | Claude | Piezas que quedan sin montar tras el cambio (para A0-L, no borradas): `MorningBrief.tsx`, `FirstRunStrip` (en `FirstRun.tsx`) y `HomeSeal` (en `ContinuitySeal.tsx`) | `grep` de usos en `src/` |
 
+## Ejecución del relevo · GitHub Copilot
+
+| Fecha | Tarea | Estado y alcance anotado antes de editar interfaz | Comprobación |
+| --- | --- | --- | --- |
+| 21/11/2026, Europe/Madrid | Revisión cruzada | Publicada en `b95b5a1`; tabla por propuesta y prioridades contrastadas | `npx.cmd tsc --noEmit -p tsconfig.json` y 9/9 archivos seguros focales de Cambios y guardias. Se usa el lanzador Windows `.cmd`, sin cambiar la política de ejecución de PowerShell |
+| 21/11/2026, Europe/Madrid | B4.3 Cambios | Hecho y comprobado sin navegador. Alcance registrado antes de editar: `src/ChangesView.tsx` y pruebas de integridad; se quitó Propuestas, el recuento duplicado de cabecera y el asistente sin pendientes. Vacío de una línea solo con lectura válida; historial, exportaciones con contenido, planes guardados y último justificante manual conservados | Antes/después, mismo arnés y respuesta vacía: asistente 1 → 0, línea de vacío 0 → 1, botones de exportación 2 → 0; historial ya marcado sin plan: asistente 1 → 0. Las tres regresiones fallaron antes y pasan después. Estados review/approved/applying/complete/partial: ≤ 1 botón relleno. `npx.cmd tsc --noEmit -p tsconfig.json`; 9/9 archivos con `node tools/safe-tests.mjs recovery-integrity-ui independent-return-integrity-ui return-steps change-history return-explain-ui css-unused color-guard design-tokens record-sheet`. Poda normal y dedupe: 0 reglas, 0 B; detector mecánico sin hallazgos. Sin medidas geométricas ni aceptación visual |
+
 ## Pendiente para el agente del otro ordenador
 
 Al hacer `git pull`, leer `docs/mision/00-LEEME.md` y, en este orden:

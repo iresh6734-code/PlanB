@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowRight, Check, CheckCircle2, Download, GitBranch } from 'lucide-react';
+import { ArrowRight, Check, CheckCircle2, Download } from 'lucide-react';
 import type { AppState, Change } from '../shared/model.js';
 import {INVALID_RECOVERY_MESSAGE,RecoveryChangesSchema,SavedChangesSchema,type RecoveryIntegrity} from '../shared/recovery-integrity.js';
 import type { RecoveryField, RecoveryOperation, RecoveryPlan } from '../shared/operations.js';
@@ -9,7 +9,6 @@ import { pollWhileVisible } from './app-shell/poll.js';
 import { api, post, download } from './api.js';
 import { Spinner } from './components.js';
 import { ManualRecovery } from './ManualRecovery.js';
-import { SalesWorkspace } from './SalesWorkspace.js';
 import { ChangeHistory } from './ChangeHistory.js';
 import { useContingency } from './app-shell/useContingency.js';
 import { clockTime } from './app-shell/contingency-text.js';
@@ -50,13 +49,15 @@ export function ChangesView({runtime,production=false,spec=null}:{runtime:boolea
   const count=(n:number,one:string,many:string)=>n+' '+(n===1?one:many);
   // C1: el asistente solo describe el punto del recorrido; las acciones siguen siendo las de debajo.
   const wizard=returnSteps({changes:changes.length,plan,blocked,reviewed}),wizardPercent=returnProgress(wizard.steps);
-  return <section className="changes-page"><header className="page-header"><div><h1>Cambios</h1><p className="page-subtitle">{hasRead?changes.length+' operaciones guardadas en este ordenador.':'Leyendo las operaciones guardadas…'}</p></div>
-    <div className="button-row"><button className="button secondary" onClick={()=>run(()=>download('/export/changes?format=csv','plan-b-cambios.csv'))}><Download size={16}/>CSV</button><button className="button secondary" onClick={()=>run(()=>download('/export/changes','plan-b-cambios.json'))}>JSON</button></div></header>
+  const hasReturn=(changes.length>0&&(blocked||pending>0))||plan!==null;
+  return <section className="changes-page"><header className="page-header"><div><h1>Cambios</h1>{!hasRead?<p className="page-subtitle">Leyendo las operaciones guardadas…</p>:null}</div>
+    {changes.length||blocked||plan?<div className="button-row"><button className="button secondary" onClick={()=>run(()=>download('/export/changes?format=csv','plan-b-cambios.csv'))}><Download size={16}/>CSV</button><button className="button secondary" onClick={()=>run(()=>download('/export/changes','plan-b-cambios.json'))}>JSON</button></div>:null}</header>
     {contingency?<p className="changes-contingency" role="note"><strong>Contingencia en curso desde las {clockTime(contingency.startedAt)}.</strong> Lo que guardes se queda en este ordenador y aparece aquí. Devuélvelo cuando HubSpot vuelva a responder y hayas terminado la contingencia.</p>:null}
     {error||loadError?<p role="alert" className="error-box">{error||loadError}</p>:null}
     {blocked?<div className="error-box" role={checking&&!hasRead?'status':'alert'}><strong>{checking&&!hasRead?'Comprobando el estado de devolución…':'Devolución bloqueada hasta revisar el estado guardado'}</strong><p>{integrity?.state==='invalid'?INVALID_RECOVERY_MESSAGE:!checking||hasRead?'No se ha podido confirmar la integridad del plan. No se enviarán cambios desde esta pantalla.':'Los controles se habilitarán cuando termine la lectura.'}</p><button type="button" className="button secondary" style={{minHeight:44}} aria-disabled={busy||checking} onClick={()=>{if(action.current||controller.current)return;setError('');void load().catch(()=>{});}}>Actualizar estado guardado</button></div>:null}
-    {!runtime&&!production?<SalesWorkspace view="proposals"/>:null}
-    {production&&!runtime?<><ManualRecovery changes={changes.filter(c=>c.id>watermark)} revision={revision} pending={pending} refresh={load} integrityBlocked={blocked}/>{manualReport?<p className="helper">Última comprobación manual: {new Date(manualReport.verifiedAt).toLocaleString('es-ES')}. No se enviaron datos mediante la API.</p>:null}</>:!runtime?<section className="return-section return-wizard" aria-labelledby="return-wizard-title"><header className="return-wizard-head"><div><h2 id="return-wizard-title">Devolución revisada</h2><p className="muted" role="status">{wizard.headline}</p></div><span className="return-wizard-meter" aria-hidden="true"><i style={{width:wizardPercent+'%'}}/></span></header>
+    {hasRead&&!blocked&&!changes.length&&!plan&&!manualReport?<p className="muted" role="status">Lo que edites en la copia aparecerá aquí para devolverlo a HubSpot</p>:null}
+    {production&&!runtime&&manualReport?<p className="helper">Última comprobación manual: {new Date(manualReport.verifiedAt).toLocaleString('es-ES')}. No se enviaron datos mediante la API.</p>:null}
+    {hasReturn?(production&&!runtime?<ManualRecovery changes={changes.filter(c=>c.id>watermark)} revision={revision} pending={pending} refresh={load} integrityBlocked={blocked}/>:!runtime?<section className="return-section return-wizard" aria-labelledby="return-wizard-title"><header className="return-wizard-head"><div><h2 id="return-wizard-title">Devolución revisada</h2><p className="muted" role="status">{wizard.headline}</p></div><span className="return-wizard-meter" aria-hidden="true"><i style={{width:wizardPercent+'%'}}/></span></header>
       <ol className="return-steps" aria-label="Pasos de la devolución">{wizard.steps.map(step=><li key={step.id} className={'return-step is-'+step.state} aria-current={step.id===wizard.current?'step':undefined}><span className="return-step-mark" aria-hidden="true">{step.state==='done'?<Check size={13}/>:step.n}</span><span className="return-step-text"><strong>{step.title}</strong><small>{step.hint}</small></span><span className="sr-only">{({done:'Hecho',current:'Paso actual',todo:'Pendiente',attention:'Necesita atención',blocked:'En pausa'})[step.state]}</span></li>)}</ol>
       <label className="checkbox-label"><input type="checkbox" checked={simulation} disabled={busy||blocked} onChange={e=>{if(!trusted.current)return;setSimulation(e.target.checked);setReviewed(false);}}/>Usar destino simulado para probar el recorrido (no envía datos a HubSpot)</label>
       {!simulation?<><p className="info-box">Solo cuentas HubSpot de prueba. La credencial necesita permisos de escritura adicionales. Revisa las automatizaciones con la agencia antes de aprobar.</p>
@@ -86,7 +87,7 @@ export function ChangesView({runtime,production=false,spec=null}:{runtime:boolea
         {plan.status==='complete'?<><p className="success-label"><CheckCircle2 size={18}/>{plan.source==='simulation'?'Prueba completada. Los cambios locales siguen pendientes de devolución real.':'Los valores enviados se han leído y verificado en HubSpot.'}</p><div className="button-row return-receipt"><button type="button" className="button secondary" disabled={busy||blocked} onClick={()=>run(()=>download('/export/changes','plan-b-justificante-devolucion.json'))}><Download size={16}/>Descargar justificante</button><span className="helper">El registro de cambios guardado en este ordenador, con lo que se devolvió.</span></div></>:null}
         {['complete','partial'].includes(plan.status)&&plan.operations.some(o=>o.status==='applied'&&o.remoteId)?<ReturnCheckPanel planId={plan.id} source={plan.source} destinations={destinations} disabled={busy||blocked}/>:null}
       </div>:null}
-    </section>:<p className="info-box">Exporta los cambios y abre la devolución en el generador con la agencia. Este paquete no contiene conectores externos.</p>}
-    <ChangeHistory changes={changes} watermark={watermark} spec={spec}/>
+    </section>:<p className="info-box">Exporta los cambios y abre la devolución en el generador con la agencia. Este paquete no contiene conectores externos.</p>):null}
+    {changes.length?<ChangeHistory changes={changes} watermark={watermark} spec={spec}/>:null}
   </section>;
 }

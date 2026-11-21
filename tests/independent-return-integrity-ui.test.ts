@@ -46,7 +46,7 @@ const payload = (over: Record<string, unknown> = {}) => ({ changes: CHANGES, pla
 // ---- sesión: arnés + transporte + temporizador manual ----------------------------------------------------------------------
 type Ctx = { t: Transport; rt: Runtime; mount: (C: any, props: Record<string, any>) => View; tick: (v: View) => Promise<void> };
 async function session(fn: (c: Ctx) => Promise<void>) {
-  const restore = setupGlobals(), t = new Transport(), rt = new Runtime(ROOT, { SalesWorkspace: { SalesWorkspace: () => null } }), views: View[] = [];
+  const restore = setupGlobals(), t = new Transport(), rt = new Runtime(ROOT, { SalesWorkspace: { SalesWorkspace: () => 'PROPOSALS_PRESENT' } }), views: View[] = [];
   const g = globalThis as any, prevFetch = g.fetch, sI = g.setInterval, cI = g.clearInterval; g.fetch = t.fetch;
   const intervals: { fn: () => void; id: number }[] = []; let seq = 0;
   g.setInterval = (fn: () => void) => { const id = ++seq; intervals.push({ fn, id }); return id; };
@@ -95,19 +95,20 @@ check('contrato · la inspección compartida distingue ausencia, nulo y forma in
 // ======================================================================================================================
 check('arranque · sin respuesta aún la devolución está cerrada (fail-closed), no hay POST y se avisa; con respuesta sana se abre (control)', () => session(async c => {
   const { ChangesView } = c.rt.load('src/ChangesView.tsx'); const v = c.mount(ChangesView, { runtime: false, production: false }); await v.settle();
-  A.eq(gets(c.t).length, 1); A.ok(off(v, button(v, 'Preparar revisión')), 'cerrado antes de la primera respuesta'); A.has(text(v), 'Comprobando el estado de devolución');
-  A.ok(off(v, v.find({ tag: 'input', type: 'checkbox' })), 'el interruptor de destino también');
+  A.eq(gets(c.t).length, 1); A.eq(v.all({ tag: 'button', text: 'Preparar revisión' }).length, 0, 'sin asistente antes de la primera respuesta'); A.has(text(v), 'Comprobando el estado de devolución');
+  A.eq(v.all({ tag: 'input', type: 'checkbox' }).length, 0, 'sin interruptor de destino todavía');
   answer(gets(c.t)[0], payload()); await v.settle();
-  A.eq(off(v, button(v, 'Preparar revisión')), false, 'abierto con estado none y cambios'); A.no(text(v), 'Devolución bloqueada'); A.has(text(v), '3 operaciones guardadas'); A.eq(c.t.posts().length, 0);
+  A.eq(off(v, button(v, 'Preparar revisión')), false, 'abierto con estado none y cambios'); A.no(text(v), 'Devolución bloqueada'); A.has(text(v), 'Historial de operaciones'); A.eq(c.t.posts().length, 0);
 }));
 check('control positivo · estado sano: un clic en "Preparar revisión" envía exactamente un POST /v2/return/preview con el destino elegido', () => session(async c => {
   c.t.on(/\/v2\/return\/preview$/, () => ({ json: PLAN }), 'POST'); const v = await open(c, payload());
+  A.no(text(v), 'PROPOSALS_PRESENT');
   v.click(button(v, 'Preparar revisión')); await v.settle(); const posts = c.t.where(/\/v2\/return\/preview$/, 'POST');
   A.eq(posts.length, 1); A.deep(posts[0].body, { simulation: true });
 }));
 check('servidor antiguo sin metadato: historial visible, devolución bloqueada con explicación y ningún POST', () => session(async c => {
   const { recoveryIntegrity: _omit, ...old } = payload(); const v = await open(c, old);
-  A.has(text(v), '3 operaciones guardadas'); A.has(text(v), 'Historial de operaciones'); A.has(text(v), 'no permite comprobar el estado del plan'); A.has(text(v), 'Devolución bloqueada');
+  A.has(text(v), 'Historial de operaciones'); A.has(text(v), 'no permite comprobar el estado del plan'); A.has(text(v), 'Devolución bloqueada');
   A.ok(off(v, button(v, 'Preparar revisión'))); v.click(button(v, 'Preparar revisión')); await v.settle(); A.eq(c.t.posts().length, 0);
 }));
 for (const [name, over] of [
@@ -116,19 +117,19 @@ for (const [name, over] of [
 ] as [string, any][]) {
   check('incoherencia plan/estado · ' + name + ' → historial conservado, plan NO mostrado, devolución bloqueada, ningún POST', () => session(async c => {
     const v = await open(c, payload(over));
-    A.has(text(v), '3 operaciones guardadas'); A.has(text(v), 'Devolución bloqueada'); A.no(text(v), 'Estudio Arce', 'un plan de una respuesta incoherente no se pinta'); A.no(text(v), 'Aprobar plan revisado');
+    A.has(text(v), 'Historial de operaciones'); A.has(text(v), 'Devolución bloqueada'); A.no(text(v), 'Estudio Arce', 'un plan de una respuesta incoherente no se pinta'); A.no(text(v), 'Aprobar plan revisado');
     A.ok(off(v, button(v, 'Preparar revisión'))); v.click(button(v, 'Preparar revisión')); await v.settle(); A.eq(c.t.posts().length, 0);
   }));
 }
 check('estado inválido declarado por el servidor: mensaje fijo, historial legible y exportaciones siguen sin requerir integridad', () => session(async c => {
   const v = await open(c, payload({ recoveryIntegrity: INVALID, plan: null }));
-  A.has(text(v), INVALID_RECOVERY_MESSAGE); A.has(text(v), '3 operaciones guardadas'); A.has(text(v), '1–3 de 3 operaciones');
+  A.has(text(v), INVALID_RECOVERY_MESSAGE); A.has(text(v), 'Historial de operaciones'); A.has(text(v), '1–3 de 3 operaciones');
   const refresh = button(v, 'Actualizar estado guardado'); A.eq(refresh.props.style?.minHeight, 44, 'el botón de actualización declara 44 px');
   A.ok(button(v, 'CSV') && button(v, 'JSON'), 'CSV y JSON siguen presentes'); A.eq(v.disabled(button(v, 'CSV')), false); A.eq(v.disabled(button(v, 'JSON')), false);
 }));
 check('historial inválido: no se muestra un historial parcial, se explica y la devolución sigue bloqueada', () => session(async c => {
   const v = await open(c, payload({ changes: [{ ...CHANGES[0], operation: 'delete' }] }));
-  A.has(text(v), 'No se pudo leer un historial de cambios válido'); A.has(text(v), 'Leyendo las operaciones guardadas'); A.ok(off(v, button(v, 'Preparar revisión')));
+  A.has(text(v), 'No se pudo leer un historial de cambios válido'); A.has(text(v), 'Leyendo las operaciones guardadas'); A.eq(v.all({ tag: 'button', text: 'Preparar revisión' }).length, 0);
 }));
 
 // ---- carreras ------------------------------------------------------------------------------------------------------------------

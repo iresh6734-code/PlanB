@@ -38,11 +38,17 @@ Encargo de la usuaria del 21/11/2026: terminar, potenciar, perfeccionar y hacer 
 6. B3.1 Menú: sin Propuestas en Hoy; Copia de equipo solo con servicio configurado; Configurar Plan B en Continuidad, conservando su ruta y pasos; sin Abrir aplicación en el menú. Tipos y 7/7 archivos seguros focales correctos. Medición estructural 19 → 17 entradas sin servicio y con datos de prueba; revisión visual pendiente.
 7. B4.4 Hoy y Agenda: una sola regla de vencido (`shared/overdue.ts`) en Hoy, Agenda, despacho y revisión semanal; la cifra global de Agenda cuenta solo tareas y abre Hoy filtrado por Vencidas. Hoy tiene un botón relleno, Despachar junto al filtro, y estado y fecha en una sola celda. Tipos y 23/24 archivos seguros focales correctos; el fallo restante ya existía en `HEAD` (`independent-interface-contexts`, arnés sin `useContinuityState`). Revisión visual pendiente.
 8. B4.5 Listas: columnas proporcionales por tipo de dato (`src/app-shell/record-columns.ts`), con un máximo de 1.040 px cuando hay 4 columnas o menos; vistas a 0 atenuadas y al final; la barra inferior solo tiene «Guardado en este ordenador» y la paginación. La cobertura y los servicios están en Continuidad y en la paleta; «Modo independiente» aparece en texto en la barra superior. Tipos y pruebas focales correctos; los dos fallos que quedan ya existían en `HEAD` (`auth-parent`, `independent-interface-contexts`, mismo arnés sin `useContinuityState`). Pendiente: «Guardar vista» en «Más», tarjetas móviles de dos líneas y revisión visual.
+9. A0-L Código sin montar:
+   - Retirados `MorningBrief`, `HomeSeal` (con `SealLine`), `FirstRunStrip`, y también `SalesWorkspace` y `WorkQueue`, que quedaron sin montar tras B4.3.
+   - Se quedan la sala y la cápsula de rescate (las usa el ensayo de relevo) y los dos huérfanos E3, que siguen justificados.
+   - `scripts/dev-only-files.mjs` reúne en una lista los archivos que solo sirven para desarrollar. El kit de relevo y la copia `source/` de la entrega los excluyen.
+   - El instalable no incluye `server/recovery-rehearsal.ts`.
+   - Interfaz: 83 → 78 archivos y −37 KB. Kit: 184 → 182 archivos. El servidor compilado no cambia.
 
 **Siguiente, en este orden** (tabla completa en `05-hoja-de-ruta.md`):
 
-1. **A0-L:** retirar o montar el código sin montar (`MorningBrief.tsx`, `FirstRunStrip`, `HomeSeal`, sala y cápsula de rescate) y sacar `server/recovery-rehearsal.ts` del instalable.
-2. **Decisiones de la usuaria pendientes:** A7 (clave sin DPAPI/PowerShell) y custodia de la clave de licencias (A6).
+1. **Decisiones de la usuaria pendientes:** A7 (clave sin DPAPI/PowerShell) y custodia de la clave de licencias (A6). No se implementa nada de A6/A7 sin esas decisiones.
+2. En el equipo autorizado: ejecutar `tests/relay-rehearsal-mount.test.ts` (aquí se omite por arrancar procesos). Retirar o adaptar las pruebas de navegador que aún buscan la antigua cola de Hoy (`tests/e2e/today-work-queue.spec.ts` y el bloque «Hoy» de `tests/e2e/independent-workspace-flows.spec.ts`).
 
 **Reglas que han funcionado en esta misión:**
 

@@ -46,7 +46,7 @@ const payload = (over: Record<string, unknown> = {}) => ({ changes: CHANGES, pla
 // ---- sesión: arnés + transporte + temporizador manual ----------------------------------------------------------------------
 type Ctx = { t: Transport; rt: Runtime; mount: (C: any, props: Record<string, any>) => View; tick: (v: View) => Promise<void> };
 async function session(fn: (c: Ctx) => Promise<void>) {
-  const restore = setupGlobals(), t = new Transport(), rt = new Runtime(ROOT, { SalesWorkspace: { SalesWorkspace: () => 'PROPOSALS_PRESENT' } }), views: View[] = [];
+  const restore = setupGlobals(), t = new Transport(), rt = new Runtime(ROOT, {}), views: View[] = [];
   const g = globalThis as any, prevFetch = g.fetch, sI = g.setInterval, cI = g.clearInterval; g.fetch = t.fetch;
   const intervals: { fn: () => void; id: number }[] = []; let seq = 0;
   g.setInterval = (fn: () => void) => { const id = ++seq; intervals.push({ fn, id }); return id; };
@@ -102,7 +102,6 @@ check('arranque · sin respuesta aún la devolución está cerrada (fail-closed)
 }));
 check('control positivo · estado sano: un clic en "Preparar revisión" envía exactamente un POST /v2/return/preview con el destino elegido', () => session(async c => {
   c.t.on(/\/v2\/return\/preview$/, () => ({ json: PLAN }), 'POST'); const v = await open(c, payload());
-  A.no(text(v), 'PROPOSALS_PRESENT');
   v.click(button(v, 'Preparar revisión')); await v.settle(); const posts = c.t.where(/\/v2\/return\/preview$/, 'POST');
   A.eq(posts.length, 1); A.deep(posts[0].body, { simulation: true });
 }));

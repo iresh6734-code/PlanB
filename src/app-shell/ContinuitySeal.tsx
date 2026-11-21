@@ -1,10 +1,7 @@
 import { Check, Circle } from 'lucide-react';
 import { ProBadge } from './ProBadge.js';
-import { continuitySeal, SEAL_DISCLAIMER, type ContinuitySeal, type SealLevel } from './continuity-seal.js';
-import type { ContinuityStatus } from '../../shared/operations.js';
+import { SEAL_DISCLAIMER, type ContinuitySeal, type SealLevel } from './continuity-seal.js';
 import './continuity-seal.css';
-
-type SealSource = Pick<ContinuityStatus, 'captures' | 'reports' | 'jobs' | 'stale'>;
 
 /** R5 · Insignia del sello: misma geometría que `sealSvg` (el informe), con el color del nivel desde los tokens. */
 export function SealBadge({ level, label, size = 88 }: { level: SealLevel; label: string; size?: number }) {
@@ -42,19 +39,4 @@ export function SealCard({ seal }: { seal: ContinuitySeal }) {
       <p className="ct-seal-note">{SEAL_DISCLAIMER} <span>Referencia {seal.reference}</span></p>
     </div>
   </section>;
-}
-
-/** Inicio: una línea con la insignia pequeña y lo que separa del nivel siguiente. */
-export function SealLine({ seal, onOpen }: { seal: ContinuitySeal; onOpen?: () => void }) {
-  return <p className="oc-seal" data-level={seal.level}>
-    <SealBadge level={seal.level} label={seal.label} size={30} />
-    <span><strong>Sello: {seal.label}</strong><small>{seal.next ? 'Falta: ' + seal.next.label.charAt(0).toLowerCase() + seal.next.label.slice(1) : 'Todo cumplido'}</small></span>
-    {onOpen ? <button type="button" className="oc-link" onClick={onOpen}>Ver criterios</button> : null}
-  </p>;
-}
-
-/** Inicio (perezoso): calcula el sello aquí para que su lógica no entre en el paquete inicial. */
-export function HomeSeal({ status, steps, onOpen }: { status: SealSource; steps: readonly boolean[]; onOpen?: () => void }) {
-  const seal = continuitySeal(status, { done: steps.filter(Boolean).length, total: steps.length }, new Date());
-  return <SealLine seal={seal} onOpen={onOpen} />;
 }

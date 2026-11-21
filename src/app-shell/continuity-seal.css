@@ -1,8 +1,8 @@
 /* Sello de continuidad (R5) · Se carga con su apartado (chunk diferido), fuera del CSS inicial. Misma especificidad «html body» que faro.css. */
-html body :is(.ct-seal, .oc-seal) { --seal-ink: var(--text-3); --seal-wash: var(--bg-subtle); --seal-line: var(--border-strong); }
-html body :is(.ct-seal, .oc-seal)[data-level="preparing"] { --seal-ink: var(--warning); --seal-wash: var(--warning-bg); --seal-line: var(--warning-border); }
-html body :is(.ct-seal, .oc-seal)[data-level="checked"] { --seal-ink: var(--success); --seal-wash: var(--success-bg); --seal-line: var(--success-border); }
-html body :is(.ct-seal, .oc-seal)[data-level="constant"] { --seal-ink: var(--info); --seal-wash: var(--info-bg); --seal-line: var(--info-border); }
+html body .ct-seal { --seal-ink: var(--text-3); --seal-wash: var(--bg-subtle); --seal-line: var(--border-strong); }
+html body .ct-seal[data-level="preparing"] { --seal-ink: var(--warning); --seal-wash: var(--warning-bg); --seal-line: var(--warning-border); }
+html body .ct-seal[data-level="checked"] { --seal-ink: var(--success); --seal-wash: var(--success-bg); --seal-line: var(--success-border); }
+html body .ct-seal[data-level="constant"] { --seal-ink: var(--info); --seal-wash: var(--info-bg); --seal-line: var(--info-border); }
 html body .seal-badge { color: var(--seal-ink); flex: none; display: block; }
 html body .seal-badge text { font-family: var(--font-display); }
 html body .ct-seal { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(200px, 250px); gap: 16px; align-items: start; margin: 12px 0; padding: 16px 18px; border: 1px solid var(--seal-line); border-radius: var(--r-lg); background: linear-gradient(135deg, var(--seal-wash) 0%, transparent 46%), var(--bg-surface); }
@@ -30,12 +30,7 @@ html body .ct-seal-months li[data-partial="true"]:not([data-ok="true"]) { border
 html body .ct-seal-months li[data-partial="true"]:not([data-ok="true"]) > i { border-style: dashed; border-color: var(--seal-ink); }
 html body .ct-seal-note { margin: 0; font-size: 11.5px; line-height: 1.4; color: var(--text-3); }
 html body .ct-seal-note span { display: block; margin-top: 4px; font-family: ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .04em; color: var(--text-2); }
-html body .oc-seal { display: flex; align-items: center; gap: 10px; margin: 10px 0 0; padding: 6px 10px 6px 6px; border-radius: var(--r-md); background: var(--seal-wash); border: 1px solid var(--seal-line); font-size: 13px; color: var(--text-2); }
-html body .oc-seal > span { display: grid; min-width: 0; flex: 1; line-height: 1.35; }
-html body .oc-seal strong { color: var(--text-1); }
-html body .oc-seal small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-xs); color: var(--text-2); }
-html body .oc-seal .oc-link { flex: none; }
 html[data-theme="dark"] body .ct-seal { background: linear-gradient(135deg, var(--seal-wash) 0%, transparent 52%), var(--bg-surface); }
 html[data-theme="dark"] body .ct-seal-criteria li[data-met="true"] .ct-seal-tick { color: var(--bg-surface); }
 @media (max-width: 1100px) { html body .ct-seal { grid-template-columns: auto minmax(0, 1fr); } html body .ct-seal-side { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; } }
-@media (max-width: 640px) { html body .ct-seal { grid-template-columns: minmax(0, 1fr); padding: 16px; } html body .ct-seal-mark { justify-self: start; } html body .ct-seal-criteria { grid-template-columns: minmax(0, 1fr); } html body .ct-seal-side { grid-template-columns: minmax(0, 1fr); } html body .oc-seal { border-radius: 12px; flex-wrap: wrap; } }
+@media (max-width: 640px) { html body .ct-seal { grid-template-columns: minmax(0, 1fr); padding: 16px; } html body .ct-seal-mark { justify-self: start; } html body .ct-seal-criteria { grid-template-columns: minmax(0, 1fr); } html body .ct-seal-side { grid-template-columns: minmax(0, 1fr); } }

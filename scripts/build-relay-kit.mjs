@@ -1,5 +1,5 @@
 // Constructor del PAQUETE DEL KIT de relevo (unidad 254, R2). Genera `<out>/` con todo lo que el ejecutor 224 necesita como `appRoot` SIN el árbol de fuentes del repositorio:
-//   server/ (sin team), shared/, los cuatro scripts del Kit, package.json (+ tsconfig.json si existe), node_modules con la CLAUSURA mínima de dependencias de ejecución (tsx, zod, fastify, @fastify/static y sus
+//   server/ (sin team ni el ensayo de `dev-only-files.mjs`), shared/, los cuatro scripts del Kit, package.json (+ tsconfig.json si existe), node_modules con la CLAUSURA mínima de dependencias de ejecución (tsx, zod, fastify, @fastify/static y sus
 //   dependencias) y `kit-manifest.json` (formato v2) con el hash de cada archivo de código y un resumen de node_modules que VINCULA LOS BYTES: lista determinista «ruta:tamaño:SHA-256» de cada archivo.
 // Uso:  node scripts/build-relay-kit.mjs <carpeta-de-salida>          (la carpeta debe no existir o estar vacía)
 // Garantías: una dependencia OBLIGATORIA (`dependencies`) ausente o resuelta fuera de `<repo>/node_modules` impide publicar el manifiesto y no deja una carpeta a medias; una OPCIONAL (`optionalDependencies`, p. ej.
@@ -9,6 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { isDevOnly } from './dev-only-files.mjs';
 
 export const KIT_FORMAT = 'planb-relay-kit-v2';
 export const KIT_FORMAT_PREVIOUS = ['planb-relay-kit-v1'];
@@ -75,7 +76,7 @@ export function buildRelayKit({ repo = process.cwd(), out, roots = KIT_ROOT_PACK
   const closure = resolveClosure(repo, roots), created = !fs.existsSync(out);
   try {
     fs.mkdirSync(out, { recursive: true });
-    for (const dir of ['server', 'shared']) fs.cpSync(path.join(repo, dir), path.join(out, dir), { recursive: true, filter: source => !/[\\/]server[\\/]team$/.test(source) && !fs.lstatSync(source).isSymbolicLink() });
+    for (const dir of ['server', 'shared']) fs.cpSync(path.join(repo, dir), path.join(out, dir), { recursive: true, filter: source => !/[\\/]server[\\/]team$/.test(source) && !isDevOnly(repo, source) && !fs.lstatSync(source).isSymbolicLink() });
     fs.mkdirSync(path.join(out, 'scripts'));
     for (const file of KIT_SCRIPTS) fs.copyFileSync(path.join(repo, 'scripts', file), path.join(out, 'scripts', file));
     for (const file of ['package.json', 'tsconfig.json']) if (fs.existsSync(path.join(repo, file))) fs.copyFileSync(path.join(repo, file), path.join(out, file));

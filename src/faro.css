@@ -1233,8 +1233,6 @@ html body .stepper .current span { background: var(--primary); border-color: var
 html body .stepper .done span { border-color: var(--info-border); background: var(--primary-subtle); color: var(--primary-text); }
 html body .table-toolbar > .muted { color: var(--text-3); }
 html body .gx-head-actions { display: flex; align-items: center; gap: 8px; flex: none; }
-html body .proposal-actions li { color: var(--text-3); }
-html body .proposal-actions span { color: var(--text-2); }
 
 /* ---- Registrar actividad (super plan V7) ---- */
 .qa { display: grid; gap: 6px; padding-top: 12px; border-top: 1px solid var(--border); }
@@ -1333,14 +1331,7 @@ html[data-theme="dark"] body .cph-sources li[data-state="error"], html[data-them
 html[data-theme="dark"] body .capture-details-body strong, html[data-theme="dark"] body .capture-counts dd { color: var(--text-1); }
 html[data-theme="dark"] body .export-instructions :is(p, li) { color: var(--text-2); }
 /* Modo oscuro · propuestas de agentes (Cambios) y avisos de Continuidad, con colores fijos en sales.css y styles.css */
-html[data-theme="dark"] body .proposal-card, html[data-theme="dark"] body .proposal-list > * { background: var(--bg-surface); border-color: var(--border); color: var(--text-2); }
-html[data-theme="dark"] body .proposal-card :is(h3, h4, strong) { color: var(--text-1); }
-html[data-theme="dark"] body .proposal-actions li { color: var(--text-3); }
-html[data-theme="dark"] body .proposal-actions strong { color: var(--text-1); }
-html[data-theme="dark"] body .proposal-actions :is(span, p, small) { color: var(--text-2); }
-html[data-theme="dark"] body .proposal-evidence :is(small, span), html[data-theme="dark"] body .proposal-evidence > span { color: var(--text-3); }
-html[data-theme="dark"] body .proposal-detail-label { color: var(--primary-text); }
-html[data-theme="dark"] body .proposal-card small { color: var(--text-3); }
+html[data-theme="dark"] body .proposal-list > * { background: var(--bg-surface); border-color: var(--border); color: var(--text-2); }
 html[data-theme="dark"] body .info-box { background: var(--bg-subtle); border-color: var(--border); color: var(--text-2); }
 html[data-theme="dark"] body .info-box strong { color: var(--text-1); }
 
@@ -1634,14 +1625,6 @@ html body .gx-first { display: grid; grid-template-columns: minmax(0, 1fr) minma
 .gx-first-bar i { display: block; height: 100%; border-radius: inherit; background: var(--primary); transition: width 240ms cubic-bezier(.2, .7, .2, 1); }
 .gx-first-progress { font-size: var(--fs-xs); color: var(--text-3); font-variant-numeric: tabular-nums; }
 .gx-first-time { margin-left: auto; font-size: var(--fs-xs); font-weight: 500; color: var(--text-3); font-variant-numeric: tabular-nums; }
-html body .gx-first-strip { display: grid; grid-template-columns: minmax(0, 1fr) minmax(160px, 220px) auto auto; align-items: center; gap: 12px 20px; margin-bottom: 18px; padding: 14px 16px 14px 20px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--bg-surface); }
-.gx-first-strip h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 2px; font-size: var(--fs-md); font-weight: 650; color: var(--text-1); }
-.gx-first-strip h2 > span { display: inline-grid; color: var(--primary-text); }
-.gx-first-strip p { margin: 0; font-size: var(--fs-sm); color: var(--text-2); line-height: 1.45; }
-.gx-first-strip .gx-first-meter { margin: 0; }
-.gx-first-strip .gx-first-waiting { font-size: var(--fs-xs); color: var(--text-3); }
-@media (max-width: 900px) { html body .gx-first-strip { grid-template-columns: minmax(0, 1fr) auto auto; } .gx-first-strip .gx-first-meter { grid-column: 1 / -1; grid-row: 2; max-width: none; } }
-@media (max-width: 600px) { html body .gx-first-strip { grid-template-columns: minmax(0, 1fr) auto; gap: 10px 12px; padding: 12px 12px 12px 16px; } .gx-first-strip .gx-first-hide { grid-column: 2; grid-row: 1; align-self: start; } .gx-first-strip > :is(.button, .gx-first-waiting) { grid-column: 1 / -1; grid-row: 3; justify-self: start; } }
 @media (prefers-reduced-motion: reduce) { .gx-first-bar i { transition: none; } }
 /* Preparación · primer paso (solo sin copia): colores heredados de la paleta antigua por debajo de AA (3,25–4,45) y opciones
    blancas en oscuro. Pasan a los tokens de Faro. */

@@ -4,6 +4,26 @@
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
 
+## Misión maestra · A0-L Código sin montar · 21/11/2026, Europe/Madrid
+
+Inventario de consumidores anotado en el registro antes de editar.
+
+- **Retirado:** `MorningBrief`, `HomeSeal` con `SealLine`, `FirstRunStrip`, y también `SalesWorkspace` y `WorkQueue`, que quedaron sin montar tras B4.3.
+- **Se queda:** la sala y la cápsula de rescate, porque las usa el ensayo de relevo, y los huérfanos E3, que siguen justificados.
+- **Solo desarrollo:** `scripts/dev-only-files.mjs` es la lista única de archivos para desarrollar. El kit de relevo y la copia `source/` de la entrega la usan para excluir `server/recovery-rehearsal.ts`, su worker, su CLI y sus pruebas.
+
+Medición sin servidores ni navegador:
+
+- Interfaz: 83 → 78 archivos (−37.130 B).
+- Kit: 184 → 182 archivos de código.
+- Servidor compilado: sin cambios.
+
+Tipos correctos y 18/18 pruebas seguras focales; `orphan-components` vuelve a pasar. Poda CSS: 184 selectores (13.160 B), más los restos de `:is()` a mano.
+
+Pendiente en el equipo autorizado: `relay-rehearsal-mount` y las pruebas de navegador obsoletas de la antigua cola de Hoy.
+
+Siguiente: decisiones de la usuaria sobre A6/A7.
+
 ## Misión maestra · B4.5 Listas · 21/11/2026, Europe/Madrid
 
 Alcance anotado en el registro antes de editar. Cada columna pesa según su dato (`src/app-shell/record-columns.ts`): el campo principal, el correo y la web valen 2 y el resto 1. Los importes van a la derecha. Con 4 columnas de datos o menos, la tabla no pasa de 1.040 px. Las vistas a 0 van al final, atenuadas; la activa no se atenúa. La barra inferior solo tiene «Guardado en este ordenador» y la paginación. La cobertura pasa a Continuidad y sigue en la paleta. Desconectar o habilitar servicios pasa a la paleta, con la misma llamada, y sigue en Continuidad. La barra superior escribe «Modo independiente» en texto. Las pruebas de navegador se adaptaron sin ejecutarlas.

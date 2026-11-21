@@ -5,7 +5,7 @@
   "continuity-lab.css": 6,
   "date-check.css": 35,
   "decision-review.css": 16,
-  "design-system.css": 35,
+  "design-system.css": 28,
   "faro.css": 103,
   "landing/story.css": 27,
   "landing/styles.css": 20,
@@ -15,6 +15,6 @@
   "refinements.css": 41,
   "rescue-capsule.css": 10,
   "rescue-room.css": 15,
-  "sales.css": 9,
+  "sales.css": 5,
   "styles.css": 59
 }

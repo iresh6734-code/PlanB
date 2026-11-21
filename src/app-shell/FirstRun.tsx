@@ -1,14 +1,12 @@
-import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { BadgeCheck, Check, LockKeyhole, Play, Sparkles, X } from 'lucide-react';
+import { BadgeCheck, Check, LockKeyhole, Play, Sparkles } from 'lucide-react';
 import type { FirstRunPlan, FirstRunStepId } from './first-run.js';
 
-/** Preferencias de este navegador (sin datos de registros): pasaporte ya visto y franja de primeros pasos ocultada. */
-const SEEN_KEY = 'planb:first-run:passport-seen', HIDDEN_KEY = 'planb:first-run:hidden';
+/** Preferencia de este navegador (sin datos de registros): pasaporte ya visto. */
+const SEEN_KEY = 'planb:first-run:passport-seen';
 const read = (key: string) => { try { return localStorage.getItem(key) === '1'; } catch { return false; } };
 const write = (key: string) => { try { localStorage.setItem(key, '1'); } catch { /* sin almacenamiento: solo dura esta visita */ } };
 export const passportSeen = () => read(SEEN_KEY);
-export const firstRunHidden = () => read(HIDDEN_KEY);
 
 const ICON: Record<FirstRunStepId, ReactNode> = { protect: <LockKeyhole size={18} />, copy: <Sparkles size={18} />, drill: <Play size={18} />, passport: <BadgeCheck size={18} /> };
 const ACTION: Record<FirstRunStepId, string> = { protect: 'Elegir contraseña', copy: 'Preparar copia', drill: 'Probar la copia', passport: 'Ver mi pasaporte' };
@@ -57,22 +55,5 @@ export function FirstRun({ plan, ...actions }: { plan: FirstRunPlan } & FirstRun
       })}
     </ol>
     <p className="gx-first-more">¿Prefieres ver el estado completo? <button type="button" className="text-button" onClick={actions.onOpenContinuity}>Ir a Continuidad</button></p>
-  </section>;
-}
-
-/** Con copia pero sin terminar los primeros pasos: una franja con el progreso y el siguiente paso, que se puede ocultar. */
-export function FirstRunStrip({ plan, ...actions }: { plan: FirstRunPlan } & FirstRunActions) {
-  const [hidden, setHidden] = useState(firstRunHidden);
-  const step = plan.steps.find(item => item.id === plan.current);
-  if (hidden || plan.complete || !step) return null;
-  const action = step.ready ? stepAction(actions)(step.id) : null;
-  return <section className="gx-first-strip" aria-labelledby="gx-first-strip-title">
-    <div className="gx-first-strip-text">
-      <h2 id="gx-first-strip-title"><span aria-hidden="true">{ICON[step.id]}</span>Siguiente paso: {step.title.charAt(0).toLowerCase() + step.title.slice(1)}</h2>
-      <p>{step.detail}</p>
-    </div>
-    <Meter plan={plan} />
-    {action ? <button type="button" className="button secondary" onClick={action}>{ACTION[step.id]}</button> : <p className="gx-first-waiting">{step.waiting}</p>}
-    <button type="button" className="icon-button gx-first-hide" aria-label="Ocultar los primeros pasos" title="Ocultar" onClick={() => { write(HIDDEN_KEY); setHidden(true); }}><X size={16} /></button>
   </section>;
 }

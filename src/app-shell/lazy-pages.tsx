@@ -42,8 +42,6 @@ export const RecordTimeline = quiet(() => import('./RecordTimeline.js').then(m =
 export const PipelineCard = quiet(() => import('./PipelineCard.js').then(m => m.PipelineCard), 'Oportunidades');
 export const CoolingCard = quiet(() => import('./CoolingCard.js').then(m => m.CoolingCard), 'Clientes que se enfrían');
 export const PipelineStats = quiet(() => import('./PipelineStats.js').then(m => m.PipelineStats), 'Analítica del proceso');
-export const HomeSeal = quiet(() => import('./ContinuitySeal.js').then(m => m.HomeSeal), 'Sello de continuidad');
-export const MorningBrief = quiet(() => import('./MorningBrief.js').then(m => m.MorningBrief), 'Parte de la mañana');
 export const SequencePicker = quiet(() => import('./SequencePicker.js').then(m => m.SequencePicker), 'Secuencia de seguimiento');
 export const QuickActivity = quiet(() => import('./QuickActivity.js').then(m => m.QuickActivity), 'Registrar actividad');
 export const WhatsNew = quiet(() => import('./WhatsNew.js').then(m => m.WhatsNew), 'Novedades');

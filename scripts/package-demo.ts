@@ -6,6 +6,7 @@ import { Store } from '../server/store.js';
 import { makeFixture, makeDemoSpec } from '../shared/fixtures.js';
 import { runtimeZip } from '../server/exporter.js';
 import { APP_VERSION, RELEASE_TAG, GENERATOR_ZIP, RUNTIME_ZIP } from '../shared/version.js';
+import { isDevOnly } from './dev-only-files.mjs';
 const root=resolve('.'),output=resolve(process.env.PLANB_OUTPUT_DIR||join(root,'delivery',RELEASE_TAG));
 const release=join(output,'Plan-B-CRM-'+RELEASE_TAG);
 const modules=resolve(process.env.PLANB_RUNTIME_MODULES||join(root,'runtime-assets','node_modules'));
@@ -23,7 +24,7 @@ writeFileSync(join(release,'ABRIR PLAN B.cmd'),'@echo off\r\ncd /d "%~dp0"\r\n"%
 const source=join(release,'source');mkdirSync(source);
 const files=['package.json','package-lock.json','tsconfig.json','vite.config.ts','playwright.config.ts','index.html','.gitignore','AGENTS.md','CONTEXTO-PROYECTO.md','PRODUCT.md','COMERCIAL-V2.md',guide,'PLAN-V0.3.md','ENSAYO-RETORNO-v0.3.0.md','IMPLEMENTACION-V2.md','NODE-LICENSE.txt','THIRD-PARTY-LICENSES.txt'];
 for(const file of files)cpSync(join(root,file),join(source,file));
-for(const folder of ['src','server','shared','public','scripts','tests','design'])cpSync(join(root,folder),join(source,folder),{recursive:true,filter:path=>!path.split(/[\\/]/).some(part=>['.tmp','data','node_modules','release'].includes(part))});
+for(const folder of ['src','server','shared','public','scripts','tests','design'])cpSync(join(root,folder),join(source,folder),{recursive:true,filter:path=>!isDevOnly(root,path)&&!path.split(/[\\/]/).some(part=>['.tmp','data','node_modules','release'].includes(part))});
 const seed=new Store(':memory:'),fixture=makeFixture();seed.importSnapshot(fixture);seed.saveGeneration(makeDemoSpec(fixture),{provider:'demo',model:null,generatedAt:new Date().toISOString(),prompt:'',approved:false});seed.activate();seed.set('disconnected',true);const bundle=seed.bundle();seed.close();
 writeFileSync(join(output,RUNTIME_ZIP),await runtimeZip(bundle,release,undefined,node));
 await new Promise<void>((done,fail)=>{const stream=createWriteStream(join(output,GENERATOR_ZIP)),archive=archiver('zip',{zlib:{level:3}});stream.on('close',done);stream.on('error',fail);archive.on('error',fail);archive.pipe(stream);archive.directory(release,false);void archive.finalize();});

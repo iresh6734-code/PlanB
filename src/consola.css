@@ -200,8 +200,8 @@ html body .toast, html[data-theme="dark"] body .toast { border: 1px solid var(--
 html body .toast svg, html[data-theme="dark"] body .toast svg { color: var(--sb-ok); }
 
 /* ---------- Hojas: un solo tipo de superficie, filete de 1 px, sin sombra ---------- */
-html body :is(.oc-card, .table-container, .oc-table, .lint .lint-rows, .lint .lint-space, .hrc, .cpp, .imp, .cr .cr-group, .continuity-summary, .proposal-card, .history-list, .export-custody, .team-sync-link, .ct-verify, .capture-details, .chub-block, .gx-ctl, .copy-inspection, .return-section, .lop-details, .ct-operations-details, .lint-rehearsal) { border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--bg-surface); box-shadow: none; }
-html[data-theme="dark"] body :is(.oc-card, .table-container, .oc-table, .continuity-summary, .proposal-card, .lop .lop-tasks li, .oc-table) { background: var(--bg-surface); }
+html body :is(.oc-card, .table-container, .oc-table, .lint .lint-rows, .lint .lint-space, .hrc, .cpp, .imp, .cr .cr-group, .continuity-summary, .history-list, .export-custody, .team-sync-link, .ct-verify, .capture-details, .chub-block, .gx-ctl, .copy-inspection, .return-section, .lop-details, .ct-operations-details, .lint-rehearsal) { border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--bg-surface); box-shadow: none; }
+html[data-theme="dark"] body :is(.oc-card, .table-container, .oc-table, .continuity-summary, .lop .lop-tasks li, .oc-table) { background: var(--bg-surface); }
 html body .oc-card { padding: 12px 16px; }
 html body .oc-card-head, html body .oc-side-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 html body :is(.oc-card-head, .oc-side-head) h2 { margin: 0; font-size: var(--fs-md); font-weight: 650; }
@@ -336,8 +336,6 @@ html body .continuity-summary, html[data-theme="dark"] body .continuity-summary 
 html body .export-review-check, html[data-theme="dark"] body .export-review-check { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--r-lg); }
 html body .gx-ctl-days > li[data-today="true"] { box-shadow: inset 0 -2px 0 var(--primary); }
 html body .inline-empty { border: 1px dashed var(--border-strong); border-radius: var(--r-lg); background: transparent; color: var(--text-3); }
-html body .proposal-card, html[data-theme="dark"] body .proposal-card { border-radius: var(--r-lg); }
-html body .proposal-detail-label { color: var(--primary-text); }
 html body .workspace-search-match, html[data-theme="dark"] body .workspace-search-match { background: var(--highlighter); color: inherit; }
 
 /* ---------- Integraciones y Radar ---------- */
@@ -404,7 +402,7 @@ html body .page-header > .button-row { margin: 0; align-self: center; }
 html[data-theme="dark"] body .capture-details > summary, html body .capture-details > summary { color: var(--text-1); }
 
 /* Ninguna tarjeta ni aviso lleva una franja de color a la izquierda: la marca es de 1px. */
-html body :is(.cr-item[data-status], .cr-source[data-state], .cr-error, .cr-done, .cr-alt, .cr-tl[data-kind], .cr-disclosures, .cr-provenance, .cr-fiction, .cd-item[data-origin], .clab-stale, .clab-note-danger, .clab-note-warning, .dc-warning, .dc-summary, .dc-receipt, .drv-detail, .drv-residual, .or-today, .or-diagnosis, .lint-shared-next, .fx-report section, .wks, .change-history-diff, .team-demo-note, .gx-focus-card, .error-box, .global-error, .dc-error, .drv-error, .rr-alert, .rc-alert, .cev-error, .team-conflict, .ui-error, .lop-day-note, .lop-day-coverage, .preparation-review-identity, .srh-list li[data-coverage], .rule-notes > div, .tcr-row fieldset, .toh, .work-queue-coverage) { border-left-width: 1px; }
+html body :is(.cr-item[data-status], .cr-source[data-state], .cr-error, .cr-done, .cr-alt, .cr-tl[data-kind], .cr-disclosures, .cr-provenance, .cr-fiction, .cd-item[data-origin], .clab-stale, .clab-note-danger, .clab-note-warning, .dc-warning, .dc-summary, .dc-receipt, .drv-detail, .drv-residual, .or-today, .or-diagnosis, .lint-shared-next, .fx-report section, .wks, .change-history-diff, .team-demo-note, .gx-focus-card, .error-box, .global-error, .dc-error, .drv-error, .rr-alert, .rc-alert, .cev-error, .team-conflict, .ui-error, .lop-day-note, .lop-day-coverage, .preparation-review-identity, .srh-list li[data-coverage], .rule-notes > div, .tcr-row fieldset, .toh) { border-left-width: 1px; }
 
 @media (max-width: 760px) {
   html body .gx-topbar > button.gx-copy { display: inline-flex; }

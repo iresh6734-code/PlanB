@@ -21,6 +21,7 @@ test('el paquete contiene SOLO lo necesario: código del Kit, cuatro scripts y l
   const top = fs.readdirSync(kit).sort(); assert.deepEqual(top, ['kit-manifest.json', 'node_modules', 'package.json', 'scripts', 'server', 'shared', ...(fs.existsSync(path.join(kit, 'tsconfig.json')) ? ['tsconfig.json'] : [])].sort());
   assert.deepEqual(fs.readdirSync(path.join(kit, 'scripts')).sort(), ['block-external.cjs', 'demo-rescue-room.ts', 'rehearse-rescue-capsule.ts', 'relay-rehearsal-child.ts']);
   assert.equal(fs.existsSync(path.join(kit, 'server', 'team')), false); assert.equal(fs.existsSync(path.join(kit, 'tests')), false); assert.equal(fs.existsSync(path.join(kit, 'src')), false);
+  assert.deepEqual(Object.keys(manifest.code).filter(file => file.includes('recovery-rehearsal')), [], 'A0-L: el ensayo de recuperación no viaja en el kit');
   for (const root of KIT_ROOT_PACKAGES) assert.ok(manifest.packages.includes(root), root); for (const dependency of ['esbuild', '@esbuild/' + process.platform + '-' + process.arch]) assert.ok(manifest.packages.some(name => name === dependency || name.endsWith('/' + dependency)), 'dependencia de tsx (también anidada): ' + dependency);
   assert.ok(manifest.nodeModules.bytes < 120 * 1024 * 1024, 'tamaño acotado: ' + manifest.nodeModules.bytes); assert.equal(verifyRelayKit(kit).ok, true);
 });

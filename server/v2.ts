@@ -11,6 +11,7 @@ import { drillReportHtml } from './drill-report.js';
 import { summarizeCapture } from './assessment.js';
 import { ConnectionSchema, type inspectConnection } from './connection.js';
 import { verifyManualRecovery } from './manual-recovery.js';
+import { registerReturnPackage } from './return-package-api.js';
 import { APP_VERSION, RUNTIME_ZIP } from '../shared/version.js';
 import { rememberExport, confirmRecoveryCopy, bundleRevision } from './recovery-copy.js';
 import { registerCaptureComparison } from './capture-comparison.js';
@@ -102,6 +103,9 @@ export function registerV2(app:FastifyInstance,store:Store,root:string,runtime=f
     store.set('disconnected',!enabled);return {connected:enabled};
   });
   app.get('/api/v2/changes',async()=>{const recoveryState=store.recoveryState();return {changes:store.changes(),plan:recoveryState.plan,recoveryIntegrity:recoveryState.integrity,revision:recovery.revision(),pendingChanges:store.pendingChangesCount,watermark:store.get('returnWatermark:hubspot',0),manualReport:store.get('manualRecoveryReport',null)};});
+  // Misión maestra A4: paquete de vuelta (CSV de importación para HubSpot). Solo lee; la vuelta se acredita en la comprobación manual.
+  if(!runtime)registerReturnPackage(app,store,{revision:()=>recovery.revision(),busy:()=>continuity.jobs.list().some(j=>['running','queued'].includes(j.status)),
+    readRemote:()=>{const connection=continuity.connection();if(!connection||!store.spec||!external)return null;return external.remote(connection.token,connection.accountId,store.spec,fetch,connection.mode==='production_readonly');}});
   if(!runtime)app.post('/api/v3/manual-recovery/verify',async request=>{
     store.assertRecoveryIntegrity();
     const body=z.object({revision:z.string().min(1),mapping:z.array(z.object({entity:EntityNameSchema,localId:z.string(),remoteId:z.string().regex(/^\d+$/)}).strict()).max(10000),reviewed:z.literal(true)}).strict().parse(request.body);

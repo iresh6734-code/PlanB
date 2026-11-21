@@ -10,8 +10,8 @@ Generado por `node tools/api/inventory.mjs` a partir de los servidores reales: c
 
 | Grupo | Rutas | main | runtime | equipo |
 | --- | --- | --- | --- | --- |
-| v2 | 39 | 39 | 26 | 0 |
-| v3 | 3 | 3 | 2 | 0 |
+| v2 | 50 | 50 | 34 | 0 |
+| v3 | 4 | 4 | 2 | 0 |
 | v4 | 10 | 10 | 10 | 0 |
 | v5 | 5 | 5 | 0 | 0 |
 | v6 | 2 | 2 | 0 | 0 |
@@ -19,7 +19,7 @@ Generado por `node tools/api/inventory.mjs` a partir de los servidores reales: c
 | sin versión | 19 | 19 | 13 | 0 |
 | team | 54 | 0 | 0 | 54 |
 | fuera de /api | 1 | 0 | 0 | 1 |
-| **Total** | **171** | **116** | **87** | **55** |
+| **Total** | **183** | **128** | **95** | **55** |
 
 ## v2
 
@@ -47,12 +47,21 @@ Generado por `node tools/api/inventory.mjs` a partir de los servidores reales: c
 | POST | `/api/v2/export/encrypted` | ● | ● |  | `server/v2.ts` |
 | POST | `/api/v2/export/package` | ● | ● |  | `server/v2.ts` |
 | POST | `/api/v2/history/prepare` | ● | ● |  | `server/v2.ts` |
+| POST | `/api/v2/import/csv/apply` | ● |  |  | `server/csv-import.ts` |
+| POST | `/api/v2/import/csv/preview` | ● |  |  | `server/csv-import.ts` |
 | POST | `/api/v2/jobs/:id/cancel` | ● | ● |  | `server/v2.ts` |
 | GET | `/api/v2/records/:entity` | ● | ● |  | `server/v2.ts` |
 | GET | `/api/v2/records/:entity/:id` | ● | ● |  | `server/v2.ts` |
+| GET | `/api/v2/records/:entity/:id/then` | ● | ● |  | `server/record-history.ts` |
+| POST | `/api/v2/records/merge` | ● | ● |  | `server/record-merge.ts` |
+| GET | `/api/v2/records/merge-preview` | ● | ● |  | `server/record-merge.ts` |
+| GET | `/api/v2/records/merges` | ● | ● |  | `server/record-merge.ts` |
+| POST | `/api/v2/records/merges/:id/release` | ● | ● |  | `server/record-merge.ts` |
+| POST | `/api/v2/records/merges/:id/undo` | ● | ● |  | `server/record-merge.ts` |
 | POST | `/api/v2/restore` | ● | ● |  | `server/v2.ts` |
 | POST | `/api/v2/return/apply` | ● |  |  | `server/v2.ts` |
 | POST | `/api/v2/return/approve` | ● |  |  | `server/v2.ts` |
+| POST | `/api/v2/return/check` | ● |  |  | `server/v2.ts` |
 | POST | `/api/v2/return/decisions` | ● |  |  | `server/v2.ts` |
 | POST | `/api/v2/return/preview` | ● |  |  | `server/v2.ts` |
 | POST | `/api/v2/return/refresh` | ● |  |  | `server/v2.ts` |
@@ -64,6 +73,8 @@ Generado por `node tools/api/inventory.mjs` a partir de los servidores reales: c
 | POST | `/api/v2/session/begin` | ● | ● |  | `server/v2.ts` |
 | POST | `/api/v2/session/end` | ● | ● |  | `server/v2.ts` |
 | GET | `/api/v2/state` | ● | ● |  | `server/app.ts` |
+| GET | `/api/v2/views/:entity` | ● | ● |  | `server/saved-views.ts` |
+| POST | `/api/v2/views/:entity` | ● | ● |  | `server/saved-views.ts` |
 
 ## v3
 
@@ -72,6 +83,7 @@ Generado por `node tools/api/inventory.mjs` a partir de los servidores reales: c
 | GET | `/api/v3/diagnostics` | ● | ● |  | `server/v2.ts` |
 | POST | `/api/v3/manual-recovery/verify` | ● |  |  | `server/v2.ts` |
 | POST | `/api/v3/recovery-copy/confirm` | ● | ● |  | `server/v2.ts` |
+| POST | `/api/v3/return-package` | ● |  |  | `server/return-package-api.ts` |
 
 ## v4
 

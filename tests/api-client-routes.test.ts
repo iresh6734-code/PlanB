@@ -22,7 +22,8 @@ const patterns = routes.map(route => new RegExp('^' + route.path.replace(/[.+?^$
  * Rutas que ya existen en los servidores pero aún no están en docs/api.md porque su regeneración espera a que se acepte
  * CLAUDE-API-INVENTORY. La prueba también falla si una de estas ya está documentada: así la lista no se queda vieja.
  */
-const PENDING_DOCS = ['/api/v2/import/csv/preview', '/api/v2/import/csv/apply'];
+// 21/11/2026 (misión maestra A4): docs/api.md regenerado con 183 rutas; las dos de importación CSV ya están documentadas.
+const PENDING_DOCS: string[] = [];
 /** Rutas que el inventario deja fuera a propósito, según dice el propio docs/api.md («Límites»). */
 const NOT_INVENTORIED = [
   { prefix: '/api/team/local-pilot', why: 'piloto local del servicio de equipo (PLANB_TEAM_LOCAL_PILOT)' },

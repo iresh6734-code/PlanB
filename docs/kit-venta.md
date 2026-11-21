@@ -10,7 +10,7 @@
 
 ## Cuatro motivos para comprarlo
 
-1. **Sigues vendiendo con HubSpot caído.** Clientes, empresas, tablero de oportunidades, agenda y tareas del día funcionan sin conexión. Un botón, «HubSpot no responde», pone el reloj del incidente en marcha y centra Hoy en lo urgente.
+1. **Sigues vendiendo con HubSpot caído.** Clientes, empresas, tablero de oportunidades, agenda y tareas del día funcionan sin conexión. Un botón, «¿HubSpot caído?», pone el reloj del incidente en marcha y centra Hoy en lo urgente.
 2. **Demuestras que la copia sirve.** Simulacros en un entorno aparte, calendario de simulacros, sello de continuidad (Sin sello, En preparación, Comprobado y Constante) y pasaporte imprimible con huella SHA-256 para el auditor.
 3. **Vuelves sin perder nada.** Devolución revisada de los cambios. Con una conexión de solo lectura, Plan B da una lista imprimible para aplicarlos a mano y comprueba después que están.
 4. **El día a día va más rápido que en el CRM.** Hoy, despachar vencidas, barrido de la mañana, secuencias de seguimiento, recordatorios, agenda semanal y mensual, objetivo del mes y revisión de la semana.

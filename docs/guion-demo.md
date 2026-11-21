@@ -24,7 +24,7 @@ Deja que respondan. Casi siempre es «esperar» o «tirar de una hoja de cálcul
 
 ## 3:00 · HubSpot no responde (R1) · 3 minutos
 
-1. Pulsa **«HubSpot no responde»** en la barra superior. Aparece la banda roja con el reloj del incidente.
+1. Pulsa **«¿HubSpot caído?»** en la barra superior. Aparece la banda roja con el reloj del incidente.
 2. Recorre **«Primeros 15 minutos»**: mirar la antigüedad de la copia, avisar al equipo y abrir la cola.
 3. **Hoy** ya solo enseña lo vencido y lo de hoy. Completa una tarea; el siguiente paso se propone solo.
 4. Abre una oportunidad, cambia su etapa y crea una secuencia de seguimiento: «llamar hoy, correo a 3 días».

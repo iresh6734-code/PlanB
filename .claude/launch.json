@@ -65,6 +65,50 @@
         "tests/.tmp/rd/vite-team.config.ts"
       ],
       "port": 5198
+    },
+    {
+      "name": "rendimiento-api",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "--require",
+        "./scripts/block-external.cjs",
+        "--import",
+        "tsx",
+        "tests/.tmp/perf-app/start-api.mjs"
+      ],
+      "port": 4521
+    },
+    {
+      "name": "rendimiento-ui",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "node_modules/vite/bin/vite.js",
+        "--config",
+        "tests/.tmp/perf-app/vite.config.ts"
+      ],
+      "port": 4522
+    },
+    {
+      "name": "mision-api",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "--require",
+        "./scripts/block-external.cjs",
+        "--import",
+        "tsx",
+        "tests/.tmp/mision/start-api.mjs"
+      ],
+      "port": 4571
+    },
+    {
+      "name": "mision-ui",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "node_modules/vite/bin/vite.js",
+        "--config",
+        "tests/.tmp/mision/vite.config.ts"
+      ],
+      "port": 4572
     }
   ]
 }

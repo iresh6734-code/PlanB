@@ -54,7 +54,7 @@ Las etapas abiertas del tablero y de «Oportunidades abiertas» son diluciones d
   - Márgenes de página de 24 / 16 / 12 px.
 - Radios de 2–4 px, 6 px en capas flotantes y en la esquina de la mesa contra el bastidor. Filetes de 1 px. Sombra solo en capas flotantes (menús, paleta, ventanas).
 - Densidad «cómoda» (Órdenes → Densidad): filas de 40 px y controles de 32 px, solo por encima de 600 px.
-- Móvil (≤ 600 px): controles de 40 px, filas de 44 px y objetivos táctiles de 44 px.
+- Móvil (≤ 600 px): controles de 44 px (campos y botones iguales; misión maestra, 21/11/2026), filas de 44 px y objetivos táctiles de 44 px.
 
 ## Composición
 

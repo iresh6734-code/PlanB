@@ -52,3 +52,9 @@ node tools/ci/full.mjs --skip-types --tests "tests/store-*.test.ts" --perf --mob
 - **Lo que no toca:** `full.mjs` no escribe en `dist/` ni `build/`, y no modifica los arneses que llama.
 
 Pruebas: `tests/ci-full.test.ts`, con la ejecución inyectada: no lanza navegadores ni compila. Encargo: `CLAUDE-CI-STEPS`.
+
+### El paso E2E (R2, revisión 462)
+
+- **Solo selecciona pruebas:** archivos `tests/e2e/…/*.spec.ts` (con `:línea` opcional), `-g`/`--grep TEXTO`, `--grep-invert TEXTO`, `--grep=…` y `--project=NOMBRE`. Cualquier otra opción da error de uso (código 2) antes de ejecutar nada: `--no-build` (reutilizar un build ajeno), `--config`/`-c`, `--list`, reporteros, rutas con `..`… Así «E2E aislados» es siempre una ejecución completa del arnés, con su compilación y su configuración.
+- **«Correcto» exige pruebas ejecutadas:** código 0 y un resumen de Playwright con al menos una prueba pasada y ninguna fallida. Un listado, una selección vacía o una salida sin resumen dejan el paso «con problemas» y lo explican (`reason`). El informe guarda el recuento en `tests` (`passed`, `failed`, `flaky`, `skipped`).
+- **Arnés compartido:** `tools/e2e/isolated.mjs` usa una carpeta fija (`tests/.tmp/e2e-build`) y puertos fijos, leídos de `tools/e2e/playwright.isolated.config.ts` (hoy 4337 y 4341). Dos ejecuciones simultáneas no están aisladas entre sí. Por eso, antes de lanzarlo, `full.mjs` comprueba si esos puertos están en uso. Si lo están, **no lo ejecuta** (pisaría la carpeta de otra ejecución) y deja el paso «con problemas» con el motivo. El arnés no se ha modificado: para aislar ejecuciones paralelas haría falta un encargo sobre `tools/e2e/**`.

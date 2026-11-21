@@ -98,3 +98,42 @@ El primer recorrido señaló un problema grave: el botón «Habilitar modelo loc
 | `tools/team-audit/run.mjs` | `d4b5db9151e6f605636b14e90608617dcc92d9277b6523f97f01728e5168ea5a` |
 | `tools/team-audit/start.mjs` | `df4b2282cb73ac3a390c7c17f6b06c8efb0a77927ca74722fda998c0154e5692` |
 | `tests/team-audit.test.ts` | `1635ac94d8107cdf075aeaa9de45d619ab9cf0416bb769f72eab266bc0d72846` |
+
+## R2 · Correcciones pedidas en CODEX-TEAM-AUDIT-REVIEW-467 (21/11/2026)
+
+Codex reprodujo cuatro casos que la medida dejaba pasar. Eran fallos de detección de la herramienta, no de la interfaz. Corregidos en `checks.mjs`:
+
+| Caso de Codex | Antes | Ahora |
+| --- | --- | --- |
+| `aria-labelledby` con referencias inexistentes | La presencia del atributo bastaba | Se calcula el nombre expuesto: las referencias deben existir y tener texto; si no, «campo sin etiqueta (aria-labelledby apunta a …)». Además, el texto de una etiqueta envolvente se toma sin el propio campo, así que las opciones de un `<select>` ya no pasan por etiqueta |
+| Sombra decorativa fija y `outline: none` | La sombra contaba como foco visible | `focusState` compara el estado enfocado con el normal (contorno, sombra, borde, fondo, color, subrayado, padre y `::after`): si nada cambia, no hay indicador. El recorrido desactiva transiciones al medir |
+| `textarea` de 22 × 22 px | Contaba como control, pero quedaba fuera de los objetivos sin avisar | Entra en la política de objetivos (24/44 px) |
+| Botón que termina en x = −20 sin carril | No se detectaba (el documento no se desplazaba) | Nuevo tipo `offscreen` (grave) contra las dos orillas, salvo que un carril con `overflow-x: auto/scroll` permita llegar |
+
+**Las pruebas nuevas fallan con la versión presentada.** La autoprueba de R2, ejecutada contra el `checks.mjs` de `HEAD` (`00b47a84…`), da exactamente estos cuatro fallos: «no detecta el aria-labelledby que apunta a algo inexistente», «no incluye el textarea de 22×22 px», «no detecta el control fuera de la pantalla por la izquierda» y «toma la sombra fija como indicador de foco». Con la versión nueva pasa entera. Los controles positivos tampoco se marcan: un campo bien etiquetado, un select dentro de su etiqueta, un carril desplazable y un anillo de `:focus-visible`.
+
+### Recorrido repetido sobre el código actual (59e7a47, rediseño «Consola de operaciones»)
+
+96 vistas: 4.264 textos, 2.025 controles y 36 paneles desplegados; ya no hay textos sobre degradado, porque el diseño nuevo lo quitó de la barra lateral. **54 problemas únicos: 8 graves, 0 medios y 46 leves**, todos a 390 y 320 px. Son defectos reales de la interfaz nueva; en el recorrido del 19/11, con el diseño anterior, no aparecían.
+
+| Gravedad | Problema | Dónde | Causa probable | Arreglo propuesto (no aplicado) |
+| --- | --- | --- | --- | --- |
+| **Grave** | La sección activa de la navegación tiene contraste **2,78:1** (texto `#1b1608` sobre píldora `#2853d0`). Se ve en la captura a 390 px | Las 8 secciones, 4 perfiles, 390 y 320 px | `src/faro.css:508-509` (`@media (max-width: 760px)`) fija `background: var(--signal) !important; color: #1b1608 !important`. Ese texto oscuro se eligió para el ámbar de Faro, y `src/consola.css:43` ha cambiado `--signal` a `#2853d0` (azul) | En `faro.css:508-509`, `color: #fff` (texto e icono): **6,48:1**. Mejor aún, un token `--signal-ink` (`#1b1608` en Faro, `#fff` en Consola), para que el texto siga al fondo si `--signal` vuelve a cambiar. La regla afecta a toda barra lateral móvil, también fuera de `/team` |
+| Leve (46) | Botones, campos y desplegables de **40 px** de alto en móvil (< 44 px recomendados; ≥ 24 px AA) | Barra superior (empresa y perfil), botones de acción, campos y permisos de miembros, a 390 y 320 px | `src/consola.css:53` pone `--control-h: 40px` en `@media (max-width: 600px)`. La pasada D7 lo había dejado en 44 px | `--control-h: 44px` en esa misma regla de `consola.css:53` |
+
+Ningún hallazgo de nombre, etiqueta, foco, `h1`, desplazamiento lateral ni control fuera de la pantalla en las vistas reales.
+
+**Verificación R2:**
+- `tests/team-audit.test.ts` → 7/7, con el nuevo tipo grave `offscreen`.
+- `node tools/team-audit/run.mjs --self-test` → correcto.
+- `tsc` → 0.
+- Resultados: `tests/.tmp/perf-team-audit/result.json` y `summary.json`. El ensayo (4531/5299) está parado y no quedan procesos.
+
+| Archivo (R2) | SHA-256 |
+| --- | --- |
+| `tools/team-audit/checks.mjs` | `9d4fc6353fc23521f4f092d7b7c28ec58f8dd972655217bcd8b7a211f572c785` |
+| `tools/team-audit/run.mjs` | `cf8ae24c8969976e3ad028320822e30b62289a8ebeb6b3a9b0dcfcf5c899882b` |
+| `tools/team-audit/README.md` | `7ff32ac733ef2e8929a8639662fc44380c19ff104e29b239fe52677ab5635ff3` |
+| `tests/team-audit.test.ts` | `ed05d369092e2a880da0ca358c2bc9ba5c1ef342e6c2872dc8b14f3492dd1d12` |
+
+Sin cambios: `tools/team-audit/start.mjs`.

@@ -61,3 +61,21 @@ La sesión principal propuso editar `tools/ci/run.mjs`. Al revisar el tablón, e
 | `tools/ci/full.mjs` | `8f94314bb211c625a93e3daace8d8c9f3e64d4714d68150d986da207518d7a22` |
 | `tests/ci-full.test.ts` | `972d6f47b65041ef326253b07a9f7c8c0d67c8f84af8024913b9da3cf25387cf` |
 | `tools/ci/README.md` (antes `4bd3bd6c059732cd882d116021b98809f2c70a10072d15ae03bde05c76725a2a`) | `61e43746859c673cdd46b3b81a65877c226adb8f6c9257798c70a97c114e998c` |
+
+## R2 · Correcciones pedidas en CODEX-CI-MOBILE-REVIEW-462 (21/11/2026)
+
+**F1 · Un paso E2E «correcto» sin pruebas ejecutadas.** Corregido: `e2eEvidence()` lee el resumen final de Playwright (`N passed`, `failed`, `flaky`, `skipped`). El paso solo es «correcto» con código 0, al menos una prueba pasada y ninguna fallida. Un listado, `Running 0 tests`, «No tests found» o una salida vacía dan «con problemas», con `reason: «no consta ninguna prueba ejecutada…»`. Una prueba fallida con código 0 da «1 pruebas fallidas». El recuento queda en `report.steps.e2e.tests`.
+
+**F2 · `--no-build` y `--config` reenviados como filtros.** Corregido: `validateE2eFilters()` solo admite selección de pruebas: `tests/e2e/…/*.spec.ts` (con `:línea`, sin `..`), `-g`/`--grep`, `--grep-invert` (con texto), `--grep=…`, `--grep-invert=…` y `--project=NOMBRE`. Todo lo demás da error de uso antes de ejecutar nada: `--no-build`, `--config`/`-c`, `--list`, reporteros, `--update-snapshots`, `--headed`, rutas fuera de `tests/e2e`… Comprobado por línea de órdenes: `--e2e --list`, `--e2e --no-build`, `--e2e --config otra.ts` y `--e2e tests/e2e/../../x.spec.ts` → código 2.
+
+**Arnés compartido.** No he tocado `tools/e2e/**`. Queda documentado en `tools/ci/README.md` que usa carpeta y puertos fijos. Además, `full.mjs` lee esos puertos de `tools/e2e/playwright.isolated.config.ts` (hoy 4337 y 4341) y los sondea antes de lanzar el arnés. Si alguno está en uso, **no lo ejecuta** y deja el paso «con problemas» con el motivo («arnés E2E ocupado: puertos … en uso»). El sondeo se inyecta en las pruebas y se comprueba con un servidor real (un puerto en uso frente a uno libre).
+
+**Pruebas:** `tests/ci-full.test.ts` → **12/12** (5 nuevas de R2; las 7 anteriores adaptadas: el ejecutor falso informa ahora de «3 passed» en E2E y los filtros de ejemplo están bajo `tests/e2e/`). `tests/ci-compare.test.ts` → 20/20. `tsc` → 0.
+
+**Lo que sigue sin verificarse de verdad:** no he lanzado el arnés E2E real, que compila la App entera y usa 4337/4341. La exigencia de ejecución real queda garantizada por el contrato («correcto» solo con pruebas pasadas en la salida de Playwright) y probada con salidas inyectadas; no con una ejecución completa.
+
+| Archivo (R2) | SHA-256 |
+| --- | --- |
+| `tools/ci/full.mjs` | `532daabd7b878c7ec0a552f8b3e18cc9f94ee67a6fef295a3983c2f81c917fd9` |
+| `tools/ci/README.md` | `a09c0a2866b52d8edb6cb665e44ef101d9bff0a68aa0c85cb9fcc9cae178d3fd` |
+| `tests/ci-full.test.ts` | `81dec9b00e903558f24adf499bebf7678750769737f298a2c4dfd5bb31cc0c00` |

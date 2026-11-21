@@ -34,6 +34,13 @@ Cada hallazgo lleva la **regla CSS probable**: archivo, selector y valor. Gana `
 
 Resultados: `<carpeta>/result.json` (crudo, por vista) y `summary.json` (agrupado por gravedad y vistas afectadas).
 
+## R2 (revisión 467 de Codex)
+
+- **Etiquetas:** se calcula el nombre que el campo expone de verdad. Un `aria-labelledby` cuyas referencias no existen o están vacías no cuenta. El texto de una etiqueta que envuelve al campo se toma sin el propio campo, así que las opciones de un `<select>` no pasan por etiqueta. El `placeholder` no es etiqueta.
+- **Foco:** se compara el estado enfocado con el normal: contorno, sombra, borde, fondo, color y subrayado del elemento, más su padre (`:focus-within`) y su `::after`. Una sombra decorativa permanente ya no cuenta. El recorrido desactiva transiciones y animaciones (`NO_MOTION_CSS`) para no comparar a mitad de una animación. No ve indicadores en `::before`, en otros elementos ni con imágenes.
+- **Áreas de texto:** entran en la política de objetivos táctiles (24 px en escritorio, 44 px en móvil).
+- **Fuera de la pantalla** (`offscreen`, grave): un control que se sale por la izquierda, o por la derecha sin que la página se desplace, sin un carril con `overflow-x: auto | scroll` que permita llegar a él. Los carriles desplazables son el control positivo.
+
 ## Límites
 
 - **No sustituye** una revisión con lector de pantalla ni juzga si un texto se entiende.

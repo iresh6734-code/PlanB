@@ -1,7 +1,7 @@
 {
   "format": 1,
-  "revision": 3235,
-  "updatedAt": "2026-11-19T10:56:42.133Z",
+  "revision": 3237,
+  "updatedAt": "2026-11-21T11:57:10.372Z",
   "tasks": [
     {
       "id": "CODEX-001",
@@ -22225,7 +22225,7 @@
         "tools/e2e/isolated.mjs"
       ],
       "dependencies": [],
-      "status": "working",
+      "status": "review",
       "reserved": true,
       "baseline": {
         "tools/ci/full.mjs": null,
@@ -22233,8 +22233,13 @@
         "tools/ci/README.md": "4bd3bd6c059732cd882d116021b98809f2c70a10072d15ae03bde05c76725a2a",
         "coordination/reports/CLAUDE-CI-STEPS.md": null
       },
-      "submitted": null,
-      "note": "R2 pedida en revisión 462. --e2e --list informa correcto sin ejecutar. Limitar argumentos al contrato de selección, impedir configuración y build alternativos, y verificar ejecución real en fixture o fallar en uso. Documentar arnés compartido.",
+      "submitted": {
+        "tools/ci/full.mjs": "532daabd7b878c7ec0a552f8b3e18cc9f94ee67a6fef295a3983c2f81c917fd9",
+        "tests/ci-full.test.ts": "81dec9b00e903558f24adf499bebf7678750769737f298a2c4dfd5bb31cc0c00",
+        "tools/ci/README.md": "a09c0a2866b52d8edb6cb665e44ef101d9bff0a68aa0c85cb9fcc9cae178d3fd",
+        "coordination/reports/CLAUDE-CI-STEPS.md": "96014f75d5ccdf040401b27973dfce06fa76b283cd6217c2a88c09d9d4acb15e"
+      },
+      "note": "R2 (462): E2E correcto solo con pruebas pasadas y ninguna fallida según el resumen de Playwright (listado/selección vacía/sin resumen = con problemas); filtros limitados a selección (tests/e2e/*.spec.ts, -g/--grep, --grep-invert, --project=) con rechazo previo de --no-build, --config, --list y demás; arnés ocupado (puertos de su config) => no se lanza. 12/12 + ci-compare 20/20, tsc 0. Arnés real no ejecutado.",
       "createdAt": "2026-11-19T07:31:00.924Z"
     },
     {
@@ -22350,7 +22355,7 @@
         "tests/.tmp/ensayo-team/start-team.mjs"
       ],
       "dependencies": [],
-      "status": "working",
+      "status": "review",
       "reserved": true,
       "baseline": {
         "tools/team-audit/start.mjs": null,
@@ -22360,8 +22365,15 @@
         "tests/team-audit.test.ts": null,
         "coordination/reports/CLAUDE-TEAM-AUDIT.md": null
       },
-      "submitted": null,
-      "note": "R2 pedida en revisión 467. Añadir controles para aria-labelledby inexistente, sombra estática que no señala foco, textarea excluido y botón totalmente fuera por la izquierda. Repetir recorrido o acotar criterios comprobados.",
+      "submitted": {
+        "tools/team-audit/start.mjs": "df4b2282cb73ac3a390c7c17f6b06c8efb0a77927ca74722fda998c0154e5692",
+        "tools/team-audit/checks.mjs": "9d4fc6353fc23521f4f092d7b7c28ec58f8dd972655217bcd8b7a211f572c785",
+        "tools/team-audit/run.mjs": "cf8ae24c8969976e3ad028320822e30b62289a8ebeb6b3a9b0dcfcf5c899882b",
+        "tools/team-audit/README.md": "7ff32ac733ef2e8929a8639662fc44380c19ff104e29b239fe52677ab5635ff3",
+        "tests/team-audit.test.ts": "ed05d369092e2a880da0ca358c2bc9ba5c1ef342e6c2872dc8b14f3492dd1d12",
+        "coordination/reports/CLAUDE-TEAM-AUDIT.md": "3ac3959a1037e9e52349dc38a4942e6705ff2348f752ad9c1fa0fdaf7a5bef30"
+      },
+      "note": "R2 (467): etiqueta expuesta real (aria-labelledby roto, select sin etiqueta), foco por comparación enfocado/normal (sombra fija ya no cuenta), textarea en objetivos y control fuera de la pantalla (offscreen) contra ambas orillas con carril desplazable como control positivo. Las 4 pruebas nuevas fallan con checks.mjs de HEAD. Recorrido repetido sobre 59e7a47: 96 vistas, 54 problemas (8 graves: sección activa móvil 2,78:1 por faro.css:508 + consola.css --signal azul; 46 leves: controles de 40 px en móvil por consola.css:53). 7/7, autoprueba ok, tsc 0.",
       "createdAt": "2026-11-19T07:40:31.176Z"
     },
     {
@@ -22633,18 +22645,6 @@
     }
   ],
   "events": [
-    {
-      "at": "2026-11-18T15:17:00.739Z",
-      "actor": "codex",
-      "action": "claim",
-      "task": "CODEX-RECORD-TIMELINE-443"
-    },
-    {
-      "at": "2026-11-18T15:17:01.511Z",
-      "actor": "codex",
-      "action": "add",
-      "task": "CODEX-CANDIDATE-NOV18-444"
-    },
     {
       "at": "2026-11-18T15:17:01.803Z",
       "actor": "codex",
@@ -23832,6 +23832,18 @@
       "actor": "claude",
       "action": "block",
       "task": "CLAUDE-TEAM-AUDIT-R"
+    },
+    {
+      "at": "2026-11-21T11:57:10.238Z",
+      "actor": "claude",
+      "action": "submit",
+      "task": "CLAUDE-TEAM-AUDIT"
+    },
+    {
+      "at": "2026-11-21T11:57:10.372Z",
+      "actor": "claude",
+      "action": "submit",
+      "task": "CLAUDE-CI-STEPS"
     }
   ]
 }

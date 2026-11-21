@@ -10,7 +10,7 @@ import { SECTIONS, WIDTHS } from '../tools/team-audit/run.mjs';
 const source = { file: 'src/faro.css', selector: '.team-shell .nav-item', prop: 'min-height', value: '30px' };
 
 test('la gravedad sigue el criterio del informe', () => {
-  for (const kind of ['name', 'label', 'overflow', 'h1', 'focus', 'error', 'img-alt']) assert.equal(severityOf({ kind }), 'grave', kind);
+  for (const kind of ['name', 'label', 'overflow', 'h1', 'focus', 'error', 'img-alt', 'offscreen']) assert.equal(severityOf({ kind }), 'grave', kind);
   assert.equal(severityOf({ kind: 'contrast', ratio: 2.99 }), 'grave');
   assert.equal(severityOf({ kind: 'contrast', ratio: 3 }), 'media');
   assert.equal(severityOf({ kind: 'contrast', ratio: 4.49 }), 'media');

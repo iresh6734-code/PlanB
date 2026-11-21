@@ -13,7 +13,7 @@ import { chromium } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { aggregate, focusState, pageAudit, severityOf, tally } from './checks.mjs';
+import { NO_MOTION_CSS, aggregate, focusState, pageAudit, severityOf, tally } from './checks.mjs';
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const EXECUTABLE = process.env.PLANB_PLAYWRIGHT_EXECUTABLE ?? 'C:/Users/iresh/AppData/Local/ms-playwright/chromium_headless_shell-1228/chrome-headless-shell-win64/chrome-headless-shell.exe';
@@ -59,6 +59,8 @@ export async function audit({ url = process.env.PLANB_TEAM_AUDIT_URL ?? 'http://
       const nav = page.getByRole('navigation', { name: 'Secciones del equipo' });
       try { await nav.waitFor({ timeout: 20_000 }); }
       catch { await enter.click({ timeout: 10_000 }); await nav.waitFor({ timeout: 30_000 }); }
+      // R2 (467): sin transiciones mientras se mide, para comparar el foco con estados ya asentados.
+      await page.addStyleTag({ content: NO_MOTION_CSS });
       const profiles = await page.getByLabel('Perfil de ensayo').locator('option').allTextContents();
       for (const profile of profiles) {
         await page.getByLabel('Perfil de ensayo').selectOption({ label: profile });
@@ -124,8 +126,36 @@ export async function selfTest({ log = console.log } = {}) {
     await page.locator('button.tiny').first().focus();
     const focus = await page.evaluate(focusState);
     if (!focus.focused || focus.visible) failures.push('no detecta el foco invisible: ' + JSON.stringify(focus));
+
+    // R2 (467): los cuatro casos que la versión presentada dejaba pasar, más los controles positivos que no deben marcarse.
+    const r2 = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    await r2.setContent('<style>' + NO_MOTION_CSS + 'body{margin:0;font:16px sans-serif;color:#111;background:#fff}button{min-width:48px;min-height:48px;border:1px solid #333;background:#fff;color:#111}'
+      + '.ring:focus-visible{outline:3px solid #000}.static{box-shadow:0 0 0 3px #888;outline:none}.lane{display:flex;overflow-x:auto;width:390px}.lane button{flex:none;width:200px}'
+      + '.offleft{position:relative;left:-90px;width:70px}</style><main><h1>R2</h1>'
+      + '<label for="ok">Nombre</label><input id="ok" style="min-height:48px">'
+      + '<input id="ghost" aria-labelledby="no-existe" style="min-height:48px">'
+      + '<label>Notas <textarea id="small" style="width:22px;height:22px"></textarea></label>'
+      + '<label>Lista <select id="opts" style="min-height:48px"><option>opción con texto</option></select></label>'
+      + '<select id="bare" style="min-height:48px"><option>texto de la opción</option></select>'
+      + '<button class="ring">Con anillo</button><button class="static">Sombra fija</button>'
+      + '<div><button class="offleft">Fuera</button></div>'
+      + '<div class="lane"><button>Uno</button><button>Dos</button><button id="reachable">Tres</button></div></main>');
+    const r2found = (await r2.evaluate(pageAudit, {})).findings;
+    const has = (kind, element) => r2found.some(f => f.kind === kind && f.element.includes(element));
+    if (!has('label', 'input#ghost')) failures.push('R2: no detecta el aria-labelledby que apunta a algo inexistente');
+    if (!has('label', 'select#bare')) failures.push('R2: toma el texto de las opciones de un select como etiqueta');
+    if (has('label', 'select#opts') || has('label', 'input#ok')) failures.push('R2: marca como sin etiqueta un campo bien etiquetado');
+    if (!has('target', 'textarea#small')) failures.push('R2: no incluye el textarea de 22×22 px en los objetivos táctiles');
+    if (!has('offscreen', 'button.offleft')) failures.push('R2: no detecta el control fuera de la pantalla por la izquierda');
+    if (r2found.some(f => f.kind === 'offscreen' && f.element.includes('reachable')) || r2found.some(f => f.kind === 'offscreen' && !f.element.includes('offleft'))) failures.push('R2: marca como inalcanzable un control dentro de un carril desplazable');
+    // Foco con teclado: el anillo de :focus-visible cuenta; la sombra fija que no cambia al enfocar, no.
+    const focusOn = async selector => { await r2.locator(selector).focus(); await r2.keyboard.press('Shift+Tab'); await r2.keyboard.press('Tab'); return r2.evaluate(focusState); };
+    const ring = await focusOn('button.ring'), still = await focusOn('button.static');
+    if (!ring.visible) failures.push('R2: no reconoce el anillo de :focus-visible como indicador: ' + JSON.stringify(ring));
+    if (still.visible) failures.push('R2: toma la sombra fija como indicador de foco: ' + JSON.stringify(still));
+    await r2.close();
   } finally { await browser.close(); }
-  log(failures.length ? 'Autoprueba con fallos:\n  ' + failures.join('\n  ') : 'Autoprueba: la medida detecta los 7 tipos plantados, el contraste sobre un degradado, el foco invisible y la regla de origen; la página limpia (con un control en un details cerrado y texto claro sobre degradado oscuro) sale sin hallazgos.');
+  log(failures.length ? 'Autoprueba con fallos:\n  ' + failures.join('\n  ') : 'Autoprueba: la medida detecta los 7 tipos plantados, el contraste sobre un degradado, el foco invisible y la regla de origen; la página limpia (con un control en un details cerrado y texto claro sobre degradado oscuro) sale sin hallazgos. R2: detecta el aria-labelledby roto, el select sin etiqueta, el textarea pequeño, el control fuera por la izquierda y la sombra fija sin cambio de foco; respeta el carril desplazable y el anillo de :focus-visible.');
   return failures.length ? 1 : 0;
 }
 

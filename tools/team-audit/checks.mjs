@@ -6,7 +6,7 @@
 /**
  * Mide la vista actual. Devuelve { findings, coverage }: hallazgos { kind, detail, element, source }, donde `source` es la regla CSS que más
  * probablemente fija la propiedad implicada ({ file, selector, prop, value }) o null. Solo lee.
- * kind: contrast · name · label · target · img-alt · h1 · overflow.
+ * kind: contrast · name · label · target · img-alt · h1 · overflow · offscreen.
  */
 export function pageAudit(options) {
   const { scope = 'main *, .sidebar *, .team-topbar *', mobile = innerWidth < 768 } = options || {};
@@ -97,20 +97,42 @@ export function pageAudit(options) {
   }
   // Nombres, etiquetas y objetivos táctiles (WCAG 4.1.2, 1.3.1, 2.5.8 AA = 24 px; 2.5.5 = 44 px, que se exige en móvil).
   const min = mobile ? 44 : 24;
+  // R2 (467): nombre que el campo expone de verdad. Un aria-labelledby cuyas referencias no existen o están vacías no
+  // nombra nada (Chromium expone el campo sin nombre); el texto de una etiqueta que envuelve al campo se toma sin el propio
+  // campo (si no, las opciones de un <select> parecerían una etiqueta). El placeholder no cuenta como etiqueta.
+  const textOf = ids => ids.split(/\s+/).filter(Boolean).map(id => document.getElementById(id)).filter(Boolean).map(n => n.textContent.trim()).join(' ').trim();
+  const wrapperText = label => { const copy = label.cloneNode(true); copy.querySelectorAll('input, select, textarea, button').forEach(n => n.remove()); return copy.textContent.trim(); };
+  const fieldName = e => {
+    const ref = e.getAttribute('aria-labelledby'); if (ref && textOf(ref)) return textOf(ref);
+    const aria = (e.getAttribute('aria-label') || '').trim(); if (aria) return aria;
+    if (e.id) { const forText = [...document.querySelectorAll('label[for="' + CSS.escape(e.id) + '"]')].map(l => wrapperText(l)).join(' ').trim(); if (forText) return forText; }
+    const wrap = e.closest('label'); if (wrap && wrapperText(wrap)) return wrapperText(wrap);
+    return (e.getAttribute('title') || '').trim();
+  };
+  const doc = document.scrollingElement || document.documentElement, pageScrollsSideways = doc.scrollWidth > innerWidth + 1;
+  // Un carril que desplaza de lado (overflow-x auto/scroll) permite llegar a lo que se sale de la pantalla; uno que recorta no.
+  const reachableLane = e => { for (let p = e.parentElement; p && p !== document.body; p = p.parentElement) { const ox = getComputedStyle(p).overflowX; if (ox === 'auto' || ox === 'scroll') return true; } return false; };
   for (const e of document.querySelectorAll('button, a[href], [role="button"], [role="tab"], select, input:not([type="hidden"]), textarea')) {
     if (!visible(e)) continue;
     coverage.controls++;
     const tag = e.tagName.toLowerCase();
     if (tag === 'input' || tag === 'select' || tag === 'textarea') {
-      const labelled = (e.id && document.querySelector('label[for="' + CSS.escape(e.id) + '"]')) || e.closest('label') || e.getAttribute('aria-label') || e.getAttribute('aria-labelledby') || e.getAttribute('title');
-      if (!labelled) out.push({ kind: 'label', detail: 'campo sin etiqueta', element: describe(e), source: null });
+      if (!fieldName(e)) {
+        const ref = e.getAttribute('aria-labelledby');
+        out.push({ kind: 'label', detail: 'campo sin etiqueta' + (ref ? ' (aria-labelledby apunta a «' + ref + '», que no existe o está vacío)' : ''), element: describe(e), source: null });
+      }
     } else if (!accessibleName(e)) out.push({ kind: 'name', detail: 'control sin nombre accesible', element: describe(e) + ' ' + e.outerHTML.slice(0, 120), source: null });
     const r = e.getBoundingClientRect();
+    // R2 (467): fuera de la pantalla por la izquierda (no se puede desplazar hasta ahí) o por la derecha sin que la página se
+    // desplace, y sin un carril desplazable que permita llegar: el control no se puede alcanzar.
+    if ((r.left < -1 || (r.right > innerWidth + 1 && !pageScrollsSideways)) && !reachableLane(e))
+      out.push({ kind: 'offscreen', detail: 'control fuera de la pantalla (x ' + Math.round(r.left) + '…' + Math.round(r.right) + ' en ' + innerWidth + ' px) sin carril desplazable «' + ((tag === 'input' || tag === 'select' || tag === 'textarea' ? fieldName(e) : accessibleName(e)).slice(0, 30) || tag) + '»', element: describe(e), source: sourceOf(e, ['left', 'right', 'margin-left', 'transform', 'position', 'width']) });
     const inline = (tag === 'a' && !!e.closest('p, li, small') && getComputedStyle(e).display === 'inline') || (tag === 'button' && !!e.closest('p'));
     const labelledToggle = tag === 'input' && ['checkbox', 'radio'].includes(e.type) && !!e.closest('label');
-    const target = ['button', 'a', 'select'].includes(tag) || e.getAttribute('role') === 'button' || e.getAttribute('role') === 'tab' || (tag === 'input' && !labelledToggle);
+    // R2 (467): las áreas de texto también son objetivos (antes se contaban como control pero se excluían sin avisar).
+    const target = ['button', 'a', 'select', 'textarea'].includes(tag) || e.getAttribute('role') === 'button' || e.getAttribute('role') === 'tab' || (tag === 'input' && !labelledToggle);
     if (target && !inline && (r.width < min || r.height < min))
-      out.push({ kind: 'target', min, width: Math.round(r.width), height: Math.round(r.height), detail: 'objetivo ' + Math.round(r.width) + '×' + Math.round(r.height) + ' < ' + min + ' px «' + (accessibleName(e).slice(0, 30) || tag) + '»', element: describe(e), source: sourceOf(e, r.height < min ? ['min-height', 'height', 'padding', 'padding-block', 'font-size'] : ['min-width', 'width', 'padding', 'padding-inline']) });
+      out.push({ kind: 'target', min, width: Math.round(r.width), height: Math.round(r.height), detail: 'objetivo ' + Math.round(r.width) + '×' + Math.round(r.height) + ' < ' + min + ' px «' + ((tag === 'input' || tag === 'select' || tag === 'textarea' ? fieldName(e) : accessibleName(e)).slice(0, 30) || tag) + '»', element: describe(e), source: sourceOf(e, r.height < min ? ['min-height', 'height', 'padding', 'padding-block', 'font-size'] : ['min-width', 'width', 'padding', 'padding-inline']) });
   }
   for (const img of document.querySelectorAll('img')) if (visible(img) && !img.hasAttribute('alt')) out.push({ kind: 'img-alt', detail: 'imagen sin alt', element: describe(img), source: null });
   // Un h1 por vista, contando los del árbol de accesibilidad (incluidos .sr-only).
@@ -118,8 +140,7 @@ export function pageAudit(options) {
   const h1 = [...document.querySelectorAll('main h1')].filter(exposed).length;
   if (h1 !== 1) out.push({ kind: 'h1', count: h1, detail: 'h1 en main: ' + h1, element: 'main', source: null });
   // Desplazamiento lateral de la página y elementos que se salen sin un contenedor que desplace o recorte.
-  const doc = document.scrollingElement || document.documentElement;
-  if (doc.scrollWidth > innerWidth + 1) {
+  if (pageScrollsSideways) {
     const offenders = [];
     for (const el of document.querySelectorAll('body *')) {
       if (!visible(el)) continue;
@@ -136,16 +157,34 @@ export function pageAudit(options) {
   return { findings: out, coverage };
 }
 
-/** Estado del foco tras pulsar Tab: ¿dibuja contorno o sombra el elemento enfocado? Se ejecuta en la página. */
+/**
+ * Estado del foco tras pulsar Tab: ¿cambia algo visible al enfocar? Se ejecuta en la página.
+ * R2 (467): se compara el estado enfocado con el normal. Antes bastaba con que hubiera contorno o sombra, y una sombra
+ * decorativa permanente pasaba por indicador de foco. Ahora se toman las propiedades que suelen señalar el foco (contorno,
+ * sombra, borde, fondo, color y subrayado) en el elemento, en su padre (anillos con :focus-within) y en su ::after, se
+ * quita el foco, se vuelven a tomar y se devuelve el foco. Es indicador si algo cambia.
+ * Alcance: no ve indicadores dibujados con ::before, en otros elementos ni con imágenes; conviene desactivar las
+ * transiciones al medir (lo hace run.mjs) para no comparar a mitad de una animación.
+ */
 export function focusState() {
   const e = document.activeElement;
   if (!e || e === document.body) return { focused: false };
-  const s = getComputedStyle(e);
-  const outline = s.outlineStyle !== 'none' && parseFloat(s.outlineWidth) > 0;
-  const shadow = s.boxShadow && s.boxShadow !== 'none';
+  const own = ['outlineStyle', 'outlineWidth', 'outlineColor', 'outlineOffset', 'boxShadow', 'borderTopColor', 'borderTopWidth', 'borderBottomColor', 'borderBottomWidth', 'borderLeftColor', 'backgroundColor', 'color', 'textDecorationLine'];
+  const take = (el, pseudo, props) => { if (!el) return ''; const s = getComputedStyle(el, pseudo); return props.map(p => s[p]).join('|'); };
+  const snapshot = () => ({ self: own.map(p => getComputedStyle(e)[p]), parent: take(e.parentElement, null, ['outlineStyle', 'outlineWidth', 'boxShadow', 'backgroundColor', 'borderTopColor']), after: take(e, '::after', ['content', 'outlineStyle', 'boxShadow', 'backgroundColor', 'borderTopColor', 'opacity']) });
+  const focused = snapshot();
+  e.blur();
+  const normal = snapshot();
+  e.focus({ preventScroll: true });
+  const changed = own.filter((_, i) => focused.self[i] !== normal.self[i]);
+  if (focused.parent !== normal.parent) changed.push('padre');
+  if (focused.after !== normal.after) changed.push('::after');
   const name = (e.getAttribute('aria-label') || e.innerText || e.getAttribute('title') || '').trim().slice(0, 30);
-  return { focused: true, visible: !!(outline || shadow), element: e.tagName.toLowerCase() + (typeof e.className === 'string' && e.className ? '.' + e.className.trim().split(/\s+/).slice(0, 2).join('.') : ''), name };
+  return { focused: true, visible: changed.length > 0, changed, element: e.tagName.toLowerCase() + (typeof e.className === 'string' && e.className ? '.' + e.className.trim().split(/\s+/).slice(0, 2).join('.') : ''), name };
 }
+
+/** Hoja que desactiva transiciones y animaciones mientras se mide el foco (no cambia colores ni tamaños finales). */
+export const NO_MOTION_CSS = '*, *::before, *::after { transition: none !important; animation: none !important; }';
 
 // ── Funciones puras ───────────────────────────────────────────────────────────────────────────────────────
 
@@ -153,14 +192,14 @@ export const SEVERITIES = ['grave', 'media', 'leve'];
 
 /**
  * Gravedad de un hallazgo:
- * - grave: impide usar o entender la vista (sin nombre o etiqueta, contraste < 3:1, foco invisible, desplazamiento lateral,
+ * - grave: impide usar o entender la vista (sin nombre o etiqueta, contraste < 3:1, foco invisible, desplazamiento lateral, control fuera de la pantalla,
  *   h1 ausente o repetido, vista que no abre);
  * - media: incumple AA sin bloquear (contraste entre 3:1 y el mínimo, objetivo < 24 px);
  * - leve: por debajo de la recomendación móvil de 44 px pero ≥ 24 px.
  */
 export function severityOf(finding) {
   switch (finding.kind) {
-    case 'name': case 'label': case 'overflow': case 'h1': case 'focus': case 'error': case 'img-alt': return 'grave';
+    case 'name': case 'label': case 'overflow': case 'h1': case 'focus': case 'error': case 'img-alt': case 'offscreen': return 'grave';
     case 'contrast': return finding.ratio < 3 ? 'grave' : 'media';
     case 'target': return Math.min(finding.width, finding.height) < 24 ? 'media' : 'leve';
     default: return 'media';

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, CalendarClock, CalendarRange, CheckCircle2, Clock3, Database, Download, FileDown, LockKeyhole, Play, RefreshCw, ShieldCheck, Siren, Unplug } from 'lucide-react';
+import { ArrowRight, CalendarClock, CalendarRange, Check, CheckCircle2, ChevronDown, Circle, Clock3, Database, Download, FileDown, LockKeyhole, Play, RefreshCw, ShieldCheck, Siren, Unplug } from 'lucide-react';
 import type { AppState } from '../shared/model.js';
 import type { ContinuityStatus } from '../shared/operations.js';
 import { api, post, download } from './api.js';
@@ -30,7 +30,7 @@ import { startContingency } from './app-shell/contingency.js';
 import { clockTime, durationText } from './app-shell/contingency-text.js';
 import { useContingency, useLastIncident } from './app-shell/useContingency.js';
 import { downloadIncident } from './app-shell/incident-download.js';
-import { captureLedger, continuityReadiness, copyVitals, drillCalendar, DRILL_EVERY_DAYS, DRILL_SOON_DAYS, formatBytes, hourlyCaptures, jobStats, outageForecast, type LedgerFilter, type NextActionId, type StepId } from './app-shell/continuity-insights.js';
+import { captureLedger, continuityReadiness, copyVitals, drillCalendar, DRILL_EVERY_DAYS, DRILL_SOON_DAYS, formatBytes, hourlyCaptures, jobStats, outageForecast, READINESS_OUTAGE_LINES, type LedgerFilter, type NextActionId, type StepId } from './app-shell/continuity-insights.js';
 import './continuity-home-hub.css';
 import { DowntimeCard } from './app-shell/DowntimeCard.js';
 import { BrandPicker } from './app-shell/BrandPicker.js';
@@ -124,29 +124,36 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
     else if(id==='confirm')document.getElementById('ct-confirm-copy')?.focus();
   };
   const {days:ledgerDays,hidden:ledgerHidden}=pageLedger(ledger?.days??[],ledger?.shown??0,ledgerAll);
-  return <section className="continuity-home"><header className="page-header"><div><h1>Continuidad</h1><p className="page-subtitle">Una copia utilizable y la prueba que lo demuestra.</p></div><div className="ct-head-side"><div className="ct-head-actions"><button type="button" className="button secondary" disabled={!status} aria-describedby="ct-share-help" onClick={shareReport}><Download size={15}/>Parte para compartir</button><button type="button" className="button secondary" disabled={!status} aria-describedby="ct-share-help" onClick={shareMonthly}><CalendarRange size={15}/>Informe del mes</button><BrandPicker/></div><p id="ct-share-help" className="ct-share-help">Para enviar o imprimir, sin nombres de clientes ni identificadores.</p></div></header>
+  return <section className="continuity-home"><header className="page-header"><div><h1>Continuidad</h1><p className="page-subtitle">Una copia utilizable y la prueba que lo demuestra.</p></div><div className="ct-head-side">{/* Misión maestra B4.2: los informes van juntos en un menú; la cabecera no compite con la acción principal. */}<details className="ct-reports"><summary className="button secondary"><FileDown size={15} aria-hidden="true"/>Informes<ChevronDown size={14} aria-hidden="true"/></summary><div className="ct-reports-menu"><p id="ct-share-help" className="ct-share-help">Para enviar o imprimir, sin nombres de clientes ni identificadores.</p><div className="ct-head-actions"><button type="button" className="button secondary" disabled={!status} aria-describedby="ct-share-help" onClick={shareReport}><Download size={15}/>Parte para compartir</button><button type="button" className="button secondary" disabled={!status} aria-describedby="ct-share-help" onClick={shareMonthly}><CalendarRange size={15}/>Informe del mes</button></div><BrandPicker/></div></details></div></header>
     {error?<p className="error-box" role="alert">{error}</p>:null}
     {readHealth.note&&!error?<p className="helper read-stale" role="status">{readHealth.note}</p>:null}
     {status?.recoveryIntegrity?.state==='invalid'?<p className="error-box" role="alert">{INVALID_RECOVERY_MESSAGE}</p>:null}
     <TabList label="Secciones de Continuidad" prefix="ct" tabs={CONTINUITY_TABS} value={tab} onChange={setTab}/>
     <div className="ct-panel ct-estado" {...tabPanelProps('ct','estado')} hidden={tab!=='estado'}>
+      {/* Misión maestra B4.2 · UN índice de preparación: el veredicto, los cinco pasos con su acción y el siguiente paso como
+          única acción principal de la pestaña. Antes la preparación se decía cuatro veces (veredicto, sello, lista lateral y aviso). */}
+      {readiness?<section className="ct-ready" data-level={readiness.level} aria-labelledby="ct-ready-title">
+        <div className="ct-ready-verdict"><h2 id="ct-ready-title">{readiness.title}</h2>
+          <p><span className="ct-ready-count">{readiness.done} de {readiness.total}</span> pasos de preparación hechos</p></div>
+        <div className="ct-ready-next"><p>{readiness.next.detail}</p>
+          {readiness.next.id!=='none'?<button type="button" className="button primary" disabled={nextDisabled(readiness.next.id)} onClick={()=>runNext(readiness.next.id)}>{readiness.next.label}<ArrowRight size={15}/></button>:<span className="ct-ready-clear"><CheckCircle2 size={15}/>Nada pendiente</span>}</div>
+        <ol className="ct-ready-steps" aria-label="Pasos de preparación">
+          <li data-done={step('protect')?.done?'true':'false'}><span className="ct-step-name">{step('protect')?.done?<Check size={13} aria-hidden="true"/>:<Circle size={11} aria-hidden="true"/>}Proteger el acceso</span>{stepDetail('protect')}{!status?.protected?<button className="text-button" onClick={protect}>Elegir contraseña</button>:null}</li>
+          <li data-done={step('connect')?.done?'true':'false'}><span className="ct-step-name">{step('connect')?.done?<Check size={13} aria-hidden="true"/>:<Circle size={11} aria-hidden="true"/>}Conectar y revisar alcance</span><button className="text-button" onClick={()=>status?.protected?setConnection(true):protect()}>{status?.connection?'Portal '+status.connection.accountId+' · '+(production?'solo lectura':'ensayo'):'Conectar HubSpot'}</button></li>
+          <li data-done={step('capture')?.done?'true':'false'}><span className="ct-step-name">{step('capture')?.done?<Check size={13} aria-hidden="true"/>:<Circle size={11} aria-hidden="true"/>}Conservar una captura completa</span>{stepDetail('capture')}</li>
+          <li data-done={step('drill')?.done?'true':'false'}><span className="ct-step-name">{step('drill')?.done?<Check size={13} aria-hidden="true"/>:<Circle size={11} aria-hidden="true"/>}Probar la misma copia</span>{stepDetail('drill')}</li>
+          <li data-done={step('recovery')?.done?'true':'false'}><span className="ct-step-name">{step('recovery')?.done?<Check size={13} aria-hidden="true"/>:<Circle size={11} aria-hidden="true"/>}Preparar recuperación</span>{stepDetail('recovery')}<button className="text-button" disabled={!state.ready} onClick={exportCopy}>Crear copia cifrada</button>{status?.recoveryCopy?.current&&!status.recoveryCopy.confirmedAt?<button id="ct-confirm-copy" className="text-button" onClick={()=>run(()=>post('/v3/recovery-copy/confirm',{storedSeparately:true,revision:status.recoveryCopy!.revision}))}>Confirmo que conservé la copia fuera de este PC y la contraseña por separado</button>:null}{status?.recoveryCopy&&!status.recoveryCopy.current?<p className="warning-text">La copia conservada corresponde a otra revisión. Exporta los cambios actuales.</p>:null}</li>
+        </ol>
+      </section>:null}
       {state.snapshot&&!state.runtime?<section className="ct-contingency" data-active={contingency?'true':undefined} aria-labelledby="ct-contingency-title">
         <span className="ct-contingency-icon" aria-hidden="true"><Siren size={18}/></span>
         <div className="ct-contingency-body"><h2 id="ct-contingency-title">{contingency?'Contingencia en curso desde las '+clockTime(contingency.startedAt):'¿HubSpot no responde?'}</h2>
           <p>{contingency?'La banda de arriba lleva el reloj y los primeros pasos. Termínala cuando HubSpot vuelva para guardar el expediente.':'Activa el modo contingencia: Hoy se centra en lo vencido y lo que vence en 24 horas, Cambios te recuerda no devolver todavía y Plan B cronometra el incidente.'}</p>
           {!contingency&&lastIncident?<p className="ct-contingency-last">Último incidente: {describeCapture(lastIncident.startedAt).date??clockTime(lastIncident.startedAt)} · {durationText(lastIncident.startedAt,lastIncident.endedAt)}</p>:null}
           {incidentNote?<p className="ct-contingency-note" role="status">{incidentNote}</p>:null}</div>
-        <div className="ct-contingency-actions">{contingency?null:<button type="button" className="button primary ct-contingency-start" onClick={()=>startContingency(new Date())}><Siren size={15}/>Activar modo contingencia</button>}
+        <div className="ct-contingency-actions">{contingency?null:<button type="button" className="button secondary ct-contingency-start" onClick={()=>startContingency(new Date())}><Siren size={15}/>Activar modo contingencia</button>}
           {!contingency&&lastIncident?<><button type="button" className="button secondary" disabled={incidentBusy} onClick={()=>saveIncident('html')}><FileDown size={15}/>Expediente<ProBadge feature="incident-file" decorative/></button><button type="button" className="text-button" disabled={incidentBusy} onClick={()=>saveIncident('json')}>JSON con huella</button></>:null}</div>
       </section>:null}
-      {readiness?<section className="ct-ready" data-level={readiness.level} aria-labelledby="ct-ready-title">
-        <div className="ct-ready-verdict"><h2 id="ct-ready-title">{readiness.title}</h2>
-          <p><span className="ct-ready-count">{readiness.done} de {readiness.total}</span> pasos de preparación hechos</p>
-          <ol className="ct-ready-meter" aria-hidden="true">{readiness.steps.map(item=><li key={item.id} data-done={item.done?'true':'false'} title={item.label+': '+item.detail}/>)}</ol></div>
-        <div className="ct-ready-next"><p>{readiness.next.detail}</p>
-          {readiness.next.id!=='none'?<button type="button" className="button secondary" disabled={nextDisabled(readiness.next.id)} onClick={()=>runNext(readiness.next.id)}>{readiness.next.label}<ArrowRight size={15}/></button>:<span className="ct-ready-clear"><CheckCircle2 size={15}/>Nada pendiente</span>}</div>
-      </section>:null}
-      {seal?<SealCard seal={seal}/>:null}
       {vitals?<dl className="ct-vitals" aria-label="Constantes de la copia">{vitals.map(vital=><div key={vital.id} data-tone={vital.tone}><dt>{vital.label}</dt><dd className="ct-vital-value">{vital.value}</dd><dd className="ct-vital-note">{vital.note}</dd></div>)}</dl>:null}
       <div className="ct-main">
     <section className={'continuity-summary '+(status?.stale?'needs-attention':'')}>
@@ -155,12 +162,12 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
       {latest ? <small>{summary && summary.id === latest.id ? captureRecordCount(summary.records) + ' en esta captura' : 'Recuento de esta captura no disponible'}{activeId && !differentArchive ? ' · Es la copia activa' : ''}</small> : null}
       {differentArchive ? <p><strong>Copia activa:</strong> {activeDate ?? 'fecha no disponible'}. Tu trabajo sigue en esta copia.</p> : null}
       {latest?<div className="continuity-facts"><StatusTag tone={diagnosis?.status==='passed'?'success':diagnosis?.status==='untested'?'warning':'neutral'}>{diagnosis?.status==='passed'?'Prueba vigente':diagnosis?.status==='untested'?'Prueba pendiente':'Verificación por revisar'}</StatusTag>{differentArchive?<span>Prueba de la última captura guardada</span>:null}<span>{status?.pendingChanges??0} cambios locales pendientes</span>{automation?<span>{automation.active?'Capturas automáticas habilitadas':automation.reason}</span>:null}</div>:null}</div>
-      <button className="button primary" disabled={busy||!!active} onClick={()=>continueActive?work():latest?run(async()=>{await post('/v2/session/begin',{captureId:latest.id});work();}):state.runtime?setRestore(true):prepare()}>{differentArchive?'Continuar con la copia activa':latest?'Continuar trabajando':state.runtime?'Restaurar archivo':'Preparar aplicación'}<ArrowRight size={17}/></button>
+      <button className={'button '+(readiness&&readiness.next.id!=='none'?'secondary':'primary')} disabled={busy||!!active} onClick={()=>continueActive?work():latest?run(async()=>{await post('/v2/session/begin',{captureId:latest.id});work();}):state.runtime?setRestore(true):prepare()}>{differentArchive?'Continuar con la copia activa':latest?'Continuar trabajando':state.runtime?'Restaurar archivo':'Preparar aplicación'}<ArrowRight size={17}/></button>
     </section>
     {outage?<article className="ct-outage" data-tone={outage.tone} aria-labelledby="ct-outage-title"><div className="section-heading"><h2 id="ct-outage-title">Si HubSpot cae ahora</h2><Unplug size={19}/></div>
       <p className="ct-outage-verdict">{outage.headline}</p>
-      <ul>{outage.lines.map(line=><li key={line.id} data-tone={line.tone}>{line.text}</li>)}</ul>
-      <DowntimeCard spec={state.ready?state.spec:null} revision={(state.snapshot?.capturedAt??'')+':'+(state.changes??0)}/>
+      {/* La prueba y la copia fuera del PC ya son pasos del índice de arriba: aquí solo lo que tendrías para trabajar. */}
+      <ul>{outage.lines.filter(line=>!readiness||!READINESS_OUTAGE_LINES.includes(line.id)).map(line=><li key={line.id} data-tone={line.tone}>{line.text}</li>)}</ul>
     </article>:null}
     {summary?<details className="capture-details ct-content"><summary>Ver contenido de esta copia</summary><div className="capture-details-body">
       <p><strong>{summary.name}</strong><span>{summary.source==='hubspot'?'HubSpot · Portal '+summary.accountId:'Conjunto de ensayo local'}</span></p>
@@ -186,14 +193,7 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
             <div className="button-row"><button className="text-button" onClick={()=>run(()=>download('/v2/drills/'+report.id+'/report?format=html','plan-b-informe-continuidad.html'))}><Download size={15}/>Informe para compartir</button>
               <button className="text-button" onClick={()=>run(()=>download('/v2/drills/'+report.id+'/report','plan-b-simulacro.json'))}>JSON</button></div>
             <p className="helper">Esta prueba ejercita un cliente, una oportunidad y una tarea. La devolución a HubSpot se valida por separado.</p></>:null}</div>:null}</article>      </div>
-      <aside className="ct-rail" aria-label="Preparación y mantenimiento">
-    {!state.runtime?<details className="capture-details" open><summary onClick={event => event.preventDefault()}>Preparación de tu Plan B</summary>{readiness?<p className="ct-steps-progress"><span className="ct-ready-count">{readiness.done} de {readiness.total}</span> completados</p>:null}<ol className="setup-checklist ct-steps">
-      <li data-done={step('protect')?.done?'true':'false'}><span>{status?.protected?'✓':'1'} Proteger el acceso</span>{stepDetail('protect')}{!status?.protected?<button className="text-button" onClick={protect}>Elegir contraseña</button>:null}</li>
-      <li data-done={step('connect')?.done?'true':'false'}><span>{state.hubspotConfigured?'✓':'2'} Conectar y revisar alcance</span><button className="text-button" onClick={()=>status?.protected?setConnection(true):protect()}>{status?.connection?'Portal '+status.connection.accountId+' · '+(production?'solo lectura':'ensayo'):'Conectar HubSpot'}</button></li>
-      <li data-done={step('capture')?.done?'true':'false'}><span>{latest?'✓':'3'} Conservar una captura completa</span>{stepDetail('capture')}</li>
-      <li data-done={step('drill')?.done?'true':'false'}><span>{diagnosis?.status==='passed'?'✓':'4'} Probar la misma copia</span>{stepDetail('drill')}</li>
-      <li data-done={step('recovery')?.done?'true':'false'}><span>{status?.recoveryCopy?.confirmedAt&&status.recoveryCopy.current?'✓':'5'} Preparar recuperación</span>{stepDetail('recovery')}<button className="text-button" disabled={!state.ready} onClick={exportCopy}>Crear copia cifrada</button>{status?.recoveryCopy?.current&&!status.recoveryCopy.confirmedAt?<button id="ct-confirm-copy" className="text-button" onClick={()=>run(()=>post('/v3/recovery-copy/confirm',{storedSeparately:true,revision:status.recoveryCopy!.revision}))}>Confirmo que conservé la copia fuera de este PC y la contraseña por separado</button>:null}{status?.recoveryCopy&&!status.recoveryCopy.current?<p className="warning-text">La copia conservada corresponde a otra revisión. Exporta los cambios actuales.</p>:null}</li>
-    </ol><p className="helper">Una carpeta por portal. La copia necesita el PC encendido para actualizarse. Una descarga no comprueba la restauración: ensáyala en otra carpeta.</p></details>:null}
+      <aside className="ct-rail" aria-label="Mantenimiento de la copia">
       <article><div className="section-heading"><h2>Mantén la copia al día</h2><Clock3 size={21}/></div><p>Una captura cada hora mientras el ordenador esté encendido, conectado y los servicios estén habilitados. Aviso de antigüedad a los 75 minutos.</p>
         {status?.operations?<details className="maintenance-details" open={!!status.operations.error}><summary>Estado de las actualizaciones</summary><div className="operation-health"><strong>{status.operations.paused?'Actualización en pausa':'Servicios habilitados'}</strong><small>Último intento: {status.operations.lastAttempt?new Date(status.operations.lastAttempt).toLocaleString('es-ES'):'Todavía sin intentos'}</small><small>Última captura de conexión correcta: {status.operations.lastSuccess?new Date(status.operations.lastSuccess).toLocaleString('es-ES'):'Todavía sin resultado'}</small>{status.operations.error?<p role="alert" className="warning-text">{status.operations.error.message} {status.operations.error.action}</p>:null}</div></details>:null}
         {!state.runtime?<><label className="checkbox-label"><input type="checkbox" checked={status?.schedule.enabled??false} disabled={busy} onChange={e=>run(()=>post('/v2/schedule',{enabled:e.target.checked}))}/>Capturas y simulacro mensual automáticos</label>
@@ -204,6 +204,9 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
       </aside>
     </div>
     <div className="ct-panel ct-evidencia" {...tabPanelProps('ct','evidencia')} hidden={tab!=='evidencia'}>
+    {/* Misión maestra B4.2: el sello (historial mensual del índice) y el coste de una caída son evidencia e impacto, no estado. */}
+    {seal?<SealCard seal={seal}/>:null}
+    {!state.runtime?<DowntimeCard spec={state.ready?state.spec:null} revision={(state.snapshot?.capturedAt??'')+':'+(state.changes??0)}/>:null}
     <details className="chub-block" ref={hubRef} open data-testid="continuity-hub-block"><summary>Evidencia, mapa de impacto y ensayo de relevo</summary>
       <p className="helper">Qué copia tienes, qué se observó de ella y de la lectura de HubSpot, y qué podría impedir seguir trabajando. «Probar mi Plan B» comprueba tu copia en un entorno aislado; el ensayo de relevo practica exportar e importar con datos ficticios y no la sustituye.</p>
       {returnNote==='integrations'?<p className="chub-return" role="status" data-testid="return-note">Has vuelto de Integraciones. Lo guardado allí se lee de nuevo aquí; no se ha pedido nada al proveedor.</p>:returnNote==='drill'&&drillNote?<p className="chub-return" role="status" data-testid="drill-note">{drillNote}</p>:null}

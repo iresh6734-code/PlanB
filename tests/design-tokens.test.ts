@@ -110,7 +110,9 @@ test('consola: la paleta efectiva cumple AA en claro y en oscuro y fija la densi
     for (let tone = 1; tone <= 5; tone++) assert.ok(c(`tone-${tone}`, `tone-${tone}-bg`) >= 4.5, `${name}: tono ${tone}`);
     assert.ok(c('border-control', 'bg-surface') >= 3, `${name}: borde de control`);
     assert.ok(c('primary', 'bg-surface') >= 3, `${name}: anillo de foco`);
+    // Misión maestra (21/11/2026): el apartado activo del menú móvil escribe --signal-ink sobre --signal (antes #1b1608 fijo: 2,78:1).
+    assert.ok(c('signal-ink', 'signal') >= 4.5, `${name}: apartado activo del menú móvil: ${c('signal-ink', 'signal').toFixed(2)}`);
   }
   assert.equal(light.get('control-h'), '28px'); assert.equal(light.get('row-h'), '32px'); assert.equal(light.get('fs-h1'), '20px');
-  assert.match(consola, /@media \(max-width: 600px\) \{ :root \{[^}]*--control-h: 40px/, 'en móvil los controles suben a 40 px');
+  assert.match(consola, /@media \(max-width: 600px\) \{ :root \{[^}]*--control-h: 44px/, 'en móvil los controles suben a 44 px, como los botones');
 });

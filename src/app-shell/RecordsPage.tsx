@@ -14,7 +14,7 @@ import { formatRecordSort } from '../../shared/record-order.js';
 import { InlineSelect } from './InlineSelect.js';
 import { BulkBar } from './BulkBar.js';
 import { bulkFields, type BulkItem, type BulkResult } from './bulk-edit.js';
-import { PipelineStats, RescheduleBar } from './lazy-pages.js';
+import { PipelineCard, PipelineStats, RescheduleBar } from './lazy-pages.js';
 import { ProBadge } from './ProBadge.js';
 
 const singular: Record<EntityName, string> = { contacts: 'Nuevo cliente', companies: 'Nueva empresa', deals: 'Nueva oportunidad', tasks: 'Nueva tarea' };
@@ -219,7 +219,7 @@ export function RecordsPage({ state, spec, entity, entityName, rows, records, to
   <div className="gx-head-actions">{entityName === 'deals' ? <button type="button" className="button secondary" aria-pressed={analytics} aria-controls={analytics ? 'gx-stats-panel' : undefined} title="Tasa de cierre, ciclo y conversión por etapa con tu copia local" onClick={() => setAnalytics(value => !value)}><ChartColumn size={15} />Analítica<ProBadge feature="pipeline-analytics" decorative /></button> : null}<button type="button" className="button secondary" disabled={recordsLoading || !loaded.length} title={partial ? 'Exporta los ' + loaded.length + ' registros cargados, con la búsqueda y el filtro aplicados' : 'Exporta lo que ves, con la búsqueda y el filtro aplicados'} onClick={exportView}><Download size={15} />CSV</button>
       <button type="button" className="button secondary" disabled={recordsLoading || !loaded.length} title="Copia lo que ves como texto para pegar en un correo o un chat" onClick={() => void copyView()}><Copy size={15} />Copiar</button>
     <button className="button primary" onClick={() => setSelected('new')}><Plus size={16} />{singular[entityName]}</button></div></header>
-    {entityName === 'deals' && analytics ? <div id="gx-stats-panel"><PipelineStats spec={spec} revision={(state.snapshot?.capturedAt ?? '') + ':' + (state.changes ?? 0)} /></div> : null}
+    {entityName === 'deals' && analytics ? <div id="gx-stats-panel"><PipelineCard variant="plan" spec={spec} revision={(state.snapshot?.capturedAt ?? '') + ':' + (state.changes ?? 0)} /><PipelineStats spec={spec} revision={(state.snapshot?.capturedAt ?? '') + ':' + (state.changes ?? 0)} /></div> : null}
     {smarts.length || saved.length || !isDefault ? <div className="gx-views" role="group" aria-label="Vistas">
       {smarts.map(view => { const count = loaded.filter(record => view.test(record, smartContext)).length; return <button key={view.id} type="button" className="gx-view" data-kind="smart" aria-pressed={smart === view.id} title={view.hint + (partial ? ' · en los registros cargados' : '')} onClick={() => setSmart(smart === view.id ? null : view.id)}><Sparkles size={13} aria-hidden="true" />{view.label}<span>{count}</span></button>; })}
       {saved.map(view => <span key={view.id} className="gx-view-saved"><button type="button" className="gx-view" data-kind="saved" aria-pressed={sameView(view, current)} title={describeView(view, labels)} onClick={() => applyView(view)}><Bookmark size={13} aria-hidden="true" />{view.name}</button><button type="button" className="gx-view-remove" aria-label={'Borrar la vista «' + view.name + '»'} title="Borrar esta vista" disabled={viewsBusy} onClick={() => void removeView(view)}><X size={12} aria-hidden="true" /></button></span>)}

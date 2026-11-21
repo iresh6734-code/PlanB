@@ -1,7 +1,7 @@
 ﻿import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { Job } from '../shared/operations.js';
-import { captureLedger, continuityReadiness, copyVitals, drillCalendar, formatAge, formatBytes, hourlyCaptures, jobStats, outageForecast, readinessFor, readinessSignal, type InsightContext, type InsightSource } from '../src/app-shell/continuity-insights.js';
+import { captureLedger, continuityReadiness, copyVitals, drillCalendar, formatAge, formatBytes, hourlyCaptures, jobStats, outageForecast, READINESS_ALERTS, READINESS_OUTAGE_LINES, readinessDetailFor, readinessFor, readinessSignal, type InsightContext, type InsightSource } from '../src/app-shell/continuity-insights.js';
 
 const NOW = new Date(2026, 10, 19, 12, 30);
 const at = (hoursAgo: number) => new Date(NOW.getTime() - hoursAgo * 3_600_000).toISOString();
@@ -44,6 +44,26 @@ test('A4 veredicto resumido: tono por nivel, pasos y siguiente acción; Inicio y
   assert.equal(readinessFor({ ...state, hubspotConfigured: false }, status({ captureId: 'c1', status: 'passed' }), NOW)!.progress, '4 de 5 pasos');
   assert.equal(readinessFor(state, null, NOW), null, 'sin estado leído no hay veredicto');
   assert.equal(readinessFor({ ...state, runtime: { id: 'x' } }, status(null), NOW), null, 'en una copia restaurada no se muestra');
+});
+
+test('índice de preparación único (misión maestra A1): Inicio ve los mismos cinco pasos, con nombre, que el veredicto del menú', () => {
+  const state = { snapshot: null, ready: false, hubspotConfigured: true, runtime: undefined } as any;
+  const status = (readiness: any, over: Partial<InsightSource> = {}) => ({ ...source(over), readiness }) as any;
+  const detail = readinessDetailFor(state, status({ captureId: 'c1', status: 'untested' }, { protected: false }), NOW)!;
+  assert.deepEqual(detail.steps.map(step => step.id), ['protect', 'connect', 'capture', 'drill', 'recovery']);
+  assert.deepEqual(detail.steps.map(step => step.done), [false, true, true, false, true]);
+  assert.equal(detail.next.id, 'protect', 'primero la contraseña, luego la prueba');
+  const signal = readinessFor(state, status({ captureId: 'c1', status: 'untested' }, { protected: false }), NOW)!;
+  assert.deepEqual(signal.steps, detail.steps.map(step => step.done), 'el punto del menú y el riel de Inicio no pueden discrepar');
+  assert.equal(signal.progress, detail.done + ' de ' + detail.total + ' pasos');
+  assert.equal(readinessDetailFor(state, null, NOW), null);
+  assert.equal(readinessDetailFor({ ...state, runtime: { id: 'x' } }, status(null), NOW), null);
+  assert.deepEqual([...READINESS_ALERTS].sort(), ['drill', 'recovery'], 'avisos que el índice ya dice y Inicio no repite');
+  // Las líneas que Continuidad › Estado quita de «Si HubSpot cae ahora» existen de verdad en el pronóstico y son las de la prueba
+  // y la copia fuera del PC: si cambian sus identificadores, esta prueba lo avisa en lugar de dejar de filtrar en silencio.
+  const lines = outageForecast(source({ recoveryCopy: null } as any), { hubspotConfigured: true, drill: 'untested' }, NOW).lines.map(line => line.id);
+  for (const id of READINESS_OUTAGE_LINES) assert.ok(lines.includes(id), 'el pronóstico tiene la línea ' + id);
+  assert.deepEqual([...READINESS_OUTAGE_LINES].sort(), ['drill', 'offsite']);
 });
 
 test('preparación: exportada pero sin confirmar pide confirmar; de otra revisión pide exportar', () => {

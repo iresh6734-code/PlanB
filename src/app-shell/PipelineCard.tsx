@@ -98,9 +98,13 @@ function GoalStrip({ goal, onChange, won, committed, probable, today, undatedWon
 
 /** Inicio · «Oportunidades abiertas»: cuánto hay en juego por etapa y las que antes piden atención (cierre vencido o próximo).
  *  Solo lee la copia local, por páginas y hasta 1.000; si hay más, lo dice en lugar de dar un total falso. */
-export function PipelineCard({ spec, revision, onOpenRecord, onOpenDeals }: {
+export function PipelineCard({ spec, revision, onOpenRecord, onOpenDeals, variant = 'full' }: {
   spec: Spec; revision: string; onOpenRecord?: (record: CrmRecord) => void; onOpenDeals?: () => void;
+  /** Misión maestra (B4.1): «home» = Inicio, solo cifras y lo que pide atención; «plan» = Oportunidades › Analítica, objetivo
+   *  del mes y previsión; «full» = todo junto (como era). Así Inicio deja de ser un panel de análisis dentro del panel. */
+  variant?: 'full' | 'home' | 'plan';
 }) {
+  const showWork = variant !== 'plan', showPlan = variant !== 'home';
   const [read, setRead] = useState<PipelineRead | null>(null);
   const [attempt, setAttempt] = useState(0);
   const target = read?.spec === spec && read.revision === revision && read.attempt === attempt ? read : null;
@@ -159,23 +163,23 @@ export function PipelineCard({ spec, revision, onOpenRecord, onOpenDeals }: {
     forecast.later.deals ? forecast.later.deals + ' más adelante (' + euros(forecast.later.probable) + ')' : '',
     forecast.undated.deals ? forecast.undated.deals + ' sin fecha de cierre' : '',
   ].filter(Boolean) : [];
-  return <article className="oc-card gx-pipe" aria-labelledby="gx-pipe-title">
-    <div className="oc-card-head"><h2 id="gx-pipe-title">Oportunidades abiertas</h2>{onOpenDeals ? <button type="button" className="oc-link" onClick={onOpenDeals}>Ver tablero →</button> : null}</div>
+  return <article className="oc-card gx-pipe" data-variant={variant} aria-labelledby="gx-pipe-title">
+    <div className="oc-card-head"><h2 id="gx-pipe-title">{variant === 'plan' ? 'Objetivo y previsión' : 'Oportunidades abiertas'}</h2>{onOpenDeals ? <button type="button" className="oc-link" onClick={onOpenDeals}>Ver tablero →</button> : null}</div>
     {!page ? (error ? <ErrorState title="No se pudieron leer las oportunidades" onAction={() => setAttempt(value => value + 1)}>{error}</ErrorState>
       : <Skeleton rows={2} label="Leyendo las oportunidades de tu copia…" />)
       : !open.length ? <p className="oc-empty-line ui-empty">{partial || uncertain ? 'No se han identificado oportunidades abiertas entre las leídas.' : 'No hay oportunidades abiertas.'}</p>
       : <>
-        <div className="gx-pipe-figures">
+        {showWork ? <div className="gx-pipe-figures">
           <p><strong>{amounts.total === null ? '—' : euros(amounts.total)}</strong><span>{amounts.overflow ? 'No se pudo sumar el importe' : amounts.total === null ? 'Sin importe conocido' : amounts.missing ? 'Importe conocido' : 'Importe en juego'}</span></p>
           <p><strong>{open.length}</strong><span>{open.length === 1 ? 'abierta' : 'abiertas'}</span></p>
           {closeField ? <p data-tone={late.length ? 'late' : 'ok'}><strong>{late.length}</strong><span>con el cierre vencido</span></p> : null}
-        </div>
-        {chartStages.length ? <div className="gx-pipe-bar" role="img" aria-label={chartStages.map(item => item.stage.label + ': ' + euros(item.total)).join(', ')}>
+        </div> : null}
+        {variant === 'full' && chartStages.length ? <div className="gx-pipe-bar" role="img" aria-label={chartStages.map(item => item.stage.label + ': ' + euros(item.total)).join(', ')}>
           {chartStages.map(item => <i key={item.stage.id} style={{ flexGrow: Math.max(item.total, 1), background: item.stage.color }} />)}
         </div> : null}
-        <ul className="gx-pipe-legend">{stages.map(item => <li key={item.stage.id}><span style={{ background: item.stage.color }} aria-hidden="true" />{item.stage.label}<em>{item.count} · {item.total === null ? '—' : euros(item.total)}</em></li>)}</ul>
-        <GoalStrip goal={goal} onChange={setGoal} won={wonMonth.amount} committed={thisMonth?.committed ?? 0} probable={thisMonth?.probable ?? 0} today={today} undatedWon={wonMonth.undated} />
-        {forecast ? <section className="gx-fc" aria-labelledby="gx-fc-title">
+        {variant === 'full' ? <ul className="gx-pipe-legend">{stages.map(item => <li key={item.stage.id}><span style={{ background: item.stage.color }} aria-hidden="true" />{item.stage.label}<em>{item.count} · {item.total === null ? '—' : euros(item.total)}</em></li>)}</ul> : null}
+        {showPlan ? <GoalStrip goal={goal} onChange={setGoal} won={wonMonth.amount} committed={thisMonth?.committed ?? 0} probable={thisMonth?.probable ?? 0} today={today} undatedWon={wonMonth.undated} /> : null}
+        {showPlan && forecast ? <section className="gx-fc" aria-labelledby="gx-fc-title">
           <h3 id="gx-fc-title">Previsión por mes de cierre</h3>
           {forecast.months.every(month => !month.deals) ? <p className="gx-fc-quiet">Nada previsto en {listNi(forecast.months.map(month => month.label.toLowerCase()))}.{outside.length ? ' Fuera de estos meses: ' + outside.join(' · ') + '.' : ''}</p> : <>
             <ol className="gx-fc-months">{forecast.months.map(month => <li key={month.month} data-empty={month.deals ? undefined : 'true'}>
@@ -190,7 +194,7 @@ export function PipelineCard({ spec, revision, onOpenRecord, onOpenDeals }: {
             <p className="gx-pipe-note">«Seguro» suma las etapas desde el {Math.round(COMMITTED_FROM * 100)} %. Probabilidad por etapa: {probabilities.map(item => item.label + ' ' + Math.round(item.probability * 100) + ' %').join(' · ')}.{byPosition ? ' Estimada por su orden; escribe el porcentaje en el nombre de la etapa (por ejemplo «Propuesta 40 %») para fijarla.' : ''}</p>
           </details>
         </section> : null}
-        {risks.length ? <section className="gx-need gx-risk" aria-labelledby="gx-risk-title">
+        {showWork && risks.length ? <section className="gx-need gx-risk" aria-labelledby="gx-risk-title">
           <h3 id="gx-risk-title">En riesgo <span>{risks.length}</span></h3>
           <p className="gx-risk-tally">{tallyText}</p>
           <ul className="oc-task-list gx-pipe-list">{risks.slice(0, 4).map(({ record, stage, amount, reasons }) => <li key={record.id}>
@@ -202,7 +206,7 @@ export function PipelineCard({ spec, revision, onOpenRecord, onOpenDeals }: {
           </li>)}</ul>
           <p className="gx-pipe-note">{risks.length > 4 ? 'Y ' + (risks.length - 4) + ' más en la vista «En riesgo» del tablero. ' : ''}{pulse ? '' : 'Sin las tareas leídas no se valora el próximo paso. '}Son avisos con su motivo: nada impide guardar.</p>
         </section> : null}
-        {soon.length ? <section className="gx-need gx-soon" aria-labelledby="gx-soon-title">
+        {showWork && soon.length ? <section className="gx-need gx-soon" aria-labelledby="gx-soon-title">
           <h3 id="gx-soon-title">Cierran pronto <span>{soon.length}</span></h3>
           <ul className="oc-task-list gx-pipe-list">{soon.map(({ record, stage, amount, status }) => <li key={record.id}>
             <span className="oc-chip" data-tone="warn">Cierra pronto</span>
@@ -212,7 +216,7 @@ export function PipelineCard({ spec, revision, onOpenRecord, onOpenDeals }: {
           </li>)}</ul>
         </section> : null}
       </>}
-    {amounts.missing ? <p className="gx-pipe-note">{amounts.missing === 1 ? '1 oportunidad abierta sin importe.' : amounts.missing + ' oportunidades abiertas sin importe.'}</p> : null}
+    {showWork && amounts.missing ? <p className="gx-pipe-note">{amounts.missing === 1 ? '1 oportunidad abierta sin importe.' : amounts.missing + ' oportunidades abiertas sin importe.'}</p> : null}
     {uncertain ? <p className="gx-pipe-note">{uncertain === 1 ? '1 oportunidad con etapa por revisar.' : uncertain + ' oportunidades con etapa por revisar.'}</p> : null}
     {page && partial ? <p className="gx-pipe-note">Calculado con las primeras {deals.length} de {page.total} oportunidades.</p> : null}
   </article>;

@@ -132,10 +132,20 @@ export function readinessSignal(readiness: Readiness): ReadinessSignal {
 }
 /** Mismo contexto que usa la portada de Continuidad: simulacro de la última captura y conexión configurada. Sin copia restaurada. */
 export function readinessFor(state: Pick<AppState, 'snapshot' | 'ready' | 'hubspotConfigured' | 'runtime'>, status: ContinuityStatus | null, now: Date): ReadinessSignal | null {
+  const detail = readinessDetailFor(state, status, now);
+  return detail ? readinessSignal(detail) : null;
+}
+/** Índice de preparación ÚNICO (misión maestra, A1): los cinco pasos con su nombre, su detalle y el siguiente paso. Es la misma
+ *  fuente que el veredicto de Continuidad y el punto del menú; Inicio lo enseña en lugar del sello y de los avisos que lo repetían. */
+export function readinessDetailFor(state: Pick<AppState, 'snapshot' | 'ready' | 'hubspotConfigured' | 'runtime'>, status: ContinuityStatus | null, now: Date): Readiness | null {
   if (!status || state.runtime) return null;
   const diagnosis = workspaceCopy(state, status).latestReadiness;
-  return readinessSignal(continuityReadiness(status, { hubspotConfigured: !!state.hubspotConfigured, drill: diagnosis?.status ?? null, reportId: diagnosis?.reportId ?? null }, now));
+  return continuityReadiness(status, { hubspotConfigured: !!state.hubspotConfigured, drill: diagnosis?.status ?? null, reportId: diagnosis?.reportId ?? null }, now);
 }
+/** Avisos de la copia que el índice de preparación NO dice ya: la prueba y la copia fuera del PC son pasos del índice. */
+export const READINESS_ALERTS: readonly string[] = ['drill', 'recovery'];
+/** Líneas de «Si HubSpot cae ahora» que el índice ya dice (la prueba y la copia fuera del PC): Continuidad › Estado no las repite. */
+export const READINESS_OUTAGE_LINES: readonly string[] = ['drill', 'offsite'];
 
 export function copyVitals(status: InsightSource, context: InsightContext, now: Date): Vital[] {
   const age = ageOf(status, now), summary = status.latestCapture;

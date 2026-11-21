@@ -44,15 +44,6 @@ body .sidebar .oc-search:disabled { opacity: .5; cursor: not-allowed; }
 .oc-status h2 { line-height: 1.3; }
 .oc-status p { margin: 0; }
 .oc-row-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-.oc-kpi { flex: 1 1 170px; min-width: 0; flex-direction: column; gap: 4px; text-align: left; font: inherit; color: inherit; }
-button.oc-kpi { cursor: pointer; }
-button.oc-kpi:hover { border-color: var(--border-strong); }
-button.oc-kpi:focus-visible { outline: 2px solid var(--oc-action); }
-.oc-kpi dt, .oc-kpi .oc-kpi-label { margin: 0; font-size: 13px; font-weight: 500; color: var(--oc-muted); }
-.oc-kpi-value { margin: 0; color: var(--oc-ink); font-variant-numeric: tabular-nums; }
-.oc-kpi[data-tone="danger"] .oc-kpi-value { color: var(--oc-danger); }
-.oc-kpi[data-tone="warn"] .oc-kpi-value { color: var(--oc-warn); }
-.oc-kpi[data-tone="ok"] .oc-kpi-value { color: var(--oc-ok); }
 .oc-kpi-note { color: var(--oc-muted); }
 .oc-home-grid { flex-wrap: wrap; }
 .oc-home-main { flex: 2 1 520px; min-width: 0; }
@@ -82,18 +73,11 @@ html body .lop-confirmation[data-stale="true"] { background: var(--warning-bg); 
 .oc-task-list li { display: grid; align-items: center; }
 .oc-task-list strong { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .oc-task-list .oc-due { color: var(--oc-muted); }
-.oc-small-button { justify-self: end; font: inherit; font-weight: 600; cursor: pointer; }
-.oc-small-button:hover { background: var(--primary-subtle); }
+.oc-small-button { justify-self: end; font: inherit; cursor: pointer; }
 .oc-side-card { display: flex; flex-direction: column; }
 .oc-side-card h2 { margin: 0; }
 .oc-side-card p { margin: 0; }
 .oc-side-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.oc-bar { display: flex; overflow: hidden; background: var(--oc-neutral-bg); }
-.oc-bar span { display: block; }
-.oc-legend { display: flex; flex-wrap: wrap; color: var(--oc-ink); }
-.oc-alert { display: flex; flex-direction: column; }
-.oc-alert p { margin: 0; color: inherit; }
-.oc-alert-button { border: 1px solid #e8b4ad; background: #ffffff; color: #8f1d14; font: inherit; font-weight: 600; cursor: pointer; }
 .oc-empty-line { margin: 0; color: var(--oc-muted); }
 
 /* ── Hoy: filtros y tabla compacta ── */

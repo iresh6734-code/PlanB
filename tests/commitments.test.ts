@@ -172,21 +172,27 @@ for (const boundary of ['list', 'detail', 'before-write', 'after-write'] as cons
         decision: { type: 'assign', owner: 'Marta', nextStep: 'Confirmar recepción', dueAt } };
       let reads = 0;
       const expire = () => { wall = observed + 30 * 60_000 + 1; };
+      // La identidad de la copia (instancia, captura, generación y sesión de trabajo) ya no se lee con store.get('sessionId'):
+      // workspace-search.ts la lee con una consulta propia sobre meta y la guarda en caché (CLAUDE-SEARCH-PERF-R). La frontera
+      // que se prueba sigue siendo la misma: la sesión caduca en la SEGUNDA lectura de esa identidad (la de después de leer el
+      // escenario) y la ruta debe revalidarla y responder 401. Misión maestra, 21/11/2026.
+      const db = f.store.db as unknown as { prepare: (sql: string) => unknown };
+      const originalPrepare = db.prepare.bind(db);
       if (boundary === 'after-write') {
         f.store.set = (key, value) => {
           originalSet(key, value);
           if (key.startsWith('commitment-demo:')) expire();
         };
       } else {
-        f.store.get = <T>(key: string, fallback: T): T => {
-          const value = originalGet(key, fallback);
-          if (key === 'sessionId' && ++reads === 2) expire();
-          return value;
+        db.prepare = (sql: string) => {
+          if (/^SELECT key,.* FROM meta WHERE key IN \(/.test(sql) && ++reads === 2) expire();
+          return originalPrepare(sql);
         };
       }
       const response = boundary === 'list' || boundary === 'detail'
         ? await f.get(boundary === 'list' ? '' : 'installation', headers, contextRevision)
         : await f.post('installation', command, headers);
+      db.prepare = originalPrepare;
       f.store.get = originalGet;
       f.store.set = originalSet;
       assert.equal(response.statusCode, 401);

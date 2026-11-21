@@ -39,7 +39,9 @@ test('K8 · Inicio tiene un solo botón relleno: «Tu siguiente paso»; el de la
   const strip = read('app-shell/FirstRun.tsx').split('export function FirstRunStrip')[1];
   const filled = (source: string) => source.match(/className="button primary"/g)?.length ?? 0;
   assert.equal(filled(home), 1);
-  assert.match(home, /className=\{'button ' \+ \(first \? 'secondary' : 'primary'\)\} onClick=\{onOpenContinuity\}/);
+  // Misión maestra B4.1 (21/11/2026): el botón del riel hace el siguiente paso del índice de preparación (o abre el estado);
+  // sigue siendo secundario mientras haya «Tu siguiente paso».
+  assert.match(home, /className=\{'button ' \+ \(first \? 'secondary' : 'primary'\)\} onClick=\{copyAction\.run\}/);
   assert.equal(filled(strip), 0);
   assert.equal(filled(read('app-shell/PipelineCard.tsx')) + filled(read('app-shell/CoolingCard.tsx')) + filled(read('app-shell/MorningBrief.tsx')), 0);
 });

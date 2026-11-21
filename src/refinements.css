@@ -59,7 +59,6 @@ button, a, input, select, textarea, summary {
 .capture-details > summary:hover { color: var(--blue); }
 .capture-details-body { border: 1px solid var(--line); margin-top: 6px; }
 .capture-counts dd { letter-spacing: -.5px; }
-.setup-checklist li { border-color: var(--line); }
 .drill-result { margin-top: 22px; }
 .drill-result > strong { font-weight: 600; }
 .drill-result > small { font-size: 11px; line-height: 1.7; color: #6c788e; }

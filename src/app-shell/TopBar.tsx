@@ -31,7 +31,7 @@ export function TopBar({ state, pageLabel, teamOrigin, openContinuity, openChang
       <span className="gx-mode" data-mode={production ? 'production' : 'test'}>{production ? 'Producción · lectura' : 'Datos de prueba'}</span>
       {teamOrigin ? <a className="text-button gx-team-link" href={teamOrigin + '/team?view=commercial'}>Espacio de equipo <ArrowRight size={13} /></a> : null}
       <span className="gx-tools">
-        {onContingency ? <button type="button" className="gx-contingency" title="Activar el modo contingencia: Hoy se centra en lo urgente y Plan B cronometra el incidente" onClick={onContingency}><Siren size={14} aria-hidden="true" /><span>HubSpot no responde</span></button> : null}
+        {onContingency ? <button type="button" className="gx-contingency" aria-label="HubSpot no responde: activar el modo contingencia" title="Activar el modo contingencia: Hoy se centra en lo urgente y Plan B cronometra el incidente" onClick={onContingency}><Siren size={14} aria-hidden="true" /><span>¿HubSpot caído?</span></button> : null}
         {news}
         <button type="button" className="gx-help gx-cmd gx-theme" aria-pressed={theme === 'dark'} aria-label="Modo oscuro" title={theme === 'dark' ? 'Volver al modo claro' : 'Cambiar a modo oscuro'} onClick={toggleTheme}>
           {theme === 'dark' ? <Sun size={15} aria-hidden="true" /> : <Moon size={15} aria-hidden="true" />}

@@ -17,10 +17,6 @@ html body .ct-ready[data-level="risk"] h2::before { background: var(--seal); }
 html body .ct-ready[data-level="risk"] h2 { color: var(--danger); }
 html body .ct-ready[data-level="start"] h2::before { background: none; border: 1px dashed var(--pencil); }
 html body .ct-ready-verdict > p { margin: 0; font-size: var(--fs-sm); color: var(--text-2); }
-html body .ct-ready-meter { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; max-width: 360px; margin: 4px 0 0; padding: 0; list-style: none; }
-html body .ct-ready-meter li { height: 6px; border-radius: 1px; border: 1px dashed var(--pencil); background: transparent; transition: background-color 240ms cubic-bezier(.16, 1, .3, 1), border-color 240ms cubic-bezier(.16, 1, .3, 1); }
-html body .ct-ready-meter li[data-done="true"] { border: 1px solid var(--ink); background: var(--ink); }
-html body .ct-ready[data-level="ready"] .ct-ready-meter li[data-done="true"] { border-color: var(--success); background: var(--success); }
 html body .ct-ready-next { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; padding-left: 20px; border-left: 1px solid var(--rule); }
 html body .ct-ready-next > p { margin: 0; max-width: 60ch; font-size: var(--fs-sm); line-height: var(--lh-body); color: var(--text-2); }
 html body .ct-ready-next > .button { gap: 6px; }
@@ -106,8 +102,6 @@ html body .ct-verify .ct-cal-ends { display: flex; justify-content: space-betwee
 html body .ct-outage li[data-tone="danger"] { color: var(--danger); }
 
 /* Preparación en la columna: lo hecho en verde botella y una nota que explica cada paso. */
-html body .ct-steps-progress { margin: 6px 0 0; font-size: var(--fs-sm); color: var(--text-2); }
-html body .ct-rail .ct-steps li[data-done="true"] > span:first-child { color: var(--success); }
 html body .ct-step-detail { flex-basis: 100%; font-size: var(--fs-xs); line-height: 1.4; color: var(--text-3); }
 
 /* Últimas 24 horas: una regla de horas; la hora en curso, en lacre. */
@@ -171,5 +165,5 @@ html body .ct-rel-fail { grid-column: 1 / -1; font-size: var(--fs-xs); color: va
   html body .ct-ledger-row { grid-template-columns: auto minmax(0, 1fr); }
   html body .ct-ledger-row > .text-button { grid-column: 2; justify-self: start; }
 }
-@media (prefers-reduced-motion: reduce) { html body .ct-ready-meter li, html body .ct-chip, html body .ct-ledger-row { transition: none; } }
+@media (prefers-reduced-motion: reduce) { html body .ct-chip,html body .ct-ledger-row { transition: none; } }
 html body .ct-ledger-diff { font-size: var(--fs-xs); min-height: 0; padding: 0; }

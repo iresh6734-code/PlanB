@@ -4,6 +4,12 @@
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
 
+## Misión maestra · Revisión cruzada · 21/11/2026, Europe/Madrid
+
+GitHub Copilot actualizó `planb-v0.3-local` con `git pull --ff-only` hasta `441f42e`, partiendo de un árbol limpio, y leyó el relevo y los cinco documentos de misión. Revisión por propuesta y contraste de prioridades en `docs/mision/registro-colaboracion.md`: A1 debe distinguir evidencia/caducidad y no acreditar meses sin histórico; A4 no marca devuelto al exportar; A6/A7 requieren decisiones de la usuaria. Consola se conserva. No se usó Codex ni su tablón.
+
+Siguiente: B4.3 Cambios, registrando alcance antes de editar interfaz. Aquí solo tipos y pruebas seguras focales con `NODE_ENV=test`; sin servidores, navegador, Playwright, servicios compartidos ni nuevas carpetas de datos. Se medirán estructura y comportamiento antes/después, sin atribuirles métricas geométricas; la comparación visual queda para el equipo autorizado.
+
 ## Rediseño «Consola de operaciones» · 20/11/2026, 13:40, Europe/Madrid
 
 El usuario rechazó el aspecto de Agenda y Oportunidades («horroroso») y pidió diseño de experto. La identidad «Cuaderno» se sustituye entera por **«Consola de operaciones»**: bastidor grafito para el menú, mesa gris lisa, bahías con regla superior y tiras claras, cobalto para actuar (`#2853d0`, oscuro `#3d63db`), señal para vencido y ámbar para revisar. Se usó la dirección A porque el formulario de dirección quedó sin respuesta. El catálogo de impeccable se consultó una vez en línea, sin enviar datos del proyecto.

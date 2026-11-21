@@ -20,7 +20,7 @@ export function PreparationNavigation({ active, expanded, step, hasSnapshot, onT
     <button type="button" className={'nav-item preparation-toggle' + (active ? ' active' : '')}
       aria-expanded={open} aria-controls={id} onClick={onToggle}>
       <LayoutDashboard size={19} aria-hidden="true" />
-      <span>Preparación</span>
+      <span>Configurar Plan B</span>
       <ChevronDown size={15} aria-hidden="true" className={open ? 'expanded' : ''} />
     </button>
     <div id={id} hidden={!open} inert={!open}>

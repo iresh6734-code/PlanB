@@ -33,7 +33,7 @@ test('v3: preparación guiada, clasificación real y recuperación manual sin es
   await page.setViewportSize({width:390,height:844});
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
   await page.screenshot({path:resolve(output,'v0.3.0-produccion-movil.png'),fullPage:true});expect(errors).toEqual([]);
-  await page.setViewportSize({width:1536,height:1024});await page.getByRole('button',{name:'Preparación',exact:true}).click();await page.getByRole('button',{name:/Procesos/}).click();
+  await page.setViewportSize({width:1536,height:1024});await page.getByRole('button',{name:'Configurar Plan B',exact:true}).click();await page.getByRole('button',{name:/Procesos/}).click();
   await expect(page.getByText('La IA está desactivada para datos reales',{exact:false})).toBeVisible();
   await expect(page.getByRole('button',{name:'Configurar proveedor',exact:true})).toHaveCount(0);await expect(page.getByRole('button',{name:'Generar con mi IA',exact:true})).toHaveCount(0);
 });

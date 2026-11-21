@@ -15,6 +15,7 @@ export type NavContext = {
   /** Copia independiente (paquete portátil): sin Hoy, Agentes, Integraciones, copia de equipo ni preparación. */ runtime: boolean;
   /** La copia activa es de datos de prueba: solo entonces existe el Laboratorio y se ofrece el proveedor de IA. */ testData: boolean;
   /** Hay copia con datos, reglas y aplicación activadas. */ ready: boolean;
+  /** El servidor local ya ha comunicado un origen de equipo configurado. */ teamConfigured?: boolean;
 };
 
 /** El Laboratorio (Radar y «Comprobar una fecha») solo funciona con una copia de datos de prueba: el servidor rechaza cualquier otra. */
@@ -30,7 +31,6 @@ export function navigationGroups(context: NavContext): NavGroup[] {
     { id: 'today', label: 'Tareas de hoy', target: { kind: 'page', page: 'today' }, badge: 'overdue' },
     { id: 'week', label: 'Revisión semanal', target: { kind: 'page', page: 'week' }, needsReady: true },
     { id: 'agenda', label: 'Agenda', target: { kind: 'page', page: 'agenda' }, needsReady: true },
-    { id: 'agents', label: 'Propuestas', target: { kind: 'page', page: 'agents' } },
   ] });
   groups.push({ id: 'clients', label: 'Clientes', target: { kind: 'entity', entity: 'contacts' }, needsReady: true, items: [
     { id: 'contacts', label: 'Clientes', target: { kind: 'entity', entity: 'contacts' }, needsReady: true },
@@ -42,12 +42,12 @@ export function navigationGroups(context: NavContext): NavGroup[] {
     { id: 'continuity', label: 'Estado', target: { kind: 'page', page: 'continuity' }, badge: 'copy' },
     { id: 'changes', label: 'Cambios', target: { kind: 'page', page: 'changes' }, badge: 'changes', needsReady: true },
     { id: 'export', label: 'Exportar', target: { kind: 'page', page: 'export' }, needsReady: true },
-    ...(!context.runtime ? [{ id: 'team-sync', label: 'Copia de equipo', target: { kind: 'page', page: 'team-sync' } } satisfies NavItem] : []),
+    ...(!context.runtime && context.teamConfigured ? [{ id: 'team-sync', label: 'Copia de equipo', target: { kind: 'page', page: 'team-sync' } } satisfies NavItem] : []),
+    ...(!context.runtime ? [{ id: 'prepare', label: 'Configurar Plan B', target: { kind: 'prepare' } } satisfies NavItem] : []),
   ] });
   const settings: NavItem[] = [
     ...(!context.runtime ? [{ id: 'integrations', label: 'Integraciones', target: { kind: 'page', page: 'integrations' } } satisfies NavItem] : []),
     ...(!context.runtime && context.testData ? [{ id: 'provider', label: 'Proveedor de IA', target: { kind: 'settings' } } satisfies NavItem] : []),
-    ...(!context.runtime ? [{ id: 'prepare', label: 'Preparación', target: { kind: 'prepare' } } satisfies NavItem] : []),
     ...(!context.runtime ? [{ id: 'plan', label: 'Plan y licencia', target: { kind: 'page', page: 'plan' } } satisfies NavItem] : []),
   ];
   if (settings.length) groups.push({ id: 'settings', label: 'Ajustes', target: settings[0].target, items: settings });
@@ -66,8 +66,8 @@ export function groupOfPage(page: PageId): GroupId {
     case 'home': return 'home';
     case 'today': case 'week': case 'agenda': case 'agents': return 'today';
     case 'workspace': return 'clients';
-    case 'continuity': case 'changes': case 'export': case 'team-sync': return 'continuity';
-    case 'integrations': case 'prepare': case 'plan': return 'settings';
+    case 'continuity': case 'changes': case 'export': case 'team-sync': case 'prepare': return 'continuity';
+    case 'integrations': case 'plan': return 'settings';
     case 'radar': case 'date-check': case 'outage-lab': return 'lab';
   }
 }

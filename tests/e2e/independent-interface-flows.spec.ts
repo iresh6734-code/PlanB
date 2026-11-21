@@ -179,7 +179,7 @@ test('B5 activación: revisión exacta con backend real, casilla, 409 por cambio
   const first = await page.request.get(MAIN + '/api/v4/activation-review').then(r => r.json());
   expect(first.kind).toBe('candidate'); expect(first.target.snapshot.name).toBe(candidateFixture.name); expect(first.records).toBe(candidateFixture.records.length); expect(first.canActivate).toBe(true);
   expect(first.target.snapshot.records, 'sin registros individuales').toEqual([]); expect(first.target.snapshot.links).toEqual([]);
-  await page.goto(MAIN + '/'); await page.getByRole('button', { name: 'Preparación', exact: true }).click(); await page.getByRole('button', { name: /Generar/ }).first().click();
+  await page.goto(MAIN + '/'); await page.getByRole('button', { name: 'Configurar Plan B', exact: true }).click(); await page.getByRole('button', { name: /Generar/ }).first().click();
   await expect(page.getByText('Versión candidata · todavía no sustituye la copia activa', { exact: false })).toBeVisible(); await expect(page.getByText(candidateFixture.name).first()).toBeVisible();
   await expect(page.getByText('Revisión ' + first.revision.slice(0, 12))).toBeVisible();
   const approval = page.locator('.review-approval input[type="checkbox"]'), activate = page.getByRole('button', { name: /Activar y abrir aplicación/ });

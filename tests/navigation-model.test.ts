@@ -66,3 +66,20 @@ test('una entrada de registros solo está activa con su tipo abierto', () => {
   assert.equal(itemActive(deals, 'workspace', 'contacts'), false);
   assert.equal(itemActive(deals, 'home', 'deals'), false);
 });
+
+test('B3.1 Propuestas sale de Hoy y Configurar Plan B pertenece a Continuidad', () => {
+  for (const testData of [true, false]) {
+    const groups = navigationGroups(ctx({ testData }));
+    assert.ok(!groups.flatMap(g => g.items).some(item => item.id === 'agents'));
+    const setup = groups.find(g => g.id === 'continuity')!.items.find(item => item.id === 'prepare');
+    assert.equal(setup?.label, 'Configurar Plan B');
+    assert.equal(groupOfPage('prepare'), 'continuity');
+    assert.ok(!groups.find(g => g.id === 'settings')!.items.some(item => item.id === 'prepare'));
+  }
+});
+
+test('B3.1 Copia de equipo solo se ofrece con servicio configurado, nunca en la independiente', () => {
+  assert.ok(!allItems(ctx()).includes('team-sync'));
+  assert.ok(allItems(ctx({ teamConfigured: true })).includes('team-sync'));
+  assert.ok(!allItems(ctx({ teamConfigured: true, runtime: true })).includes('team-sync'));
+});

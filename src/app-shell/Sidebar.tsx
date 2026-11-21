@@ -12,6 +12,7 @@ type Toggle = (update: (open: boolean) => boolean) => void;
 type Signals = { overdue: number | null; atRisk: number | null; copy?: { count: number; tone: 'danger' | 'warn'; titles: string[] } | null; readiness?: ReadinessSignal | null };
 type Props = {
   state: AppState; page: PageId; entityName: EntityName;
+  teamConfigured: boolean;
   /** Hay una ficha abierta: la búsqueda global se desactiva. */ selected: boolean;
   /** Recuentos para los avisos del menú; null = sin dato. */ signals: Signals;
   step: number; preparationOpen: boolean;
@@ -31,8 +32,8 @@ const ITEM_ICON: Record<string, ComponentType<{ size?: number }>> = {
  * Navegación principal en cinco lugares (Inicio, Hoy, Clientes, Continuidad y Ajustes) más el Laboratorio cuando la
  * copia es de datos de prueba (CLAUDE-UI-NAV-LAB). Solo cambia de apartado; no lee ni guarda datos.
  */
-export function Sidebar({ state, page, entityName, selected, signals, step, preparationOpen, setPage, setSelected, setPreparationOpen, setGlobalSearch, setModal, openEntity, openPreparation, pins }: Props) {
-  const context = { runtime: !!state.runtime, testData: state.snapshot?.source.isTestData !== false, ready: !!state.ready };
+export function Sidebar({ state, page, entityName, teamConfigured, selected, signals, step, preparationOpen, setPage, setSelected, setPreparationOpen, setGlobalSearch, setModal, openEntity, openPreparation, pins }: Props) {
+  const context = { runtime: !!state.runtime, testData: state.snapshot?.source.isTestData !== false, ready: !!state.ready, teamConfigured };
   const groups = navigationGroups(context), current = groupOfPage(page);
   const [open, setOpen] = useState<Set<GroupId>>(() => new Set([current]));
   // Al cambiar de lugar queda desplegado solo el suyo (el menú no crece al navegar); dentro del mismo lugar se respeta lo que la persona abra o cierre.
@@ -78,7 +79,6 @@ export function Sidebar({ state, page, entityName, selected, signals, step, prep
             const ItemIcon = ITEM_ICON[item.id] ?? ArrowRight, on = itemActive(item, page, entityName);
             return <button key={item.id} type="button" className={'nav-item ' + (on ? 'active' : '')} aria-current={on ? 'page' : undefined} disabled={disabled(item)} onClick={() => go(item.target)}><ItemIcon size={16} />{item.label}{badgeOf(item.badge)}</button>;
           })}
-          {group.id === 'settings' && page === 'prepare' ? <button type="button" className="nav-item" disabled={!state.ready} onClick={() => setPage('workspace')}><ArrowRight size={16} />Abrir aplicación</button> : null}
         </nav>
       </div></div>
     </>;

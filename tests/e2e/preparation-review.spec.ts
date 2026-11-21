@@ -7,10 +7,10 @@ test.beforeEach(()=>{if(test.info().project.use.baseURL!==origin)throw Error('Us
 async function openPreparation(page:Page) {
   await page.goto('/');
   const nav = page.getByRole('navigation', { name: 'Navegación principal', exact: true });
-  const settings = nav.getByRole('button', { name: 'Ajustes', exact: true });
+  const settings = nav.getByRole('button', { name: 'Continuidad', exact: true });
   await expect(settings).toBeVisible();
   if (await settings.getAttribute('aria-expanded') === 'false') await settings.click();
-  await nav.getByRole('navigation', { name: 'Ajustes', exact: true }).getByRole('button', { name: 'Preparación', exact: true }).click();
+  await nav.getByRole('navigation', { name: 'Continuidad', exact: true }).getByRole('button', { name: 'Configurar Plan B', exact: true }).click();
   await expect(page).toHaveURL(origin + '/ajustes/preparacion');
 }
 

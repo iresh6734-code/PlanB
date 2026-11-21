@@ -6,7 +6,7 @@ const readyOrigin = 'http://127.0.0.1:4581';
 const emptyOrigin = 'http://127.0.0.1:4582';
 const evidence = process.env.PLANB_NAV117_EVIDENCE;
 const browserLogs = new WeakMap<Page, { level: string; text: string; url: string }[]>();
-const prep = (page: Page) => page.locator('.sidebar').getByRole('button', { name: 'Preparación', exact: true });
+const prep = (page: Page) => page.locator('.sidebar').getByRole('button', { name: 'Configurar Plan B', exact: true });
 const sections = (page: Page) => page.getByRole('navigation', { name: 'Secciones de preparación' });
 test.afterEach(async ({ page }, info) => {
   await info.attach('browser-console', { body: JSON.stringify(browserLogs.get(page) ?? [], null, 2), contentType: 'application/json' });
@@ -81,7 +81,7 @@ for (const width of [390, 320]) test(`preparation navigation at${width} fits, ke
     expect(box!.height).toBeGreaterThanOrEqual(44); expect(box!.x).toBeGreaterThanOrEqual(0); expect(box!.x + box!.width).toBeLessThanOrEqual(width);
     expect(await control.evaluate(element => element.scrollWidth <= element.clientWidth + 1), 'el texto del control no sobresale de su propia caja').toBe(true);
   }
-  const controls = [prep(page), ...await sections(page).getByRole('button').all(), page.locator('.sidebar').getByRole('button', { name: 'Abrir aplicación', exact: true }), menuGroup(page, 'Continuidad')] /* Exportar vive dentro del grupo Continuidad (CLAUDE-UI-NAV-LAB) */;
+  const controls = [prep(page), ...await sections(page).getByRole('button').all(), menuGroup(page, 'Continuidad')];
   const boxes = await Promise.all(controls.map(control => control.boundingBox()));
   for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
     const a = boxes[i]!, b = boxes[j]!;

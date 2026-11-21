@@ -4,6 +4,14 @@
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
 
+## Misión maestra · B3.1 Menú · 21/11/2026, Europe/Madrid
+
+Alcance registrado antes de editar. Propuestas sale del menú Hoy y su orden queda solo con datos de prueba, rotulada. Copia de equipo solo aparece con el origen configurado ya leído por App; no hay nuevas peticiones ni conexiones al servicio. Configurar Plan B pasa a Continuidad y conserva pasos y `/ajustes/preparacion`. Sale Abrir aplicación del menú. Las pruebas de navegador dependientes tienen selectores/fixtures adaptados, pero no se ejecutaron.
+
+Medición del modelo anterior (`25ac07c`) frente al actual, mismos datos de prueba y sin servicio: entradas 19 → 17; Hoy 4 → 3; Propuestas 1 → 0; Copia de equipo 1 → 0; Preparación Ajustes → Continuidad. Dos regresiones fallaron antes y pasan después; render de Sidebar cubre pasos, acción, servicio presente/ausente y ausencia de botones rellenos. Tipos correctos, 7/7 archivos seguros focales; podas CSS 0 B y detector mecánico sin hallazgos. Geometría y navegador sin comprobar, por las restricciones.
+
+Siguiente: B4.4 Hoy y Agenda, con regla compartida de vencido. No se ha implementado todavía; A6/A7 siguen esperando decisión.
+
 ## Misión maestra · B4.3 Cambios · 21/11/2026, Europe/Madrid
 
 Alcance anotado antes de editar en `docs/mision/registro-colaboracion.md`. Cambios ya no monta Propuestas; el vacío válido es una línea, sin asistente ni descargas vacías. El asistente aparece con pendientes o plan guardado; no se ocultan bloqueos de integridad, historial exportable, planes enviados ni el último justificante manual. El total ya no se repite en la cabecera.

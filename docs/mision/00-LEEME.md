@@ -35,14 +35,14 @@ Encargo de la usuaria del 21/11/2026: terminar, potenciar, perfeccionar y hacer 
    - Sello y coste de una caída en «Evidencia e impacto».
 4. Revisión cruzada de los dos Superplanes por GitHub Copilot, por propuesta, con prioridades contrastadas.
 5. B4.3 Cambios: vacío de una línea tras lectura válida, sin Propuestas ni asistente sin pendientes; historial, planes guardados y justificantes conservados. Tipos y 9/9 archivos seguros focales correctos. Medición estructural antes/después; comparación visual pendiente del equipo autorizado.
+6. B3.1 Menú: sin Propuestas en Hoy; Copia de equipo solo con servicio configurado; Configurar Plan B en Continuidad, conservando su ruta y pasos; sin Abrir aplicación en el menú. Tipos y 7/7 archivos seguros focales correctos. Medición estructural 19 → 17 entradas sin servicio y con datos de prueba; revisión visual pendiente.
 
 **Siguiente, en este orden** (tabla completa en `05-hoja-de-ruta.md`):
 
-1. **B3.1 Menú:** Propuestas fuera de Hoy; Copia de equipo solo con servicio de equipo; Preparación a Continuidad como «Configurar Plan B».
-2. **B4.4 Hoy y Agenda:** una sola acción principal en Hoy; una sola definición de «vencido» (`shared/overdue.ts`, A8), porque la Agenda dice 2 y 23 a la vez.
-3. **B4.5 Listas:** columnas proporcionales con ancho máximo; vistas a 0 atenuadas; acciones globales fuera de la barra inferior.
-4. **A0-L:** retirar o montar el código sin montar (`MorningBrief.tsx`, `FirstRunStrip`, `HomeSeal`, sala y cápsula de rescate) y sacar `server/recovery-rehearsal.ts` del instalable.
-5. **Decisiones de la usuaria pendientes:** A7 (clave sin DPAPI/PowerShell) y custodia de la clave de licencias (A6).
+1. **B4.4 Hoy y Agenda:** una sola acción principal en Hoy; una sola definición de «vencido» (`shared/overdue.ts`, A8), porque la Agenda dice 2 y 23 a la vez.
+2. **B4.5 Listas:** columnas proporcionales con ancho máximo; vistas a 0 atenuadas; acciones globales fuera de la barra inferior.
+3. **A0-L:** retirar o montar el código sin montar (`MorningBrief.tsx`, `FirstRunStrip`, `HomeSeal`, sala y cápsula de rescate) y sacar `server/recovery-rehearsal.ts` del instalable.
+4. **Decisiones de la usuaria pendientes:** A7 (clave sin DPAPI/PowerShell) y custodia de la clave de licencias (A6).
 
 **Reglas que han funcionado en esta misión:**
 

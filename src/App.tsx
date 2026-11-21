@@ -279,11 +279,12 @@ export default function App() {
         ...(!state.runtime && state.ready && spec ? [{ id: 'week', label: 'Ir a Revisión semanal', group: 'Ir a', run: goTo('week') }, { id: 'agenda', label: 'Ir a Agenda', group: 'Ir a', run: goTo('agenda') }] : []),
     ...(state.ready && spec ? spec.entities.map(item => ({ id: 'open-' + item.id, label: 'Ir a ' + item.label, group: 'Ir a', run: () => openEntity(item.id) })) : []),
     ...(state.ready ? [{ id: 'changes', label: 'Ir a Cambios', group: 'Ir a', hint: 'G M', run: goTo('changes') }] : []),
-    ...(!state.runtime ? [{ id: 'agents', label: 'Ir a Propuestas', group: 'Ir a', run: goTo('agents') }] : []),
+    ...(!state.runtime && lab ? [{ id: 'agents', label: 'Ir a Propuestas (datos de prueba)', group: 'Ir a', run: goTo('agents') }] : []),
     ...(state.ready && lab ? [{ id: 'radar', label: 'Laboratorio: Radar de compromisos', group: 'Ir a', hint: 'G R', run: () => { setRehearseFromToday(null); goTo('radar')(); } }, { id: 'date-check', label: 'Laboratorio: Comprobar una fecha', group: 'Ir a', hint: 'G F', run: goTo('date-check') }] : []),
     ...(lab ? [{ id: 'outage-lab', label: 'Laboratorio: ¿Y si cae…? (caídas ficticias)', group: 'Ir a', run: goTo('outage-lab') }] : []),
     { id: 'continuity', label: 'Ir a Continuidad', group: 'Ir a', hint: 'G N', run: goTo('continuity') },
-    ...(!state.runtime ? [{ id: 'team-sync', label: 'Ir a Copia de equipo', group: 'Ir a', run: goTo('team-sync') }, { id: 'integrations', label: 'Ir a Integraciones', group: 'Ir a', run: goTo('integrations') }, { id: 'plan', label: 'Ir a Plan y licencia', group: 'Ir a', run: goTo('plan') }] : []),
+    ...(!state.runtime && teamOrigin ? [{ id: 'team-sync', label: 'Ir a Copia de equipo', group: 'Ir a', run: goTo('team-sync') }] : []),
+    ...(!state.runtime ? [{ id: 'integrations', label: 'Ir a Integraciones', group: 'Ir a', run: goTo('integrations') }, { id: 'plan', label: 'Ir a Plan y licencia', group: 'Ir a', run: goTo('plan') }] : []),
     ...(state.ready ? [{ id: 'export', label: 'Ir a Exportar', group: 'Ir a', hint: 'G X', run: goTo('export') }] : []),
     ...(state.ready && spec ? spec.entities.map(item => ({ id: 'new-' + item.id, label: 'Crear: ' + item.singular, group: 'Crear', run: () => { openEntity(item.id); setSelected('new'); } })) : []),
     ...(state.ready && spec && !state.runtime ? [{ id: 'csv-import', label: 'Importar desde CSV…', group: 'Crear', run: () => setModal('csv') }] : []),
@@ -291,7 +292,7 @@ export default function App() {
     ...(state.ready && spec ? [{ id: 'focus', label: 'Despachar vencidas', group: 'Acción', hint: signals.overdue ? signals.overdue + ' vencidas' : undefined, run: () => setFocusOpen('overdue') },
       { id: 'focus-sweep', label: 'Barrido de la mañana: vencidas y de hoy', group: 'Acción', run: () => setFocusOpen('sweep') }] : []),
     ...(state.ready ? [{ id: 'search', label: 'Buscar en toda la copia', group: 'Acción', hint: 'Ctrl K', run: () => setGlobalSearch(true) }, { id: 'coverage', label: 'Ver la cobertura de la copia', group: 'Acción', run: () => void viewCoverage() }] : []),
-    ...(!state.runtime ? [{ id: 'prepare', label: 'Ir a Preparación', group: 'Ir a', run: () => openPreparation() }] : []),
+    ...(!state.runtime ? [{ id: 'prepare', label: 'Configurar Plan B', group: 'Ir a', run: () => openPreparation() }] : []),
     ...(!state.runtime && state.snapshot?.source.isTestData !== false ? [{ id: 'provider', label: 'Proveedor de IA', group: 'Ajustes', run: () => setModal('settings') }] : []),
     ...(!state.runtime && teamOrigin ? [{ id: 'commercial', label: 'Ir al espacio comercial', group: 'Ir a', run: () => { location.href = teamOrigin + '/team?view=company'; } }] : []),
     ...(undoable ? [{ id: 'undo', label: 'Deshacer el último guardado', group: 'Acción', run: () => void undoLast() }] : []),
@@ -330,7 +331,7 @@ export default function App() {
   const date = describeCapture(state.snapshot?.capturedAt).date ?? '';
   return <TaskOutcomesHost refreshState={refresh} onOpenTask={openTaskFromOutcomes} onClosed={(summary,reason)=>{setLockedOutcomes(previous=>addLockSummary(previous,summary));if(summary.dispatched+summary.notDispatched>0)setLockFailed(reason==='lock-not-completed');}} controlRef={outcomesControl}><div className={'app-shell ' + (selected ? 'has-drawer' : '')}>
     <a className="skip-link" href="#main-content">Saltar al contenido</a>
-    <Sidebar pins={sidebarPins} state={state} page={page} entityName={entityName} selected={!!selected} signals={{ ...signals, copy: copySignal, readiness: readinessDot }} step={step} preparationOpen={preparationOpen}
+    <Sidebar pins={sidebarPins} state={state} page={page} entityName={entityName} teamConfigured={!!teamOrigin} selected={!!selected} signals={{ ...signals, copy: copySignal, readiness: readinessDot }} step={step} preparationOpen={preparationOpen}
       setPage={setPage} setSelected={setSelected} setPreparationOpen={setPreparationOpen} setGlobalSearch={setGlobalSearch} setModal={setModal}
       openEntity={openEntity} openPreparation={openPreparation} />
     <div className="mobile-brand"><Brand /><span className="badge">{state.snapshot?.source.isTestData===false?'Producción · lectura':'Datos de prueba'}</span></div>

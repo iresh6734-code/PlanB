@@ -1,16 +1,16 @@
 // Navegación por el menú de cinco lugares para las pruebas de navegador (CLAUDE-E2E-MENU-HELPER, 18/11/2026).
 // Desde CLAUDE-UI-NAV-LAB el menú tiene grupos (Inicio, Hoy, Clientes, Continuidad, Ajustes y, con datos de prueba,
 // Laboratorio) y cada apartado vive dentro del suyo; un grupo solo enseña sus apartados cuando está desplegado.
-// Equivalencias con el menú anterior: «Trabajar» → grupo «Clientes»; «Agentes» → «Hoy › Propuestas»;
+// Equivalencias con el menú anterior: «Trabajar» → grupo «Clientes»; Propuestas solo en la paleta con datos de prueba;
 // «Proteger / bloquear» → botón «Bloquear Plan B» de la barra superior; «Espacio comercial» → «Espacio de equipo» (barra superior).
 import type { Locator, Page } from '@playwright/test';
 
 /** Apartado → [grupo, nombre del apartado en el menú]. */
 const SECTIONS: Record<string, [string, string]> = {
-  'Tareas de hoy': ['Hoy', 'Tareas de hoy'], 'Revisión semanal': ['Hoy', 'Revisión semanal'], Agenda: ['Hoy', 'Agenda'], Propuestas: ['Hoy', 'Propuestas'],
+  'Tareas de hoy': ['Hoy', 'Tareas de hoy'], 'Revisión semanal': ['Hoy', 'Revisión semanal'], Agenda: ['Hoy', 'Agenda'],
   Clientes: ['Clientes', 'Clientes'], Empresas: ['Clientes', 'Empresas'], Oportunidades: ['Clientes', 'Oportunidades'], Tareas: ['Clientes', 'Tareas'],
   Estado: ['Continuidad', 'Estado'], Cambios: ['Continuidad', 'Cambios'], Exportar: ['Continuidad', 'Exportar'], 'Copia de equipo': ['Continuidad', 'Copia de equipo'],
-  Integraciones: ['Ajustes', 'Integraciones'], 'Proveedor de IA': ['Ajustes', 'Proveedor de IA'], Preparación: ['Ajustes', 'Preparación'],
+  Integraciones: ['Ajustes', 'Integraciones'], 'Proveedor de IA': ['Ajustes', 'Proveedor de IA'], Preparación: ['Continuidad', 'Configurar Plan B'], 'Configurar Plan B': ['Continuidad', 'Configurar Plan B'],
   Radar: ['Laboratorio', 'Radar'], 'Comprobar una fecha': ['Laboratorio', 'Comprobar fecha'],
 };
 
@@ -26,9 +26,9 @@ export const menuItem = (page: Page, section: string): Locator => {
 
 /** Orden de la paleta (Ctrl J o «Más» en el móvil) que abre cada apartado. */
 const COMMANDS: Record<string, string> = {
-  'Tareas de hoy': 'Ir a Hoy', 'Revisión semanal': 'Ir a Revisión semanal', Agenda: 'Ir a Agenda', Propuestas: 'Ir a Propuestas', Clientes: 'Ir a Clientes', Empresas: 'Ir a Empresas', Oportunidades: 'Ir a Oportunidades', Tareas: 'Ir a Tareas',
+  'Tareas de hoy': 'Ir a Hoy', 'Revisión semanal': 'Ir a Revisión semanal', Agenda: 'Ir a Agenda', Propuestas: 'Ir a Propuestas (datos de prueba)', Clientes: 'Ir a Clientes', Empresas: 'Ir a Empresas', Oportunidades: 'Ir a Oportunidades', Tareas: 'Ir a Tareas',
   Estado: 'Ir a Continuidad', Cambios: 'Ir a Cambios', Exportar: 'Ir a Exportar', 'Copia de equipo': 'Ir a Copia de equipo',
-  Integraciones: 'Ir a Integraciones', 'Proveedor de IA': 'Proveedor de IA', Preparación: 'Ir a Preparación',
+  Integraciones: 'Ir a Integraciones', 'Proveedor de IA': 'Proveedor de IA', Preparación: 'Configurar Plan B', 'Configurar Plan B': 'Configurar Plan B',
   Radar: 'Laboratorio: Radar de compromisos', 'Comprobar una fecha': 'Laboratorio: Comprobar una fecha',
 };
 
@@ -39,8 +39,10 @@ const COMMANDS: Record<string, string> = {
 export async function openSection(page: Page, section: string) {
   // Primero, que la App haya pintado alguno de los dos menús: decidir antes confundía «todavía cargando» con «móvil».
   await page.locator('.sidebar, .gx-mnav').filter({ visible: true }).first().waitFor();
-  if (!(await page.locator('.sidebar').isVisible())) {
-    await page.locator('.gx-mnav').getByRole('button', { name: 'Más', exact: true }).click();
+  const desktop = await page.locator('.sidebar').isVisible();
+  if (section === 'Propuestas' || !desktop) {
+    if (desktop) await page.locator('.gx-topbar').getByRole('button', { name: 'Órdenes', exact: true }).click();
+    else await page.locator('.gx-mnav').getByRole('button', { name: 'Más', exact: true }).click();
     await page.getByRole('combobox', { name: 'Escribe una orden o un nombre' }).fill(COMMANDS[section] ?? section);
     await page.locator('#gx-commands-list [role="option"]').filter({ hasText: COMMANDS[section] ?? section }).first().click();
     return;
@@ -55,7 +57,7 @@ export async function openSection(page: Page, section: string) {
  * barra inferior en el móvil (bajo 768 px el menú lateral no se muestra). Para apartados dentro de un grupo, `openSection`.
  */
 export const place = (page: Page, name: string): Locator =>
-  page.locator('.sidebar, .gx-mnav').getByRole('button', { name, exact: true }).filter({ visible: true }).first();
+  page.locator('.sidebar, .gx-mnav').getByRole('button', { name: name === 'Preparación' ? 'Configurar Plan B' : name, exact: true }).filter({ visible: true }).first();
 
 /** Botón «Bloquear Plan B» (antes «Proteger / bloquear» en el menú). */
 export const lockButton = (page: Page): Locator => page.locator('.gx-topbar').getByRole('button', { name: 'Bloquear Plan B', exact: true });

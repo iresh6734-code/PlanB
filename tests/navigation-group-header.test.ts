@@ -3,6 +3,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { headerPress, navigationGroups } from '../src/app-shell/navigation.js';
+import path from 'node:path';
+import { Runtime, View, setupGlobals } from './helpers/independent-interface-harness.js';
 
 const groups = navigationGroups({ runtime: false, testData: true, ready: true });
 const group = (id: string) => groups.find(g => g.id === id)!;
@@ -37,4 +39,32 @@ test('A4 el punto de preparación va junto a «Continuidad», con el tono del ve
   const app = fs.readFileSync('src/App.tsx', 'utf8');
   assert.match(app, /readiness: readinessDot/, 'App entrega el veredicto al menú');
   assert.match(app, /readinessFor\(state, continuityStatus, new Date\(\)\)/, 'con el estado ya leído, sin otra lectura');
+});
+
+test('B3.1 Sidebar abre Configurar Plan B en Continuidad, conserva los pasos y no monta Propuestas ni Abrir aplicación', () => {
+  const restore = setupGlobals();
+  const rt = new Runtime(path.resolve('.'), { components: { Brand: () => null }, version: { APP_VERSION: 'test' } });
+  const { Sidebar } = rt.load('src/app-shell/Sidebar.tsx');
+  let opened = 0;
+  const view = new View(rt, Sidebar, {
+    state: { runtime: false, ready: true, snapshot: { source: { isTestData: true } } },
+    page: 'prepare', entityName: 'contacts', teamConfigured: false, selected: false,
+    signals: { overdue: null, atRisk: null }, step: 0, preparationOpen: true,
+    setPage() {}, setSelected() {}, setPreparationOpen() {}, setGlobalSearch() {}, setModal() {}, openEntity() {},
+    openPreparation() { opened++; },
+  });
+  try {
+    const setup = view.find({ tag: 'button', text: 'Configurar Plan B' });
+    assert.equal(view.find({ tag: 'button', where: n => n.props['aria-controls'] === 'nav-group-continuity' }).props['aria-expanded'], true);
+    assert.equal(setup.props['aria-expanded'], true);
+    assert.equal(view.all({ tag: 'nav', label: 'Secciones de preparación' }).length, 1);
+    assert.equal(view.all({ tag: 'button', text: 'Propuestas' }).length, 0);
+    assert.equal(view.all({ tag: 'button', text: 'Abrir aplicación' }).length, 0);
+    assert.equal(view.all({ tag: 'button', text: 'Copia de equipo' }).length, 0);
+    view.click(view.find({ tag: 'button', text: '2Procesos' }));
+    assert.equal(opened, 1);
+    view.update({ teamConfigured: true });
+    assert.equal(view.all({ tag: 'button', text: 'Copia de equipo' }).length, 1);
+    assert.equal(view.all({ tag: 'button', className: /\bprimary\b/ }).length, 0);
+  } finally { view.unmount(); restore(); }
 });

@@ -25,11 +25,11 @@ test('parent072: a failed state load after a valid login keeps Protection, retri
  await page.goto('/');const view=await login(page);
  await expect(view.getByRole('alert')).toContainText('El servidor confirmó el acceso, pero no se pudo terminar de abrir la copia');
  await expect(view.getByRole('button',{name:'Reintentar apertura',exact:true})).toBeVisible();
- await expect(page.getByRole('button',{name:'Copia de equipo',exact:true})).toHaveCount(0);
+ await expect(page.getByRole('button',{name:'Órdenes',exact:true})).toHaveCount(0);
  expect((await gateOf(page)).authenticated).toBe(true);
  expect(seen.posts).toEqual(['/api/v2/auth/login']);
  await view.getByRole('button',{name:'Reintentar apertura',exact:true}).click();
- await expect(view).toHaveCount(0);await expect(page.getByRole('button',{name:'Copia de equipo',exact:true})).toBeVisible();
+ await expect(view).toHaveCount(0);await expect(page.getByRole('button',{name:'Órdenes',exact:true})).toBeVisible();
  expect(seen.posts,'reintentar no envía otra autenticación').toEqual(['/api/v2/auth/login']);
  expect(calls).toBeGreaterThanOrEqual(2);expect(seen.errors,'ningún rechazo sin atender').toEqual([]);expect(seen.outside).toEqual([]);
 });
@@ -39,9 +39,9 @@ test('parent072: the app does not open while the confirmed state is still loadin
  await page.route('**/api/v2/state',async route=>{await held;await route.continue();});
  await page.goto('/');const view=await login(page);
  await expect.poll(()=>seen.stateReads.length).toBeGreaterThanOrEqual(1);
- await expect(page.getByRole('button',{name:'Copia de equipo',exact:true})).toHaveCount(0);
+ await expect(page.getByRole('button',{name:'Órdenes',exact:true})).toHaveCount(0);
  await expect(view).toHaveCount(1);
- release();await expect(view).toHaveCount(0);await expect(page.getByRole('button',{name:'Copia de equipo',exact:true})).toBeVisible();
+ release();await expect(view).toHaveCount(0);await expect(page.getByRole('button',{name:'Órdenes',exact:true})).toBeVisible();
  expect(seen.posts).toEqual(['/api/v2/auth/login']);expect(seen.errors).toEqual([]);expect(seen.outside).toEqual([]);
 });
 
@@ -50,7 +50,7 @@ test('parent072: a real 401 while loading the state keeps the copy locked and ne
  await page.route('**/api/v2/state',async route=>{if(!locked){locked=true;expect((await page.request.post('/api/v2/auth/lock',{data:{}})).ok()).toBeTruthy();}await route.continue();});
  await page.goto('/');const view=await login(page);
  await expect.poll(()=>locked).toBe(true);
- await expect(page.getByRole('button',{name:'Copia de equipo',exact:true})).toHaveCount(0);
+ await expect(page.getByRole('button',{name:'Órdenes',exact:true})).toHaveCount(0);
  await expect.poll(async()=>(await gateOf(page)).authenticated).toBe(false);
  await expect(view).toHaveCount(1);
  // Sin esto el usuario quedaría en «acuse confirmado»: sin campos y con un reintento que vuelve a dar 401. Debe poder identificarse de nuevo.
@@ -58,6 +58,6 @@ test('parent072: a real 401 while loading the state keeps the copy locked and ne
  await expect(view.getByRole('button',{name:'Reintentar apertura',exact:true})).toHaveCount(0);
  await page.unroute('**/api/v2/state');
  await view.getByLabel('Contraseña local',{exact:true}).fill(password);await view.getByRole('button',{name:'Desbloquear',exact:true}).click();
- await expect(view).toHaveCount(0);await expect(page.getByRole('button',{name:'Copia de equipo',exact:true})).toBeVisible();
+ await expect(view).toHaveCount(0);await expect(page.getByRole('button',{name:'Órdenes',exact:true})).toBeVisible();
  expect(seen.posts,'una autenticación nueva y legítima tras el bloqueo').toEqual(['/api/v2/auth/login','/api/v2/auth/login']);expect(seen.errors,'ningún rechazo sin atender').toEqual([]);expect(seen.outside).toEqual([]);
 });

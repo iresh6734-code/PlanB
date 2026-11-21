@@ -83,12 +83,80 @@ Archivos de interfaz: `src/app-shell/lazy-pages.tsx`, `src/app-shell/FirstRun.ts
 
 ## Pendiente para el agente del otro ordenador
 
-Nota de convivencia (21/11/2026): B4.3 ya está cerrado, así que `ChangesView.tsx` queda libre para montar la interfaz del paquete de vuelta A4 descrito en `registro-claude-paralelo.md`. GitHub Copilot no lo monta en esta tanda porque no está en «Siguiente, en este orden»; sigue con B4.5 y A0-L.
+### Relevo de GitHub Copilot · 21/11/2026, 18:35 Europe/Madrid · leer primero
+
+**Dónde me quedé:** la rama `planb-v0.3-local` está limpia y sincronizada en `7fcb771`. Está hecho y subido todo lo de «Siguiente, en este orden» que no dependía de la usuaria.
+
+| Commit | Tema |
+| --- | --- |
+| `b95b5a1` | Revisión cruzada |
+| `25ac07c` | B4.3 Cambios |
+| `c14f115` | B3.1 Menú |
+| `9e1ad41` | B4.4 Hoy y Agenda |
+| `a0fedfa` | B4.5 Listas |
+| `7fcb771` | A0-L Código sin montar |
+
+El detalle y las medidas de cada tema están en la tabla «Ejecución del relevo» de este archivo.
+
+**Siguiente: A6 y A7, que esperan la decisión de la usuaria.** Le presenté estas opciones y canceló el formulario, así que no hay nada decidido ni implementado. Pregúntale antes de tocar código.
+
+**A7 · Clave local sin PowerShell ni DPAPI.**
+
+Estado actual del código:
+
+- `server/crypto.ts` (`localKey`) guarda `.planb-key` envuelta con DPAPI, que llama a `powershell.exe`.
+- `Store` la abre en el constructor (`server/store.ts:36`), es decir, al arrancar y antes de cualquier inicio de sesión.
+- La contraseña local es opcional: `server/security.ts`, `credential()`.
+- Las capturas programadas corren solas: `continuity.tick()` cada 60 s en `server/v2.ts:192`.
+- Otros consumidores de `localKey`: `provider.ts`, `continuity.ts`, `hubspot-read-check-mount.ts`, `team/local-config.ts`, `team/main.ts` (piloto) y varios `scripts/*`.
+
+Consecuencias de cada opción:
+
+- **(b) Clave derivada de la contraseña con scrypt:**
+  - La contraseña pasa a ser obligatoria y la copia arranca bloqueada. Nada se descifra hasta el desbloqueo, así que hay que retrasar la creación del `Store` o su clave hasta el inicio de sesión.
+  - Las capturas programadas esperan al desbloqueo después de cada reinicio.
+  - Si se olvida la contraseña, solo se recupera con un paquete exportado. Ya existe `encodePortable` con scrypt.
+  - La envoltura nueva debe llevar parámetros y versión de scrypt, como `server/password-hash.ts`.
+  - El cambio debe ser atómico, con vuelta atrás.
+- **Híbrido:** (b) por defecto y DPAPI opcional en equipos personales.
+- **(c) Ejecutable propio firmado:** requiere un certificado de firma de código.
+- **Migrar una copia que ya usa DPAPI** exige abrir DPAPI una última vez, y eso puede disparar la alerta una vez. La otra vía es exportar con contraseña e importar en una carpeta nueva.
+- No prometer cero alertas.
+
+**A6 · Licencias.**
+
+Estado actual del código:
+
+- `shared/license.ts` verifica Ed25519, pero `LICENSE_PUBLIC_KEY` está vacía.
+- Las puertas de `shared/plans.ts` (`featureAccess`) son suaves: solo muestran una insignia.
+- La prueba de 14 días vive en el navegador.
+
+Decisiones pendientes:
+
+- **Custodia de la clave privada.** La genera la usuaria en un equipo personal con `scripts/license-tool.ts keygen` y el agente solo recibe la pública. La otra opción es posponerla e implementar el servidor con claves de prueba.
+- **Puertas suaves, o 402 en el servidor solo para funciones nuevas de pago.** Nunca para leer, exportar, recuperar ni salir de una contingencia.
+- **Si la prueba de 14 días pasa al servidor.**
+
+**Otros pendientes** que sí puede hacer un agente sin decisiones:
+
+1. Sustituir la huella SHA-256 de `src/task-save-outcomes.css` en `tests/task-focus-outcomes.test.ts`, línea 21, por una aserción de comportamiento. Sigue pendiente.
+2. Arreglar el arnés `auth-parent-harness` para que simule `useContinuityState`. Por esa carencia fallan `auth-parent` e `independent-interface-contexts`, igual en `HEAD` limpio, desde `607a835`.
+3. Ejecutar `tests/relay-rehearsal-mount.test.ts`. Lleva una aserción nueva de manifiesto sin `recovery-rehearsal`, y `tools/safe-tests.mjs` lo omite porque arranca procesos.
+4. Retirar o adaptar las pruebas de navegador de la antigua cola de Hoy: `tests/e2e/today-work-queue.spec.ts` y el bloque «Hoy» de `tests/e2e/independent-workspace-flows.spec.ts`. Buscan `.work-queue-count`, que ya no se monta.
+5. Revisión visual y geometría de B4.3 a B4.5, que no se hizo aquí. También quedan de B4.5 «Guardar vista» dentro de «Más» y las tarjetas móviles de dos líneas.
+
+**Cómo comprobar:**
+
+- Tipos: `npx tsc --noEmit -p tsconfig.json`.
+- Pruebas focales: `node tools/safe-tests.mjs <selectores>`. Los selectores de cada tema están en su fila de la tabla.
+- Poda de CSS: `node tools/css-unused.mjs --write` y después `--dedupe`. La herramienta no quita alternativas muertas dentro de `:is()`, así que eso hay que hacerlo a mano.
+
+Nota de convivencia (21/11/2026): B4.3 ya está cerrado, así que `ChangesView.tsx` queda libre para montar la interfaz del paquete de vuelta A4 descrito en `registro-claude-paralelo.md`. GitHub Copilot no lo monta en esta tanda porque no está en «Siguiente, en este orden».
 
 Al hacer `git pull`, leer `docs/mision/00-LEEME.md` y, en este orden:
 
 1. **Revisión cruzada hecha por Copilot el 21/11:** tabla por propuesta más abajo. Seguir el orden vigente de `00-LEEME.md`, no el reparto histórico de este apartado.
-2. **Fase 1:** A0-L (limpieza de código sin montar y `recovery-rehearsal.ts` fuera del instalable) y decidir qué hacer con la huella SHA-256 de `src/task-save-outcomes.css` en `tests/task-focus-outcomes.test.ts`: sustituirla por una aserción de comportamiento.
+2. **Fase 1:** A0-L hecho en `7fcb771`. Sigue pendiente sustituir la huella SHA-256 de `src/task-save-outcomes.css` en `tests/task-focus-outcomes.test.ts` por una aserción de comportamiento.
 3. **Antes de tocar** archivos del ámbito de interfaz (`src/consola.css`, `src/faro.css`, `src/ui/**`, `TopBar.tsx`, `Sidebar.tsx`, `navigation.ts`, `HomeOverview.tsx`, `ContinuityHome.tsx`), anotar aquí la tarea para no editar a la vez.
 
 ## Revisión cruzada · GitHub Copilot · 21/11/2026 (Europe/Madrid)

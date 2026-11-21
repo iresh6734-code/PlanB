@@ -47,7 +47,7 @@ Encargo de la usuaria del 21/11/2026: terminar, potenciar, perfeccionar y hacer 
 
 **Siguiente, en este orden** (tabla completa en `05-hoja-de-ruta.md`):
 
-1. **Decisiones de la usuaria pendientes:** A7 (clave sin DPAPI/PowerShell) y custodia de la clave de licencias (A6). No se implementa nada de A6/A7 sin esas decisiones.
+1. **Decisiones de la usuaria pendientes:** A7 (clave sin DPAPI/PowerShell) y custodia de la clave de licencias (A6). No se implementa nada de A6/A7 sin esas decisiones. El análisis del código y las opciones están en `registro-colaboracion.md`, apartado «Relevo de GitHub Copilot · 21/11/2026, 18:35».
 2. En el equipo autorizado: ejecutar `tests/relay-rehearsal-mount.test.ts` (aquí se omite por arrancar procesos). Retirar o adaptar las pruebas de navegador que aún buscan la antigua cola de Hoy (`tests/e2e/today-work-queue.spec.ts` y el bloque «Hoy» de `tests/e2e/independent-workspace-flows.spec.ts`).
 
 **Reglas que han funcionado en esta misión:**

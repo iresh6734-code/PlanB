@@ -11,7 +11,7 @@ import { doneOption } from './focus.js';
 import { BOARD_MAX_PAGES, readPages, type ListPage } from './pager.js';
 import { followUpDates } from './task-preset.js';
 import { recordListPath } from './useRecordList.js';
-import { nextStepTask, POSTPONE_LIMIT, reviewDay, reviewHeadline, reviewText, weeklyReview, type WeeklyReview as Review } from './weekly-review.js';
+import { lateSpan, nextStepTask, POSTPONE_LIMIT, reviewDay, reviewHeadline, reviewText, weeklyReview, type WeeklyReview as Review } from './weekly-review.js';
 import './weekly-review.css';
 
 type Props = {
@@ -22,6 +22,8 @@ type Props = {
 };
 type Read = { key: string } & ({ review: Review; error?: never } | { error: string; review?: never });
 const SHOWN = 6;
+/** Una cifra a cero se atenúa: lo que pide atención es lo que no es cero. */
+const zero = (value: number) => value === 0 ? 'true' : undefined;
 
 /** Hoy › Revisión semanal (H3): lo hecho en siete días y lo que pide una decisión, con la acción en la misma fila. */
 export function WeeklyReview({ spec, revision, title, saveField, createTask, onOpenRecord }: Props) {
@@ -91,11 +93,11 @@ export function WeeklyReview({ spec, revision, title, saveField, createTask, onO
           </div>
           {start > 0 ? <div className="wr-meter"><span>Decididas en esta revisión: {decided} de {start}</span><progress max={start} value={decided} aria-label={'Decididas ' + decided + ' de ' + start} /></div> : null}
           <dl className="wr-figures">
-            <div><dt>Hechas</dt><dd>{review.done.length}</dd></div>
-            <div><dt>Ganadas</dt><dd>{review.won.length}{review.won.some(item => item.amount !== null) ? <small>{euros(review.won.reduce((sum, item) => sum + (item.amount ?? 0), 0))}</small> : null}</dd></div>
-            <div data-tone={review.postponed.length ? 'warn' : undefined}><dt>Pospuestas de más</dt><dd>{review.postponed.length}</dd></div>
-            <div data-tone={review.overdue.length ? 'danger' : undefined}><dt>Vencidas</dt><dd>{review.overdue.length}</dd></div>
-            <div data-tone={review.noNext?.length ? 'warn' : undefined}><dt>Sin próximo paso</dt><dd>{review.noNext === null ? '—' : review.noNext.length}</dd></div>
+            <div data-zero={zero(review.done.length)}><dt>Hechas</dt><dd>{review.done.length}</dd></div>
+            <div data-zero={zero(review.won.length)}><dt>Ganadas</dt><dd>{review.won.length}{review.won.some(item => item.amount !== null) ? <small>{euros(review.won.reduce((sum, item) => sum + (item.amount ?? 0), 0))}</small> : null}</dd></div>
+            <div data-tone={review.postponed.length ? 'warn' : undefined} data-zero={zero(review.postponed.length)}><dt>Pospuestas de más</dt><dd>{review.postponed.length}</dd></div>
+            <div data-tone={review.overdue.length ? 'danger' : undefined} data-zero={zero(review.overdue.length)}><dt>Vencidas</dt><dd>{review.overdue.length}</dd></div>
+            <div data-tone={review.noNext?.length ? 'warn' : undefined} data-zero={zero(review.noNext?.length ?? 1)}><dt>Sin próximo paso</dt><dd>{review.noNext === null ? '—' : review.noNext.length}</dd></div>
           </dl>
         </div>
         {note ? <p className="wr-note" data-tone={note.tone}>{note.text}</p> : null}
@@ -105,7 +107,7 @@ export function WeeklyReview({ spec, revision, title, saveField, createTask, onO
             <p className="wr-hint">Si siempre se aplaza, decide: hazla hoy, ciérrala o cámbiala por algo que sí vayas a hacer.</p>
             {review.postponed.length ? <ul className="oc-task-list wr-list">{list('postponed', review.postponed).map(item => <li key={item.record.id}>
               <span className="oc-chip" data-tone="warn">{item.postponed} veces</span>
-              <div style={{ minWidth: 0 }}><strong title={item.name}>{item.name}</strong><span className="oc-due">{item.due ? (item.late ? 'Venció hace ' + (item.late === 1 ? '1 día' : item.late + ' días') : 'Vence el ' + reviewDay(item.due)) : 'Sin fecha'}</span></div>
+              <div style={{ minWidth: 0 }}><strong title={item.name}>{item.name}</strong><span className="oc-due">{item.due ? (item.late !== null ? (item.late === 0 ? 'Venció hoy' : 'Venció hace ' + lateSpan(item.late)) : 'Vence el ' + reviewDay(item.due)) : 'Sin fecha'}</span></div>
               <span className="wr-actions">{done ? <button type="button" className="oc-small-button" disabled={busy !== null} onClick={() => void markDone(item.record, item.name)} aria-label={'Marcar como hecha «' + item.name + '»'}>Hecha</button> : null}
                 <button type="button" className="oc-small-button" onClick={() => onOpenRecord(item.record)} aria-label={'Abrir «' + item.name + '» para cambiarla'}>Abrir</button></span>
             </li>)}</ul> : <p className="oc-empty-line ui-empty ui-empty-ok">Ninguna tarea se ha aplazado más de {POSTPONE_LIMIT} veces.</p>}
@@ -114,13 +116,13 @@ export function WeeklyReview({ spec, revision, title, saveField, createTask, onO
           <article className="oc-card wr-card" data-wide={review.overdue.length ? 'true' : undefined} aria-labelledby="wr-overdue">
             <div className="oc-card-head"><h2 id="wr-overdue">Vencidas <span className="oc-count">{review.overdue.length}</span></h2></div>
             {review.overdue.length ? <ul className="oc-task-list wr-list">{list('overdue', review.overdue).map(item => <li key={item.record.id}>
-              <span className="oc-chip" data-tone="danger">{item.late === 1 ? '1 día' : item.late + ' días'}</span>
+              <span className="oc-chip" data-tone="danger">{item.late === 0 ? 'Hoy' : lateSpan(item.late!)}</span>
               <div style={{ minWidth: 0 }}><strong title={item.name}>{item.name}</strong><span className="oc-due">{item.postponed ? 'Aplazada ' + (item.postponed === 1 ? '1 vez' : item.postponed + ' veces') : 'Venció el ' + reviewDay(item.due!)}</span></div>
               <span className="wr-actions">{done ? <button type="button" className="oc-small-button" disabled={busy !== null} onClick={() => void markDone(item.record, item.name)} aria-label={'Marcar como hecha «' + item.name + '»'}>Hecha</button> : null}
                 {tomorrow ? <button type="button" className="oc-small-button" disabled={busy !== null} onClick={() => void moveTo(item.record, item.name, tomorrow.date, tomorrow.label)} aria-label={'Pasar «' + item.name + '» a mañana'}>Mañana</button> : null}
                 {monday ? <button type="button" className="oc-small-button" disabled={busy !== null} onClick={() => void moveTo(item.record, item.name, monday.date, monday.label)} aria-label={'Pasar «' + item.name + '» al lunes'}>Lunes</button> : null}
                 <button type="button" className="oc-small-button" onClick={() => onOpenRecord(item.record)} aria-label={'Abrir «' + item.name + '»'}>Abrir</button></span>
-            </li>)}</ul> : <p className="oc-empty-line ui-empty ui-empty-ok">No hay tareas vencidas{review.postponed.some(item => item.late) ? ' aparte de las pospuestas' : ''}.</p>}
+            </li>)}</ul> : <p className="oc-empty-line ui-empty ui-empty-ok">No hay tareas vencidas{review.postponed.some(item => item.late !== null) ? ' aparte de las pospuestas' : ''}.</p>}
             {showMore('overdue', review.overdue.length)}
           </article>
           {spec.entities.some(entity => entity.id === 'deals') ? <article className="oc-card wr-card" data-wide={review.noNext?.length ? 'true' : undefined} aria-labelledby="wr-nonext">

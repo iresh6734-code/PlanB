@@ -1,4 +1,5 @@
 import type { AppSpec, Change, CrmRecord, FieldValue } from '../../shared/model.js';
+import { taskRule } from '../../shared/overdue.js';
 import { dueDay, madridDay } from '../task-display.js';
 import { dealPulse, euros, stageKind } from './deal-insights.js';
 import { doneOption } from './focus.js';
@@ -15,6 +16,7 @@ export const REVIEW_DAYS = 7;
 /** «Pospuesta más de dos veces»: la fecha límite se movió hacia delante tres o más veces. */
 export const POSTPONE_LIMIT = 2;
 
+/** `late`: días de calendario desde que venció con la regla de Hoy (0 si venció hoy, con hora); null si no está vencida. */
 export interface ReviewTask { record: CrmRecord; name: string; due: string | null; late: number | null; postponed: number }
 export interface ReviewDone { id: string; name: string; at: string }
 export interface ReviewWon { id: string; name: string; at: string; amount: number | null }
@@ -77,10 +79,10 @@ export function weeklyReview({ spec, tasks, deals, changes, now, tasksComplete, 
   const stillWon = [...wonMap.values()].filter(item => { const record = current.get('deals:' + item.id); return !record || kindOf(record) === 'won'; });
   const recent = <T extends { at: string }>(list: T[]) => list.sort((a, b) => b.at.localeCompare(a.at));
 
-  const counts = postponeCounts(changes, dueKey);
+  const counts = postponeCounts(changes, dueKey), rule = taskRule(spec), at = now.getTime();
   const open = tasks.filter(record => record.entity === 'tasks' && !isDone(record)).map(record => {
-    const due = dueDay(record.values[dueKey]);
-    const late = due && due < to ? Math.round((Date.parse(to + 'T12:00:00Z') - Date.parse(due + 'T12:00:00Z')) / DAY) : null;
+    const due = dueDay(record.values[dueKey]), day = rule.due(record).localDate;
+    const late = day && rule.overdue(record, at, to) ? Math.round((Date.parse(to + 'T12:00:00Z') - Date.parse(day + 'T12:00:00Z')) / DAY) : null;
     return { record, name: nameOf(record), due, late, postponed: counts.get(record.id) ?? 0 };
   });
   const postponed = open.filter(item => item.postponed > POSTPONE_LIMIT).sort((a, b) => b.postponed - a.postponed || (b.late ?? -1) - (a.late ?? -1) || a.record.id.localeCompare(b.record.id));
@@ -119,6 +121,8 @@ export function nextStepTask(spec: AppSpec, deal: CrmRecord, name: string, due: 
 
 const dayLabel = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', timeZone: 'UTC' });
 export const reviewDay = (day: string) => dayLabel.format(Date.parse(day + 'T12:00:00Z'));
+/** Tiempo vencido en texto: «hoy» si venció hoy (tenía hora), «1 día» o «N días». */
+export const lateSpan = (late: number) => late === 0 ? 'hoy' : late === 1 ? '1 día' : late + ' días';
 
 /** Una frase que resume la semana, para la cabecera y el texto copiado. */
 export function reviewHeadline(review: WeeklyReview): string {
@@ -137,7 +141,7 @@ export function reviewText(review: WeeklyReview, title = 'Plan B'): string {
   section('Hechas', review.done.map(item => item.name));
   section('Ganadas', review.won.map(item => item.name + (item.amount === null ? '' : ' · ' + euros(item.amount))));
   section('Pospuestas más de ' + POSTPONE_LIMIT + ' veces', review.postponed.map(item => item.name + ' · ' + item.postponed + ' veces'));
-  section('Vencidas', review.overdue.map(item => item.name + ' · ' + (item.late === 1 ? '1 día' : item.late + ' días')));
+  section('Vencidas', review.overdue.map(item => item.name + ' · ' + lateSpan(item.late!)));
   section('Oportunidades sin próximo paso', (review.noNext ?? []).map(item => item.name + ' · ' + item.stage));
   return lines.join('\n').trim() + '\n';
 }

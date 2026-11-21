@@ -58,7 +58,7 @@ export class Runtime {
     return ['.tsx', '.ts'].map(ext => base + ext).find(file => fs.existsSync(file));
   }
   private req = (from: string) => (spec: string): any => {
-    if (spec === 'react') return new Proxy({}, { get: (_t, name) => (this.hooks as any)[name] });
+    if (spec === 'react') return new Proxy({}, { get: (_t, name) => name === 'Fragment' ? FRAGMENT : (this.hooks as any)[name] });
     if (spec === 'react/jsx-runtime') return { jsx, jsxs: jsx, Fragment: FRAGMENT };
     if (spec === 'lucide-react') return new Proxy({}, { get: () => () => null });
     if (spec.endsWith('.css')) return {};

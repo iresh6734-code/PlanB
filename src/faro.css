@@ -221,6 +221,7 @@ html body .oc-filter { min-height: 26px; height: 26px; padding: 0 9px; gap: 6px;
 html body .oc-filter:hover { color: var(--text-1); background: rgba(255, 255, 255, .5); }
 html body .oc-filter[aria-pressed="true"] { background: var(--bg-surface); color: var(--text-1); box-shadow: 0 1px 2px rgba(21, 23, 28, .14); }
 html body .oc-filter .oc-count { min-width: 18px; padding: 0 5px; border-radius: 5px; font-size: var(--fs-xs); line-height: 17px; }
+html body .oc-filters .lop-dispatch { flex: none; align-self: center; min-height: 32px; padding: 0 6px; font-size: var(--fs-sm); white-space: nowrap; }
 html body .oc-filters .oc-copy-total { margin-left: 6px; padding: 0 8px; font-size: var(--fs-xs); color: var(--text-3); white-space: nowrap; }
 html body .lop > section > .lop-search { flex: 1 1 200px; order: 3; margin: 0 0 10px auto; max-width: 260px; display: block; }
 html body .lop .lop-search > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -233,15 +234,16 @@ html body .lop-review > div > .button { grid-column: 2; grid-row: 1 / span 4; }
 html body .lop-review > svg { margin: 0; color: var(--primary); }
 html body .lop .lop-day { margin: 0 0 10px; padding: 12px; border-radius: var(--r-lg); }
 html body .oc-table { border-radius: var(--r-lg); border: 1px solid var(--border); box-shadow: var(--shadow-1); overflow: clip; }
-html body .oc-table-head, html body .lop .lop-tasks li { grid-template-columns: 112px minmax(0, 1fr) 96px 76px; gap: 10px; }
+html body .oc-table-head, html body .lop .lop-tasks li { grid-template-columns: minmax(0, 1fr) 136px 76px; gap: 10px; }
 html body .oc-table-head { position: sticky; top: var(--topbar-h); z-index: 2; padding: 0 8px 0 14px; height: 30px; font-size: 10.5px; letter-spacing: .06em; }
 html body .oc-group { padding: 0 14px; height: 26px; border-bottom: 1px solid #e8eaef; font-family: var(--font-sans); font-size: var(--fs-xs); letter-spacing: 0; }
 html body .oc-group::before { width: 6px; height: 6px; }
 html body .lop .lop-tasks li { padding: 0 8px 0 14px; border-bottom: 1px solid #eceef2; transition: background-color 100ms; }
 html body .lop .lop-tasks li:hover { background: var(--bg-row-hover); }
-html body .lop .lop-tasks li > .oc-chip { justify-self: start; }
 html body .lop .lop-tasks .oc-task-title { font-size: var(--fs-md); }
 html body .lop .lop-tasks .oc-due { font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
+html body .lop .lop-tasks .oc-due[data-tone="danger"] { font-weight: 600; color: var(--oc-danger-fg); }
+html body .lop .lop-tasks .oc-due[data-tone="warn"] { font-weight: 600; color: var(--oc-warn-fg); }
 html body .lop .lop-tasks .lop-open-task { min-height: 24px; height: 24px; padding: 0 8px; gap: 4px; font-size: var(--fs-sm); border-color: transparent; background: transparent; box-shadow: none; color: var(--primary-text); }
 html body .lop .lop-tasks li:hover .lop-open-task, html body .lop .lop-tasks .lop-open-task:focus-visible { border-color: var(--border-strong); background: var(--bg-surface); }
 html body .lop .lop-tasks .lop-cell-action { display: inline-flex; justify-self: end; }
@@ -519,11 +521,10 @@ html body .modal .field { margin-bottom: 12px; }
   html body .workspace > .kanban { display: flex; flex-wrap: nowrap; }
   html body .kanban-column { min-width: 0; }
   html body .oc-filter { flex: none; white-space: nowrap; }
-  html body .lop .lop-tasks li { grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 10px; padding: 8px 12px; }
+  html body .lop .lop-tasks li { grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; padding: 8px 12px; }
   html body .lop .lop-tasks li > div { grid-column: 1 / -1; grid-row: 1; }
-  html body .lop .lop-tasks li > .oc-chip { grid-column: 1; grid-row: 2; }
-  html body .lop .lop-tasks li > .oc-due { grid-column: 2; grid-row: 2; }
-  html body .lop .lop-tasks li > :last-child { grid-column: 3; grid-row: 2; }
+  html body .lop .lop-tasks li > .oc-due { grid-column: 1; grid-row: 2; }
+  html body .lop .lop-tasks li > :last-child { grid-column: 2; grid-row: 2; }
   html body .oc-task-list li { grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 10px; }
   html body .oc-task-list li > div { grid-column: 1 / -1; grid-row: 1; }
   html body .oc-task-list li > .oc-chip { grid-column: 1; grid-row: 2; }

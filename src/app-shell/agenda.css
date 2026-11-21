@@ -23,6 +23,8 @@ html body .ag-figures dd { display: flex; align-items: baseline; gap: 5px; margi
 html body .ag-figures dd small { font-size: var(--fs-xs); font-weight: 500; white-space: nowrap; color: var(--text-3); }
 html body .ag-figures [data-tone="danger"] dd { color: var(--oc-danger-fg); }
 html body .ag-figures [data-tone="warn"] dd { color: var(--oc-warn-fg); }
+html body .ag-figure-link { display: inline-flex; align-items: center; gap: 2px; min-height: 24px; padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+html body .ag-figure-link:hover { text-decoration-thickness: 2px; }
 html body .ag-busiest { flex: 1; min-width: 0; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-sm); color: var(--text-3); }
 html body .ag-actions { display: inline-flex; flex: none; align-items: center; gap: 2px; }
 html body .ag-actions > .ag-copy { min-height: 28px; margin: 0; padding: 0 8px; gap: 5px; border-radius: var(--r-sm); font-size: var(--fs-sm); white-space: nowrap; }
@@ -91,14 +93,10 @@ html body .ag-what { grid-area: what; display: grid; gap: 1px; min-width: 0; }
 html body .ag-what strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-md); font-weight: 600; color: var(--text-1); }
 html body .ag-what span { font-size: var(--fs-sm); color: var(--text-3); }
 html body .ag-list li[data-tone="late"] .ag-what span { color: var(--oc-danger-fg); }
+html body .ag-list li[data-tone="review"] .ag-what span { color: var(--oc-warn-fg); }
 html body .ag-acts { grid-area: acts; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
 html body .ag-move input { height: var(--control-h-sm); padding: 0 6px; border: 1px solid var(--border-control); border-radius: var(--r-sm); background: var(--bg-surface); color: var(--text-1); font: inherit; font-size: var(--fs-sm); }
 html body .ag-empty { margin: 0; font-size: var(--fs-sm); color: var(--text-3); }
-html body .ag-overdue { display: grid; gap: 8px; padding-top: 10px; border-top: 1px solid var(--border); }
-html body .ag-overdue h3 { display: flex; align-items: center; gap: 6px; margin: 0; font-size: var(--fs-sm); font-weight: 650; color: var(--text-2); }
-html body .ag-overdue h3::before { content: ''; flex: none; width: 6px; height: 6px; background: var(--seal); }
-html body .ag-overdue-n { margin-left: auto; font-size: 20px; font-weight: 650; line-height: 1; font-variant-numeric: tabular-nums; color: var(--oc-danger-fg); }
-html body .ag-list-compact li { padding: 6px 0; }
 html body .ag-side > .ag-foot { flex: none; margin: auto 0 0; padding: 10px 0 0; border-top: 1px solid var(--rule); font-size: var(--fs-xs); line-height: 1.45; }
 
 /* A toda altura en escritorio: el calendario llena el alto disponible y el panel del día se desplaza por dentro. */
@@ -121,18 +119,7 @@ html body .ag-side > .ag-foot { flex: none; margin: auto 0 0; padding: 10px 0 0;
   html body .ag-what strong { flex: 0 1 auto; min-width: 0; }
   html body .ag-what span { flex: none; white-space: nowrap; }
 }
-@container (min-width: 860px) {
-  html body .ag-overdue .ag-list { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 28px; }
-  html body .ag-overdue .ag-list li:nth-child(2) { padding-top: 0; border-top: 0; }
-}
 /* Panel estrecho: lo vencido en dos renglones (nombre; tipo, antigüedad y acciones). */
-@container (max-width: 559px) {
-  html body .ag-list-compact li { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "name name name" "kind meta acts"; align-items: center; gap: 3px 8px; }
-  html body .ag-list-compact .ag-what { display: contents; }
-  html body .ag-list-compact .ag-what strong { grid-area: name; }
-  html body .ag-list-compact .ag-what span { grid-area: meta; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  html body .ag-list-compact .ag-kind { padding-top: 0; }
-}
 
 @media (max-width: 1180px) {
   html body .ag-layout { grid-template-columns: minmax(0, 1fr); }

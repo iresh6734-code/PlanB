@@ -1,4 +1,5 @@
 import type { AppSpec, CrmRecord } from '../../shared/model.js';
+import { localDay, taskRule } from '../../shared/overdue.js';
 import { dueDay } from '../task-display.js';
 import { euros, stageKind } from './deal-insights.js';
 import { doneOption } from './focus.js';
@@ -9,7 +10,8 @@ import { doneOption } from './focus.js';
  * oportunidad se puede mover desde aquí (con el guardado de siempre); las tareas se abren en su ficha.
  */
 export type AgendaView = 'week' | 'month';
-export type AgendaTone = 'late' | 'today' | 'soon' | 'later';
+/** `review`: tarea con un día ya pasado que la regla de Hoy no puede dar por vencida (estado desconocido o fecha que no casa con el campo). */
+export type AgendaTone = 'late' | 'review' | 'today' | 'soon' | 'later';
 export interface AgendaItem {
   key: string; kind: 'task' | 'close'; record: CrmRecord; name: string; day: string; tone: AgendaTone;
   amount: number | null; stage: string | null;
@@ -17,7 +19,7 @@ export interface AgendaItem {
 export interface AgendaDay { day: string; inPeriod: boolean; today: boolean; past: boolean; weekend: boolean; items: AgendaItem[] }
 export interface Agenda {
   view: AgendaView; anchor: string; from: string; to: string; title: string; days: AgendaDay[];
-  /** Pendiente con fecha pasada, también la anterior al periodo que se ve. */ overdue: AgendaItem[];
+  /** Tareas vencidas con la regla de Hoy, también las anteriores al periodo que se ve. Los cierres pasados no cuentan: siguen en su día. */ overdue: AgendaItem[];
   totals: { tasks: number; closes: number; amount: number; late: number };
   /** Día del periodo con más cosas (null si el periodo está vacío). */ busiest: { day: string; count: number } | null;
 }
@@ -75,22 +77,28 @@ function amountOf(value: unknown): number | null {
   const amount = Number(value);
   return Number.isFinite(amount) ? amount : null;
 }
+/** Cómo se nombra lo que ya pasó: una tarea «vencida» (regla de Hoy); un cierre en un día pasado, «fecha pasada», porque no cuenta como vencida. */
+export const pastWord = (item: Pick<AgendaItem, 'kind' | 'tone'>) => item.tone !== 'late' ? null : item.kind === 'task' ? 'vencida' : 'fecha pasada';
 const toneOf = (day: string, today: string): AgendaTone => day < today ? 'late' : day === today ? 'today' : day <= shiftDay(today, SOON_DAYS) ? 'soon' : 'later';
 
-type ItemsInput = { spec: AppSpec; tasks: readonly CrmRecord[]; deals: readonly CrmRecord[]; today: string; nameOf: (record: CrmRecord) => string };
+/** 
+ow: instante de evaluación; una tarea con hora vence en cuanto pasa y una de solo día, al acabar ese día en Madrid. */
+type ItemsInput = { spec: AppSpec; tasks: readonly CrmRecord[]; deals: readonly CrmRecord[]; now: number; nameOf: (record: CrmRecord) => string };
 
 /** Lo que cabe en la agenda: tareas sin hacer con fecha y oportunidades abiertas con cierre. `undated`: tareas pendientes sin fecha. */
-export function agendaItems({ spec, tasks, deals, today, nameOf }: ItemsInput): { items: AgendaItem[]; undated: number } {
+export function agendaItems({ spec, tasks, deals, now, nameOf }: ItemsInput): { items: AgendaItem[]; undated: number } {
+  const today = localDay(now), rule = taskRule(spec);
   const dueKey = spec.roles?.dueDate ?? 'due_date', stageKey = spec.roles?.stage ?? 'dealstage', amountKey = spec.roles?.amount ?? 'amount';
   const done = doneOption(spec), close = closeFieldFor(spec);
   const stages = new Map(spec.stages.map(stage => [stage.id, stage]));
   const items: AgendaItem[] = [];
   let undated = 0;
   for (const record of tasks) {
-    if (record.entity !== 'tasks' || (done && String(record.values[done.key] ?? '') === done.id)) continue;
+    if (record.entity !== 'tasks' || (done && String(record.values[done.key] ?? '') === done.id) || rule.status(record) === 'completed') continue;
     const day = dueDay(record.values[dueKey]);
     if (!day || !isDay(day)) { undated++; continue; }
-    items.push({ key: 'tasks:' + record.id, kind: 'task', record, name: nameOf(record), day, tone: toneOf(day, today), amount: null, stage: null });
+    const tone: AgendaTone = rule.overdue(record, now, today) ? 'late' : day < today ? 'review' : toneOf(day, today);
+    items.push({ key: 'tasks:' + record.id, kind: 'task', record, name: nameOf(record), day, tone, amount: null, stage: null });
   }
   if (close) for (const record of deals) {
     const stage = stages.get(String(record.values[stageKey] ?? ''));
@@ -123,12 +131,12 @@ export function buildAgenda({ view, anchor, today, items }: { view: AgendaView; 
   const busiest = days.filter(day => day.inPeriod && day.items.length).reduce<{ day: string; count: number } | null>((best, day) => !best || day.items.length > best.count ? { day: day.day, count: day.items.length } : best, null);
   return {
     view, anchor, from, to, title: agendaTitle(view, anchor), days,
-    overdue: items.filter(item => item.tone === 'late'),
+    overdue: items.filter(item => item.kind === 'task' && item.tone === 'late'),
     totals: {
       tasks: shown.filter(item => item.kind === 'task').length,
       closes: shown.filter(item => item.kind === 'close').length,
       amount: shown.reduce((sum, item) => sum + (item.kind === 'close' ? item.amount ?? 0 : 0), 0),
-      late: shown.filter(item => item.tone === 'late').length,
+      late: shown.filter(item => item.kind === 'task' && item.tone === 'late').length,
     },
     busiest,
   };
@@ -148,7 +156,7 @@ export function agendaText(agenda: Agenda): string {
   const days = agenda.days.filter(day => day.inPeriod && day.items.length);
   for (const day of days) {
     lines.push('', agendaDayLabel(day.day) + (day.today ? ' (hoy)' : ''));
-    for (const item of day.items) lines.push('– ' + (item.kind === 'close' ? 'Cierre: ' + item.name + (item.amount !== null ? ' · ' + euros(item.amount) : '') : 'Tarea: ' + item.name) + (item.tone === 'late' ? ' (vencida)' : ''));
+    for (const item of day.items) lines.push('– ' + (item.kind === 'close' ? 'Cierre: ' + item.name + (item.amount !== null ? ' · ' + euros(item.amount) : '') : 'Tarea: ' + item.name) + (pastWord(item) ? ' (' + pastWord(item) + ')' : ''));
   }
   if (!days.length) lines.push('', agenda.view === 'week' ? 'Nada previsto esta semana.' : 'Nada previsto este mes.');
   return lines.join('\n') + '\n';
@@ -189,7 +197,7 @@ export function agendaIcs(agenda: Agenda, now: Date): { text: string; count: num
   for (const item of items) {
     const close = item.kind === 'close';
     const summary = (close ? 'Cierre: ' : 'Tarea: ') + item.name + (close && item.amount !== null ? ' · ' + euros(item.amount) : '');
-    const detail = [close ? item.stage ?? 'Oportunidad abierta' : 'Tarea pendiente', item.tone === 'late' ? 'vencida' : null].filter(Boolean).join(' · ');
+    const detail = [close ? item.stage ?? 'Oportunidad abierta' : 'Tarea pendiente', pastWord(item)].filter(Boolean).join(' · ');
     lines.push('BEGIN:VEVENT', 'UID:planb-' + item.key.replace(/[^\w-]/g, '-') + '@agenda.planb', 'DTSTAMP:' + stamp,
       'DTSTART;VALUE=DATE:' + icsDay(item.day), 'DTEND;VALUE=DATE:' + icsDay(shiftDay(item.day, 1)),
       'SUMMARY:' + icsText(summary), 'DESCRIPTION:' + icsText(detail + '. Desde la agenda de Plan B.'), 'CATEGORIES:' + (close ? 'Cierre' : 'Tarea'), 'TRANSP:TRANSPARENT', 'END:VEVENT');

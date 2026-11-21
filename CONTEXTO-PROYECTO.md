@@ -4,6 +4,14 @@
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
 
+## Misión maestra · B4.4 Hoy y Agenda · 21/11/2026, Europe/Madrid
+
+Decisiones de la usuaria anotadas antes de editar: se conserva la regla de Hoy (fecha sin hora vence por día de Madrid; instante con hora, cuando pasa) y la cifra global de Agenda cuenta solo tareas. `shared/overdue.ts` es la única definición y la usan la cola de Hoy, Agenda, despacho y revisión semanal. En Hoy hay un botón relleno por fase, Despachar va junto al filtro Vencidas y estado y fecha comparten celda (3 columnas, sin chip). En Agenda la lista lateral de vencidas desaparece: la cifra global abre Hoy filtrado, y los cierres pasados se muestran como «fecha pasada» en su día. La revisión semanal atenúa los ceros.
+
+Medición con el mismo arnés y datos ficticios, `HEAD` frente al actual: botones rellenos en fase importada 2 → 1, columnas 4 → 3, chips 3 → 0. La prueba de paridad confirma la misma cifra en los cuatro consumidores. Tipos correctos y 23/24 archivos seguros focales; el fallo restante (`independent-interface-contexts`, arnés sin `useContinuityState`) ya existía en `HEAD` desde `607a835`. La poda CSS quitó 12 selectores (1358 B). Geometría y navegador sin comprobar, por las restricciones.
+
+Siguiente: B4.5 Listas.
+
 ## Misión maestra · B3.1 Menú · 21/11/2026, Europe/Madrid
 
 Alcance registrado antes de editar. Propuestas sale del menú Hoy y su orden queda solo con datos de prueba, rotulada. Copia de equipo solo aparece con el origen configurado ya leído por App; no hay nuevas peticiones ni conexiones al servicio. Configurar Plan B pasa a Continuidad y conserva pasos y `/ajustes/preparacion`. Sale Abrir aplicación del menú. Las pruebas de navegador dependientes tienen selectores/fixtures adaptados, pero no se ejecutaron.

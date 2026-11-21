@@ -7,6 +7,8 @@ import { daysBetween, doneOption, loadFocusReview, nextMonday, overdueTasks, pen
 // «Despachar vencidas» (fase 2 del plan Faro 2): lógica pura.
 const snapshot = makeFixture('agency'), spec = makeDemoSpec(snapshot);
 const records = structuredClone(snapshot.records) as CrmRecord[];
+// Mediodía en Madrid del día indicado: la regla de vencidas es la de Hoy (shared/overdue).
+const at = (day: string) => Date.parse(day + 'T11:00:00Z');
 
 test('doneOption reconoce «Completada» como estado hecho', () => {
   assert.deepEqual(doneOption(spec), { key: 'status', id: 'completed', label: 'Completada' });
@@ -18,7 +20,7 @@ test('doneOption devuelve null si ninguna opción significa hecha', () => {
 });
 
 test('overdueTasks: solo abiertas y anteriores a hoy, de la más antigua a la más reciente', () => {
-  const list = overdueTasks(spec, records, '2026-11-10');
+  const list = overdueTasks(spec, records, at('2026-11-10'));
   assert.ok(list.length > 0);
   for (const task of list) { assert.ok(String(task.values.due_date) < '2026-11-10'); assert.notEqual(task.values.status, 'completed'); }
   const dates = list.map(task => String(task.values.due_date)); assert.deepEqual(dates, [...dates].sort());
@@ -28,7 +30,7 @@ test('overdueTasks: solo abiertas y anteriores a hoy, de la más antigua a la m�
 
 test('overdueTasks: una tarea de hoy no está vencida y una sin fecha legible se ignora', () => {
   const extra = [{ entity: 'tasks', id: 'hoy', values: { subject: 'Hoy', due_date: '2026-11-10', status: 'pending' } }, { entity: 'tasks', id: 'mal', values: { subject: 'Mal', due_date: 'pronto', status: 'pending' } }] as CrmRecord[];
-  assert.deepEqual(overdueTasks(spec, extra, '2026-11-10'), []);
+  assert.deepEqual(overdueTasks(spec, extra, at('2026-11-10')), []);
 });
 
 test('daysBetween cuenta días de calendario', () => {
@@ -36,11 +38,14 @@ test('daysBetween cuenta días de calendario', () => {
   assert.equal(daysBetween('2026-11-13', '2026-11-13'), 0);
 });
 
-test('overdueTasks y daysBetween usan el día de Madrid de un instante, como Hoy', () => {
-  // 23:30 UTC del 9 es ya el día 10 en Madrid: no está vencida el 10.
+test('overdueTasks: con hora, vence en su instante, como en Hoy; una hora en un campo de solo fecha no se da por vencida', () => {
+  const withTime = structuredClone(spec);
+  withTime.entities.find(entity => entity.id === 'tasks')!.fields.find(field => field.key === 'due_date')!.type = 'datetime';
+  // 23:30 UTC del 9 son las 00:30 del 10 en Madrid.
   const late = [{ entity: 'tasks', id: 'noche', values: { subject: 'Noche', due_date: '2026-11-09T23:30:00Z', status: 'pending' } }] as CrmRecord[];
-  assert.deepEqual(overdueTasks(spec, late, '2026-11-10'), []);
-  assert.equal(overdueTasks(spec, late, '2026-11-11').length, 1);
+  assert.deepEqual(overdueTasks(withTime, late, Date.parse('2026-11-09T23:29:00Z')), [], 'un minuto antes, aún no');
+  assert.equal(overdueTasks(withTime, late, Date.parse('2026-11-09T23:31:00Z')).length, 1, 'un minuto después, ya vencida aunque sea el mismo día');
+  assert.deepEqual(overdueTasks(spec, late, at('2026-11-11')), [], 'el campo es de fecha: se revisa en Hoy, no se despacha');
   assert.equal(daysBetween('2026-11-09T23:30:00Z', '2026-11-12'), 2);
 });
 
@@ -51,8 +56,8 @@ test('pendingTasks con includeToday añade las de hoy detrás de las vencidas, n
     { entity: 'tasks', id: 'manana', values: { due_date: '2026-11-11', status: 'pending' } },
     { entity: 'tasks', id: 'hecha', values: { due_date: '2026-11-10', status: 'completed' } },
   ] as CrmRecord[];
-  assert.deepEqual(pendingTasks(spec, list, '2026-11-10', true).map(task => task.id), ['ayer', 'hoy']);
-  assert.deepEqual(pendingTasks(spec, list, '2026-11-10', false).map(task => task.id), ['ayer']);
+  assert.deepEqual(pendingTasks(spec, list, at('2026-11-10'), true).map(task => task.id), ['ayer', 'hoy']);
+  assert.deepEqual(pendingTasks(spec, list, at('2026-11-10'), false).map(task => task.id), ['ayer']);
 });
 
 test('nextMonday: siempre un lunes posterior, también si hoy es lunes', () => {
@@ -61,7 +66,7 @@ test('nextMonday: siempre un lunes posterior, también si hoy es lunes', () => {
   assert.equal(nextMonday('2026-11-23'), '2026-11-30'); // lunes
 });
 
-const today = '2026-11-10';
+const today = at('2026-11-10');
 const task = (id: number, due = '2026-11-15'): CrmRecord => ({
   id: String(id), entity: 'tasks', values: { due_date: due, status: 'pending' },
 });

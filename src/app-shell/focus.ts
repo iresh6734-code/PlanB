@@ -1,17 +1,18 @@
 import type { AppSpec, CrmRecord } from '../../shared/model.js';
+import { localDay, taskRule } from '../../shared/overdue.js';
 import { dueDay } from '../task-display.js';
 import { readPages, type ListPage } from './pager.js';
 
 export async function loadFocusReview(
   spec: AppSpec,
-  today: string,
+  now: number,
   readPage: (offset: number, limit: number, signal: AbortSignal) => Promise<ListPage>,
   signal: AbortSignal,
   includeToday = false,
 ) {
   const read = await readPages(readPage, signal, { accept: record => record.entity === 'tasks' });
   return {
-    tasks: pendingTasks(spec, read.records, today, includeToday),
+    tasks: pendingTasks(spec, read.records, now, includeToday),
     related: read.related, scanned: read.scanned, total: read.total, complete: read.complete,
   };
 }
@@ -26,18 +27,18 @@ export function doneOption(spec: AppSpec): { key: string; id: string; label: str
   return option ? { key: field.key, id: option.id, label: option.label } : null;
 }
 
-/** Tareas abiertas cuya fecha límite (día de Madrid) es anterior a `today` (AAAA-MM-DD), de la más antigua a la más reciente. */
-export function overdueTasks(spec: AppSpec, records: CrmRecord[], today: string): CrmRecord[] {
-  return pendingTasks(spec, records, today, false);
+/** Tareas vencidas en el instante `now` con la regla de Hoy (shared/overdue), de la más antigua a la más reciente. */
+export function overdueTasks(spec: AppSpec, records: CrmRecord[], now: number): CrmRecord[] {
+  return pendingTasks(spec, records, now, false);
 }
 
-/** Igual que `overdueTasks`, y con `includeToday` también las que vencen hoy (el barrido de la mañana), detrás de las vencidas. */
-export function pendingTasks(spec: AppSpec, records: CrmRecord[], today: string, includeToday: boolean): CrmRecord[] {
-  const dueKey = spec.roles?.dueDate ?? 'due_date', done = doneOption(spec);
-  return records.filter(record => record.entity === 'tasks')
-    .filter(record => { const day = dueDay(record.values[dueKey]); return day !== null && (day < today || includeToday && day === today); })
-    .filter(record => !done || String(record.values[done.key] ?? '') !== done.id)
-    .sort((a, b) => String(a.values[dueKey]).localeCompare(String(b.values[dueKey])) || a.id.localeCompare(b.id));
+/** Igual que `overdueTasks`, y con `includeToday` también las abiertas que vencen hoy en Madrid (el barrido de la mañana), detrás de las vencidas. */
+export function pendingTasks(spec: AppSpec, records: CrmRecord[], now: number, includeToday: boolean): CrmRecord[] {
+  const rule = taskRule(spec), today = localDay(now), done = doneOption(spec);
+  const picked = records.filter(record => record.entity === 'tasks' && (!done || String(record.values[done.key] ?? '') !== done.id) && rule.status(record) === 'open')
+    .map(record => ({ record, due: rule.due(record), late: rule.overdue(record, now, today) }))
+    .filter(item => item.late || includeToday && item.due.localDate === today);
+  return picked.sort((a, b) => Number(b.late) - Number(a.late) || (a.due.localDate ?? '').localeCompare(b.due.localDate ?? '') || (a.due.at ?? 0) - (b.due.at ?? 0) || a.record.id.localeCompare(b.record.id)).map(item => item.record);
 }
 
 /** Próximo lunes (AAAA-MM-DD) después de `today`; si hoy es lunes, el de la semana siguiente. */

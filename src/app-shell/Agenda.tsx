@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState, type DragEvent } from 'react';
-import { Check, ChevronLeft, ChevronRight, Copy, Download, RefreshCw } from 'lucide-react';
+import { ArrowRight, Check, ChevronLeft, ChevronRight, Copy, Download, RefreshCw } from 'lucide-react';
 import type { AppSpec, CrmRecord } from '../../shared/model.js';
 import { api } from '../api.js';
 import { recordName } from '../components.js';
 import { madridDay } from '../task-display.js';
 import { ErrorState, Skeleton } from '../ui/index.js';
-import { agendaDayLabel, agendaIcs, agendaIcsName, agendaItems, agendaText, agendaWeekday, buildAgenda, canMoveClose, closeFieldFor, compareItems, itemOnDay, shiftDay, stepAnchor, type AgendaItem, type AgendaView } from './agenda-grid.js';
+import { agendaDayLabel, agendaIcs, agendaIcsName, agendaItems, agendaText, agendaWeekday, buildAgenda, canMoveClose, closeFieldFor, compareItems, itemOnDay, pastWord, stepAnchor, type AgendaItem, type AgendaView } from './agenda-grid.js';
 import { downloadText } from './csv.js';
 import { euros } from './deal-insights.js';
 import { BOARD_MAX_PAGES, readPages, type ListPage } from './pager.js';
@@ -16,17 +16,17 @@ type Props = {
   spec: AppSpec; revision: string;
   saveField: (record: CrmRecord, key: string, value: string | null) => Promise<string | null>;
   onOpenRecord: (record: CrmRecord) => void;
+  /** Abre Hoy con el filtro «Vencidas»: allí se resuelven, con la misma regla que esta cifra. */
+  onOpenOverdue?: () => void;
 };
 type Read = { key: string } & ({ items: AgendaItem[]; undated: number; complete: boolean; error?: never } | { error: string; items?: never });
 const VIEW_KEY = 'planb:agenda-view';
 const SHOWN: Record<AgendaView, number> = { week: 10, month: 3 };
-const OVERDUE_SHOWN = 8;
-const TONE_LABEL = { late: 'Vencida', today: 'Hoy', soon: 'Esta semana', later: 'Más adelante' } as const;
+const TONE_LABEL = { late: 'Vencida', review: 'Por revisar en Hoy', today: 'Hoy', soon: 'Esta semana', later: 'Más adelante' } as const;
 const storedView = (): AgendaView => { try { return sessionStorage.getItem(VIEW_KEY) === 'month' ? 'month' : 'week'; } catch { return 'week'; } };
-const lateBy = (day: string, today: string) => { const days = Math.round((Date.parse(today + 'T12:00:00Z') - Date.parse(day + 'T12:00:00Z')) / 86_400_000); return days === 1 ? 'hace 1 día' : 'hace ' + days + ' días'; };
 
 /** Hoy › Agenda (F3): la semana o el mes con tareas y cierres; el cierre de una oportunidad se mueve arrastrándolo o desde el día. */
-export function Agenda({ spec, revision, saveField, onOpenRecord }: Props) {
+export function Agenda({ spec, revision, saveField, onOpenRecord, onOpenOverdue }: Props) {
   const today = madridDay(new Date());
   const [view, setView] = useState<AgendaView>(storedView);
   const [anchor, setAnchor] = useState(today);
@@ -50,7 +50,7 @@ export function Agenda({ spec, revision, saveField, onOpenRecord }: Props) {
     Promise.all([hasTasks ? page('tasks') : Promise.resolve(null), hasDeals ? page('deals') : Promise.resolve(null)])
       .then(([tasks, deals]) => {
         if (signal.aborted) return;
-        const { items, undated } = agendaItems({ spec, tasks: tasks?.records ?? [], deals: deals?.records ?? [], today: madridDay(new Date()), nameOf: record => recordName(record, spec) });
+        const { items, undated } = agendaItems({ spec, tasks: tasks?.records ?? [], deals: deals?.records ?? [], now: Date.now(), nameOf: record => recordName(record, spec) });
         setMoved({});
         setRead({ key, items, undated, complete: (tasks?.complete ?? true) && (deals?.complete ?? true) });
       })
@@ -86,7 +86,7 @@ export function Agenda({ spec, revision, saveField, onOpenRecord }: Props) {
     onDragLeave: () => setOver(value => value === day ? null : value),
     onDrop: (event: DragEvent) => { event.preventDefault(); const item = dragging; setDragging(null); setOver(null); setPicked(day); if (item) void move(item, day); },
   } : {};
-  const describe = (item: AgendaItem) => (item.kind === 'close' ? 'Cierre' + (item.amount !== null ? ' · ' + euros(item.amount) : '') : 'Tarea') + ' · ' + item.name + (item.tone === 'late' ? ' · vencida' : '');
+  const describe = (item: AgendaItem) => (item.kind === 'close' ? 'Cierre' + (item.amount !== null ? ' · ' + euros(item.amount) : '') : 'Tarea') + ' · ' + item.name + (pastWord(item) ? ' · ' + pastWord(item) : '');
   // «Copiado» vale para el periodo copiado: al cambiar de semana o de mes, el botón vuelve a ofrecer la copia.
   const copyPeriod = async () => {
     try { await navigator.clipboard.writeText(agendaText(agenda)); setCopied(agenda.title); }
@@ -117,7 +117,7 @@ export function Agenda({ spec, revision, saveField, onOpenRecord }: Props) {
   if (!read || (read.error !== undefined && loading)) return <section className="ag" aria-labelledby="ag-title">{head}<Skeleton rows={5} label="Leyendo tareas y oportunidades de tu copia…" /></section>;
   if (read.error !== undefined) return <section className="ag" aria-labelledby="ag-title">{head}<ErrorState title="No se pudo preparar la agenda" onAction={() => setAttempt(value => value + 1)}>{read.error}</ErrorState></section>;
 
-  const { totals } = agenda;
+  const { totals } = agenda, late = agenda.overdue.length;
   return <section className="ag" aria-labelledby="ag-title" aria-busy={loading || busy !== null}>
     {head}
     <p className="oc-sr" role="status">{note?.text ?? ''}</p>
@@ -128,7 +128,7 @@ export function Agenda({ spec, revision, saveField, onOpenRecord }: Props) {
           <dl className="ag-figures">
             <div><dt>Tareas</dt><dd>{totals.tasks}</dd></div>
             {close ? <div><dt>Cierres</dt><dd>{totals.closes}{totals.amount ? <small>{euros(totals.amount)}</small> : null}</dd></div> : null}
-            <div data-tone={totals.late ? 'danger' : undefined}><dt>Vencidas aquí</dt><dd>{totals.late}</dd></div>
+            <div data-tone={late ? 'danger' : undefined}><dt>Vencidas</dt><dd>{late && onOpenOverdue ? <button type="button" className="ag-figure-link" title="Tareas vencidas de toda la copia, con la regla de Hoy" aria-label={(late === 1 ? '1 tarea vencida' : late + ' tareas vencidas') + ' en la copia: ver en Hoy'} onClick={onOpenOverdue}>{late}<ArrowRight size={13} aria-hidden="true" /></button> : late}</dd></div>
             <div data-tone={read.undated ? 'warn' : undefined}><dt>Sin fecha</dt><dd>{read.undated}</dd></div>
           </dl>
           <p className="ag-busiest" title={agenda.busiest ? 'Lo más cargado: ' + agendaDayLabel(agenda.busiest.day).toLocaleLowerCase('es') : undefined}>{agenda.busiest ? 'Más carga: ' + agendaWeekday(agenda.busiest.day) + ' ' + Number(agenda.busiest.day.slice(8)) + ' · ' + agenda.busiest.count : view === 'week' ? 'Semana sin nada previsto' : 'Mes sin nada previsto'}{read.complete ? '' : ' · copia leída en parte'}</p>
@@ -170,18 +170,6 @@ export function Agenda({ spec, revision, saveField, onOpenRecord }: Props) {
             <button type="button" className="oc-small-button" onClick={() => onOpenRecord(item.record)} aria-label={'Abrir «' + item.name + '»'}>Abrir</button>
           </div>
         </li>)}</ul> : <p className="ag-empty">Nada previsto este día.{editable ? ' Arrastra aquí el cierre de una oportunidad desde el calendario.' : ''}</p>}
-        {agenda.overdue.length ? <section className="ag-overdue" aria-labelledby="ag-overdue-title">
-          <h3 id="ag-overdue-title"><span>Vencido sin resolver</span><span className="ag-overdue-n">{agenda.overdue.length}</span></h3>
-          <ul className="ag-list ag-list-compact">{agenda.overdue.slice(0, OVERDUE_SHOWN).map(item => <li key={item.key} data-tone="late">
-            <span className="ag-kind" data-kind={item.kind}>{item.kind === 'close' ? 'Cierre' : 'Tarea'}</span>
-            <div className="ag-what"><strong title={item.name}>{item.name}</strong><span>{lateBy(item.day, today)}</span></div>
-            <div className="ag-acts">
-              {item.kind === 'close' && editable ? <button type="button" className="oc-small-button" disabled={busy !== null} onClick={() => void move(item, shiftDay(today, 7))} aria-label={'Pasar el cierre de «' + item.name + '» a dentro de siete días'}>A 7 días</button> : null}
-              <button type="button" className="oc-small-button" onClick={() => onOpenRecord(item.record)} aria-label={'Abrir «' + item.name + '»'}>Abrir</button>
-            </div>
-          </li>)}</ul>
-          {agenda.overdue.length > OVERDUE_SHOWN ? <p className="ag-empty">Y {agenda.overdue.length - OVERDUE_SHOWN} más: la revisión semanal las ordena por antigüedad.</p> : null}
-        </section> : null}
         <p className="gx-pipe-note ag-foot">{editable ? 'Solo se mueve la fecha de cierre de las oportunidades, con el guardado de siempre: se deshace desde el aviso o desde Cambios. Las tareas se abren en su ficha.' : 'Las tareas y oportunidades se abren en su ficha; esta copia no permite mover el cierre desde aquí.'}</p>
       </aside>
     </div>

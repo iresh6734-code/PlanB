@@ -22,6 +22,7 @@ html body .wr-figures dd { display: flex; align-items: baseline; gap: 6px; margi
 html body .wr-figures dd small { font-size: var(--fs-sm); font-weight: 500; color: var(--text-3); }
 html body .wr-figures [data-tone="danger"] dd { color: var(--oc-danger-fg); }
 html body .wr-figures [data-tone="warn"] dd { color: var(--oc-warn-fg); }
+html body .wr-figures [data-zero] dd { font-weight: 450; color: var(--text-3); }
 html body .wr-note { margin: 0; font-size: var(--fs-sm); color: var(--text-2); }
 html body .wr-note[data-tone="error"] { color: var(--oc-danger-fg); }
 html body .wr-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: row dense; gap: 16px; align-items: stretch; }

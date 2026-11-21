@@ -8,15 +8,16 @@ const focus = fs.readFileSync('src/app-shell/FocusRun.tsx', 'utf8');
 
 test('Hoy: la lista es una tabla para el lector de pantalla, con cabeceras, filas y celdas', () => {
   assert.match(today, /className="oc-table" role="table" aria-label="Tareas de Hoy por estado"/);
-  assert.match(today, /className="oc-table-head" role="row">(<span role="columnheader">[^<]+<\/span>){3}<span role="columnheader"><span className="oc-sr">Acción<\/span><\/span>/);
+  assert.match(today, /className="oc-table-head" role="row">(<span role="columnheader">[^<]+<\/span>){2}<span role="columnheader"><span className="oc-sr">Acción<\/span><\/span>/);
   assert.doesNotMatch(today, /oc-table-head" aria-hidden/);
   assert.match(today, /<ul className="lop-tasks" role="rowgroup" aria-label=\{groupNames\[group\.bucket\]\}>/);
   assert.match(today, /<li key=\{task\.id\} role="row">/);
-  // Cuatro celdas por fila, también cuando no hay botón (así las columnas no se descuadran).
+  // B4.4: estado y fecha en una sola celda («Vence», con el tono del grupo). Tres columnas, también sin botón.
   const row = today.slice(today.indexOf('<li key={task.id} role="row">'), today.indexOf('</li>', today.indexOf('<li key={task.id} role="row">')));
-  assert.equal((row.match(/role="cell"/g) ?? []).length, 5, 'chip, tarea, vence y acción (con botón o vacía)');
+  assert.equal((row.match(/role="cell"/g) ?? []).length, 4, 'tarea, vence y acción (con botón o vacía)');
+  assert.doesNotMatch(row, /oc-chip/, 'el estado ya lo dice el título del grupo y el tono de la fecha');
   assert.match(row, /<span className="lop-cell-action" role="cell"><button/);
-  assert.match(today, /<div role="row"><div role="cell" aria-colspan=\{4\}><h3 className="oc-group"/, 'el título de grupo sigue siendo un encabezado, dentro de una fila');
+  assert.match(today, /<div role="row"><div role="cell" aria-colspan=\{3\}><h3 className="oc-group"/, 'el título de grupo sigue siendo un encabezado, dentro de una fila');
 });
 
 test('Despachar: progreso como barra real y anuncio con el nombre de la tarea', () => {

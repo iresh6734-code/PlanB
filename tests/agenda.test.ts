@@ -2,15 +2,18 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { makeDemoSpec, makeFixture } from '../shared/fixtures.js';
-import type { CrmRecord } from '../shared/model.js';
+import type { AppSpec, CrmRecord } from '../shared/model.js';
+import { buildResponseQueue } from '../shared/response-queue.js';
 import { agendaIcs, agendaIcsName, agendaItems, agendaRange, agendaText, agendaTitle, buildAgenda, canMoveClose, closeFieldFor, itemOnDay, stepAnchor, weekStart } from '../src/app-shell/agenda-grid.js';
 import { euros } from '../src/app-shell/deal-insights.js';
+import { overdueTasks } from '../src/app-shell/focus.js';
+import { weeklyReview } from '../src/app-shell/weekly-review.js';
 import { pathOf, placeOf } from '../src/app-shell/routes.js';
 import { groupOfPage, navigationGroups } from '../src/app-shell/navigation.js';
 
 // F3 · Agenda: semana o mes con tareas con fecha y cierres previstos. 20/11/2026 es viernes.
 const spec = makeDemoSpec(makeFixture('agency'));
-const today = '2026-11-20';
+const today = '2026-11-20', now = Date.parse('2026-11-20T08:00:00Z'); // 09:00 en Madrid
 const task = (id: string, due: string | null, status = 'pending'): CrmRecord => ({ id, entity: 'tasks', values: { subject: 'Tarea ' + id, due_date: due, status, contact_id: null, deal_id: null, notes: '' } });
 const deal = (id: string, stage: string, close: string | null, amount: number | null = 1000): CrmRecord => ({ id, entity: 'deals', values: { dealname: 'Op ' + id, amount, dealstage: stage, company_id: null, contact_id: null, service: 'web', closedate: close } });
 const nameOf = (record: CrmRecord) => String(record.values.subject ?? record.values.dealname);
@@ -32,7 +35,7 @@ test('F3 · la semana va de lunes a domingo y el mes se pinta en semanas enteras
 
 test('F3 · entran tareas pendientes con fecha y cierres de oportunidades abiertas; nada inventado', () => {
   const { items, undated } = agendaItems({
-    spec, today, nameOf,
+    spec, now, nameOf,
     tasks: [task('a', '2026-11-18'), task('b', '2026-11-20T09:00:00Z'), task('c', null), task('d', '2026-11-19', 'completed'), task('e', '2026-13-40')],
     deals: [deal('x', 'proposal', '2026-11-27', 4000), deal('y', 'won', '2026-11-21'), deal('z', 'negotiation', null)],
   });
@@ -44,9 +47,9 @@ test('F3 · entran tareas pendientes con fecha y cierres de oportunidades abiert
   assert.equal(close.stage, spec.stages.find(stage => stage.id === 'proposal')?.label, 'lleva la etiqueta de su etapa');
 });
 
-test('F3 · la rejilla reparte por día, suma el periodo y separa lo vencido (también de antes)', () => {
+test('B4.4 · la rejilla reparte por día y suma el periodo; vencidas son solo las tareas (también de antes), como en Hoy', () => {
   const { items } = agendaItems({
-    spec, today, nameOf,
+    spec, now, nameOf,
     tasks: [task('old', '2026-11-02'), task('a', '2026-11-18'), task('b', '2026-11-18'), task('c', '2026-11-21'), task('next', '2026-11-25')],
     deals: [deal('x', 'proposal', '2026-11-18', 2500), deal('w', 'contact', '2026-11-22', null)],
   });
@@ -57,9 +60,10 @@ test('F3 · la rejilla reparte por día, suma el periodo y separa lo vencido (ta
   assert.deepEqual(wednesday.items.map(item => item.key), ['deals:x', 'tasks:a', 'tasks:b'], 'el cierre primero');
   assert.equal(week.days.find(day => day.today)?.day, today);
   assert.ok(week.days.find(day => day.day === '2026-11-21')!.weekend);
-  assert.deepEqual(week.totals, { tasks: 3, closes: 2, amount: 2500, late: 3 });
+  assert.deepEqual(week.totals, { tasks: 3, closes: 2, amount: 2500, late: 2 }, 'el cierre pasado no cuenta como vencida');
   assert.deepEqual(week.busiest, { day: '2026-11-18', count: 3 });
-  assert.deepEqual(week.overdue.map(item => item.key), ['tasks:old', 'deals:x', 'tasks:a', 'tasks:b'], 'lo vencido incluye lo anterior a la semana');
+  assert.deepEqual(week.overdue.map(item => item.key), ['tasks:old', 'tasks:a', 'tasks:b'], 'incluye lo anterior a la semana; el cierre sigue en su día');
+  assert.equal(wednesday.items.find(item => item.kind === 'close')!.tone, 'late', 'el cierre pasado se ve como pasado en su día');
 
   const month = buildAgenda({ view: 'month', anchor: today, today, items });
   assert.equal(month.days.length, 42);
@@ -79,7 +83,7 @@ test('F3 · solo se mueve el cierre de una oportunidad, a otro día válido, si 
   assert.equal(canMoveClose({ kind: 'close', day: '2026-11-18' }, '2026-11-18', true), false);
   assert.equal(canMoveClose({ kind: 'close', day: '2026-11-18' }, '2026-02-30', true), false);
   assert.equal(canMoveClose({ kind: 'close', day: '2026-11-18' }, '2026-11-25', false), false);
-  const { items } = agendaItems({ spec, today, nameOf, tasks: [], deals: [deal('x', 'proposal', '2026-11-18')] });
+  const { items } = agendaItems({ spec, now, nameOf, tasks: [], deals: [deal('x', 'proposal', '2026-11-18')] });
   const moved = itemOnDay(items[0], '2026-11-26', today);
   assert.equal(moved.day, '2026-11-26');
   assert.equal(moved.tone, 'soon', 'al moverlo deja de estar vencido');
@@ -87,17 +91,17 @@ test('F3 · solo se mueve el cierre de una oportunidad, a otro día válido, si 
 
 test('B2 · «Copiar» deja el periodo en texto plano, agrupado por día y solo con los días que tienen algo', () => {
   const { items } = agendaItems({
-    spec, today, nameOf,
+    spec, now, nameOf,
     tasks: [task('a', '2026-11-18'), task('b', '2026-11-20')],
     deals: [deal('x', 'proposal', '2026-11-18', 2500)],
   });
   const text = agendaText(buildAgenda({ view: 'week', anchor: today, today, items }));
   assert.equal(text, [
     'Agenda · Del 16 al 22 de noviembre',
-    '2 tareas · 1 cierre (' + euros(2500) + ') · 2 vencidas',
+    '2 tareas · 1 cierre (' + euros(2500) + ') · 1 vencida',
     '',
     'Miércoles, 18 de noviembre',
-    '– Cierre: Op x · ' + euros(2500) + ' (vencida)',
+    '– Cierre: Op x · ' + euros(2500) + ' (fecha pasada)',
     '– Tarea: Tarea a (vencida)',
     '',
     'Viernes, 20 de noviembre (hoy)',
@@ -108,7 +112,7 @@ test('B2 · «Copiar» deja el periodo en texto plano, agrupado por día y solo 
 
 test('C2 · «Al calendario» genera un .ics de días completos, escapado y plegado según RFC 5545', () => {
   const { items } = agendaItems({
-    spec, today, nameOf,
+    spec, now, nameOf,
     tasks: [task('a', '2026-11-18'), { ...task('b', '2026-11-22'), values: { ...task('b', '2026-11-22').values, subject: 'Llamar a Pérez; revisar, firmar\\ok' } }, task('fuera', '2026-11-30')],
     deals: [deal('x', 'proposal', '2026-11-20', 2500)],
   });
@@ -132,7 +136,7 @@ test('C2 · «Al calendario» genera un .ics de días completos, escapado y pleg
 });
 
 test('C2 · las líneas largas se pliegan sin partir caracteres', () => {
-  const { items } = agendaItems({ spec, today, nameOf, tasks: [{ ...task('l', '2026-11-19'), values: { ...task('l', '2026-11-19').values, subject: 'Revisión ñ '.repeat(12) } }], deals: [] });
+  const { items } = agendaItems({ spec, now, nameOf, tasks: [{ ...task('l', '2026-11-19'), values: { ...task('l', '2026-11-19').values, subject: 'Revisión ñ '.repeat(12) } }], deals: [] });
   const { text } = agendaIcs(buildAgenda({ view: 'week', anchor: today, today, items }), new Date('2026-11-20T00:00:00Z'));
   assert.ok(text.includes('\r\n '), 'hay pliegue');
   assert.ok(text.replace(/\r\n /g, '').includes('SUMMARY:Tarea: ' + 'Revisión ñ '.repeat(12)), 'al desplegar sale el texto íntegro');
@@ -151,4 +155,25 @@ test('F3 · la Agenda tiene dirección, vive en el grupo Hoy y se carga bajo dem
   const view = readFileSync('src/app-shell/Agenda.tsx', 'utf8');
   assert.match(view, /import '\.\/agenda\.css'/, 'su CSS va en su propio chunk');
   assert.match(view, /item\.kind === 'close' && editable && busy === null \? \{\s*draggable: true/, 'solo los cierres se arrastran');
+});
+
+test('B4.4 · Agenda, Hoy, «Despachar vencidas» y la revisión semanal cuentan las mismas vencidas', () => {
+  const withTime = structuredClone(spec) as AppSpec;
+  withTime.entities.find(entity => entity.id === 'tasks')!.fields.find(field => field.key === 'due_date')!.type = 'datetime';
+  const cases: [AppSpec, CrmRecord[], number][] = [
+    [spec, [task('ayer', '2026-11-19'), task('hoy', '2026-11-20'), task('antigua', '2026-10-01'), task('hecha', '2026-11-18', 'completed'),
+      task('rara', '2026-11-18', 'quizá'), task('con-hora', '2026-11-18T09:00:00Z'), task('imposible', '2026-02-30')], 2],
+    [withTime, [task('antes', '2026-11-20T07:59:00Z'), task('despues', '2026-11-20T08:01:00Z'), task('noche', '2026-11-19T23:30:00Z'),
+      task('sin-hora', '2026-11-18'), task('hecha', '2026-11-20T07:00:00Z', 'completed')], 2],
+  ];
+  for (const [model, tasks, expected] of cases) {
+    const { items } = agendaItems({ spec: model, now, nameOf, tasks, deals: [deal('x', 'proposal', '2026-11-18')] });
+    const agenda = buildAgenda({ view: 'week', anchor: today, today, items }).overdue.length;
+    const hoy = buildResponseQueue({ spec: model, records: tasks, evaluatedAt: now }).summary.buckets.overdue;
+    const despachar = overdueTasks(model, tasks, now).length;
+    const semana = weeklyReview({ spec: model, tasks, deals: [], changes: [], now: new Date(now), tasksComplete: true, nameOf }).overdue.length;
+    assert.deepEqual({ agenda, hoy, despachar, semana }, { agenda: expected, hoy: expected, despachar: expected, semana: expected });
+  }
+  const { items } = agendaItems({ spec, now, nameOf, deals: [], tasks: [task('rara', '2026-11-18', 'quizá'), task('con-hora', '2026-11-18T09:00:00Z')] });
+  assert.deepEqual(items.map(item => item.tone), ['review', 'review'], 'pasadas pero sin poder darlas por vencidas: se revisan en Hoy');
 });

@@ -105,7 +105,7 @@ html body .lop-confirmation[data-stale="true"] { background: var(--warning-bg); 
 @media (max-width: 700px) {
   .oc-table-head { display: none; }
   .oc-task-list li, .lop .lop-tasks li { row-gap: 4px; }
-  .oc-task-list li > .oc-chip, .lop .lop-tasks li > .oc-chip { grid-column: 1 / -1; }
+  .oc-task-list li > .oc-chip { grid-column: 1 / -1; }
   .oc-task-list .oc-due, .lop .lop-tasks .oc-due { grid-column: 1; }
 }
 @media (max-width: 600px) {

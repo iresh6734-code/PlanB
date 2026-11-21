@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import type { AppSpec, CrmRecord, FieldValue } from '../../shared/model.js';
 import { api } from '../api.js';
 import { Modal, displayValue, recordName } from '../components.js';
+import { taskRule } from '../../shared/overdue.js';
 import { madridDay } from '../task-display.js';
 import { Skeleton } from '../ui/index.js';
 import { daysBetween, doneOption, loadFocusReview, nextMonday } from './focus.js';
@@ -28,7 +29,7 @@ export function FocusRun({ spec, saveField, createTask, onOpen, close, initialSc
   useEffect(() => {
     const controller = new AbortController();
     setReview(null); setIndex(0); setResults({}); setError(''); setFollow(null); setFollowed(0);
-    loadFocusReview(spec, today, (offset, limit, signal) => api(recordListPath('tasks', '', offset, '', limit), { signal }), controller.signal, scope === 'sweep')
+    loadFocusReview(spec, Date.now(), (offset, limit, signal) => api(recordListPath('tasks', '', offset, '', limit), { signal }), controller.signal, scope === 'sweep')
       .then(result => { if (!controller.signal.aborted) setReview(result); })
       .catch(failure => {
         if (!controller.signal.aborted) setError(failure instanceof Error ? failure.message : 'No se pudieron leer las tareas.');
@@ -92,6 +93,8 @@ export function FocusRun({ spec, saveField, createTask, onOpen, close, initialSc
     .map(field => [field.label, displayValue(current.values[field.key], field, [...review.related, current], spec)] as const).filter(([, value]) => value) : [];
   const started = Object.keys(results).length > 0;
   const late = current ? daysBetween(String(current.values[dueKey]), today) : 0;
+  // Con hora, una tarea de hoy puede haber vencido ya: la regla de Hoy lo decide, no el día.
+  const lateText = late > 0 ? 'Vencida hace ' + late + (late === 1 ? ' día' : ' días') : current && taskRule(spec).overdue(current, Date.now()) ? 'Vencida hoy' : 'Vence hoy';
   return <Modal title={scope === 'sweep' ? 'Despachar vencidas y de hoy' : 'Despachar vencidas'} close={close}><div className="modal-body gx-focus" ref={panel} tabIndex={-1} onKeyDown={key}>
     {!started ? <div className="gx-focus-scope" role="radiogroup" aria-label="Qué tareas despachar">
       {([['overdue', 'Solo vencidas'], ['sweep', 'Vencidas y de hoy']] as const).map(([value, label]) => <button key={value} type="button" role="radio" aria-checked={scope === value} className={scope === value ? 'active' : ''} disabled={busy} onClick={() => { if (scope !== value) setScope(value); }}>{label}</button>)}
@@ -104,7 +107,7 @@ export function FocusRun({ spec, saveField, createTask, onOpen, close, initialSc
       : !list ? <Skeleton rows={4} label={scope === 'sweep' ? 'Buscando tareas vencidas y de hoy…' : 'Buscando tareas vencidas…'} />
       : !list.length ? <div className="gx-focus-end">
           <p className="gx-focus-big">{review?.complete ? (scope === 'sweep' ? 'Nada pendiente para hoy.' : 'Nada vencido.') : 'No hay tareas ' + (scope === 'sweep' ? 'pendientes' : 'vencidas') + ' entre las revisadas.'}</p>
-          {review?.complete ? <p>{scope === 'sweep' ? 'No hay tareas abiertas con fecha de hoy o anterior.' : 'No hay tareas abiertas con fecha anterior a hoy.'}</p> : null}
+          {review?.complete ? <p>{scope === 'sweep' ? 'No hay tareas abiertas vencidas ni con fecha de hoy.' : 'No hay tareas abiertas cuyo vencimiento haya pasado.'}</p> : null}
           <button type="button" className="button primary" onClick={close}>Cerrar</button>
         </div>
       : finished ? <div className="gx-focus-end" role="status"><p className="gx-focus-big">Listo: {list.length} {list.length === 1 ? 'tarea revisada' : 'tareas revisadas'}.</p>
@@ -112,9 +115,9 @@ export function FocusRun({ spec, saveField, createTask, onOpen, close, initialSc
           <button type="button" className="button primary" onClick={close}>Cerrar</button></div>
       : current ? <>
           <div className="gx-focus-progress" role="progressbar" aria-label="Avance al despachar" aria-valuemin={0} aria-valuemax={list.length} aria-valuenow={index} aria-valuetext={index + ' de ' + list.length + ' revisadas'}><span style={{ width: (index / list.length * 100) + '%' }} /></div>
-          <p className="gx-focus-count" aria-live="polite" aria-atomic="true">Tarea {index + 1} de {list.length}<span className="sr-only">: {recordName(current, spec)}. {late <= 0 ? 'Vence hoy' : 'Vencida hace ' + late + (late === 1 ? ' día' : ' días')}.</span></p>
+          <p className="gx-focus-count" aria-live="polite" aria-atomic="true">Tarea {index + 1} de {list.length}<span className="sr-only">: {recordName(current, spec)}. {lateText}.</span></p>
           <div className="gx-focus-card" data-done={follow ? 'true' : undefined}>
-            <p className="gx-focus-late" data-today={late <= 0 ? 'true' : undefined}>{late <= 0 ? 'Vence hoy' : 'Vencida hace ' + late + (late === 1 ? ' día' : ' días')}</p>
+            <p className="gx-focus-late" data-today={lateText === 'Vence hoy' ? 'true' : undefined}>{lateText}</p>
             <h3>{recordName(current, spec)}</h3>
             {details.length ? <dl>{details.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl> : null}
           </div>

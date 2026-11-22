@@ -734,6 +734,7 @@ Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
 
 - [x] ~~Destinos de cada parte: motor, congelado, aparcado o fuera~~: confirmados el 22/11/2026 tal como están en el plan. Se aparcaron por tandas: la 1 (Laboratorio), la 2 (aplicación de equipos) y la 3 (IA local), todas hechas el 22/11/2026.
 - [x] ~~Qué agente coordina y quién es dueño de cada carpeta~~: coordina GitHub Copilot (22/11/2026).
+- [ ] *(nuevo, fase 0)* Declarar la fase 0 con `npx tsx scripts/verifica-pruebas.ts --single-product`. Lo aparcado ya salió. En el menú de la App local queda el CRM congelado, igual con datos de prueba y reales: Inicio, Hoy (3), Clientes (4), Continuidad (Estado, Cambios, Exportar, Configurar Plan B) y Ajustes (Integraciones, Plan y licencia). Verifica tiene su propia página, `verifica.html`. Si eso cuenta como «un solo producto en el menú» lo decides tú; el programa no mira el menú.
 - [ ] Mover las 11 carpetas `planb-local-*` y `planb-hubspot-*` fuera del repositorio. Lo hace la usuaria; los agentes no las tocan.
 - [ ] A6 y A7 del relevo anterior. Con Verifica, A6 pierde sentido y A7 gana importancia.
 - [ ] *(nuevo, fase 2)* ¿Firma digital del informe? Hoy la huella prueba que no se ha tocado, pero no quién lo emitió. Opciones: firma de Plan B Verifica como tercero, firma del vendedor, o solo el contrato citando las huellas.
@@ -799,7 +800,7 @@ Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
 - [ ] *(nuevo, fase 4)* Sellar la captura del cierre en una copia custodiada, como el informe de la fase 2, para que el informe de equivalencia se pueda rehacer meses después.
 - [ ] *(nuevo, fase 0 · tanda 3)* La tabla `usage` del almacén, con `usage()`, `reserveUsage` y `AppState.usage`, ya no la usa nadie: era el contador de gasto de la IA. Se quedó porque el núcleo y el esquema de la base de datos están congelados. Decidir si sale en una migración, o si vuelve con la IA.
 - [ ] *(nuevo, fase 0)* Los lectores de Pipedrive y Zendesk (`shared/` y `server/` `source-reading*`, `pipedrive-source`, `zendesk-source`, `src/SourceReadingHistory.tsx` y `SourceStatusRow.tsx`) ya no estaban conectados a nada antes de aparcar el Laboratorio. Se quedan porque pueden servir de lector del CRM del comprador (fase 4). Decidir: adaptarlos a Verifica o aparcarlos también.
-- [ ] Fase 5 · Salir a vender. **Preparada el 22/11/2026:** las cinco pruebas en `scripts/verifica-pruebas.ts` (pasan las fases 1 a 4; la 0 está pendiente) y `docs/verifica-salir-a-vender.md`. Queda abierta hasta la primera conversación con alguien de fuera, que no se tiene antes de cerrar la lista de la sección 1 de ese documento.
+- [ ] Fase 5 · Salir a vender. **Preparada el 22/11/2026:** las cinco pruebas en `scripts/verifica-pruebas.ts` (pasan las fases 1 a 4; la 0 queda pendiente de declarar, con lo aparcado ya fuera) y `docs/verifica-salir-a-vender.md`. Queda abierta hasta la primera conversación con alguien de fuera, que no se tiene antes de cerrar la lista de la sección 1 de ese documento.
 
 ## Pendiente para el agente del otro ordenador
 

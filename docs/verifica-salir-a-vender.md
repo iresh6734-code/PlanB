@@ -14,7 +14,7 @@ Si pasan las cinco, sale con código 0. Si alguna no pasa o está pendiente, sal
 
 | Fase | Criterio del plan | Estado a 22/11/2026 |
 | --- | --- | --- |
-| 0 · Ordenar | Un solo producto en el menú y la prueba de referencia escrita | **Pendiente:** la referencia está escrita; faltan los destinos de cada parte. `--single-product` solo lo pasa quien lo haya decidido |
+| 0 · Ordenar | Un solo producto en el menú y la prueba de referencia escrita | **Pendiente de declarar:** la referencia está escrita y lo aparcado ya salió del menú (22/11/2026). Queda el CRM congelado: 5 grupos y 13 entradas, iguales con datos de prueba y reales. `--single-product` solo lo pasa quien lo decida |
 | 1 · Motor | Detecta las seis trampas sin falsos avisos | Pasa con la empresa ficticia |
 | 2 · Informe y sala limpia | Un tercero comprueba la huella sin acceso a los datos | Pasa con la empresa ficticia |
 | 3 · Vigilancia | Borrar contactos dispara la alerta | Pasa con la empresa ficticia |

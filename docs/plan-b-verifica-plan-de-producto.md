@@ -134,8 +134,8 @@ Plan B pasa a ser un solo producto, Verifica. Lo que existe hoy se reparte en cu
 
 **Lo que tienes que decidir tú.**
 
-- [ ] Confirmar los cuatro destinos, sobre todo aparcar la aplicación de equipos.
-- [ ] Elegir qué agente coordina y quién es dueño de cada carpeta.
+- [x] Confirmar los cuatro destinos, sobre todo aparcar la aplicación de equipos. Confirmados el 22/11/2026; lo aparcado ya salió en tres tandas y está en la rama `archivo/aparcado-2026-11-22`.
+- [x] Elegir qué agente coordina y quién es dueño de cada carpeta. Coordina GitHub Copilot (22/11/2026).
 - [ ] Mover las carpetas de instalaciones fuera del repositorio.
 
 ## Hoja de ruta de construcción

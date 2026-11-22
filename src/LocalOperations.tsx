@@ -14,6 +14,7 @@ import './local-operations.css';
 import { daysLate, dueLabel, splitTaskLabel, TASK_BUCKET_ORDER, TASK_BUCKETS, type TaskBucket } from './task-display.js';
 import { inContingencyScope } from './app-shell/contingency.js';
 import { useContingency } from './app-shell/useContingency.js';
+import { textMatches } from '../shared/text-match.js';
 
 /** Petición de abrir una tarea por ID desde fuera de Hoy (la superficie de resultados). El `nonce` distingue peticiones repetidas del mismo ID. */
 export type OpenTaskRequest = { taskId: string; attemptId?: string | null; nonce: number };
@@ -156,7 +157,7 @@ export function LocalOperations({ view, onOpenTasks, onOpenDeals, onPrepare, onR
   const unverified = day ? day.input.candidates.flatMap(candidate => { const note = referenceNoteOf(day.input.referenceNotes, candidate.id); return note && (note.unverifiable > 0 || note.notShown > 0) ? [{ candidate, note }] : []; }) : [];
   const last = ack ? { ...ack, stale: !!data && ack.revision !== data.revision } : data?.lastReview;
   const urgentOnly = view === 'today' && !!contingency && filter === 'all' && !showAllInContingency;
-  const visible = data?.tasks.filter(task => (filter === 'all' ? !urgentOnly || inContingencyScope(task.bucket) : task.bucket === filter) && (task.label + ' ' + task.id).toLocaleLowerCase('es').includes(query.toLocaleLowerCase('es'))) ?? [];
+  const visible = data?.tasks.filter(task => (filter === 'all' ? !urgentOnly || inContingencyScope(task.bucket) : task.bucket === filter) && textMatches(task.label + ' ' + task.id, query)) ?? [];
   const hiddenByContingency = urgentOnly ? data?.tasks.filter(task => !inContingencyScope(task.bucket)).length ?? 0 : 0;
   const groups = bucketOrder.map(bucket => ({ bucket, tasks: visible.filter(task => task.bucket === bucket) })).filter(group => group.tasks.length > 0);
   const shownIn = (bucket: Bucket) => data?.tasks.filter(task => task.bucket === bucket).length ?? 0;

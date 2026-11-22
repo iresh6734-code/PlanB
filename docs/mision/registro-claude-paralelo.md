@@ -105,3 +105,16 @@ Solo CSS (`src/consola.css`, bloque móvil de listas; `faro.css` pierde 5 declar
 - Guardias `css-unused`, `color-guard`, `design-tokens`, `design-k-block`, `record-list`, `listas-ui`, `record-sheet` y `bundle-budget` en verde; `tsc` sin errores.
 
 Límite: en Tareas el desplegable de estado mide 44 px (mínimo táctil) y la tarjeta ocupa tres líneas. Bajar de ahí exigiría quitar la edición en línea en móvil, que no se ha hecho.
+
+## 22/11/2026 · Búsqueda de Hoy sin acentos
+
+`shared/text-match.ts`, nuevo y probado en `tests/text-match.test.ts`:
+
+- `foldText` quita tildes y diéresis, convierte la ñ en n, pasa a minúsculas en español y junta los espacios.
+- `textMatches` exige todas las palabras, en cualquier orden.
+
+El filtro de Hoy (`src/LocalOperations.tsx`) lo usa: «nunez» encuentra «Núñez» y «ana revisar» encuentra «Revisar los detalles · Ana». En el ensayo, «alvaro» devuelve «Revisar los detalles · Álvaro».
+
+`tsc` sin errores; `text-match`, `local-operations`, `overdue`, `auth-parent`, `independent-interface-contexts` y `bundle-budget` en verde.
+
+El código tiene al menos cinco copias locales de esta normalización: `change-history`, `csv-import`, `overdue`, `team-replica-view` y la búsqueda global. Unificarlas en `text-match` queda como mejora aparte, sin urgencia.

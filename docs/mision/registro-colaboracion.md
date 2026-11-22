@@ -475,6 +475,59 @@ El último debe decir «Hay diferencias» y salir con 0. Abrir `verifica.html`, 
 4. La captura del cierre no se sella en una copia custodiada; su respaldo es la huella y el enlace con el parte de vigilancia.
 5. Lo ambiguo no se resuelve: un contacto con dos candidatos en el destino queda abierto hasta que alguien elija.
 
+## Verifica · Fase 5 · Salir a vender · GitHub Copilot
+
+### Reserva · antes de editar
+
+22/11/2026, 22:05 Europe/Madrid. La usuaria: «sigue con la fase 5». Según el plan: «Abogados para el anexo, precios y primeros informes; Salesforce solo con demanda pagada». La fase termina la primera vez que se habla con alguien de fuera, y nadie de fuera ve el producto hasta que pase sus cinco pruebas.
+
+Aquí no se habla con nadie ni se vende nada: se prepara lo que hace falta para hacerlo. Código puro, pruebas sin red y un documento:
+
+- **`shared/verifica/readiness.ts` (nuevo):** las cinco pruebas del plan, una por fase, sobre la empresa ficticia, cada una con su criterio literal. La fase 0 queda pendiente mientras no haya un solo producto en el menú, porque eso lo decide la usuaria.
+- **`scripts/verifica-pruebas.ts` (nuevo):** un solo comando que las pasa todas y dice si el producto se puede enseñar fuera. Sin red y sin escribir nada.
+- **`docs/verifica-salir-a-vender.md` (nuevo):** borrador del anexo de alcance para los abogados, precios de lanzamiento, el primer encargo paso a paso (72 horas hábiles), canal de venta y lo que no se dice nunca. Va por debajo del plan de producto, que sigue mandando.
+- **Pruebas:** `tests/verifica-pruebas.test.ts`.
+
+Sin interfaz. El único servidor es el de Vite de `verifica.html` en `127.0.0.1`, solo para verla, con permiso de la usuaria; sin servidor de la app, DPAPI, carpetas de datos, red ni datos reales.
+
+### Hecho · 22/11/2026
+
+| Commit | Qué |
+| --- | --- |
+| `2a16087` | Las cinco pruebas en un solo comando: `shared/verifica/readiness.ts`, `scripts/verifica-pruebas.ts` y `tests/verifica-pruebas.test.ts` (3 casos) |
+| `fd33dd1` | `docs/verifica-salir-a-vender.md` |
+
+**Resultado hoy:** las fases 1 a 4 pasan con la empresa ficticia. La 0 queda **pendiente** porque la referencia está escrita pero el menú todavía no tiene un solo producto. Por eso el comando sale con 1 y dice «No se enseña fuera todavía». Con `--single-product` (solo quien lo haya decidido) sale con 0. Siempre añade que todo está probado con empresas ficticias y que los textos legales son de los abogados.
+
+**Qué mide cada prueba:**
+
+- **Fase 1:** salen las seis alarmas con sus cifras y ningún falso aviso sin trampas.
+- **Fase 2:** un tercero, con solo el JSON publicado, valida la huella y rechaza una cifra retocada. Ni el informe ni la copia llevan textos del CRM ni la llave, y la copia rehace la misma huella.
+- **Fase 3:** borrar contactos da aviso y retiene la captura; sin borrados no sale ningún aviso.
+- **Fase 4:** la migración limpia sale «sin diferencias en lo que compara el mapa» y la de fallos sembrados los enseña todos.
+
+**El documento:** lista previa a la primera conversación de fuera, borrador del anexo de alcance (reglas y umbrales, huella, sala limpia, copia, vigilancia y equivalencia, cada uno contrastado con el código), primer encargo en 72 horas hábiles, canal (agencias de HubSpot y abogados; Salesforce solo con demanda pagada) y lo que no se dice nunca. Los precios no se copian: siguen en el plan.
+
+**Cómo se comprueba:**
+
+- `npx tsc --noEmit -p tsconfig.json` sin errores.
+- `node tools/safe-tests.mjs verifica orphan-components css-unused color-guard design-tokens dev-only-files`: 12 de 12.
+- `node tools/css-unused.mjs`: 0 muertos.
+- Cada prueba deja de pasar si se rompe lo que mide, y falla por la razón correcta, no por una excepción. Lo comprueba el segundo caso del test:
+  - referencia sin alarmas;
+  - datos sin trampas;
+  - informe que no cuadra;
+  - vigilancia sin borrados;
+  - destino de la migración con fallos.
+- A mano: `npx tsx scripts/verifica-pruebas.ts` (sale con 1 y la fase 0 pendiente) y `npx tsx scripts/verifica-pruebas.ts --single-product --json` (sale con 0).
+
+**Límites:**
+
+1. Pasar las cinco pruebas no es la salida de la fase 5: esa es la primera conversación con alguien de fuera, que depende de la usuaria y de la lista de la sección 1 del documento.
+2. `--single-product` lo declara una persona: el programa no mira el menú.
+3. El anexo es un borrador técnico, no un texto legal.
+4. Hoy no hay cómo leer el portal de un cliente: `scripts/verifica-hubspot.ts` solo lee portales de pruebas (`mode: 'test'`).
+
 ## Verifica · Pendientes (lista viva)
 
 Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
@@ -494,6 +547,8 @@ Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
 - [ ] *(nuevo, fase 4)* Quién escribe y confirma el mapa de campos: nosotros, el integrador que hace la migración o el comprador. El informe solo es tan bueno como el mapa (límite 1 de «Verifica · Fase 4»).
 - [ ] *(nuevo, fase 4)* Quién recibe la lista de trabajo con los IDs reales, por qué canal y cuándo se borra.
 - [ ] *(nuevo, fase 4)* Precio del informe de equivalencia: ¿aparte, dentro de la vigilancia o como cierre del encargo? Y si se repite tras cada corrección de la migración.
+- [ ] *(nuevo, fase 5)* Cuándo y con quién es la primera conversación de fuera: ¿una agencia de HubSpot, un abogado de compraventas o un search fund? Es la salida de la fase 5.
+- [ ] *(nuevo, fase 5)* Quién guarda la copia custodiada y la llave en el primer encargo, y quién firma el encargo por parte de Plan B.
 
 **Abogados y seguro (antes de la fase 5, la venta; no bloquean construir)**
 
@@ -507,6 +562,7 @@ Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
 - [ ] *(nuevo, fase 3)* Si mirar el CRM del vendedor cada semana necesita un permiso aparte en el acuerdo de tratamiento de datos.
 - [ ] *(nuevo, fase 4)* Texto del informe de equivalencia: «sin diferencias en lo que compara el mapa», nunca «migración íntegra». Y si puede servir para liberar un pago aplazado o una retención del precio.
 - [ ] *(nuevo, fase 4)* La exportación del CRM del comprador y la lista de trabajo llevan datos de las dos partes: quién es responsable del tratamiento en esa fase.
+- [ ] *(nuevo, fase 5)* Revisar el borrador del anexo de alcance (`docs/verifica-salir-a-vender.md`, sección 2) y convertirlo en texto contractual. Es la base del texto del alcance de arriba.
 
 **En el ordenador personal (aquí no se puede)**
 
@@ -523,6 +579,7 @@ Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
 - [ ] *(nuevo, fase 4)* Recorrido a mano de la migración con `scripts/verifica-ejemplo.ts`, `scripts/verifica-vigilancia.ts` y `scripts/verifica-migracion.ts`, y abrir `equivalencia.json` en `verifica.html`. Pasos en «Verifica · Fase 4».
 - [ ] *(nuevo, fase 4)* Revisión visual de «Migración» en `verifica.html`: escritorio y móvil (la tabla), tema claro y oscuro, la espera mientras carga el ejemplo, las tres pestañas con teclado y la impresión. Aquí solo está probado el HTML.
 - [ ] *(nuevo, fase 4)* Una migración real de prueba: del portal de pruebas de HubSpot a una cuenta de prueba de otro CRM, con un mapa escrito a mano, para ver el informe con datos que no son de la empresa ficticia.
+- [ ] *(nuevo, fase 5)* Un lector para el portal del cliente (hoy `verifica-hubspot.ts` solo admite portales de pruebas), con el mismo «solo lectura» y la autorización explícita. Va después de validar el lector en el portal de pruebas.
 
 **Fases siguientes**
 
@@ -532,7 +589,7 @@ Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
 - [x] ~~Fase 4 · Después del cierre~~: hecha el 22/11/2026 con la empresa migrada. Falta lo marcado «fase 4» en las listas de arriba.
 - [ ] *(nuevo, fase 4)* Lector del CRM del comprador: hoy el destino tiene que llegar ya como exportación de migración o como captura de Verifica. El primero, probablemente Pipedrive, junto con su historial (ya pendiente arriba).
 - [ ] *(nuevo, fase 4)* Sellar la captura del cierre en una copia custodiada, como el informe de la fase 2, para que el informe de equivalencia se pueda rehacer meses después.
-- [ ] Fase 5 · Salir a vender.
+- [ ] Fase 5 · Salir a vender. **Preparada el 22/11/2026:** las cinco pruebas en `scripts/verifica-pruebas.ts` (pasan las fases 1 a 4; la 0 está pendiente) y `docs/verifica-salir-a-vender.md`. Queda abierta hasta la primera conversación con alguien de fuera, que no se tiene antes de cerrar la lista de la sección 1 de ese documento.
 
 ## Pendiente para el agente del otro ordenador
 

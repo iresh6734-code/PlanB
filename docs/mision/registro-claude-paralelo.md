@@ -118,3 +118,17 @@ El filtro de Hoy (`src/LocalOperations.tsx`) lo usa: «nunez» encuentra «Núñ
 `tsc` sin errores; `text-match`, `local-operations`, `overdue`, `auth-parent`, `independent-interface-contexts` y `bundle-budget` en verde.
 
 El código tiene al menos cinco copias locales de esta normalización: `change-history`, `csv-import`, `overdue`, `team-replica-view` y la búsqueda global. Unificarlas en `text-match` queda como mejora aparte, sin urgencia.
+
+## 22/11/2026 · A10-2 · Cobertura declarada
+
+`src/app-shell/coverage.ts` (`coverageStatement`, `notCopiedLine`), probado en `tests/coverage.test.ts` (3/3). Todo sale de la especificación (`coverage.supported` / `unsupported`, que vienen de la captura) y de los recuentos de la captura, nunca de un texto fijo:
+
+- Los campos «conservados como solo lectura» que anota la captura de HubSpot se agrupan en un recuento.
+- Sin recuentos no se inventan cifras.
+
+En Continuidad › Estado:
+
+- **Línea visible:** «No se copia: …», con el aviso de que una copia de estos datos no reproduce todas las funciones del CRM, al pie de «Si HubSpot cae ahora».
+- **Lista completa:** dentro de «Ver contenido de esta copia» (el texto se conserva por la E2E `continuity.spec`), con los campos solo de consulta y lo cubierto.
+
+Comprobado en el ensayo con la captura de «Agencia Norte». `tsc` sin errores; `coverage`, `continuity-home-hub`, `css-unused`, `color-guard`, `design-tokens`, `bundle-budget` y `ui-copy` en verde.

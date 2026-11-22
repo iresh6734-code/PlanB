@@ -167,3 +167,9 @@ html body .ct-rel-fail { grid-column: 1 / -1; font-size: var(--fs-xs); color: va
 }
 @media (prefers-reduced-motion: reduce) { html body .ct-chip,html body .ct-ledger-row { transition: none; } }
 html body .ct-ledger-diff { font-size: var(--fs-xs); min-height: 0; padding: 0; }
+/* Misión maestra A10-2: cobertura declarada. */
+html body .ct-outage .ct-not-copied { margin: 8px 0 0; padding-top: 8px; border-top: 1px solid var(--rule); font-size: var(--fs-sm); color: var(--text-2); }
+html body .ct-coverage { display: grid; gap: 4px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--rule); }
+html body .ct-coverage h3 { margin: 0; font-size: var(--fs-sm); font-weight: 650; }
+html body .ct-coverage ul { margin: 0; padding-left: 18px; font-size: var(--fs-sm); color: var(--text-2); }
+html body .ct-coverage .helper { margin: 0; }

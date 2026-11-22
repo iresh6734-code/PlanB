@@ -33,6 +33,7 @@ import { downloadIncident } from './app-shell/incident-download.js';
 import { captureLedger, continuityReadiness, copyVitals, drillCalendar, DRILL_EVERY_DAYS, DRILL_SOON_DAYS, formatBytes, hourlyCaptures, jobStats, outageForecast, READINESS_OUTAGE_LINES, type LedgerFilter, type NextActionId, type StepId } from './app-shell/continuity-insights.js';
 import './continuity-home-hub.css';
 import { DowntimeCard } from './app-shell/DowntimeCard.js';
+import { coverageStatement, notCopiedLine } from './app-shell/coverage.js';
 import { BrandPicker } from './app-shell/BrandPicker.js';
 import { readBrand } from './app-shell/brand-store.js';
 import { coveredHours, formatHours } from '../shared/downtime-cost.js';
@@ -105,6 +106,7 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
   const seal=status&&readiness?continuitySeal(status,{done:readiness.done,total:readiness.total,missing:readiness.steps.filter(item=>!item.done).map(item=>item.label)},now):null;
   const vitals=status?copyVitals(status,insightContext,now):null;
   const outage=status?outageForecast(status,insightContext,now):null;
+  const coverage=state.spec?coverageStatement(state.spec,summary?.counts??null):null;
   const hours=status?.captures.length?hourlyCaptures(status.captures,now):null;
   const fresh=status?.captures.length?coveredHours(status.captures,new Date(now.getTime()-86_400_000),now):null;
   const ledger=status?captureLedger(status.captures,now,ledgerFilter):null;
@@ -168,11 +170,16 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
       <p className="ct-outage-verdict">{outage.headline}</p>
       {/* La prueba y la copia fuera del PC ya son pasos del índice de arriba: aquí solo lo que tendrías para trabajar. */}
       <ul>{outage.lines.filter(line=>!readiness||!READINESS_OUTAGE_LINES.includes(line.id)).map(line=><li key={line.id} data-tone={line.tone}>{line.text}</li>)}</ul>
+      {/* Misión maestra A10-2: lo que la copia no reproduce, dicho donde se decide si se puede seguir trabajando. */}
+      {coverage&&notCopiedLine(coverage)?<p className="ct-not-copied">{notCopiedLine(coverage)} Una copia de estos datos no reproduce todas las funciones del CRM.</p>:null}
     </article>:null}
     {summary?<details className="capture-details ct-content"><summary>Ver contenido de esta copia</summary><div className="capture-details-body">
       <p><strong>{summary.name}</strong><span>{summary.source==='hubspot'?'HubSpot · Portal '+summary.accountId:'Conjunto de ensayo local'}</span></p>
       <dl className="capture-counts">{([['contacts','Clientes'],['companies','Empresas'],['deals','Oportunidades'],['tasks','Tareas']] as const).map(([id,label])=><div key={id}><dt>{label}</dt><dd>{summary.counts[id]}</dd></div>)}</dl>
       <p className="helper">{summary.relations} relaciones · {summary.pipelines} {summary.pipelines===1?'proceso comercial':'procesos comerciales'} · {summary.fields} campos conservados</p>
+      {coverage?<div className="ct-coverage"><h3>Lo que no se copia</h3>{coverage.notCopied.length?<ul>{coverage.notCopied.map(item=><li key={item}>{item}</li>)}</ul>:<p className="helper">La captura no declara exclusiones.</p>}
+        {coverage.readOnlyFields?<p className="helper">{coverage.readOnlyFields} {coverage.readOnlyFields===1?'campo se conserva':'campos se conservan'} solo para consulta: no se pueden editar en la copia.</p>:null}
+        {coverage.supported.length?<p className="helper">Cubierto: {coverage.supported.join(' · ')}.</p>:null}</div>:null}
       {state.ready&&state.snapshot&&state.snapshot.id+':'+state.snapshot.capturedAt!==summary.id?<p className="helper">El espacio de trabajo conserva otra versión. Abrir esta copia requiere cerrar la sesión anterior y resolver los cambios pendientes.</p>:null}
     </div></details>:null}
     {status?.session?<div className="info-box"><Unplug size={20}/><div><strong>Sesión de continuidad abierta</strong><p>Importaciones e IA pausadas. Tus cambios se conservan. La devolución a HubSpot tiene su propio proceso de revisión.</p><div className="button-row"><button className="text-button" onClick={work}>Abrir trabajo</button><button className="text-button" onClick={()=>run(()=>post('/v2/session/end',{}))}>Cerrar sesión de continuidad</button></div></div></div>:null}

@@ -89,3 +89,19 @@ Traídos con `git pull --ff-only` los commits de Copilot `9e1ad41` (Hoy y Agenda
   2. G6 resuelto en el arnés, no en el producto. `tests/helpers/auth-parent-harness.ts` carga los ganchos reales `useContinuityState`, `useNotices`, `useRecordShortcuts` y `recents` en vez de sustituirlos por un Stub que devolvía null. Las aserciones no cambian: `auth-parent` e `independent-interface-contexts` pasan, 51/51 pruebas.
   3. La antigua cola de Hoy ya no existe. Retirado `tests/e2e/today-work-queue.spec.ts` (sus 4 casos eran de WorkQueue y `/api/v4/today`). En `tests/e2e/independent-workspace-flows.spec.ts`, los 3 casos de la cola se sustituyen por 1 del Hoy actual: 61 vencidas, «Despachar» junto al filtro, un único botón relleno, búsqueda sin otra lectura, sin desborde a 1440, 390 y 320. **Compila, pero no se ha ejecutado en navegador:** este ordenador no tiene la versión de Chromium de Playwright instalada (`chromium_headless_shell-1248`) y no se instala sin permiso.
   - Visto de paso: la búsqueda de Hoy no ignora acentos («nunez» no encuentra «Núñez»). Es un comportamiento del producto, pendiente de decidir.
+
+## 22/11/2026 · B4.5 · Tarjetas de dos líneas en móvil
+
+Solo CSS (`src/consola.css`, bloque móvil de listas; `faro.css` pierde 5 declaraciones que quedaban pisadas). El nombre va arriba y el resto de datos en una línea separados por espacio, sin rótulo encima de cada valor. Correo, teléfono y fecha se reconocen solos, y las cabeceras de la tabla siguen en el código.
+
+| Lista en móvil | 390 px antes → después | 320 px después |
+| --- | --- | --- |
+| Clientes | 4,51 → 3,36 pantallas | 4,36 |
+| Tareas | 4,78 → 3,88 | 4,78 |
+| Empresas | 1,84 → 1,32 | 1,8 |
+
+- Sin desborde horizontal.
+- Comprobado en el ensayo a 375 px.
+- Guardias `css-unused`, `color-guard`, `design-tokens`, `design-k-block`, `record-list`, `listas-ui`, `record-sheet` y `bundle-budget` en verde; `tsc` sin errores.
+
+Límite: en Tareas el desplegable de estado mide 44 px (mínimo táctil) y la tarjeta ocupa tres líneas. Bajar de ahí exigiría quitar la edición en línea en móvil, que no se ha hecho.

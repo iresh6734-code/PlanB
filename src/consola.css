@@ -374,6 +374,12 @@ html body .gx-mnav [aria-current="page"], html body .gx-mnav .active { color: va
   /* En la tarjeta de un registro, el correo y la web ocupan la fila entera y no se parten a media palabra. */
   html body .workspace > .table-container tbody tr { grid-auto-flow: row dense; }
   html body .workspace > .table-container tbody tr td:is([data-label="Correo"], [data-label="Web"], [data-label="Sitio web"]) { grid-column: 1 / -1; }
+  /* Misión maestra B4.5 (22/11/2026): tarjeta de DOS líneas. El nombre arriba y el resto en una línea de datos separados por espacio,
+   * sin rótulo encima de cada valor (correo, teléfono o fecha se reconocen solos). Antes eran unas cuatro filas por registro. */
+  html body .workspace > .table-container tbody tr { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 14px; margin: 0 0 6px; padding: 8px 36px 8px 12px; }
+  html body .workspace > .table-container tbody tr td:first-child { flex: 1 1 100%; min-width: 0; }
+  html body .workspace > .table-container tbody tr td:not(:first-child):not(.gx-row-open) { flex: 0 1 auto; min-width: 0; max-width: 100%; overflow: hidden; font-size: var(--fs-sm); color: var(--text-2); text-overflow: ellipsis; white-space: nowrap; }
+  html body .workspace > .table-container tbody tr td:not(:first-child):not(.gx-row-open)::before { content: none; }
   /* Cabecera de registros: en el móvil las acciones quedan solo en icono (sin el sello Pro) y el título no se corta. */
   html body .page-header.gx-records-head { column-gap: 10px; }
   html body .page-header.gx-records-head > .gx-head-actions { gap: 6px; }

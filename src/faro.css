@@ -1411,10 +1411,10 @@ html body .sidebar-bottom { padding-bottom: 8px; }
   html body .workspace > .table-container { overflow: visible; border: 0; background: transparent; box-shadow: none; }
   html body .workspace > .table-container table, html body .workspace > .table-container tbody { display: block; }
   html body .workspace > .table-container thead { display: none; }
-  html body .workspace > .table-container tbody tr { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 4px 12px; margin: 0 0 8px; padding: 10px 40px 10px 12px; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--bg-surface); }
+  html body .workspace > .table-container tbody tr { position: relative; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--bg-surface); }
   html body .workspace > .table-container tbody tr td { display: block; height: auto; max-width: none; padding: 0; border: 0; white-space: normal; overflow: visible; background: transparent !important; font-size: var(--fs-sm); }
   html body .workspace > .table-container tbody tr td:first-child { grid-column: 1 / -1; font-size: 14px; }
-  html body .workspace > .table-container tbody tr td:not(:first-child):not(.gx-row-open)::before { content: attr(data-label); display: block; font-size: 10.5px; font-weight: 600; color: var(--text-3); }
+  html body .workspace > .table-container tbody tr td:not(:first-child):not(.gx-row-open)::before { display: block; font-size: 10.5px; font-weight: 600; color: var(--text-3); }
   html body .workspace > .table-container tbody tr td.gx-row-open { position: absolute; top: 50%; right: 6px; transform: translateY(-50%); width: auto; }
   html body .workspace > .table-container tbody tr td.gx-row-open .icon-button { opacity: 1; }
   html body .workspace > .table-container td .gx-postpone { opacity: 1; margin: 4px 0 0; }

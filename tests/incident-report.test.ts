@@ -79,3 +79,28 @@ test('un intervalo de varios días etiqueta las horas con el día y tiene tope',
   const long = incidentReport(base({ window: { startedAt: '2026-11-01T00:00:00.000Z', endedAt: '2026-12-31T00:00:00.000Z' }, changes: [] }));
   assert.ok(long.hours.length <= 24 * 14);
 });
+
+// A10-1 · El expediente dice cómo se acreditó la vuelta y separa comprobado, incierto, fallido y pendiente.
+test('A10-1 · vuelta separada por certeza: relectura con fecha, inciertos y fallidos, sin dar por comprobado lo que no lo está', async () => {
+  const { returnLines } = await import('../src/app-shell/incident-report.js');
+  const without = incidentReport(base());
+  assert.equal(without.returnEvidence, undefined, 'sin datos de vuelta, el formato no cambia');
+  assert.deepEqual(returnLines(without), []);
+  const verified = incidentReport(base({ returnInfo: { verifiedAt: '2026-11-19T12:00:00Z', operations: [{ status: 'applied' }, { status: 'uncertain' }, { status: 'sending' }, { status: 'failed' }] } }));
+  assert.deepEqual(verified.returnEvidence, { verifiedAt: '2026-11-19T12:00:00.000Z', uncertain: 2, failed: 1 });
+  const lines = returnLines(verified);
+  assert.match(lines[0], /^Comprobado por relectura de HubSpot el .*: 1 cambio de este incidente\.$/);
+  assert.match(lines.join(' '), /2 operaciones enviadas sin confirmar \(resultado incierto\)/);
+  assert.match(lines.join(' '), /1 operación falló/);
+  assert.match(lines.join(' '), /2 cambios siguen pendientes/);
+  const unverified = returnLines(incidentReport(base({ returnInfo: { verifiedAt: null, operations: [] } })));
+  assert.match(unverified[0], /marcado como devueltos sin una comprobación por relectura registrada/);
+  const files = incidentFiles(verified);
+  assert.match(files.html, /<h2>Vuelta a HubSpot<\/h2>/);
+  assert.equal(JSON.parse(files.json).returnEvidence.uncertain, 2);
+});
+
+test('A10-1 · una comprobación anterior al incidente (o ilegible) no lo acredita', () => {
+  assert.equal(incidentReport(base({ returnInfo: { verifiedAt: '2026-11-18T12:00:00Z', operations: [] } })).returnEvidence!.verifiedAt, null);
+  assert.equal(incidentReport(base({ returnInfo: { verifiedAt: 'roto', operations: [] } })).returnEvidence!.verifiedAt, null);
+});

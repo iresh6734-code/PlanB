@@ -172,3 +172,17 @@ Comprobado en el ensayo con la captura de «Agencia Norte». `tsc` sin errores; 
 - `tests/drill-schedule.test.ts` 3/3, incluida una prueba de `tick()`: tres vueltas con un simulacro que no arranca lo lanzan una sola vez.
 - Una mutación (no leer el intento guardado) la hace fallar.
 - `v2` y `capture-quarantine-api` (24 pruebas), `continuity-home-hub`, `capture-schedule` y `capture-state` en verde; `tsc` sin errores.
+
+## 22/11/2026 · A10-1 · Parte de incidente unido a la vuelta
+
+`src/app-shell/incident-report.ts` y `incident-download.ts`. El expediente añade el campo opcional `returnEvidence` (el formato anterior no cambia si no hay datos) y la sección «Vuelta a HubSpot», que separa por certeza:
+
+- **Comprobado por relectura de HubSpot**, con fecha. Solo si la comprobación es posterior al inicio del incidente; una anterior o ilegible no lo acredita.
+- **Marcado como devuelto** sin comprobación registrada.
+- **Operaciones enviadas sin confirmar:** resultado incierto, que no se repite solo.
+- **Operaciones fallidas.**
+- **Cambios pendientes.**
+
+Los datos salen de `/v2/changes`: el plan con el estado de cada operación y el informe de la comprobación manual.
+
+`tests/incident-report.test.ts` pasa de 6 a 8 pruebas; `tsc` sin errores. El JSON firmado incluye el campo nuevo y la huella lo cubre.

@@ -12,11 +12,13 @@ const fileStamp = (value: string) => { const date = new Date(value); const pad =
 export async function downloadIncident(window: IncidentWindow, format: IncidentFormat, labels?: Readonly<Record<string, string>>): Promise<string> {
   const [module, history, continuity] = await Promise.all([
     import('./incident-report.js'),
-    api<{ changes: Change[]; watermark: number }>('/v2/changes'),
+    api<{ changes: Change[]; watermark: number; plan?: { operations?: { status: string }[] } | null; manualReport?: { verifiedAt?: string } | null }>('/v2/changes'),
     api<ContinuityStatus>('/v2/continuity').catch(() => null),
   ]);
   if (!Array.isArray(history.changes)) throw new Error('No se pudo leer el historial de cambios de este ordenador.');
-  const report = module.incidentReport({ window, changes: history.changes, watermark: Number.isSafeInteger(history.watermark) ? history.watermark : 0, captures: continuity?.captures ?? [], labels, version: APP_VERSION, generatedAt: new Date() });
+  const report = module.incidentReport({ window, changes: history.changes, watermark: Number.isSafeInteger(history.watermark) ? history.watermark : 0, captures: continuity?.captures ?? [], labels, version: APP_VERSION, generatedAt: new Date(),
+    // A10-1 · cómo se acreditó la vuelta: comprobación por relectura y estados del plan de devolución.
+    returnInfo: { verifiedAt: history.manualReport?.verifiedAt ?? null, operations: Array.isArray(history.plan?.operations) ? history.plan!.operations! : [] } });
   const files = module.incidentFiles(report, readBrand());
   const name = 'plan-b-incidente-' + fileStamp(window.startedAt) + '.' + format;
   const url = URL.createObjectURL(new Blob([format === 'html' ? files.html : files.json], { type: format === 'html' ? 'text/html;charset=utf-8' : 'application/json;charset=utf-8' }));

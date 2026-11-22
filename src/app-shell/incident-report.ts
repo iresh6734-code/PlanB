@@ -15,7 +15,11 @@ export interface IncidentInput {
   /** Nombre en plural de cada tipo de registro (Clientes, Tareas…). */ labels?: Readonly<Record<string, string>>;
   version: string;
   generatedAt: Date;
+  /** A10-1 · Cómo se acreditó la vuelta: comprobación por relectura (fecha) y estados del plan de devolución, si lo hay. */
+  returnInfo?: { verifiedAt: string | null; operations: readonly { status: string }[] };
 }
+/** A10-1 · La vuelta separada por certeza: comprobado por relectura, enviado sin confirmar (incierto), fallido y pendiente. */
+export interface IncidentReturn { verifiedAt: string | null; uncertain: number; failed: number }
 export interface IncidentEntity { entity: string; label: string; created: number; updated: number; returned: number; pending: number; fields: string[] }
 export interface IncidentHour { key: string; label: string; created: number; updated: number }
 export type ReturnState = 'none' | 'pending' | 'partial' | 'returned';
@@ -29,6 +33,7 @@ export interface IncidentReport {
   copyAtStart: string | null;
   capturesDuring: string[];
   returnState: ReturnState;
+  /** A10-1 · Presente solo si se conoce cómo se acreditó la vuelta. */ returnEvidence?: IncidentReturn;
   /** Huella de las operaciones incluidas (id, hora, tipo, operación e identificador interno), para cotejarlas después con el historial. */ evidenceDigest: string;
 }
 
@@ -75,6 +80,10 @@ export function incidentReport(input: IncidentInput): IncidentReport {
     copyAtStart: before.length ? new Date(before[before.length - 1]).toISOString() : null,
     capturesDuring: captureTimes.filter(time => time > start && time <= end).map(time => new Date(time).toISOString()),
     returnState: !inside.length ? 'none' : !pending ? 'returned' : !returned ? 'pending' : 'partial',
+    ...(input.returnInfo ? { returnEvidence: { // una comprobación anterior al inicio del incidente no acredita nada de él
+      verifiedAt: input.returnInfo.verifiedAt && Date.parse(input.returnInfo.verifiedAt) >= start ? new Date(input.returnInfo.verifiedAt).toISOString() : null,
+      uncertain: input.returnInfo.operations.filter(op => op.status === 'uncertain' || op.status === 'sending').length,
+      failed: input.returnInfo.operations.filter(op => op.status === 'failed').length } } : {}),
     evidenceDigest: sha256Hex(inside.map(change => [change.id, change.at, change.entity, change.operation, change.recordId].join('|')).join('\n')),
   };
 }
@@ -91,6 +100,19 @@ export function incidentHeadline(report: IncidentReport): string {
   const work = totals.changes + (totals.changes === 1 ? ' cambio' : ' cambios') + ' en ' + totals.records + (totals.records === 1 ? ' registro' : ' registros');
   const state = report.returnState === 'returned' ? 'todos marcados como devueltos a HubSpot' : report.returnState === 'pending' ? 'ninguno devuelto todavía' : totals.returned + ' devueltos y ' + totals.pending + ' pendientes de devolver';
   return 'Durante ' + report.duration + ' se trabajó en Plan B: ' + work + ', ' + state + '.';
+}
+
+/** A10-1 · La vuelta en frases, sin convertir una acción aceptada en un resultado verificado. */
+export function returnLines(report: IncidentReport): string[] {
+  const evidence = report.returnEvidence;
+  if (!evidence) return [];
+  const { returned, pending } = report.totals;
+  return [
+    evidence.verifiedAt ? 'Comprobado por relectura de HubSpot el ' + when(evidence.verifiedAt) + ': ' + returned + (returned === 1 ? ' cambio' : ' cambios') + ' de este incidente.' : returned ? returned + (returned === 1 ? ' cambio marcado' : ' cambios marcados') + ' como devueltos sin una comprobación por relectura registrada.' : 'Ningún cambio de este incidente se ha devuelto todavía.',
+    evidence.uncertain ? evidence.uncertain + (evidence.uncertain === 1 ? ' operación enviada' : ' operaciones enviadas') + ' sin confirmar (resultado incierto): no se repiten solas; se comprueban por relectura.' : '',
+    evidence.failed ? evidence.failed + (evidence.failed === 1 ? ' operación falló' : ' operaciones fallaron') + ' al enviarse.' : '',
+    pending ? pending + (pending === 1 ? ' cambio sigue pendiente' : ' cambios siguen pendientes') + ' de devolver.' : '',
+  ].filter(Boolean);
 }
 
 const escape = (value: string) => value.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]!);
@@ -121,6 +143,7 @@ export function incidentReportHtml(report: IncidentReport, digest: string, brand
     + '<div class="grid">' + metric('Duración', report.duration) + metric('Cambios guardados', String(report.totals.changes)) + metric('Altas', String(report.totals.created)) + metric('Registros tocados', String(report.totals.records)) + metric('Devolución', RETURN_TEXT[report.returnState]) + '</div>'
     + '<h2>Línea temporal</h2><table><thead><tr><th scope="col">Hora</th><th scope="col">Actividad</th><th scope="col">Cambios</th></tr></thead><tbody>' + (timeline || '<tr><td colspan="3">Sin horas que mostrar.</td></tr>') + '</tbody></table>'
     + '<h2>Por tipo de registro</h2>' + (entities ? '<table><thead><tr><th scope="col">Tipo</th><th scope="col">Altas</th><th scope="col">Cambios</th><th scope="col">Devueltos</th><th scope="col">Pendientes</th><th scope="col">Campos tocados</th></tr></thead><tbody>' + entities + '</tbody></table>' : '<p class="meta">No se guardaron cambios durante la contingencia.</p>')
+    + (report.returnEvidence ? '<h2>Vuelta a HubSpot</h2><ul>' + returnLines(report).map(line => '<li>' + escape(line) + '</li>').join('') + '</ul>' : '')
     + '<h2>Copias</h2><ul><li>Copia en uso al empezar: ' + (report.copyAtStart ? escape(when(report.copyAtStart)) : 'no consta ninguna anterior al inicio') + '.</li><li>Capturas durante la contingencia: ' + (report.capturesDuring.length ? report.capturesDuring.map(value => escape(clockTime(value))).join(', ') : 'ninguna') + '.</li></ul>'
     + '<h2>Huellas</h2><ul><li>Operaciones incluidas (SHA-256): <code>' + escape(report.evidenceDigest) + '</code></li><li>Este expediente en JSON (SHA-256): <code>' + escape(digest) + '</code></li></ul>'
     + '<h2>Límites</h2><ul><li>Las horas de inicio y fin las marcó la persona al activar y terminar el modo contingencia; Plan B no consulta HubSpot para saber si responde.</li><li>«Devuelto» significa marcado como devuelto en este ordenador; no acredita que HubSpot lo conserve.</li><li>Solo cuenta lo que este ordenador guarda: cambios hechos en otro equipo no aparecen.</li></ul>'

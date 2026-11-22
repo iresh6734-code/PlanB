@@ -256,6 +256,122 @@ Si dice «Historial: NO», la regla de aplazamientos no se puede prometer con Hu
 
 La salida de la fase 1 (la empresa con trampas da las seis alarmas por los lectores reales) queda cumplida con lectores simulados. Falta confirmarla con el portal de pruebas.
 
+## Verifica · Fase 2 · Informe y sala limpia · GitHub Copilot
+
+### Reserva · antes de editar
+
+22/11/2026, 17:05 Europe/Madrid. La usuaria: «continúa con la siguiente fase y ve apuntando todo lo que va quedando pendiente». Lo pendiente se lleva en la lista viva de abajo, «Verifica · Pendientes».
+
+Alcance, todo código puro y pruebas sin red:
+
+- **`shared/verifica/clean-room.ts` (nuevo), la sala limpia:**
+  - genera el informe con una sal nueva;
+  - antes de soltarlo comprueba que no lleva ningún nombre, correo, NIF ni ID del CRM;
+  - si lleva alguno, no sale nada.
+- **`shared/verifica/custody.ts` (nuevo), la copia custodiada:**
+  - cifra con AES-256-GCM (Web Crypto, sin DPAPI) todo lo necesario para rehacer el informe: capturas, facturas, declaraciones y sal;
+  - la copia queda atada a la huella del informe;
+  - la llave es aleatoria y se entrega aparte;
+  - al abrir la copia se rehace el informe y se comprueba que la huella es idéntica.
+- **`scripts/verifica-sala-limpia.ts` (nuevo):** trabaja sin conexión, a partir de capturas ya guardadas, y escribe el informe, la copia y la llave en archivos nuevos. `scripts/verifica-hubspot.ts` pasa a soltar el informe por la misma barrera.
+- **Interfaz, `src/verifica/` (verificador público):**
+  - abrir un informe JSON y comprobar su huella;
+  - con la copia y la llave, comprobar que la copia reproduce el informe, todo en el navegador, sin enviar nada;
+  - un solo botón relleno por vista.
+  - El aviso «Empresa ficticia» solo se muestra en el informe de referencia.
+  - Se mide el paquete antes y después.
+- **Pruebas:** `tests/verifica-*.test.ts`. La empresa con trampas pasa por la sala limpia y por la copia. Retocar el informe o la copia, o usar otra llave, debe notarse.
+
+Sin servidores, navegador, PowerShell, DPAPI, red ni datos reales. Dueño provisional: GitHub Copilot, de `shared/verifica/`, `server/verifica/`, `src/verifica/` y `scripts/verifica-*`.
+
+### Hecho · 22/11/2026, 17:15 · cómo se comprueba
+
+Hecho todo lo reservado. Salida de la fase 2: la empresa con trampas pasa por la sala limpia, el informe sale con sus seis alarmas sin ningún texto del CRM, y la copia custodiada rehace ese mismo informe, huella por huella.
+
+| Pieza | Qué hace |
+|---|---|
+| `shared/verifica/clean-room.ts` | **La barrera.** Busca en el informe los nombres de comerciales, empresas, contactos y oportunidades (sin tildes ni mayúsculas), los correos, los NIF y los IDs de registros y facturas. Si encuentra alguno, no sale nada, y el error dice cuántos encontró pero no cuáles. `runCleanRoom` usa una sal nueva cada vez y devuelve el informe, la copia y la llave. |
+| `shared/verifica/custody.ts` | **La copia custodiada.** Comprime y cifra con AES-256-GCM (Web Crypto: igual en Node y en el navegador, sin DPAPI) todo lo que hace falta para rehacer el informe, sal incluida. La huella del informe y la fecha de corte van autenticadas: la copia no se puede presentar con otro informe. La llave es aleatoria (`vfk1-` y 43 caracteres). Al abrir la copia se rehace el informe y se compara su huella. Tope de 512 MiB descomprimida. |
+| `scripts/verifica-sala-limpia.ts` | **Sin conexión.** Toma dos capturas, las facturas en CSV y las declaraciones en JSON, y escribe tres archivos nuevos: informe, copia y llave. Nunca imprime la llave ni sobrescribe. Si la barrera para el informe, no escribe nada; con `--show-leaks` dice, solo en esa pantalla, qué texto lo ha parado. |
+| `scripts/verifica-hubspot.ts` | `--report` pasa ahora por la misma barrera. |
+| `scripts/verifica-ejemplo.ts` | Escribe en una carpeta nueva los archivos de la empresa ficticia, para probar el recorrido a mano. |
+| `shared/verifica/report.ts` | `parseReport`: comprueba la forma de un informe que llega de fuera antes de pintarlo. Un informe bien formado pero retocado se acepta, y la página dice que no coincide con su huella. |
+| `src/verifica/` (`verifica.html`) | **Verificador público.** «Abrir un informe» lee un JSON desde el equipo y comprueba su huella. Con un informe abierto aparece «Comprobar con la copia custodiada»: archivo de la copia y llave, en el navegador y sin enviar nada. La llave se borra del campo tras cada intento. Sin aviso de ficción ni variantes, que solo salen en el ejemplo. Un solo botón relleno por vista: «Descargar informe» en el ejemplo y «Comprobar la copia» en un informe abierto. La huella del informe sale una sola vez. La comprobación no se imprime. |
+
+**Cómo se comprueba aquí (sin red):**
+
+- `npx tsc --noEmit -p tsconfig.json`: limpio.
+- `node tools/safe-tests.mjs verifica orphan-components css-unused color-guard design-tokens dev-only-files`: 9 de 9 archivos. `node tools/css-unused.mjs`: 0 muertos.
+- `tests/verifica-sala-limpia.test.ts`, 6 casos:
+  - de extremo a extremo con las seis alarmas, sin textos del CRM ni la llave en el informe ni en la copia;
+  - sal nueva por ejecución (mismas cifras, otros seudónimos);
+  - otra llave, un byte cambiado, otra huella u otra fecha en la copia, una llave mal formada o una copia mal formada → no se abre;
+  - no se sella una copia con un informe que no sale de ella;
+  - la barrera para nombres, correos e IDs sin repetirlos en el mensaje;
+  - el script: tres archivos, sin imprimir la llave, sin sobrescribir ni dejar archivos sueltos; entradas malas → código 2; la barrera → nada escrito.
+- `tests/verifica-pagina.test.ts`, 3 casos nuevos:
+  - un informe abierto, sin ficción y con un solo botón relleno;
+  - archivos que no son informes, y un informe retocado señalado;
+  - la comprobación de la copia en sus seis desenlaces.
+- Prueba de mutación: con la barrera ciega, o sin la huella del informe en el dato autenticado, fallan 3 casos. Se deshizo después.
+- Paquete, con `node tools/perf/bundle.mjs`:
+  - App inicial sin cambios: 743,5 KB, 228,3 KB comprimido; CSS 348,5 KB.
+  - Página Verifica: JS de 21,3 a 30,2 KB (de 7,8 a 10,8 KB comprimido); CSS de 6,2 a 8,8 KB.
+
+**Recorrido a mano en el ordenador personal** (aquí no se abre navegador):
+
+```
+npx tsx scripts/verifica-ejemplo.ts ejemplo
+npx tsx scripts/verifica-sala-limpia.ts --previous ejemplo/antes.json --latest ejemplo/ahora.json --invoices ejemplo/facturas.csv --declarations ejemplo/declaraciones.json --report informe.json --custody copia.json --key-out llave.txt
+```
+
+Abrir `verifica.html`, pulsar «Abrir un informe» → `informe.json`, y comprobar con `copia.json` y el contenido de `llave.txt`. Debe decir «La copia rehace este informe exactamente». Si se cambia una cifra de `informe.json`, debe decir que se ha tocado.
+
+**Límites que hay que saber:**
+
+1. La barrera es una heurística. No comprueba los nombres de una sola palabra («Acme») ni los de menos de 8 caracteres, porque podrían coincidir con el texto fijo del informe y bloquearlo sin motivo. Tampoco reconoce un nombre reescrito (abreviado, con otra forma societaria). Hoy las reglas solo escriben seudónimos y cifras; si una regla futura escribe texto libre, hay que revisarla.
+2. La huella prueba que el informe no se ha tocado, pero no quién lo hizo: cualquiera puede fabricar un informe con huella coherente. Lo que lo ata a los datos es la copia custodiada, y lo que lo ata al vendedor es el contrato que cite las dos huellas. Una firma digital es una decisión abierta (ver pendientes).
+3. La copia lleva las capturas enteras y la sal: quien tenga la copia y la llave ve todo el CRM. La llave nunca debe viajar con el informe ni con la copia.
+
+## Verifica · Pendientes (lista viva)
+
+Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
+
+**Decide la usuaria**
+
+- [ ] Destinos de cada parte: motor, congelado, aparcado o fuera. Es la salida de la fase 0.
+- [ ] Qué agente coordina y quién es dueño de cada carpeta.
+- [ ] Mover las 11 carpetas `planb-local-*` y `planb-hubspot-*` fuera del repositorio.
+- [ ] A6 y A7 del relevo anterior. Con Verifica, A6 pierde sentido y A7 gana importancia.
+- [ ] *(nuevo, fase 2)* ¿Firma digital del informe? Hoy la huella prueba que no se ha tocado, pero no quién lo emitió. Opciones: firma de Plan B Verifica como tercero, firma del vendedor, o solo el contrato citando las huellas.
+- [ ] *(nuevo, fase 2)* Quién genera la copia y la llave y cómo se entregan: en mano, por un canal distinto del informe, o depositadas ante notario.
+
+**Abogados y seguro (antes de la fase 5, la venta; no bloquean construir)**
+
+- [ ] Texto del alcance: solo se afirma lo observado, nunca «cartera íntegra». Hoy el informe no lleva ningún texto legal.
+- [ ] Acuerdo de tratamiento de datos con el vendedor y borrado al terminar.
+- [ ] Seguro de responsabilidad profesional antes del primer cobro.
+- [ ] Si la huella del informe y de la copia custodiada valen como anexo de las garantías del contrato, y quién guarda la copia y la llave (abogado o notario).
+- [ ] *(nuevo, fase 2)* Que la sala limpia sea una heurística (límite 1 de «Verifica · Fase 2») es aceptable si el contrato lo dice; si no, hay que revisar a mano cada informe antes de soltarlo.
+- [ ] *(nuevo, fase 2)* Cuánto tiempo se guarda la copia custodiada y cómo se destruye, porque lleva el CRM entero del vendedor.
+
+**En el ordenador personal (aquí no se puede)**
+
+- [ ] Validar el lector de HubSpot en el portal de pruebas: historial junto con la empresa asociada, formato de las fechas del historial, metadatos de las etapas. Pasos en «Verifica · Fase 1».
+- [ ] Cabeceras reales del libro de facturas emitidas de Holded.
+- [ ] Historial de Pipedrive.
+- [ ] Subir el prototipo `shared/billing-check.ts`, que sigue sin estar en el repositorio.
+- [ ] *(nuevo, fase 2)* Recorrido a mano de la sala limpia y el verificador con `scripts/verifica-ejemplo.ts`. Pasos en «Verifica · Fase 2».
+- [ ] *(nuevo, fase 2)* Revisión visual de `verifica.html` con un informe abierto y la comprobación de la copia: escritorio y móvil, tema claro y oscuro, foco con teclado en «Abrir un informe» y «Elegir archivo». Aquí no se ha visto pintado; solo está probado el HTML.
+- [ ] *(nuevo, fase 2)* Tamaño real de la copia con el portal de pruebas. El verificador acepta copias de hasta 64 MB; hay que ver cuánto ocupa un CRM con historial.
+
+**Fases siguientes**
+
+- [x] ~~Fase 2 · Informe y sala limpia~~: hecha el 22/11/2026 con la empresa con trampas. Falta lo marcado «fase 2» en las listas de arriba.
+- [ ] Fase 3 · Vigilancia: capturas semanales y aviso si la cartera se vacía o desaparecen contactos en bloque.
+- [ ] Fase 4 · Después del cierre: migración verificada al CRM del comprador.
+- [ ] Fase 5 · Salir a vender.
+
 ## Pendiente para el agente del otro ordenador
 
 ### Relevo de GitHub Copilot · 21/11/2026, 18:35 Europe/Madrid · leer primero

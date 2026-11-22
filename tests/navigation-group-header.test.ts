@@ -49,7 +49,7 @@ test('B3.1 Sidebar abre Configurar Plan B en Continuidad, conserva los pasos y n
   const view = new View(rt, Sidebar, {
     state: { runtime: false, ready: true, snapshot: { source: { isTestData: true } } },
     page: 'prepare', entityName: 'contacts', teamConfigured: false, selected: false,
-    signals: { overdue: null, atRisk: null }, step: 0, preparationOpen: true,
+    signals: { overdue: null }, step: 0, preparationOpen: true,
     setPage() {}, setSelected() {}, setPreparationOpen() {}, setGlobalSearch() {}, setModal() {}, openEntity() {},
     openPreparation() { opened++; },
   });

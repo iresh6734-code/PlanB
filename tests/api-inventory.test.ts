@@ -23,7 +23,7 @@ const cli = (...args: string[]) => spawnSync(process.execPath, [TOOL, ...args], 
 
 test('agrupa por versión de API y deja aparte lo que no es /api', () => {
   assert.equal(groupOf('/api/v2/records/:entity'), 'v2');
-  assert.equal(groupOf('/api/v7/date-check/checks/:id'), 'v7');
+  assert.equal(groupOf('/api/v7/ejemplo/:id'), 'v7');
   assert.equal(groupOf('/api/v12/futuro'), 'v12', 'versiones de dos cifras');
   assert.equal(groupOf('/api/team/spaces'), 'team');
   assert.equal(groupOf('/api/health'), 'sin versión');

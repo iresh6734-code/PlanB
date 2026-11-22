@@ -20,7 +20,7 @@ const wanted = (key: string) => !only.length || only.some(text => key.includes(t
 const sizes: [number, number][] = [[1440, 900], [1366, 768], [1280, 800], [390, 844]];
 const views: [string, string, string?][] = [
   ['inicio', 'Inicio'], ['hoy', 'Hoy'], ['clientes', 'Clientes'], ['empresas', 'Empresas'], ['oportunidades', 'Oportunidades'], ['tareas', 'Tareas'],
-  ['cambios', 'Cambios'], ['agentes', 'Agentes'], ['radar', 'Radar'], ['fecha', 'Comprobar una fecha'],
+  ['cambios', 'Cambios'], ['agentes', 'Agentes'],
   ['continuidad', 'Continuidad'], ['continuidad-evidencia', 'Continuidad', 'Evidencia e impacto'], ['continuidad-copias', 'Continuidad', 'Copias y archivo'], ['continuidad-operaciones', 'Continuidad', 'Operaciones'],
   ['equipo', 'Copia de equipo'], ['exportar', 'Exportar'], ['integraciones', 'Integraciones'], ['preparacion', 'Preparación']
 ];

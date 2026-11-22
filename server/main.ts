@@ -34,7 +34,7 @@ mountRelayRehearsal(app, store, security);
 registerGenerator(app, store, providers);
 registerCopyInspection(app,store);
 registerTaskIntents(app, store);
-// Módulos compartidos con la App portátil (evidencia, Laboratorio, resumen de trabajo): ver server/modules.ts.
+// Módulos compartidos con la App portátil (evidencia y resumen de trabajo): ver server/modules.ts.
 mountSharedModules(app, store);
 // Importar registros desde CSV (vista previa y aplicación con marca): ver server/csv-import.ts.
 registerCsvImport(app, store);

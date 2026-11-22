@@ -84,8 +84,8 @@ html[data-theme="dark"] {
 
 /* ---------- Base y superficies del navegador ---------- */
 html body { font-family: var(--font-sans); font-size: var(--fs-md); line-height: var(--lh-body); color: var(--text-1); font-feature-settings: "tnum" 1, "cv11" 1, "ss01" 1; }
-html body :is(h1, h2, h3, h4), html body .page-header h1, html body .oc-home-head h1, html body .lop .page-header h1, html body .cr .cr-head :is(h1, h2) { font-family: var(--font-sans); letter-spacing: -.01em; }
-html body h1, html body .page-header h1, html body .oc-home-head h1, html body .lop .page-header h1, html body .cr .cr-head h1, html body .ui-page-header h1 { font-size: var(--fs-h1); line-height: 28px; font-weight: 650; color: var(--text-1); text-wrap: balance; }
+html body :is(h1, h2, h3, h4),html body .page-header h1,html body .oc-home-head h1,html body .lop .page-header h1 { font-family: var(--font-sans); letter-spacing: -.01em; }
+html body h1,html body .page-header h1,html body .oc-home-head h1,html body .lop .page-header h1,html body .ui-page-header h1 { font-size: var(--fs-h1); line-height: 28px; font-weight: 650; color: var(--text-1); text-wrap: balance; }
 html body h2 { font-size: var(--fs-h2); line-height: 20px; font-weight: 650; }
 html body h3 { font-size: var(--fs-md); line-height: 20px; font-weight: 600; }
 html body ::selection { background: var(--highlighter); color: var(--text-1); }
@@ -120,7 +120,6 @@ html body .sidebar .nav-item.work-toggle.active svg:first-child { color: var(--s
 html body .sidebar .nav-item.work-toggle > svg:last-child { width: 13px; height: 13px; color: var(--sb-muted); }
 html body .sidebar .work-subnav { margin: 0 0 4px 15px; padding-left: 8px; border-left: 1px solid var(--sb-border); }
 html body .sidebar .work-subnav .nav-item { min-height: 26px; gap: 6px; }
-html body .sidebar .gx-nav-lab { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--sb-border); }
 html body .sidebar .gx-badge { min-width: 18px; height: 16px; padding: 0 4px; border-radius: 2px; background: transparent; color: var(--sb-muted); font-size: 11px; font-weight: 650; box-shadow: inset 0 -1.5px 0 currentColor; }
 html body .sidebar .gx-badge[data-tone="danger"] { color: var(--sb-danger); }
 html body .sidebar .gx-badge[data-tone="warn"] { color: var(--sb-warn); background: transparent; }
@@ -187,12 +186,12 @@ html body .field > span, html body label > span:first-child:not(.dot) { font-siz
 /* ---------- Marcas de estado: trazos, no pastillas ---------- */
 html body .badge { height: 20px; padding: 0 6px; border-radius: var(--r-sm); background: var(--bg-subtle); border: 1px solid var(--border); color: var(--text-2); font-size: var(--fs-xs); font-weight: 600; }
 html body :is(.oc-chip, .or-chip, .cr-chip, .enum-label) { height: 20px; padding: 0 6px; border-radius: var(--r-sm); border: 0; background: var(--oc-neutral-bg); color: var(--oc-neutral-fg); font-size: var(--fs-xs); font-weight: 600; }
-html body :is(.oc-chip, .cr-chip)[data-tone="danger"], html body .cr-chip[data-status="at-risk"], html[data-theme="dark"] body .cr-chip[data-status="at-risk"] { display: inline-flex; align-items: center; gap: 6px; background: transparent; color: var(--danger); box-shadow: none; border-radius: 0; padding: 0; }
-html body :is(.oc-chip, .cr-chip)[data-tone="warn"], html body .cr-chip[data-status="unconfirmed"], html[data-theme="dark"] body .cr-chip[data-status="unconfirmed"] { display: inline-flex; align-items: center; gap: 6px; background: transparent; color: var(--warning); padding: 0; }
+html body :is(.oc-chip, .cr-chip)[data-tone="danger"] { display: inline-flex; align-items: center; gap: 6px; background: transparent; color: var(--danger); box-shadow: none; border-radius: 0; padding: 0; }
+html body :is(.oc-chip, .cr-chip)[data-tone="warn"] { display: inline-flex; align-items: center; gap: 6px; background: transparent; color: var(--warning); padding: 0; }
 /* El sello: un cuadrado de 6 px en lacre u ocre delante del texto. Es la única marca de color de un estado. */
-html body :is(.oc-chip, .cr-chip)[data-tone="danger"]::before, html body .cr-chip[data-status="at-risk"]::before, html body .deal-card .deal-close[data-tone="late"]::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 1px; background: var(--seal); }
-html body :is(.oc-chip, .cr-chip)[data-tone="warn"]::before, html body .cr-chip[data-status="unconfirmed"]::before, html body .deal-card .deal-close[data-tone="soon"]::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 1px; background: var(--seal-warn); }
-html body :is(.oc-chip, .cr-chip)[data-tone="ok"], html body .cr-chip[data-status="no-risk-detected"], html[data-theme="dark"] body .cr-chip[data-status="no-risk-detected"] { background: transparent; color: var(--success); }
+html body :is(.oc-chip, .cr-chip)[data-tone="danger"]::before,html body .deal-card .deal-close[data-tone="late"]::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 1px; background: var(--seal); }
+html body :is(.oc-chip, .cr-chip)[data-tone="warn"]::before,html body .deal-card .deal-close[data-tone="soon"]::before { content: ""; flex: none; width: 6px; height: 6px; border-radius: 1px; background: var(--seal-warn); }
+html body :is(.oc-chip, .cr-chip)[data-tone="ok"] { background: transparent; color: var(--success); }
 html body .error-box, html body .global-error { border-radius: var(--r-lg); border: 1px solid var(--danger-border); background: var(--danger-bg); color: var(--danger); }
 html body .info-box, html[data-theme="dark"] body .info-box { border-radius: var(--r-lg); border: 1px solid var(--border); background: var(--bg-surface); color: var(--text-2); }
 /* El aviso flotante sale del bastidor: grafito en los dos temas. */
@@ -323,7 +322,6 @@ html body .lop .lop-open-task svg { width: 14px; height: 14px; }
 html body .lop .lop-tasks li:hover .lop-open-task, html[data-theme="dark"] body .lop .lop-tasks li:hover .lop-open-task, html body .lop .lop-tasks .lop-open-task:focus-visible { border: 0; background: transparent; text-decoration: underline; text-underline-offset: 3px; }
 html body .lop .lop-tasks .lop-open-task:focus-visible { outline: 0; }
 html body .lop .lop-open-task:focus-visible::after { outline: 2px solid var(--primary); outline-offset: -2px; border-radius: var(--r-md); }
-html body .or-today, html[data-theme="dark"] body .or-today { border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--bg-surface); }
 
 /* ---------- Pestañas (Continuidad y equipo) ---------- */
 html body .commercial-tabs { gap: 0; border-bottom: 1px solid var(--border-strong); }
@@ -340,12 +338,6 @@ html body .workspace-search-match, html[data-theme="dark"] body .workspace-searc
 
 /* ---------- Integraciones y Radar ---------- */
 html body .lint .lint-scope, html body .lint .lint-explain { max-width: 75ch; }
-html body .cr .cr-item, html body .cr .cr-item[data-status] { border-left: 0; padding-left: 14px; }
-html body .cr .cr-item[data-status="at-risk"] .cr-open { text-decoration: none; }
-html body .cr .cr-group > :is(h2, h3)::before { border-radius: 1px; }
-html body .cr .cr-group[data-status="at-risk"] > :is(h2, h3)::before { background: var(--danger); }
-html body .cr .cr-group[data-status="unconfirmed"] > :is(h2, h3)::before { background: var(--oc-warn-bar); }
-html body .cr .cr-group[data-status="no-risk-detected"] > :is(h2, h3)::before { background: var(--success); }
 html body :is(.cr-provenance, .provenance), html[data-theme="dark"] body :is(.cr-provenance, .provenance) { border: 1px dashed var(--pencil); border-radius: var(--r-sm); background: transparent; color: var(--text-2); }
 
 /* ---------- Pantallas de acceso (bloqueo, protección, equipo) ---------- */

@@ -6,7 +6,7 @@ import { Brand, Modal, RecordDrawer, Spinner, recordName } from './components.js
 import { Protection } from './Protection.js';
 import { type PageId, rememberPlace, storedEntity, storedPage } from './app-shell/session.js';
 import { useShortcuts } from './app-shell/useShortcuts.js';
-import { fallbackPage, labVisible } from './app-shell/navigation.js';
+import { fallbackPage } from './app-shell/navigation.js';
 import { pathOf, pendingStillWanted, placeOf } from './app-shell/routes.js';
 import { useBoardLoader, useRecordListLoader, useRecordListState } from './app-shell/useRecordList.js';
 import { useDealPulse } from './app-shell/useDealPulse.js';
@@ -34,14 +34,13 @@ import { currentDensity, toggleDensity, toggleTheme } from './app-shell/theme.js
 import { LocalOperations, type OpenTaskRequest } from './LocalOperations.js';
 import { OutcomesLockNotice, TaskOutcomesHost, TaskOutcomesSurface, addLockSummary, type TaskOutcomesControl } from './TaskOutcomesHost.js';
 import { WorkspaceSearch } from './WorkspaceSearch.js';
-import { RehearsalTodayEntry } from './RehearsalTodayEntry.js';
 import { HomeOverview } from './HomeOverview.js';
 import { advanceDrill, drillHandoffNote, startDrill, type DrillState, type DrillStepId } from './app-shell/guided-drill.js';
 import { type AlertTarget } from './app-shell/continuity-alerts.js';
 import { useContinuityState } from './app-shell/useContinuityState.js';
 import { readinessFor } from './app-shell/continuity-insights.js';
 // Apartados que se descargan al visitarlos por primera vez (misma interfaz de uso que los originales).
-import { Agenda, ChangesView, CommandPalette, ContingencyBand, ContinuityHome, CsvImport, DateCheck, DecisionReview, FocusRun, GuidedDrill, LicensePanel, LocalIntegrations, OperationalRehearsal, OutageLab, PortableExport, Preparation, QuickActivity, RadarHost, RecordTimeline, SequencePicker, Settings, ShortcutsHelp, TeamSync, WeeklyReview, WhatsNew } from './app-shell/lazy-pages.js';
+import { Agenda, ChangesView, CommandPalette, ContingencyBand, ContinuityHome, CsvImport, FocusRun, GuidedDrill, LicensePanel, LocalIntegrations, PortableExport, Preparation, QuickActivity, RecordTimeline, SequencePicker, Settings, ShortcutsHelp, TeamSync, WeeklyReview, WhatsNew } from './app-shell/lazy-pages.js';
 import type { WorkspaceSearchContext } from '../shared/workspace-search.js';
 
 type LocalAppState = AppState & { workspaceSearchContext?: WorkspaceSearchContext | null };
@@ -58,7 +57,6 @@ export default function App() {
   // Dirección inicial (B1): /clientes/<id>, /continuidad/cambios… abre ese lugar; la raíz abre el apartado recordado.
   const [initialPlace] = useState(() => typeof location === 'undefined' ? null : placeOf(location.pathname));
   const [page, setPage] = useState<PageId>(() => initialPlace?.page ?? storedPage());
-  const [rehearseFromToday, setRehearseFromToday] = useState<string | null>(null);
   const [integrationsFrom, setIntegrationsFrom] = useState<'continuity' | null>(null), [returnedFrom, setReturnedFrom] = useState<'integrations' | 'drill' | null>(null), [drillNote, setDrillNote] = useState<string | null>(null);
   useEffect(() => { if (page !== 'integrations') setIntegrationsFrom(null); }, [page]);
   const [entityName, setEntity] = useState<EntityName>(() => initialPlace?.entity ?? storedEntity());
@@ -66,7 +64,7 @@ export default function App() {
   const [pendingRecord, setPendingRecord] = useState<{ entity: EntityName; id: string } | null>(() => initialPlace?.recordId && initialPlace.entity ? { entity: initialPlace.entity, id: initialPlace.recordId } : null);
   const urlSynced = useRef(false), fromHistory = useRef(false);
   useEffect(() => { rememberPlace(page, entityName); }, [page, entityName]);
-  const [signals, setSignals] = useState<{ overdue: number | null; atRisk: number | null }>({ overdue: null, atRisk: null });
+  const [signals, setSignals] = useState<{ overdue: number | null }>({ overdue: null });
   // Avisos de la copia para el menú: se calculan con el estado que Inicio o Continuidad ya han leído (sin otra lectura). Ver app-shell/useContinuityState.ts (T2).
   const { continuityStatus, receiveContinuity, continuityTab, setContinuityTab, copySignal } = useContinuityState(page);
   const [help, setHelp] = useState(false);
@@ -113,11 +111,11 @@ export default function App() {
   }, [auth, state?.ready, selected]);
   useEffect(() => { if (auth !== 'open' || !state?.ready) setGlobalSearch(false); }, [auth, state?.ready]);
   const [modal, setModal] = useState<'settings' | 'coverage' | 'csv' | null>(null);
-  // Laboratorio (Radar y «Comprobar una fecha»): solo sin copia o con una copia de datos de prueba (decisión del usuario, 17/11/2026).
-  const lab = labVisible({ testData: state?.snapshot?.source.isTestData !== false });
-  useShortcuts({ active: auth === 'open' && !!state, ready: !!state?.ready, runtime: !!state?.runtime, lab, blocked: !!selected, onRecords: page === 'workspace',
+  // Propuestas de agentes: solo sin copia o con una copia de datos de prueba.
+  const testData = state?.snapshot?.source.isTestData !== false;
+  useShortcuts({ active: auth === 'open' && !!state, ready: !!state?.ready, runtime: !!state?.runtime, blocked: !!selected, onRecords: page === 'workspace',
     openEntity: entity => openEntity(entity), go: next => { setPage(next); setSelected(null); }, openHelp: () => setHelp(true), openSearch: () => setGlobalSearch(true), newRecord: () => setSelected('new'), openCommands: () => setCommandsOpen(true), openFocus: scope => setFocusOpen(scope) });
-  // Un apartado recordado que no existe en esta copia (el Laboratorio sin datos de prueba; Hoy, Propuestas, Integraciones o copia de equipo
+  // Un apartado recordado que no existe en esta copia (Hoy, Propuestas, Integraciones o copia de equipo
   // en una copia restaurada) vuelve a Inicio.
   // La dirección sigue al lugar: la primera vez se sustituye (no añade historial); después, cada cambio es una entrada nueva,
   // salvo cuando el cambio viene de Atrás/Adelante. Mientras se abre una ficha pedida por la dirección no se toca.
@@ -228,7 +226,7 @@ export default function App() {
   const focusWhenReady = (id: string, tries = 20) => { const node = document.getElementById(id); if (node) node.focus(); else if (tries > 0) setTimeout(() => focusWhenReady(id, tries - 1), 50); };
   const openAlert = (target: AlertTarget) => { setSelected(null); if (target === 'export') { setPage('export'); focusWhenReady('main-content'); return; } setContinuityTab(target); setPage('continuity'); focusWhenReady('ct-tab-' + target); };
   const readinessDot = readinessFor(state, continuityStatus, new Date());
-  const pageLabel = page==='workspace'?(entity?.label??'Trabajar'):({home:'Inicio',today:'Hoy',week:'Revisión semanal',agenda:'Agenda',changes:'Cambios',agents:'Propuestas',radar:'Laboratorio · Radar','date-check':'Laboratorio · Comprobar una fecha','outage-lab':'Laboratorio · ¿Y si cae…?',continuity:'Continuidad','team-sync':'Copia de equipo',export:'Exportar',integrations:'Integraciones',prepare:'Preparación',plan:'Plan y licencia'} as Record<string,string>)[page]??'';
+  const pageLabel = page==='workspace'?(entity?.label??'Trabajar'):({home:'Inicio',today:'Hoy',week:'Revisión semanal',agenda:'Agenda',changes:'Cambios',agents:'Propuestas',continuity:'Continuidad','team-sync':'Copia de equipo',export:'Exportar',integrations:'Integraciones',prepare:'Preparación',plan:'Plan y licencia'} as Record<string,string>)[page]??'';
   // Mover una oportunidad de etapa desde el tablero: misma validación y mismo guardado que la ficha. Devuelve el motivo si no se puede.
   // Cambiar un campo desde la tabla o el tablero: misma validación y mismo guardado que la ficha. Devuelve el motivo si no se puede.
   // Escribir un campo con la validación de la ficha, sin refrescar: lo usan el guardado suelto y el cambio en bloque.
@@ -279,9 +277,7 @@ export default function App() {
         ...(!state.runtime && state.ready && spec ? [{ id: 'week', label: 'Ir a Revisión semanal', group: 'Ir a', run: goTo('week') }, { id: 'agenda', label: 'Ir a Agenda', group: 'Ir a', run: goTo('agenda') }] : []),
     ...(state.ready && spec ? spec.entities.map(item => ({ id: 'open-' + item.id, label: 'Ir a ' + item.label, group: 'Ir a', run: () => openEntity(item.id) })) : []),
     ...(state.ready ? [{ id: 'changes', label: 'Ir a Cambios', group: 'Ir a', hint: 'G M', run: goTo('changes') }] : []),
-    ...(!state.runtime && lab ? [{ id: 'agents', label: 'Ir a Propuestas (datos de prueba)', group: 'Ir a', run: goTo('agents') }] : []),
-    ...(state.ready && lab ? [{ id: 'radar', label: 'Laboratorio: Radar de compromisos', group: 'Ir a', hint: 'G R', run: () => { setRehearseFromToday(null); goTo('radar')(); } }, { id: 'date-check', label: 'Laboratorio: Comprobar una fecha', group: 'Ir a', hint: 'G F', run: goTo('date-check') }] : []),
-    ...(lab ? [{ id: 'outage-lab', label: 'Laboratorio: ¿Y si cae…? (caídas ficticias)', group: 'Ir a', run: goTo('outage-lab') }] : []),
+    ...(!state.runtime && testData ? [{ id: 'agents', label: 'Ir a Propuestas (datos de prueba)', group: 'Ir a', run: goTo('agents') }] : []),
     { id: 'continuity', label: 'Ir a Continuidad', group: 'Ir a', hint: 'G N', run: goTo('continuity') },
     ...(!state.runtime && teamOrigin ? [{ id: 'team-sync', label: 'Ir a Copia de equipo', group: 'Ir a', run: goTo('team-sync') }] : []),
     ...(!state.runtime ? [{ id: 'integrations', label: 'Ir a Integraciones', group: 'Ir a', run: goTo('integrations') }, { id: 'plan', label: 'Ir a Plan y licencia', group: 'Ir a', run: goTo('plan') }] : []),
@@ -342,15 +338,12 @@ export default function App() {
       {error ? <div role="alert" className="global-error"><span>{error}</span><button className="icon-button" aria-label="Cerrar aviso" onClick={() => setError('')}><X size={18} /></button></div> : null}
       <OutcomesLockNotice summary={lockedOutcomes} failed={lockFailed} onRetry={()=>void protect()} onDismiss={()=>{setLockedOutcomes(null);setLockFailed(false);}}/>
       {!state.runtime?<TaskOutcomesSurface/>:null}
-      {page==='home'?<HomeOverview state={state} onSignals={setSignals} onOpenDeals={() => openEntity('deals')} onOpenRecord={record => { openEntity(record.entity); setRecords([record]); setSelected(record); }} onDataChanged={()=>void refresh()}contextRevision={state.workspaceSearchContext?.contextRevision??null} onOpenToday={()=>{setPage('today');setSelected(null);}} onOpenTask={id=>openTaskFromOutcomes(id)} onOpenRadar={()=>{setRehearseFromToday(null);setPage('radar');setSelected(null);}} onRehearse={id=>{setRehearseFromToday(id);setPage('radar');setSelected(null);}} onOpenDateCheck={()=>{setPage('date-check');setSelected(null);}} onOpenContinuity={()=>{setPage('continuity');setSelected(null);}} onOpenChanges={()=>{setPage('changes');setSelected(null);}} onContinuityStatus={receiveContinuity} onOpenAlert={openAlert} onOpenPassport={()=>{setSelected(null);setContinuityTab('evidencia');setPage('continuity');focusWhenReady('ct-tab-evidencia');}} onProtect={() => void protect()} onPrepare={() => openPreparation(0)} lab={lab}/>
+      {page==='home'?<HomeOverview state={state} onSignals={setSignals} onOpenDeals={() => openEntity('deals')} onOpenRecord={record => { openEntity(record.entity); setRecords([record]); setSelected(record); }} onDataChanged={()=>void refresh()}contextRevision={state.workspaceSearchContext?.contextRevision??null} onOpenToday={()=>{setPage('today');setSelected(null);}} onOpenTask={id=>openTaskFromOutcomes(id)} onOpenContinuity={()=>{setPage('continuity');setSelected(null);}} onOpenChanges={()=>{setPage('changes');setSelected(null);}} onContinuityStatus={receiveContinuity} onOpenAlert={openAlert} onOpenPassport={()=>{setSelected(null);setContinuityTab('evidencia');setPage('continuity');focusWhenReady('ct-tab-evidencia');}} onProtect={() => void protect()} onPrepare={() => openPreparation(0)}/>
       :page==='continuity'?<ContinuityHome initialTab={continuityTab??'estado'} onStatus={receiveContinuity} onGuidedDrill={state.ready && !state.runtime ? startGuidedDrill : undefined} state={state} workspaceContextRevision={state.workspaceSearchContext?.contextRevision??null} refresh={refresh} work={()=>openEntity('contacts')} prepare={()=>openPreparation(0)} protect={()=>void protect()} exportCopy={()=>setPage('export')} onCoverage={state.ready?()=>void viewCoverage():undefined} connectRequest={connectRequest} onOpenToday={()=>{setPage('today');setSelected(null);}} onOpenIntegrations={()=>{setIntegrationsFrom('continuity');setPage('integrations');setSelected(null);}} returnedFrom={returnedFrom} drillNote={drillNote} onReturnHandled={()=>setReturnedFrom(null)}/>
-      :page==='today'||page==='agents'?<>{page==='today'&&lab?<RehearsalTodayEntry contextRevision={state.workspaceSearchContext?.contextRevision??null} onOpen={id=>{setRehearseFromToday(id);setPage('radar');setSelected(null);}} onOpenRadar={()=>{setRehearseFromToday(null);setPage('radar');setSelected(null);}}/>:null}<LocalOperations key={page} view={page} filterRequest={page==='today'?todayFilter:null} onFilterHandled={()=>setTodayFilter(null)} onDispatch={state.ready && spec ? () => setFocusOpen('overdue') : undefined} onOpenTasks={()=>openEntity('tasks')} onOpenDeals={()=>openEntity('deals')} onOpenProposals={()=>setPage('changes')} onPrepare={()=>openPreparation(0)} onRecordSaved={refresh} openTaskRequest={taskRequest} onOpenTaskHandled={()=>setTaskRequest(null)}/></>
+      :page==='today'||page==='agents'?<><LocalOperations key={page} view={page} filterRequest={page==='today'?todayFilter:null} onFilterHandled={()=>setTodayFilter(null)} onDispatch={state.ready && spec ? () => setFocusOpen('overdue') : undefined} onOpenTasks={()=>openEntity('tasks')} onOpenDeals={()=>openEntity('deals')} onOpenProposals={()=>setPage('changes')} onPrepare={()=>openPreparation(0)} onRecordSaved={refresh} openTaskRequest={taskRequest} onOpenTaskHandled={()=>setTaskRequest(null)}/></>
         :page==='integrations'?<>{integrationsFrom?<p className="back-link"><button type="button" className="text-button" onClick={()=>{setIntegrationsFrom(null);setPage('continuity');setSelected(null);setReturnedFrom('integrations');}}>← Volver a Continuidad</button></p>:null}<LocalIntegrations onConnectHubspot={()=>{setPage('continuity');setSelected(null);setConnectRequest(n=>n+1);}}/></>
       :page==='team-sync'?<TeamSync/>
       :page==='plan'?<LicensePanel/>
-      :page==='date-check'?<div className="gx-datecheck"><h1 className="sr-only">Comprobar una fecha</h1><DateCheck contextRevision={state.workspaceSearchContext?.contextRevision??null} onContextStale={()=>void refresh()}/><div className="gx-datecheck-side"><DecisionReview contextRevision={state.workspaceSearchContext?.contextRevision??null} onContextStale={()=>void refresh()}/></div></div>
-      :page==='outage-lab'?<OutageLab/>
-      :page==='radar'?(rehearseFromToday?<OperationalRehearsal contextRevision={state.workspaceSearchContext?.contextRevision??null} commitmentId={rehearseFromToday} onContextStale={()=>void refresh()} onClose={()=>setRehearseFromToday(null)}/>:<RadarHost contextRevision={state.workspaceSearchContext?.contextRevision??null} refresh={()=>void refresh()}/>)
       :page==='changes'?<ChangesView runtime={state.runtime} production={state.snapshot?.source.isTestData===false} spec={state.spec}/>
       :page==='export'?<PortableExport/>
       :page==='week'&&state.ready&&spec?<WeeklyReview spec={spec} revision={(state.snapshot?.capturedAt??'')+':'+(state.changes??0)} title={state.snapshot?.name??'Plan B'} saveField={saveField} createTask={createTask} onOpenRecord={record=>{openEntity(record.entity);setRecords([record]);setSelected(record);}}/>

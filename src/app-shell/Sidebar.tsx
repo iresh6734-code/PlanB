@@ -1,5 +1,5 @@
 import { useEffect, useState, type ComponentType } from 'react';
-import { ArrowRight, BadgeCheck, Building2, CalendarCheck, CalendarDays, ChevronDown, Download, FlaskConical, GitBranch, Home, Inbox, ListTodo, Pin, PlugZap, Radar, Search, Settings2, ShieldCheck, SlidersHorizontal, Users } from 'lucide-react';
+import { ArrowRight, BadgeCheck, Building2, CalendarDays, ChevronDown, Download, GitBranch, Home, Inbox, ListTodo, Pin, PlugZap, Search, Settings2, ShieldCheck, SlidersHorizontal, Users } from 'lucide-react';
 import type { AppState, EntityName } from '../../shared/model.js';
 import { APP_VERSION } from '../../shared/version.js';
 import { Brand } from '../components.js';
@@ -9,7 +9,7 @@ import type { PageId } from './session.js';
 import type { ReadinessSignal } from './continuity-insights.js';
 
 type Toggle = (update: (open: boolean) => boolean) => void;
-type Signals = { overdue: number | null; atRisk: number | null; copy?: { count: number; tone: 'danger' | 'warn'; titles: string[] } | null; readiness?: ReadinessSignal | null };
+type Signals = { overdue: number | null; copy?: { count: number; tone: 'danger' | 'warn'; titles: string[] } | null; readiness?: ReadinessSignal | null };
 type Props = {
   state: AppState; page: PageId; entityName: EntityName;
   teamConfigured: boolean;
@@ -22,15 +22,15 @@ type Props = {
   /** F5 · Fichas ancladas de esta copia (ya con su nombre leído de la copia). */ pins?: { key: string; label: string; title: string; open: () => void }[];
 };
 
-const GROUP_ICON: Record<GroupId, ComponentType<{ size?: number }>> = { home: Home, today: CalendarDays, clients: Users, continuity: ShieldCheck, settings: SlidersHorizontal, lab: FlaskConical };
+const GROUP_ICON: Record<GroupId, ComponentType<{ size?: number }>> = { home: Home, today: CalendarDays, clients: Users, continuity: ShieldCheck, settings: SlidersHorizontal };
 const ITEM_ICON: Record<string, ComponentType<{ size?: number }>> = {
   today: CalendarDays, agents: Inbox, contacts: Users, companies: Building2, deals: GitBranch, tasks: ListTodo,
-  continuity: ShieldCheck, changes: GitBranch, export: Download, 'team-sync': Building2, integrations: PlugZap, provider: Settings2, radar: Radar, 'date-check': CalendarCheck, 'outage-lab': FlaskConical, plan: BadgeCheck,
+  continuity: ShieldCheck, changes: GitBranch, export: Download, 'team-sync': Building2, integrations: PlugZap, provider: Settings2, plan: BadgeCheck,
 };
 
 /**
- * Navegación principal en cinco lugares (Inicio, Hoy, Clientes, Continuidad y Ajustes) más el Laboratorio cuando la
- * copia es de datos de prueba (CLAUDE-UI-NAV-LAB). Solo cambia de apartado; no lee ni guarda datos.
+ * Navegación principal en cinco lugares (Inicio, Hoy, Clientes, Continuidad y Ajustes). Solo cambia de apartado; no lee
+ * ni guarda datos.
  */
 export function Sidebar({ state, page, entityName, teamConfigured, selected, signals, step, preparationOpen, setPage, setSelected, setPreparationOpen, setGlobalSearch, setModal, openEntity, openPreparation, pins }: Props) {
   const context = { runtime: !!state.runtime, testData: state.snapshot?.source.isTestData !== false, ready: !!state.ready, teamConfigured };
@@ -43,7 +43,6 @@ export function Sidebar({ state, page, entityName, teamConfigured, selected, sig
     if (badge === 'overdue' && signals.overdue) return <span className="gx-badge" data-tone="danger" aria-hidden="true" title={signals.overdue + (signals.overdue === 1 ? ' tarea vencida' : ' tareas vencidas')}>{signals.overdue}</span>;
     if (badge === 'changes' && state.changes) return <span className="gx-badge" aria-hidden="true" title={state.changes + (state.changes === 1 ? ' cambio local' : ' cambios locales')}>{state.changes}</span>;
     if (badge === 'copy' && signals.copy) return <span className="gx-badge" data-tone={signals.copy.tone} aria-hidden="true" title={signals.copy.titles.join(' · ')}>{signals.copy.count}</span>;
-    if (badge === 'atRisk' && signals.atRisk) return <span className="gx-badge" data-tone="danger" aria-hidden="true" title={signals.atRisk + (signals.atRisk === 1 ? ' compromiso en riesgo' : ' compromisos en riesgo')}>{signals.atRisk}</span>;
     return null;
   };
   // Punto de preparación junto a «Continuidad»: el mismo veredicto que Inicio. Oculto al lector (ya lo lee en Inicio) para no cambiar el nombre del botón.
@@ -84,14 +83,12 @@ export function Sidebar({ state, page, entityName, teamConfigured, selected, sig
     </>;
   };
 
-  const main = groups.filter(group => group.id !== 'lab'), lab = groups.find(group => group.id === 'lab');
   return (
     <aside className="sidebar">
       <Brand />
       <button type="button" className="oc-search" disabled={!state.ready || !!selected} onClick={() => setGlobalSearch(true)}><Search size={16} /><span>Buscar en toda la copia</span></button>
       <nav aria-label="Navegación principal">
-        <div className="oc-nav-group" role="group" aria-label="Lugares">{main.map(group => <div key={group.id} className="gx-nav-place">{header(group)}</div>)}</div>
-        {lab ? <div className="oc-nav-group gx-nav-lab" role="group" aria-label="Laboratorio">{header(lab)}</div> : null}
+        <div className="oc-nav-group" role="group" aria-label="Lugares">{groups.map(group => <div key={group.id} className="gx-nav-place">{header(group)}</div>)}</div>
       </nav>
       {pins?.length ? <section className="sidebar-pins" aria-label="Fichas ancladas"><h2>Anclados</h2>{pins.map(pin => <button key={pin.key} type="button" title={pin.title} disabled={!!selected} onClick={pin.open}><Pin size={14} aria-hidden="true" /><span>{pin.label}</span></button>)}</section> : null}
       <div className="sidebar-bottom"><span>{state.snapshot?.name ?? 'Tu copia, en tu ordenador'}</span><small>Plan B · v{APP_VERSION}</small></div>

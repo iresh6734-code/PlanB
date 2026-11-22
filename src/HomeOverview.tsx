@@ -3,14 +3,12 @@ import { Check, CheckCircle2, Circle, Clock3, ShieldCheck } from 'lucide-react';
 import type { AppState } from '../shared/model.js';
 import type { ContinuityStatus } from '../shared/operations.js';
 import type { LocalOperations as Operations } from '../shared/local-operations.js';
-import type { CommitmentSummary } from '../shared/commitments.js';
 import { api } from './api.js';
 import { Modal } from './components.js';
 import { Skeleton } from './ui/index.js';
 import { QualityPanel } from './app-shell/QualityPanel.js';
 import type { CrmRecord } from '../shared/model.js';
 import { loadLocalOperations } from './local-operations-client.js';
-import { loadCommitments, loadRadarCapability } from './commitment-radar-client.js';
 import { daysLate, dueLabel, splitTaskLabel, taskChip } from './task-display.js';
 import { continuityAlerts, type AlertTarget } from './app-shell/continuity-alerts.js';
 import { READINESS_ALERTS, readinessDetailFor, type NextActionId } from './app-shell/continuity-insights.js';
@@ -19,18 +17,16 @@ import { anyDrillPassed, firstRunPlan } from './app-shell/first-run.js';
 import { CoolingCard, PipelineCard } from './app-shell/lazy-pages.js';
 import { captureRecordCount, describeCapture, workspaceCopy } from './app-shell/workspace-copy.js';
 
-/** INICIO · «puesto de mando» (misión maestra B4.1, 21/11/2026). Solo LEE: estado de la copia, tareas de Hoy y, con datos de
- *  prueba, el Radar para el aviso del menú. No captura, no decide ni escribe nada; cada acción abre la página que ya la hace.
+/** INICIO · «puesto de mando» (misión maestra B4.1, 21/11/2026). Solo LEE: estado de la copia y tareas de Hoy. No captura, no decide ni escribe nada; cada acción abre la página que ya la hace.
  *  Tres zonas y cada dato una sola vez: el siguiente paso de trabajo, la columna de trabajo (prioridades, oportunidades y
  *  clientes que se enfrían) y el riel de la copia con el ÍNDICE DE PREPARACIÓN único. Lo que antes repetía estas cifras
- *  (parte de la mañana, la semana en una línea, sello, tira de primeros pasos y tarjeta del Radar) vive en su apartado.
+ *  (parte de la mañana, la semana en una línea, sello y tira de primeros pasos) vive en su apartado.
  *  Lo que no se puede leer se muestra como «—» con su motivo, nunca como cero. */
 type Props = {
   state: AppState; contextRevision: string | null;
-  onOpenToday: () => void; onOpenTask: (taskId: string) => void; onOpenRadar: () => void; onRehearse: (commitmentId: string) => void;
-  onOpenDateCheck: () => void; onOpenContinuity: () => void; onOpenChanges: () => void;
+  onOpenToday: () => void; onOpenTask: (taskId: string) => void; onOpenContinuity: () => void; onOpenChanges: () => void;
   /** Recuentos ya leídos aquí, para los avisos del menú. null = sin dato (nunca cero). */
-  onSignals?: (signals: { overdue: number | null; atRisk: number | null }) => void;
+  onSignals?: (signals: { overdue: number | null }) => void;
   /** Abre la ficha de un registro (avisos de calidad de los datos). */
   onOpenRecord?: (record: CrmRecord) => void;
   /** Una fusión de duplicados cambió la copia: la App vuelve a leer su estado (cambios pendientes). */
@@ -45,15 +41,11 @@ type Props = {
   onProtect?: () => void; onPrepare?: () => void;
   /** Primeros pasos: abrir el pasaporte (Continuidad › Evidencia). */
   onOpenPassport?: () => void;
-  /** El Laboratorio (Radar) solo existe con datos de prueba: sin él, Inicio no lee el Radar. */
-  lab?: boolean;
 };
-type Radar = { state: 'loading' } | { state: 'off'; reason: string } | { state: 'ready'; items: CommitmentSummary[] };
 
-export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, onRehearse, onOpenContinuity, onOpenChanges, onSignals, onOpenRecord, onDataChanged, onOpenDeals, onContinuityStatus, onOpenAlert, onProtect, onPrepare, onOpenPassport, lab = true }: Props) {
+export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, onOpenContinuity, onOpenChanges, onSignals, onOpenRecord, onDataChanged, onOpenDeals, onContinuityStatus, onOpenAlert, onProtect, onPrepare, onOpenPassport }: Props) {
   const [ops, setOps] = useState<Operations | null>(null), [opsError, setOpsError] = useState('');
   const [status, setStatus] = useState<ContinuityStatus | null>(null);
-  const [radar, setRadar] = useState<Radar>({ state: 'loading' });
   const [report, setReport] = useState(false), [copied, setCopied] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
@@ -62,20 +54,6 @@ export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, 
     api<ContinuityStatus>('/v2/continuity').then(value => { if (!controller.signal.aborted) { setStatus(value); onContinuityStatus?.(value); } }).catch(() => undefined);
     return () => controller.abort();
   }, [state.runtime, state.snapshot?.capturedAt]);
-  // El Radar (Laboratorio, solo datos de prueba) ya no tiene tarjeta en Inicio: se lee para el aviso del menú, el siguiente
-  // paso cuando un compromiso está en riesgo y el resumen de la semana.
-  useEffect(() => {
-    const controller = new AbortController();
-    if (!lab) { setRadar({ state: 'off', reason: 'El Radar forma parte del Laboratorio y solo funciona con datos de prueba.' }); return () => controller.abort(); }
-    if (!contextRevision) { setRadar({ state: 'off', reason: 'La copia aún no tiene una referencia autorizada.' }); return () => controller.abort(); }
-    setRadar({ state: 'loading' });
-    loadRadarCapability(contextRevision, controller.signal).then(async capability => {
-      if (capability.status !== 'available') { setRadar({ state: 'off', reason: capability.status === 'not-initialized' ? 'El escenario de ensayo del Radar está sin activar.' : 'El Radar no está disponible en esta copia.' }); return; }
-      const list = await loadCommitments(contextRevision, controller.signal);
-      setRadar({ state: 'ready', items: list.items });
-    }).catch(() => { if (!controller.signal.aborted) setRadar({ state: 'off', reason: 'No se pudo leer el Radar.' }); });
-    return () => controller.abort();
-  }, [contextRevision, lab]);
 
   const now = new Date();
   const snapshot = state.snapshot;
@@ -88,9 +66,6 @@ export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, 
   const counts = ops?.counts ?? null;
   const urgent = ops?.tasks.filter(task => task.bucket === 'overdue' || task.bucket === 'due-in-window') ?? [];
   const oldest = ops ? ops.tasks.filter(task => task.bucket === 'overdue').reduce((max, task) => Math.max(max, daysLate(task.due, now) ?? 0), 0) : 0;
-  const open = radar.state === 'ready' ? radar.items.filter(item => item.status !== 'resolved') : [];
-  const atRisk = open.filter(item => item.status === 'at-risk'), unconfirmed = open.filter(item => item.status === 'unconfirmed');
-  const worst = atRisk.slice().sort((a, b) => a.dueAt.localeCompare(b.dueAt))[0];
   const today = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', weekday: 'long', day: 'numeric', month: 'long' }).format(now);
   const hour = Number(new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', hour: 'numeric', hour12: false }).format(now));
   const greeting = hour < 14 ? 'Buenos días' : hour < 21 ? 'Buenas tardes' : 'Buenas noches';
@@ -102,16 +77,15 @@ export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, 
   const firstSteps = firstRunPlan({ protectedAccess: status ? status.protected : null, hasCopy: !!snapshot || !!status?.captures.length, drillPassed: anyDrillPassed(status), passportSeen: passportSeen() });
   const firstActions = { onProtect, onPrepare, onTest: onOpenAlert ? () => onOpenAlert('estado') : undefined, onPassport: onOpenPassport, onOpenContinuity };
   const copyTone = !snapshot ? 'neutral' : stale || copyAlerts.length ? 'warn' : readiness?.level === 'ready' ? 'ok' : 'warn';
-  const overdueCount = counts ? counts.overdue : null, riskCount = radar.state === 'ready' ? atRisk.length : null;
-  useEffect(() => { onSignals?.({ overdue: overdueCount, atRisk: riskCount }); }, [overdueCount, riskCount]);
-  // «Tu siguiente paso»: una sola recomendación de TRABAJO, ordenada por lo que antes puede costarte algo: un compromiso en riesgo,
-  // lo vencido, la copia vieja y los cambios por revisar. La preparación (contraseña, prueba, copia fuera del PC) la dice el índice
+  const overdueCount = counts ? counts.overdue : null;
+  useEffect(() => { onSignals?.({ overdue: overdueCount }); }, [overdueCount]);
+  // «Tu siguiente paso»: una sola recomendación de TRABAJO, ordenada por lo que antes puede costarte algo: lo vencido,
+  // la copia vieja y los cambios por revisar. La preparación (contraseña, prueba, copia fuera del PC) la dice el índice
   // del riel con su propio botón, para no repetirla. Es una sugerencia calculada con lo leído, no una decisión.
   type Advice = { tone: 'danger' | 'warn' | 'ok'; title: string; detail: string; label: string; run: () => void; taskId?: string };
   const advice: Advice[] = [];
   const oldestTask = ops ? ops.tasks.filter(task => task.bucket === 'overdue').sort((a, b) => (daysLate(b.due, now) ?? 0) - (daysLate(a.due, now) ?? 0))[0] : undefined;
   if (!snapshot) advice.push({ tone: 'warn', title: 'Prepara tu primera copia', detail: 'Sin una copia no hay nada que consultar ni que probar.', label: 'Ir a Continuidad', run: onOpenContinuity });
-  if (worst) advice.push({ tone: 'danger', title: '«' + worst.title + '» está en riesgo', detail: 'Comprometido para el ' + new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(worst.dueAt)) + '. Ensaya la semana antes de dar otra fecha.', label: 'Ensayar mi semana', run: () => onRehearse(worst.id) });
   if (oldestTask && counts) advice.push({ tone: 'danger', title: 'Revisa «' + (oldestTask.label || 'Tarea sin título') + '»', detail: (counts.overdue === 1 ? 'Es tu única tarea vencida' : 'Es la más antigua de ' + counts.overdue + ' tareas vencidas') + (oldest > 0 ? ': lleva ' + oldest + (oldest === 1 ? ' día.' : ' días.') : '.'), label: 'Abrir la tarea', run: () => onOpenTask(oldestTask.id), taskId: oldestTask.id });
   if (stale) advice.push({
     tone: 'warn', title: latestIsDifferent ? 'Revisa la copia activa' : 'Actualiza tu copia',
@@ -149,7 +123,6 @@ export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, 
     'VENCIDO (' + week.overdue.length + ')', ...week.overdue.map(task => '- ' + taskLine(task)), '',
     'PRÓXIMAS 24 H (' + week.soon.length + ')', ...week.soon.map(task => '- ' + taskLine(task)), '',
     'PRÓXIMOS 7 DÍAS (' + week.later.length + ')', ...week.later.map(task => '- ' + taskLine(task)), '',
-    ...(radar.state === 'ready' ? ['COMPROMISOS DEL RADAR', ...atRisk.map(item => '- En riesgo: ' + item.title), ...unconfirmed.map(item => '- Sin confirmar: ' + item.title), ''] : []),
     'TU COPIA', copyLine].join('\n');
   const tally = !counts ? (opsError ? '' : 'Leyendo…') : [counts.overdue === 0 ? 'nada vencido' : counts.overdue + (counts.overdue === 1 ? ' vencida' : ' vencidas'), counts.upcoming ? counts.upcoming + ' en 24 h' : ''].filter(Boolean).join(' · ');
 
@@ -212,8 +185,6 @@ export function HomeOverview({ state, contextRevision, onOpenToday, onOpenTask, 
       <p className="fx-report-meta">{snapshot?.name ?? 'Plan B'} · {today}. Calculado con lo leído ahora de tu copia local.</p>
       {([['Vencido', week.overdue, 'danger'], ['Próximas 24 h', week.soon, 'warn'], ['Próximos 7 días', week.later, 'later']] as const).map(([title, list, tone]) => <section key={title} data-tone={tone}><h3>{title}<span>{list.length}</span></h3>
         {list.length ? <ul>{list.map(task => <li key={task.id}><span>{task.label || 'Tarea sin título'}</span><time>{dueLabel(task.due, task.dueKind, now)}</time></li>)}</ul> : <p>Nada.</p>}</section>)}
-      {radar.state === 'ready' ? <section data-tone="danger"><h3>Compromisos del Radar<span>{atRisk.length + unconfirmed.length}</span></h3>
-        {atRisk.length + unconfirmed.length ? <ul>{atRisk.map(item => <li key={item.id}><span>{item.title}</span><time>En riesgo</time></li>)}{unconfirmed.map(item => <li key={item.id}><span>{item.title}</span><time>Sin confirmar</time></li>)}</ul> : <p>Ninguno en riesgo ni sin confirmar.</p>}</section> : null}
       <section><h3>Tu copia</h3><p>{copyLine}</p></section>
       <div className="fx-report-actions"><button type="button" className="button primary" onClick={() => window.print()}>Imprimir</button>
         <button type="button" className="button secondary" onClick={() => { void navigator.clipboard?.writeText(reportText()).then(() => setCopied(true)).catch(() => setCopied(false)); }}>Copiar como texto</button>

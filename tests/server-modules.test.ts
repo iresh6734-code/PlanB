@@ -19,7 +19,7 @@ test('los dos puntos de entrada montan el registro y conservan el montaje litera
     const code = fs.readFileSync(entry, 'utf8');
     assert.equal(code.split('mountSharedModules(app, store);').length, 2, entry + ': una sola llamada al registro');
     assert.equal(code.split('registerTaskIntents(app, store);').length, 2, entry + ': la prueba 318 instrumenta esta llamada literal');
-    for (const module of ['continuity-evidence-api', 'commitment-radar-mount', 'operational-rehearsal-mount', 'date-check-mount', 'date-check-review-mount', 'work-summary-api']) {
+    for (const module of ['continuity-evidence-api', 'work-summary-api']) {
       assert.ok(!code.includes("'./" + module + ".js'"), entry + ' ya no importa ' + module + ' directamente');
     }
   }
@@ -35,5 +35,5 @@ test('el paquete portátil compilado sigue sin generador, proveedores, conectore
   for (const file of ['server/generator.ts', 'server/provider.ts', 'server/hubspot.ts', 'server/copy-inspection.ts', 'server/team-sync.ts', 'server/relay-rehearsal-mount.ts']) {
     assert.ok(!inputs.some(p => p.endsWith(file)), 'el portátil no incluye ' + file);
   }
-  for (const file of ['server/modules.ts', 'server/date-check-mount.ts', 'server/work-summary-api.ts']) assert.ok(inputs.some(p => p.endsWith(file)), 'sí incluye ' + file);
+  for (const file of ['server/modules.ts', 'server/continuity-evidence-api.ts', 'server/work-summary-api.ts']) assert.ok(inputs.some(p => p.endsWith(file)), 'sí incluye ' + file);
 });

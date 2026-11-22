@@ -175,6 +175,82 @@ Sin servidores, navegador, PowerShell, DPAPI, red ni datos reales. Dueño provis
 
 **Sigue abierto (decide la usuaria):** destinos de cada parte (motor, congelado, aparcado o fuera), coordinador y dueños de carpetas, y sacar las carpetas de instalaciones del repositorio. Sin eso, la salida de la fase 0 «un solo producto en el menú» no está hecha.
 
+### Decisiones de la usuaria · 22/11/2026, 22:12 Europe/Madrid
+
+- **Destinos:** confirma los cuatro tal como están en el plan, también aparcar la aplicación de equipos.
+- **Coordinador:** GitHub Copilot, este agente.
+- **Carpetas de instalaciones:** las saca ella del repositorio. Los agentes no las tocan.
+
+### Reserva · aparcar · antes de editar
+
+22/11/2026, 22:14 Europe/Madrid. Lo aparcado se guarda en la rama `archivo/aparcado-2026-11-22` (subida, en `8920810`) y sale de `planb-v0.3-local`: del menú, de las rutas, del servidor y de la compilación. Nada se pierde: se recupera con `git checkout archivo/aparcado-2026-11-22 -- <ruta>`.
+
+Va por tandas, con un commit cada una. Cada tanda se comprueba con `tsc`, las pruebas seguras afectadas y la poda de CSS:
+
+1. **Laboratorio:** Radar, Comprobar fecha (con «Revisar una decisión»), ¿Y si cae…? y Ensayar mi semana.
+   - Se tocan `App.tsx`, `HomeOverview.tsx`, `app-shell/navigation.ts`, `routes.ts`, `session.ts`, `lazy-pages.tsx`, `Sidebar.tsx`, `useShortcuts.ts` y `server/modules.ts`.
+   - Se quitan los componentes, los clientes, los montajes, los módulos compartidos propios, su CSS y sus pruebas.
+   - **Se queda** `shared/continuity-lab.ts`, porque lo usa la evidencia de Continuidad.
+2. **Aplicación de equipos:** `server/team/`, las pantallas `Team*`, la copia de equipo y los scripts del piloto de Google y del alias, con su compilación en `package.json`.
+3. **IA local:** el proveedor de IA y lo que solo él usa.
+
+Lo congelado (el CRM local: Clientes, Hoy, Agenda, Continuidad, Cambios, Exportar, devolución, sala y cápsula de rescate, con sus ensayos de relevo y vuelta) no se toca, salvo para quitarle enlaces a lo aparcado.
+
+### Hecho · tanda 1 · Laboratorio aparcado · 22/11/2026
+
+**Qué sale de la App local.** Sale el grupo «Laboratorio» del menú, con:
+
+- Radar;
+- Comprobar fecha;
+- ¿Y si cae…?;
+- la entrada «Ensayar mi semana» de Hoy.
+
+También salen:
+
+- sus rutas `/laboratorio/*`;
+- los atajos G R y G F y sus tres órdenes de la paleta;
+- en Inicio: la lectura del Radar, el aviso de compromisos en riesgo del menú, el consejo «Ensayar mi semana» y la sección del Radar del resumen semanal;
+- los cuatro montajes del servidor: Radar, ensayo, fecha y revisión.
+
+Un apartado o una dirección guardados de antes abren Inicio, porque `session.ts` y `routes.ts` ya no los reconocen.
+
+**Qué se borró.**
+
+- 9 componentes, 5 clientes y 5 hojas de estilo.
+- 27 módulos `shared/` y `server/` (compromisos, fecha y operacional). Antes de borrarlos se comprobó que no los importa nada fuera de las pruebas.
+- La demo aislada `design/continuity-lab` y `scripts/demo-continuity-lab.ts`.
+- 26 pruebas unitarias, 2 oráculos y 23 pruebas de navegador del Laboratorio. Las pruebas no se ejecutaron aquí.
+- 137 selectores de CSS sin uso: 13,3 KB.
+
+**Qué se queda.**
+
+- `shared/continuity-lab.ts`, con su prueba `continuity-lab.test.ts`.
+- `shared/commitments.ts`, porque lo usan los lectores de Pipedrive y Zendesk.
+- El «radar» de Continuidad › Operaciones, que es la cola de respuesta y no el Laboratorio.
+
+**Medida del menú.**
+
+| Menú | Grupos antes | Entradas antes | Grupos ahora | Entradas ahora |
+|---|---|---|---|---|
+| Con datos de prueba | 6 | 17 | 5 | 14 |
+| Con datos reales | 5 | 13 | 5 | 13 (sin cambios) |
+
+La paleta tiene 3 órdenes menos y la ayuda de atajos 2 líneas menos.
+
+**Ajustes en pruebas y herramientas.**
+
+- Pruebas: `navigation-model` (cinco lugares con o sin datos de prueba), `server-modules`, `api-inventory` y `navigation-group-header`.
+- `tools/ci/known-failures.json`: de 20 entradas a 11, porque se quitan las de pruebas borradas.
+- `tests/color-guard-baseline.json`: 5 hojas menos; además `faro.css` baja de 103 a 98 colores fijos y `styles.css` de 100 a 96.
+- `tools/visual/composition.mts` y `check.mts` ya no recorren el Laboratorio.
+
+**Cómo se comprueba.**
+
+- `npx tsc --noEmit -p tsconfig.json` termina con 0 errores.
+- Con `NODE_ENV=test`, `node tools/safe-tests.mjs verifica orphan-components css-unused color-guard design-tokens dev-only-files navigation-model navigation-group-header url-routes server-modules record-sheet continuity-lab` pasa 18 de 18 archivos. `api-inventory` no corre aquí, porque abre procesos.
+- `node tools/css-unused.mjs` da 0 selectores muertos.
+- Para recuperar algo: `git checkout archivo/aparcado-2026-11-22 -- <ruta>`.
+
 ## Verifica · Fase 1 · GitHub Copilot
 
 ### Reserva · antes de editar
@@ -534,9 +610,9 @@ Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
 
 **Decide la usuaria**
 
-- [ ] Destinos de cada parte: motor, congelado, aparcado o fuera. Es la salida de la fase 0.
-- [ ] Qué agente coordina y quién es dueño de cada carpeta.
-- [ ] Mover las 11 carpetas `planb-local-*` y `planb-hubspot-*` fuera del repositorio.
+- [x] ~~Destinos de cada parte: motor, congelado, aparcado o fuera~~: confirmados el 22/11/2026 tal como están en el plan. Se aparcan por tandas; la 1 (Laboratorio) está hecha, faltan la 2 (aplicación de equipos) y la 3 (IA local).
+- [x] ~~Qué agente coordina y quién es dueño de cada carpeta~~: coordina GitHub Copilot (22/11/2026).
+- [ ] Mover las 11 carpetas `planb-local-*` y `planb-hubspot-*` fuera del repositorio. Lo hace la usuaria; los agentes no las tocan.
 - [ ] A6 y A7 del relevo anterior. Con Verifica, A6 pierde sentido y A7 gana importancia.
 - [ ] *(nuevo, fase 2)* ¿Firma digital del informe? Hoy la huella prueba que no se ha tocado, pero no quién lo emitió. Opciones: firma de Plan B Verifica como tercero, firma del vendedor, o solo el contrato citando las huellas.
 - [ ] *(nuevo, fase 2)* Quién genera la copia y la llave y cómo se entregan: en mano, por un canal distinto del informe, o depositadas ante notario.
@@ -589,6 +665,7 @@ Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
 - [x] ~~Fase 4 · Después del cierre~~: hecha el 22/11/2026 con la empresa migrada. Falta lo marcado «fase 4» en las listas de arriba.
 - [ ] *(nuevo, fase 4)* Lector del CRM del comprador: hoy el destino tiene que llegar ya como exportación de migración o como captura de Verifica. El primero, probablemente Pipedrive, junto con su historial (ya pendiente arriba).
 - [ ] *(nuevo, fase 4)* Sellar la captura del cierre en una copia custodiada, como el informe de la fase 2, para que el informe de equivalencia se pueda rehacer meses después.
+- [ ] *(nuevo, fase 0)* Los lectores de Pipedrive y Zendesk (`shared/` y `server/` `source-reading*`, `pipedrive-source`, `zendesk-source`, `src/SourceReadingHistory.tsx` y `SourceStatusRow.tsx`) ya no estaban conectados a nada antes de aparcar el Laboratorio. Se quedan porque pueden servir de lector del CRM del comprador (fase 4). Decidir: adaptarlos a Verifica o aparcarlos también.
 - [ ] Fase 5 · Salir a vender. **Preparada el 22/11/2026:** las cinco pruebas en `scripts/verifica-pruebas.ts` (pasan las fases 1 a 4; la 0 está pendiente) y `docs/verifica-salir-a-vender.md`. Queda abierta hasta la primera conversación con alguien de fuera, que no se tiene antes de cerrar la lista de la sección 1 de ese documento.
 
 ## Pendiente para el agente del otro ordenador

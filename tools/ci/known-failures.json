@@ -1,6 +1,6 @@
 {
   "description": "Fallos conocidos de la batería unitaria con NODE_ENV=test. Cada uno con causa y responsable; se retira en cuanto pasa. Ver tools/ci/README.md.",
-  "updated": "2026-11-17",
+  "updated": "2026-11-22",
   "failures": [
     {
       "file": "tests/continuity-evidence-mount.test.ts",
@@ -8,60 +8,6 @@
       "cause": "Arranca el servidor completo como proceso propio y espera respuesta con un plazo fijo; con la batería entera en marcha a veces no responde a tiempo («El servidor propio no respondió»). Aislada pasa (14/11).",
       "owner": "Codex (prueba de CODEX-CONTINUITY-EVIDENCE-MOUNT-239)",
       "flaky": true
-    },
-    {
-      "file": "tests/date-check-decision-independent-339.test.ts",
-      "name": "339 · el ID de alternativa debe corresponder a las ofertas exactas de la decisión",
-      "cause": "Sonda independiente de CODEX-OPUS-DECISION-REVIEW-339 que documenta defectos abiertos en «Revisar una decisión»; queda roja a propósito hasta que se corrijan.",
-      "owner": "Sesión Opus (CLAUDE-OPUS-DATE-CHECK-REVIEW, devuelta por Codex)"
-    },
-    {
-      "file": "tests/date-check-decision-independent-339.test.ts",
-      "name": "339 · un acta de otra solicitud no sustituye el acta de la instalación revisada",
-      "cause": "Sonda independiente de CODEX-OPUS-DECISION-REVIEW-339 que documenta defectos abiertos en «Revisar una decisión»; queda roja a propósito hasta que se corrijan.",
-      "owner": "Sesión Opus (CLAUDE-OPUS-DATE-CHECK-REVIEW, devuelta por Codex)"
-    },
-    {
-      "file": "tests/date-check-decision-independent-339.test.ts",
-      "name": "339 · una proyección no probada conserva el retraso observado sin dar por acreditada su atribución",
-      "cause": "Sonda independiente de CODEX-OPUS-DECISION-REVIEW-339 que documenta defectos abiertos en «Revisar una decisión»; queda roja a propósito hasta que se corrijan.",
-      "owner": "Sesión Opus (CLAUDE-OPUS-DATE-CHECK-REVIEW, devuelta por Codex)"
-    },
-    {
-      "file": "tests/date-check-decision-independent-339.test.ts",
-      "name": "339 · una terminación observada sin fecha ofrecida no acredita incumplimiento",
-      "cause": "Sonda independiente de CODEX-OPUS-DECISION-REVIEW-339 que documenta defectos abiertos en «Revisar una decisión»; queda roja a propósito hasta que se corrijan.",
-      "owner": "Sesión Opus (CLAUDE-OPUS-DATE-CHECK-REVIEW, devuelta por Codex)"
-    },
-    {
-      "file": "tests/independent-continuity-lab.test.ts",
-      "name": "099 new capture must not collide with an already present foreign evidence generation",
-      "cause": "Sonda independiente de CODEX-LAB-REVIEW-099 sobre la identidad de captura del laboratorio de continuidad; documenta un defecto abierto de shared/continuity-lab.ts.",
-      "owner": "Codex (CODEX-LAB-035)"
-    },
-    {
-      "file": "tests/independent-continuity-lab.test.ts",
-      "name": "099 valid opaque IDs with a large numeric suffix must still produce a different capture identity",
-      "cause": "Sonda independiente de CODEX-LAB-REVIEW-099 sobre la identidad de captura del laboratorio de continuidad; documenta un defecto abierto de shared/continuity-lab.ts.",
-      "owner": "Codex (CODEX-LAB-035)"
-    },
-    {
-      "file": "tests/operational-date-check-independent-337.test.ts",
-      "name": "337 · cancelar después de las alternativas impide certificar la matriz de escenarios",
-      "cause": "Sonda independiente de CODEX-OPUS-DATE-CHECK-CORE-REVIEW-337 que documenta defectos abiertos del motor de «Comprobar una fecha»; queda roja a propósito hasta que se corrijan.",
-      "owner": "Sesión Opus (CLAUDE-OPUS-DATE-CHECK-CORE, devuelta por Codex)"
-    },
-    {
-      "file": "tests/operational-date-check-independent-337.test.ts",
-      "name": "337 · la baja de un técnico no puede conservar dos protecciones que exigen 140 minutos con 120 de capacidad",
-      "cause": "Sonda independiente de CODEX-OPUS-DATE-CHECK-CORE-REVIEW-337 que documenta defectos abiertos del motor de «Comprobar una fecha»; queda roja a propósito hasta que se corrijan.",
-      "owner": "Sesión Opus (CLAUDE-OPUS-DATE-CHECK-CORE, devuelta por Codex)"
-    },
-    {
-      "file": "tests/operational-date-check-independent-337.test.ts",
-      "name": "337 · una instalación de 35 minutos no cabe en una ventana de 30 aunque la fecha pedida sea posterior",
-      "cause": "Sonda independiente de CODEX-OPUS-DATE-CHECK-CORE-REVIEW-337 que documenta defectos abiertos del motor de «Comprobar una fecha»; queda roja a propósito hasta que se corrijan.",
-      "owner": "Sesión Opus (CLAUDE-OPUS-DATE-CHECK-CORE, devuelta por Codex)"
     },
     {
       "file": "tests/rescue-capsule-integrity.test.ts",

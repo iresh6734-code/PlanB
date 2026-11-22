@@ -14,7 +14,7 @@ const tag = process.argv[2] ?? 'antes';
 const sizes = (process.argv[3] ?? '1440x900,1366x768,390x844').split(',').map(s => s.split('x').map(Number) as [number, number]);
 const ALL = ['/inicio', '/hoy', '/hoy/semana', '/hoy/agenda', '/hoy/propuestas', '/clientes', '/empresas', '/oportunidades', '/tareas',
   '/continuidad', '/continuidad/cambios', '/continuidad/exportar', '/continuidad/equipo', '/ajustes/integraciones', '/ajustes/preparacion',
-  '/ajustes/plan', '/laboratorio/radar', '/laboratorio/fecha', '/laboratorio/caidas'];
+  '/ajustes/plan'];
 const routes = process.argv[4] ? process.argv[4].split(',') : ALL;
 const base = process.env.MISION_URL ?? 'http://127.0.0.1:4572';
 const outDir = join(process.env.MISION_OUT ?? 'tests/.tmp/mision/shots', tag);

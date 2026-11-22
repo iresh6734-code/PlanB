@@ -1,24 +1,20 @@
-// CLAUDE-UI-NAV-LAB · Menú en cinco lugares y Laboratorio solo con datos de prueba.
+// Menú en cinco lugares. El Laboratorio se aparcó el 22/11/2026 (fase 0 de Verifica).
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { LAB_PAGES, fallbackPage, groupOfPage, itemActive, labVisible, navigationGroups, type NavContext } from '../src/app-shell/navigation.js';
+import { fallbackPage, groupOfPage, itemActive, navigationGroups, type NavContext } from '../src/app-shell/navigation.js';
 import { PAGES } from '../src/app-shell/session.js';
 
 const ctx = (over: Partial<NavContext> = {}): NavContext => ({ runtime: false, testData: true, ready: true, ...over });
 const ids = (context: NavContext) => navigationGroups(context).map(g => g.id);
 const allItems = (context: NavContext) => navigationGroups(context).flatMap(g => g.items.map(i => i.id));
 
-test('cinco lugares de primer nivel; el Laboratorio aparte y solo con datos de prueba', () => {
-  assert.deepEqual(ids(ctx()), ['home', 'today', 'clients', 'continuity', 'settings', 'lab']);
-  assert.deepEqual(ids(ctx({ testData: false })), ['home', 'today', 'clients', 'continuity', 'settings']);
-  assert.ok(navigationGroups(ctx()).filter(g => g.id !== 'lab').length <= 5);
-  assert.equal(labVisible({ testData: false }), false);
+test('cinco lugares de primer nivel y ningún Laboratorio, con datos de prueba o reales', () => {
+  for (const testData of [true, false]) assert.deepEqual(ids(ctx({ testData })), ['home', 'today', 'clients', 'continuity', 'settings']);
+  for (const page of ['radar', 'date-check', 'outage-lab']) assert.ok(!(PAGES as readonly string[]).includes(page), page);
 });
 
-test('con datos reales ninguna entrada lleva al Laboratorio ni al proveedor de IA', () => {
-  const items = allItems(ctx({ testData: false }));
-  for (const page of LAB_PAGES) assert.ok(!items.includes(page), page);
-  assert.ok(!items.includes('provider'));
+test('con datos reales no se ofrece el proveedor de IA', () => {
+  assert.ok(!allItems(ctx({ testData: false })).includes('provider'));
   assert.ok(allItems(ctx()).includes('provider'), 'con datos de prueba sí se ofrece');
 });
 
@@ -43,20 +39,8 @@ test('cada apartado de la App pertenece a un grupo, y el grupo existe cuando el 
 });
 
 test('un apartado recordado que ya no existe en esta copia vuelve a Inicio', () => {
-  assert.equal(fallbackPage('radar', ctx({ testData: false })), 'home');
-  assert.equal(fallbackPage('date-check', ctx({ testData: false })), 'home');
-  assert.equal(fallbackPage('outage-lab', ctx({ testData: false })), 'home');
-  assert.equal(fallbackPage('radar', ctx()), null);
   assert.equal(fallbackPage('today', ctx({ runtime: true })), 'home');
   assert.equal(fallbackPage('changes', ctx({ runtime: true })), null);
-});
-
-test('E1: «¿Y si cae…?» vive en el Laboratorio y no necesita copia activa', () => {
-  const lab = navigationGroups(ctx({ ready: false })).find(g => g.id === 'lab')!;
-  const item = lab.items.find(i => i.id === 'outage-lab')!;
-  assert.deepEqual(item.target, { kind: 'page', page: 'outage-lab' });
-  assert.notEqual(item.needsReady, true, 'solo usa casos ficticios');
-  assert.equal(groupOfPage('outage-lab'), 'lab');
 });
 
 test('una entrada de registros solo está activa con su tipo abierto', () => {

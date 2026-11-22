@@ -23,11 +23,6 @@ export const PortableExport = deferred(() => import('../PortableExport.js').then
 export const LocalIntegrations = deferred(() => import('../LocalIntegrations.js').then(m => m.LocalIntegrations), 'Abriendo Integraciones…');
 export const TeamSync = deferred(() => import('../TeamSync.js').then(m => m.TeamSync), 'Abriendo la copia de equipo…');
 export const LicensePanel = deferred(() => import('../LicensePanel.js').then(m => m.LicensePanel), 'Abriendo tu plan…');
-export const RadarHost = deferred(() => import('../RadarHost.js').then(m => m.RadarHost), 'Abriendo el Radar…');
-export const OperationalRehearsal = deferred(() => import('../OperationalRehearsal.js').then(m => m.OperationalRehearsal), 'Abriendo el ensayo…');
-export const DateCheck = deferred(() => import('../DateCheck.js').then(m => m.DateCheck), 'Abriendo Comprobar una fecha…');
-export const OutageLab = deferred(() => import('../OutageLab.js').then(m => m.OutageLab), 'Abriendo el laboratorio de caídas…');
-export const DecisionReview = deferred(() => import('../DecisionReview.js').then(m => m.DecisionReview), 'Abriendo las decisiones…');
 export const Settings = deferred(() => import('../Settings.js').then(m => m.Settings), 'Abriendo los ajustes…');
 export const WeeklyReview = deferred(() => import('./WeeklyReview.js').then(m => m.WeeklyReview), 'Abriendo la revisión semanal…');
 export const Agenda = deferred(() => import('./Agenda.js').then(m => m.Agenda), 'Abriendo la agenda…');

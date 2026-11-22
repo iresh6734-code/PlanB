@@ -1,30 +1,24 @@
-// Navegación de la App local en cinco lugares más el Laboratorio (CLAUDE-UI-NAV-LAB, decisión del usuario del 17/11/2026).
+// Navegación de la App local en cinco lugares. El Laboratorio se aparcó el 22/11/2026 (rama archivo/aparcado-2026-11-22).
 // Lógica pura: qué grupos y entradas se ven y a qué grupo pertenece cada apartado. Sin React ni CSS, para poder probarla.
 import type { EntityName } from '../../shared/model.js';
 import type { PageId } from './session.js';
 
-export type GroupId = 'home' | 'today' | 'clients' | 'continuity' | 'settings' | 'lab';
+export type GroupId = 'home' | 'today' | 'clients' | 'continuity' | 'settings';
 
 /** Destino de una entrada: un apartado, un tipo de registro, la ventana del proveedor de IA o la preparación. */
 export type NavTarget = { kind: 'page'; page: PageId } | { kind: 'entity'; entity: EntityName } | { kind: 'settings' } | { kind: 'prepare' };
 
-export type NavItem = { id: string; label: string; target: NavTarget; badge?: 'overdue' | 'changes' | 'copy' | 'atRisk'; needsReady?: boolean };
+export type NavItem = { id: string; label: string; target: NavTarget; badge?: 'overdue' | 'changes' | 'copy'; needsReady?: boolean };
 export type NavGroup = { id: GroupId; label: string; target: NavTarget; items: NavItem[]; badge?: NavItem['badge']; needsReady?: boolean };
 
 export type NavContext = {
   /** Copia independiente (paquete portátil): sin Hoy, Agentes, Integraciones, copia de equipo ni preparación. */ runtime: boolean;
-  /** La copia activa es de datos de prueba: solo entonces existe el Laboratorio y se ofrece el proveedor de IA. */ testData: boolean;
+  /** La copia activa es de datos de prueba: solo entonces se ofrece el proveedor de IA. */ testData: boolean;
   /** Hay copia con datos, reglas y aplicación activadas. */ ready: boolean;
   /** El servidor local ya ha comunicado un origen de equipo configurado. */ teamConfigured?: boolean;
 };
 
-/** El Laboratorio (Radar y «Comprobar una fecha») solo funciona con una copia de datos de prueba: el servidor rechaza cualquier otra. */
-export const labVisible = (context: Pick<NavContext, 'testData'>) => context.testData;
-
-/** Apartados que pertenecen al Laboratorio. */
-export const LAB_PAGES: readonly PageId[] = ['radar', 'date-check', 'outage-lab'];
-
-/** Grupos visibles, en orden. Como máximo cinco más el Laboratorio. */
+/** Grupos visibles, en orden. Como máximo cinco. */
 export function navigationGroups(context: NavContext): NavGroup[] {
   const groups: NavGroup[] = [{ id: 'home', label: 'Inicio', target: { kind: 'page', page: 'home' }, items: [] }];
   if (!context.runtime) groups.push({ id: 'today', label: 'Hoy', target: { kind: 'page', page: 'today' }, badge: 'overdue', items: [
@@ -51,12 +45,6 @@ export function navigationGroups(context: NavContext): NavGroup[] {
     ...(!context.runtime ? [{ id: 'plan', label: 'Plan y licencia', target: { kind: 'page', page: 'plan' } } satisfies NavItem] : []),
   ];
   if (settings.length) groups.push({ id: 'settings', label: 'Ajustes', target: settings[0].target, items: settings });
-  if (labVisible(context)) groups.push({ id: 'lab', label: 'Laboratorio', target: { kind: 'page', page: 'radar' }, badge: 'atRisk', needsReady: true, items: [
-    { id: 'radar', label: 'Radar', target: { kind: 'page', page: 'radar' }, badge: 'atRisk', needsReady: true },
-    { id: 'date-check', label: 'Comprobar fecha', target: { kind: 'page', page: 'date-check' }, needsReady: true },
-    // Solo casos ficticios en el navegador: no necesita copia activa.
-    { id: 'outage-lab', label: '¿Y si cae…?', target: { kind: 'page', page: 'outage-lab' } },
-  ] });
   return groups;
 }
 
@@ -68,7 +56,6 @@ export function groupOfPage(page: PageId): GroupId {
     case 'workspace': return 'clients';
     case 'continuity': case 'changes': case 'export': case 'team-sync': case 'prepare': return 'continuity';
     case 'integrations': case 'plan': return 'settings';
-    case 'radar': case 'date-check': case 'outage-lab': return 'lab';
   }
 }
 
@@ -91,11 +78,10 @@ export function itemActive(item: NavItem, page: PageId, entity: EntityName): boo
 }
 
 /**
- * Apartado al que hay que ir si el recordado ya no existe en esta copia: el Laboratorio sin datos de prueba, o
- * Hoy, Propuestas, Integraciones y copia de equipo en una copia independiente. null = el apartado sirve.
+ * Apartado al que hay que ir si el recordado ya no existe en esta copia: Hoy, Propuestas, Integraciones y copia de
+ * equipo en una copia independiente. null = el apartado sirve.
  */
 export function fallbackPage(page: PageId, context: NavContext): PageId | null {
-  if (LAB_PAGES.includes(page) && !labVisible(context)) return 'home';
   if (context.runtime && (page === 'today' || page === 'week' || page === 'agenda' || page === 'agents' || page === 'integrations' || page === 'team-sync' || page === 'plan')) return 'home';
   return null;
 }

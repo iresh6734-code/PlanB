@@ -4,6 +4,10 @@
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
 
+## Verifica · Fase 0 · Laboratorio aparcado · 22/11/2026, Europe/Madrid
+
+El Laboratorio sale de la App local: Radar, Comprobar fecha, ¿Y si cae…? y Ensayar mi semana. Se guarda en la rama `archivo/aparcado-2026-11-22`. Las menciones al Laboratorio, al Radar y a sus archivos que hay más abajo describen sus fechas y ya no corresponden a código de esta rama. Detalle y comprobación en `docs/mision/registro-colaboracion.md`, «Hecho · tanda 1».
+
 ## Misión maestra · A0-L Código sin montar · 21/11/2026, Europe/Madrid
 
 Inventario de consumidores anotado en el registro antes de editar.

@@ -1,18 +1,13 @@
 {
   "commercial-email.css": 2,
-  "commitment-radar.css": 36,
   "continuity-day.css": 2,
-  "continuity-lab.css": 6,
-  "date-check.css": 35,
-  "decision-review.css": 16,
   "design-system.css": 28,
-  "faro.css": 103,
+  "faro.css": 98,
   "landing/story.css": 27,
   "landing/styles.css": 20,
-  "operational-rehearsal.css": 32,
   "planb-ui.css": 6,
   "rescue-capsule.css": 10,
   "rescue-room.css": 15,
   "sales.css": 5,
-  "styles.css": 100
+  "styles.css": 96
 }

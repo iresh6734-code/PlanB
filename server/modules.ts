@@ -9,22 +9,12 @@
 import type { FastifyInstance } from 'fastify';
 import type { Store } from './store.js';
 import { registerContinuityEvidenceApi } from './continuity-evidence-api.js';
-import { mountCommitmentRadar } from './commitment-radar-mount.js';
-import { mountOperationalRehearsal } from './operational-rehearsal-mount.js';
-import { mountDateCheck } from './date-check-mount.js';
-import { mountDateCheckReview } from './date-check-review-mount.js';
 import { registerWorkSummaryApi } from './work-summary-api.js';
 
 export type SharedModule = { id: string; why: string; mount: (app: FastifyInstance, store: Store) => void };
 
 export const SHARED_MODULES: readonly SharedModule[] = [
   { id: 'continuity-evidence', why: 'Evidencia de continuidad local', mount: registerContinuityEvidenceApi },
-  // Radar de compromisos y «Ensayar mi semana»: solo ficción, exigen copia de ensayo activa y no llaman a ningún proveedor.
-  { id: 'commitment-radar', why: 'Laboratorio · Radar', mount: mountCommitmentRadar },
-  { id: 'operational-rehearsal', why: 'Laboratorio · Ensayar mi semana', mount: mountOperationalRehearsal },
-  // «Comprobar una fecha» y «Revisar una decisión»: solo ficción, exigen copia de ensayo activa y no llaman a ningún proveedor.
-  { id: 'date-check', why: 'Laboratorio · Comprobar una fecha', mount: mountDateCheck },
-  { id: 'date-check-review', why: 'Laboratorio · Revisar una decisión', mount: mountDateCheckReview },
   // El resumen de trabajo sigue sin acreditar hasta que la copia activa tenga cobertura A4 verificada.
   { id: 'work-summary', why: 'Resumen de trabajo (sin acreditar)', mount: (app, store) => registerWorkSummaryApi(app, store, { covers: () => false }) },
 ];

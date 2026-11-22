@@ -13,7 +13,7 @@ const { app, store } = await createBaseApp({
   root, staticDir: join(root, 'dist'), runtime: true, taskRevisions: true
 });
 registerTaskIntents(app, store);
-// Módulos compartidos con la App portátil (evidencia, Laboratorio, resumen de trabajo): ver server/modules.ts.
+// Módulos compartidos con la App portátil (evidencia y resumen de trabajo): ver server/modules.ts.
 mountSharedModules(app, store);
 // Preserve damaged return evidence; never replace it automatically with the package seed.
 if (!store.snapshot && store.recoveryIntegrity().state!=='invalid') {

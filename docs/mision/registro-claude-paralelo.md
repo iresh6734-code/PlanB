@@ -151,3 +151,24 @@ Comprobado en el ensayo con la captura de «Agencia Norte». `tsc` sin errores; 
   - Una mutación (sin la puerta en `begin`) hace fallar la prueba.
   - `tsc` sin errores; pruebas de Continuidad y de captura en verde; inventario de API al día (183).
   - En el ensayo, el estado trae `quarantine: {}` y no hay aviso. No se ha provocado un encogimiento real en la App en marcha (exigiría una captura de HubSpot).
+
+## 22/11/2026 · A3 · Simulacro programado
+
+**Fallo real encontrado.** `tick()` lanzaba el simulacro mensual mirando solo el último informe. Si el proceso aislado no terminaba (no deja informe), cada minuto se lanzaba otro proceso, sin fin.
+
+**Arreglo:**
+
+- **Regla** en `shared/drill-schedule.ts` (`drillPlan`):
+  - Toca un simulacro cada 30 días desde el último informe, y enseguida si no hay ninguno.
+  - Un intento sin informe frena 6 horas. Un intento anterior al último informe no cuenta y una fecha ilegible no bloquea.
+- **`server/continuity.ts`:**
+  - El intento se guarda en la copia (`drillLastAttempt`) antes de lanzar el simulacro: sobrevive a un reinicio y no se duplica.
+  - Si no arranca, deja el error en `operationError` con qué hacer.
+  - `GET /api/v2/continuity` incluye `drillSchedule` (`enabled`, `lastAttempt`, `nextAt`).
+- **Continuidad:** con la programación activada muestra «Próximo simulacro automático: …» y aclara que solo se hace con Plan B abierto y que un intento fallido se reintenta a las 6 horas.
+
+**Comprobación:**
+
+- `tests/drill-schedule.test.ts` 3/3, incluida una prueba de `tick()`: tres vueltas con un simulacro que no arranca lo lanzan una sola vez.
+- Una mutación (no leer el intento guardado) la hace fallar.
+- `v2` y `capture-quarantine-api` (24 pruebas), `continuity-home-hub`, `capture-schedule` y `capture-state` en verde; `tsc` sin errores.

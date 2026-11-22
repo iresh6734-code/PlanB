@@ -23,6 +23,8 @@ export interface ContinuityStatus {
   recoveryIntegrity?:RecoveryIntegrity;
   /** Misión maestra A2: capturas retenidas porque encogieron frente a la anterior (id → motivo). */
   quarantine?:Record<string,import('./capture-quarantine.js').QuarantineEntry>;
+  /** Misión maestra A3: simulacro automático (solo con Plan B abierto y la programación activada). */
+  drillSchedule?:{enabled:boolean;lastAttempt:string|null;nextAt:string|null};
   operations?:{lastAttempt:string|null;lastSuccess:string|null;error:{at:string;message:string;action:string}|null;paused:boolean};
 }
 export interface RecoveryCopy {

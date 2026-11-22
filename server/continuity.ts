@@ -11,6 +11,7 @@ import type { ContinuityBundle } from '../shared/model.js';
 import { planDrill } from './drill-plan.js';
 import { assessDrill, summarizeCapture } from './assessment.js';
 import { quarantineFor, quarantined, requireReleased, saveQuarantine } from './capture-quarantine.js';
+import { drillPlan } from '../shared/drill-schedule.js';
 import type { SavedConnection } from './connection.js';
 import { recoveryCopyStatus } from './recovery-copy.js';
 
@@ -30,7 +31,7 @@ export class Continuity {
       session:this.store.get('continuitySession',null),schedule:this.store.get('schedule',{enabled:false,intervalMinutes:60,lastAttempt:null}),
       connected:!this.store.disconnected,protected:!!this.store.get('password',null),accountId:this.store.snapshot?.source.accountId??null,
       changes:this.store.changesCount,pendingChanges:this.store.pendingChangesCount,runtime:this.runtime,realDataEnabled:this.store.get<{mode?:string}|null>('connectionPublic',null)?.mode==='production_readonly',connection:this.store.get('connectionPublic',null),recoveryCopy:recoveryCopyStatus(this.store),
-      recoveryIntegrity,quarantine:quarantined(this.store),operations:{lastAttempt:this.store.get('captureLastAttempt',null)??this.store.get<{lastAttempt:string|null}>('schedule',{lastAttempt:null}).lastAttempt,
+      recoveryIntegrity,quarantine:quarantined(this.store),drillSchedule:{enabled:this.store.get<{enabled?:boolean}>("schedule",{}).enabled===true,lastAttempt:this.store.get<string|null>("drillLastAttempt",null),nextAt:drillPlan(Date.now(),{hasCapture:captures.length>0,lastReportAt:reports[0]?.completedAt??null,lastAttemptAt:this.store.get<string|null>("drillLastAttempt",null)}).nextAt},operations:{lastAttempt:this.store.get('captureLastAttempt',null)??this.store.get<{lastAttempt:string|null}>('schedule',{lastAttempt:null}).lastAttempt,
         lastSuccess:this.store.get('captureLastSuccess',null),error:this.store.get('operationError',null),paused:this.runtime||this.store.disconnected||!!this.store.get('continuitySession',null)||recoveryIntegrity.state==='invalid'}};
   }
   private secretKey(){return localKey(dirname(this.store.filename));}
@@ -130,7 +131,10 @@ export class Continuity {
       }
       return;
     }
-    const last=status.reports[0];if(status.captures.length && (!last || Date.now()-Date.parse(last.completedAt)>30*86400_000)){try{this.drill();}catch{}}
+    // Misión maestra A3: el intento se guarda ANTES de lanzar el simulacro; si no deja informe, se espera 6 h en vez de
+    // lanzar otro proceso aislado en cada vuelta del temporizador.
+    const plan=drillPlan(Date.now(),{hasCapture:status.captures.length>0,lastReportAt:status.reports[0]?.completedAt??null,lastAttemptAt:this.store.get<string|null>('drillLastAttempt',null)});
+    if(plan.due){this.store.set('drillLastAttempt',now);try{this.drill();}catch{this.store.set('operationError',{at:now,message:'No se pudo iniciar el simulacro programado.',action:'Prueba la copia a mano desde Continuidad; se reintentará en 6 horas.'});}}
   }
 }
 export type CaptureImporter=(options:import('./hubspot.js').HubspotOptions)=>Promise<import('../shared/model.js').CrmSnapshot>;

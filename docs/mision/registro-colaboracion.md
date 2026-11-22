@@ -81,6 +81,100 @@ Archivos de interfaz: `src/app-shell/lazy-pages.tsx`, `src/app-shell/FirstRun.ts
 | 21/11/2026, Europe/Madrid | B4.5 Listas | Hecho según la reserva anterior. Modelo puro `src/app-shell/record-columns.ts`: peso 2 para el campo principal, correo y web, 1 para el resto; importes y números a la derecha con cifras tabulares; columna de abrir de 44 px. Con 4 columnas de datos o menos la tabla se limita a 1.040 px (`data-narrow`); en móvil siguen las tarjetas. Vistas rápidas a 0 al final, atenuadas y en orden estable; la activa no se degrada. Barra inferior: solo «Guardado en este ordenador» y la paginación. «Ver cobertura» pasa a Continuidad (junto a servicios) y sigue en la paleta; desconectar o habilitar servicios pasa a la paleta, con la misma llamada `/disconnect`, y sigue en Continuidad. La barra superior dice «Modo independiente» en texto, no solo con el color del punto; la etiqueta de cambios dice «1 cambio local» en singular. Pruebas de navegador adaptadas (`runCommand`, `copyMode`, recuento desde `.gx-topbar .gx-changes`) sin ejecutarlas | Mismo arnés y la misma copia ficticia, `RecordsPage` de `HEAD` frente al actual: botones de la barra inferior 4 → 2 (fuera Ver cobertura y Desconectar servicios); texto de estado, fecha y «2 cambios locales» en la barra inferior → 0, ya están arriba; negocios: 3 vistas a 0 al final y atenuadas (antes mezcladas). Anchos: contactos 33,3/16,7/33,3/16,7 %, empresas 40/40/20 %, tareas 40/20/20/20 %, las tres estrechas. `tests/listas-ui.test.ts` (nuevo, 4 casos) falla en `HEAD` y pasa ahora. `npx.cmd tsc --noEmit -p tsconfig.json`; 7/7 con `node tools/safe-tests.mjs listas-ui ui-states record-list record-sheet url-routes navigation-group-header continuity-home-hub`; 9/12 con `node tools/safe-tests.mjs css-unused color-guard design-tokens design-k-block auth-parent agenda task-outcomes-host team-audit independent-copy-inspection-api saved-view independent-interface`, tras bajar `tests/color-guard-baseline.json` (faro 105 → 103, refinements 42 → 41). Fallan `auth-parent` e `independent-interface-contexts` por el mismo `useContinuityState` sin simular, igual en `HEAD` limpio (viene de `607a835`); no se tocan. Poda CSS de la barra antigua: faro −1.625 B, refinements −49 B, styles −60 B; consola +499 B por las reglas nuevas; después, 0 muertos y 0 pisadas. Detector sin hallazgos. Pendiente: «Guardar vista» en «Más», tarjetas móviles de dos líneas, geometría y aceptación visual en el equipo autorizado |
 | 21/11/2026, Europe/Madrid | A0-L Código sin montar | Hecho según la reserva y su ampliación. Retirados: `MorningBrief.tsx`, `morning-brief.ts`, `morning-brief.css` y su prueba; `HomeSeal` y `SealLine`, cuyo único consumidor era `HomeSeal` (se quedan `SealBadge` y `SealCard`); `FirstRunStrip` con su clave «ocultar»; las exportaciones perezosas sin uso. También `SalesWorkspace.tsx`, `WorkQueue.tsx`, `work-queue.css`, `MetricStrip` y `SectionHeader`, sin montar desde B4.3, y las simulaciones de `SalesWorkspace` que quedaban en dos pruebas de Cambios. Se quedan la sala y la cápsula de rescate, que usa el ensayo de relevo de `server/main.ts`, y los huérfanos E3. Nueva lista única `scripts/dev-only-files.mjs`: `recovery-rehearsal`, su worker, su CLI y sus pruebas. `build-relay-kit.mjs` y `package-demo.ts` la usan como filtro; `tests/dev-only-files.test.ts` comprueba que los archivos existen, que el filtro no atrapa vecinos y que nada distribuible los importa | Compilación sin servidores ni navegador, antes → después: interfaz 83 → 78 archivos, 3.409.813 → 3.372.683 B. Desaparecen los fragmentos `MorningBrief` y `ContinuitySeal` (`SealCard` va ahora con quien lo usa). El servidor compilado no cambia: 831.078 B, ya sin `recovery-rehearsal`. Kit de relevo 184 → 182 archivos de código, sin `server/recovery-rehearsal*.ts`. `npx.cmd tsc --noEmit -p tsconfig.json` correcto. 18/18 con `node tools/safe-tests.mjs orphan-components dev-only-files record-sheet first-run continuity-seal css-unused color-guard design-tokens continuity-home-hub independent-return-integrity-ui recovery-integrity-ui work-queue ui-journeys local-integrations continuity-operations` y 2/2 con `color-guard design-k-block`. `orphan-components` fallaba antes por `SalesWorkspace.tsx` y ahora pasa. Se bajó `tests/color-guard-baseline.json` (design-system 35 → 28, sales 9 → 5). Poda con `css-unused --write`: 17 + 167 selectores, 1.940 + 11.220 B. A mano: `commitment-list` y `commitments-empty`, que la herramienta conserva porque `'commitment-not-linked'` parece un prefijo, y las alternativas muertas de `:is()` en `consola.css`, `planb-ui.css` y `continuity-seal.css`, sin cambiar la especificidad. Después: 0 muertos y 0 pisadas. El detector solo repite dos `border-left-width: 3px` de `planb-ui.css` que ya están en `HEAD`. No se ejecutan aquí, por arrancar procesos o navegador: `tests/relay-rehearsal-mount.test.ts`, que gana una aserción de manifiesto sin `recovery-rehearsal`, y las pruebas de navegador de la antigua cola de Hoy, ya obsoletas |
 
+## Verifica · Fase 0 · GitHub Copilot
+
+### Reserva · antes de editar
+
+22/11/2026, 16:00 Europe/Madrid. La usuaria: «ves a ello, acuérdate de evitar alertas a la empresa, de no hacer nada con riesgo». Manda `docs/plan-b-verifica-plan-de-producto.md`. Las tres decisiones de la fase 0 siguen abiertas: destinos, coordinador y dueños, y carpetas de instalaciones. Por eso esta tanda no aparca nada, no toca el menú y no mueve carpetas.
+
+Alcance:
+
+- **`shared/verifica/` (nuevo):**
+  - La empresa con trampas: ficticia, determinista, con una variante limpia y con su resultado esperado.
+  - Las seis reglas puras, con reloj inyectado.
+  - Un informe seudonimizado con la huella de cada captura.
+- **`src/verifica/` y `verifica.html` (nuevos):** una entrada propia que muestra el informe de referencia, más la entrada en `vite.config.ts`. No entra en el menú de la App.
+- **Pruebas:** `tests/verifica-*.test.ts`.
+
+Sin servidores, navegador, PowerShell, DPAPI, red ni datos reales. Dueño provisional de `shared/verifica/` y `src/verifica/` mientras dure la tarea: GitHub Copilot.
+
+### Hecho · 22/11/2026 · cómo se comprueba
+
+**Motor (`shared/verifica/`)**, todo puro: sin red, disco ni reloj del sistema.
+
+- `model.ts`: la forma común a la que se traduce cualquier lector (HubSpot, Pipedrive o exportación). Captura con `historyAvailable`, facturas con `dealRef` y declaraciones del vendedor. Cada hallazgo lleva su base: observado, declarado o sin comprobar.
+- `rules.ts`: las seis trampas del plan. Los umbrales están en `THRESHOLDS` y se describen abajo.
+- `report.ts`: el informe `planb-verifica-report-v1`.
+  - Página 1: hallazgos con la huella de las capturas de las que salen.
+  - Página 2: lo que no se pudo comprobar.
+  - La huella es SHA-256 del JSON con claves ordenadas, y `verifyReport` la recalcula.
+  - Las referencias son seudónimos `deal:`, `company:` y `owner:` con una sal de al menos 16 caracteres que no viaja en el informe.
+- `empresa-con-trampas.ts`: la empresa ficticia de referencia, determinista (semilla fija), en dos variantes, con trampas y sin trampas. El resultado esperado se apunta al sembrar.
+
+**Las seis reglas y sus umbrales:**
+
+| Regla | Qué mira | Cuándo avisa |
+| --- | --- | --- |
+| Ventana de venta | Lo creado o subido de importe en las últimas 6 semanas, frente a la media de hasta 7 periodos anteriores | Más de 1,5× con al menos 3 periodos |
+| Fechas aplazadas | Oportunidades abiertas aplazadas 3 veces o más | Al menos 3, o al menos el 10 % de la cartera abierta |
+| Ganadas sin factura | Factura enlazada por `dealRef` (observado). La misma empresa, con importe ±1 % y fecha entre −30 y +120 días, cuenta como ambigua y sin comprobar. Las ganadas de los últimos 30 días tienen gracia | Si falta alguna factura |
+| Concentración | Lo que suman los dos primeros comerciales de la cartera abierta | Más del 50 % con al menos 3 comerciales |
+| Borrado masivo | Contactos que desaparecen entre capturas. Reutiliza `assessShrink` de `shared/capture-quarantine.ts` para decir si la captura queda retenida | Al menos 10 contactos y al menos el 5 % |
+| Renovación declarada | Clientes sin factura en 12 meses, clientes activos declarados frente al CRM y renovación observada, esta solo si hay facturas de 24 meses | Más del 10 % sin factura, declarados por encima de CRM × 1,05, o una diferencia de más de 5 puntos |
+
+**Página (`src/verifica/` y `verifica.html`)**
+
+- Entrada propia de Vite (`verifica`), fuera del menú de la App.
+- Pinta el informe de referencia con el aviso «Empresa ficticia», con un selector entre «Con trampas» y «Sin trampas».
+- Un solo botón relleno: «Descargar informe» (JSON).
+- Cada cifra sale una vez, en la frase de su hallazgo. Las referencias van plegadas.
+- Al pie: fuentes, huella completa y el estado «Coincide con el contenido».
+- Hoja propia `verifica.css` con las tintas de la consola copiadas como tokens. Sigue el tema oscuro de la App (`planb:theme`) y al imprimir pone la página 2 en hoja aparte.
+
+**Cifras de la empresa de referencia**, con márgenes holgados frente a los umbrales:
+
+| Regla | Con trampas | Sin trampas |
+| --- | --- | --- |
+| Ventana | 49 creadas (1.041.800 €) y 6 subidas (150.000 €), 254 % de lo normal | 98 % |
+| Aplazadas | 8 aplazadas (96.600 €) | 1 aplazada (la legítima) |
+| Facturas | 12 ganadas sin factura (164.300 €), 4 ambiguas y 3 recientes | 0 sin factura |
+| Concentración | Los dos primeros suman el 67,5 % | 34,8 % |
+| Borrado | 320 → 240 contactos (80 borrados); captura retenida | 3 borrados y 5 nuevos |
+| Renovación | 45 de 300 clientes sin factura; 340 activos declarados | 6 sin factura |
+
+**Cómo se comprueba**
+
+- `npx.cmd tsc --noEmit -p tsconfig.json`: correcto.
+- `node tools/safe-tests.mjs verifica orphan-components color-guard css-unused design-tokens`: 6/6.
+  - `verifica-referencia` tiene 6 casos:
+    - La variante con trampas da las 6 alarmas con sus cifras.
+    - La variante sin trampas no da ningún aviso.
+    - No sale ningún nombre, correo ni identificador del CRM.
+    - La huella es estable y se rompe con cualquier retoque; otra sal cambia las referencias pero no las cifras.
+    - Sin historial, sin facturas o sin captura anterior, la regla pasa a «sin comprobar» y aparece en la página 2.
+    - Con 24 meses de facturas, la renovación pasa a observada.
+  - `verifica-pagina` tiene 3 casos con `renderToStaticMarkup`:
+    - 6 hallazgos, 6 sellos, la huella y el aviso de empresa ficticia.
+    - La variante limpia no lleva sellos.
+    - Un solo botón relleno y ningún nombre del CRM en la página.
+- Prueba de mutación: si el seudónimo devuelve el identificador real, `verifica-referencia` falla. Se deshizo después.
+- Compilación de Vite a una carpeta temporal, antes → después:
+  - JS inicial de la App: 761.011 → 761.300 B; 233.575 → 233.753 B comprimido. Presupuesto: 235.520 B.
+  - CSS inicial de la App: 356.873 → 356.873 B, sin cambio.
+  - La subida es el trozo de React que ahora comparten las dos entradas. Por eso la página no importa `theme.ts` y lee el tema por su cuenta.
+  - Verifica carga aparte: 21,3 kB de JS (7,8 kB comprimido) y 6,2 kB de CSS.
+
+**Desviación del plan:** el plan habla de «dos comerciales». Con solo dos, la regla de concentración avisaría siempre (los dos primeros serían el 100 %). La empresa ficticia tiene 6 comerciales, y dos de ellos concentran la cartera en la variante con trampas.
+
+**Huecos del plan que esta tanda no cubre** (solo se pueden cerrar con datos o permisos que aquí no hay):
+
+- No hay lector de Holded ni formato de importación de facturas.
+- El historial de propiedades de HubSpot (`propertiesWithHistory`) no se usa en ningún sitio del código y no está validado contra una cuenta de pruebas.
+- No hay historial de Pipedrive.
+- `shared/billing-check.ts`, que cita el plan, no existe en el repositorio.
+
+**Sigue abierto (decide la usuaria):** destinos de cada parte (motor, congelado, aparcado o fuera), coordinador y dueños de carpetas, y sacar las carpetas de instalaciones del repositorio. Sin eso, la salida de la fase 0 «un solo producto en el menú» no está hecha.
+
 ## Pendiente para el agente del otro ordenador
 
 ### Relevo de GitHub Copilot · 21/11/2026, 18:35 Europe/Madrid · leer primero

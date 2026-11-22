@@ -91,6 +91,12 @@ function mount(appFile: string) {
   };
   (globalThis as any).document = { addEventListener() {}, removeEventListener() {}, querySelector: () => null };
 
+  function realShellModule(file: string) {
+    const shellModule = { exports: {} as any };
+    const shellCode = ts.transpileModule(fs.readFileSync(path.resolve(file), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+    new Function('require', 'exports', 'module', shellCode)(imports, shellModule.exports, shellModule);
+    return shellModule.exports;
+  }
   function imports(name: string) {
     if (name === 'react') return hooks;
     if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx, Fragment: Symbol.for('fragment') };
@@ -98,12 +104,11 @@ function mount(appFile: string) {
     if (name.endsWith('api.js')) return { api: transport, post: transport };
     if (name.endsWith('Protection.js')) return { Protection };
     if (name.endsWith('workspace-copy.js')) return { describeCapture };
-    // Lista de registros (CLAUDE-RECORD-LIST): el módulo real, con los mismos React y transporte simulados de este arnés.
-    if (name.endsWith('useRecordList.js')) {
-      const listModule = { exports: {} as any };
-      const listCode = ts.transpileModule(fs.readFileSync(path.resolve('src/app-shell/useRecordList.ts'), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
-      new Function('require', 'exports', 'module', listCode)(imports, listModule.exports, listModule);
-      return listModule.exports;
+    // Ganchos de app-shell cuyo resultado App desestructura o usa (lista de registros, continuidad T2, avisos T2, recientes F5):
+    // los módulos reales, con los mismos React y transporte simulados de este arnés. Un Stub devolvería null y App fallaría
+    // al montar, antes de llegar a lo que estas pruebas comprueban (el bloqueo y la autorización del padre).
+    for (const shell of ['useRecordList', 'useContinuityState', 'useNotices', 'useRecordShortcuts', 'recents']) {
+      if (name.endsWith('/' + shell + '.js')) return realShellModule('src/app-shell/' + shell + '.ts');
     }
     if (name.endsWith('version.js')) return { APP_VERSION: 'test' };
     if (name.endsWith('components.js')) {

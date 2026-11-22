@@ -114,75 +114,40 @@ test('búsqueda: un 404 del servicio antiguo no se presenta como «sin resultado
 });
 
 // ------------------------------------------------------------------ Hoy
-async function today(page: Page) {
+// La antigua cola de Hoy (WorkQueue: «Lista de prioridades» y «Lista de compromisos», páginas de 20 y aviso de listTotals de
+// /api/v4/today) se retiró en 7fcb771. Hoy es ahora LocalOperations (/api/v7/local-operations): tareas por estado, filtros con
+// recuento, una sola regla de vencidas, «Despachar» junto al filtro Vencidas, un solo botón relleno y estado y fecha en una celda (9e1ad41).
+test('Hoy: las tareas vencidas con una sola regla, «Despachar» junto a su filtro, un botón relleno, estado y fecha en una celda, búsqueda local sin releer y sin desbordamiento en 1440, 390 y 320', async ({ page }) => {
+  const watch = await enter(page);
   await page.getByRole('button', { name: 'Hoy', exact: true }).click(); await expect(page.getByRole('heading', { name: 'Hoy', exact: true })).toBeVisible();
-  const priorities = page.getByRole('region', { name: 'Lista de prioridades', exact: true }), commitments = page.getByRole('region', { name: 'Lista de compromisos', exact: true });
-  await expect(priorities.locator('.work-queue-count')).toHaveText('1–5 de ' + OPPS + ' prioridades'); await expect(commitments.locator('.work-queue-count')).toHaveText('1–5 de ' + TASKS + ' tareas');
-  return { priorities, commitments };
-}
-
-test('Hoy: totales y filas completas, páginas de 20 hasta el último elemento, búsqueda por ID/acentos sin peticiones, página antigua acotada y foco al limpiar', async ({ page }) => {
-  const watch = await enter(page), { priorities, commitments } = await today(page);
-  await expect(priorities.getByRole('listitem')).toHaveCount(5); await expect(priorities.getByText(/No se ha podido comprobar/)).toHaveCount(0);
-  await priorities.getByRole('button', { name: 'Ver las ' + OPPS + ' prioridades' }).click();
-  await expect(priorities.getByRole('listitem')).toHaveCount(20); await expect(priorities.locator('.work-queue-count')).toHaveText('1–20 de ' + OPPS + ' prioridades'); await expect(priorities.getByText('Página 1 de 3')).toBeVisible();
-  const next = priorities.getByRole('button', { name: 'Siguiente', exact: true }), previous = priorities.getByRole('button', { name: 'Anterior', exact: true });
-  await expect(previous).toBeDisabled(); await next.click(); await next.click();
-  await expect(priorities.getByText('Página 3 de 3')).toBeVisible(); await expect(priorities.getByRole('listitem')).toHaveCount(OPPS - 40); await expect(next).toBeDisabled();
-  await expect(priorities.getByRole('listitem').last()).toContainText('Zzultima oportunidad'); await expect(priorities.getByRole('listitem').last()).toContainText('ID zz-ultima');
-  // La búsqueda es local: ninguna petición, ningún cambio de orden.
-  const requestsBefore = watch.apiGets.length, search = priorities.getByRole('searchbox', { name: 'Buscar prioridades' });
-  await search.fill('opp-07'); await expect(priorities.getByRole('listitem')).toHaveCount(1); await expect(priorities.locator('.work-queue-count')).toHaveText('1–1 de 1 prioridades · ' + OPPS + ' recibidas en total');
-  await expect(priorities.getByText(/Página \d de \d/), 'una página antigua no deja una vista vacía').toHaveCount(0);
-  await search.fill('OPP059 5'); await expect(priorities.locator('.work-queue-count')).toHaveText(/de \d+ prioridades/);
-  await search.fill('zzzz-no-existe'); await expect(priorities.locator('.work-queue-count')).toContainText('No hay prioridades que coincidan.'); await expect(priorities.getByRole('listitem')).toHaveCount(0);
-  const clear = priorities.getByRole('button', { name: 'Limpiar búsqueda' }); await clear.click(); await expect(search).toBeFocused(); await expect(search).toHaveValue(''); await expect(priorities.locator('.work-queue-count')).toHaveText('1–20 de ' + OPPS + ' prioridades');
-  expect(watch.apiGets.length, 'filtrar no hace peticiones').toBe(requestsBefore);
-  // Tareas: 61 compromisos; búsqueda con acentos por etiqueta y por ID.
-  await commitments.getByRole('button', { name: 'Ver las ' + TASKS + ' tareas' }).click(); await expect(commitments.getByText('Página 1 de 4')).toBeVisible();
-  const tasks = commitments.getByRole('searchbox', { name: 'Buscar tareas' }); await tasks.fill('nunez 61'); await expect(commitments.getByRole('listitem')).toHaveCount(1); await expect(commitments.getByRole('listitem')).toContainText('ID task-61');
-  await tasks.fill('NÚÑEZ'); await expect(commitments.locator('.work-queue-count')).toContainText('de ' + TASKS + ' tareas');
-  done(watch); expect(watch.writes).toEqual([]);
-});
-
-test('Hoy: servidor anterior sin listTotals o con totales inconsistentes avisa y no afirma que sean todas', async ({ page }) => {
-  for (const [name, mutate, expected] of [
-    ['sin listTotals', (d: any) => { delete d.listTotals; }, new RegExp('Se muestran ' + OPPS + ' recibidas\\.')],
-    ['total mayor que lo recibido', (d: any) => { d.listTotals = { opportunities: 70, tasks: TASKS }; }, new RegExp('Se muestran ' + OPPS + ' recibidas de 70 indicadas')],
-    ['total menor que lo recibido', (d: any) => { d.listTotals = { opportunities: 20, tasks: TASKS }; }, new RegExp('Se muestran ' + OPPS + ' recibidas\\.')],
-  ] as const) {
-    const fresh = await page.context().newPage(); const watch = await enter(fresh);
-    await fresh.route('**/api/v4/today', async route => { const response = await route.fetch(); const body = await response.json(); mutate(body); await route.fulfill({ response, json: body }); });
-    await fresh.getByRole('button', { name: 'Hoy', exact: true }).click();
-    const priorities = fresh.getByRole('region', { name: 'Lista de prioridades', exact: true });
-    await expect(priorities.getByText(/No se ha podido comprobar que estén todas las prioridades/), name).toBeVisible(); await expect(priorities.getByText(expected), name).toBeVisible();
-    await expect(priorities.getByText(/Actualiza Plan B antes de dar la lista por completa/)).toBeVisible();
-    await expect(fresh.getByRole('region', { name: 'Lista de compromisos', exact: true }).getByText(/No se ha podido comprobar/), 'las tareas, coherentes, no avisan').toHaveCount(name === 'sin listTotals' ? 1 : 0);
-    done(watch); await fresh.close();
-  }
-});
-
-test('Hoy: controles táctiles, teclado y sin desbordamiento en 1440, 390 y 320', async ({ page }) => {
-  const watch = await enter(page); await today(page); const priorities = page.getByRole('region', { name: 'Lista de prioridades', exact: true });
-  await priorities.getByRole('button', { name: 'Ver las ' + OPPS + ' prioridades' }).click();
-  const search = priorities.getByRole('searchbox', { name: 'Buscar prioridades' }); await search.fill('opp'); await expect(priorities.getByRole('button', { name: 'Limpiar búsqueda' })).toBeVisible();
-  const sizes: Record<string, number> = {};
+  const hoy = page.locator('section.lop'), table = hoy.getByRole('table', { name: 'Tareas de Hoy por estado' }), rows = table.locator('li[role="row"]');
+  await expect(rows).toHaveCount(TASKS);
+  // Una sola regla de vencidas: las 61 tareas del 01/01/2020 son vencidas en el filtro, en su grupo y en «Todas».
+  const filters = hoy.getByRole('group', { name: 'Filtrar las tareas mostradas' }), overdue = filters.getByRole('button', { name: /^Vencidas/ });
+  await expect(filters.getByRole('button', { name: /^Todas/ }).locator('.oc-count')).toHaveText(String(TASKS)); await expect(overdue.locator('.oc-count')).toHaveText(String(TASKS));
+  await expect(table.getByRole('heading', { name: 'Vencidas · ' + TASKS, exact: true })).toBeVisible();
+  // «Despachar» va justo después del filtro Vencidas y dice cuántas despacha.
+  const dispatch = filters.getByRole('button', { name: 'Despachar las ' + TASKS + ' tareas vencidas de la copia, una a una', exact: true });
+  await expect(dispatch).toBeVisible(); await expect(overdue.locator('xpath=following-sibling::*[1]')).toHaveClass(/lop-dispatch/);
+  // Un solo botón relleno en la vista.
+  await expect(hoy.locator('.button.primary')).toHaveCount(1); await expect(hoy.locator('.button.primary')).toHaveText('Organizar mi jornada');
+  // Estado y fecha en una celda: tres columnas, y la fecha de una vencida lleva su tono y los días de retraso.
+  await expect(table.getByRole('columnheader')).toHaveCount(3); await expect(rows.first().getByRole('cell')).toHaveCount(3);
+  const due = rows.first().locator('.oc-due'); await expect(due).toHaveAttribute('data-tone', 'danger'); await expect(due).toHaveText(/ · \d+ d$/);
+  // La búsqueda filtra lo mostrado en el navegador: no relee la lista ni la cola.
+  const reads = () => watch.apiGets.filter(url => url.startsWith('/api/v7/local-operations')).length, before = reads();
+  const search = hoy.getByRole('searchbox', { name: 'Buscar en las tareas mostradas' });
+  await search.fill('task-61'); await expect(rows).toHaveCount(1); await expect(rows.first()).toContainText('Tarea Núñez 61');
+  await search.fill('zzzz-no-existe'); await expect(rows).toHaveCount(0); await expect(hoy.getByText('No hay coincidencias entre las tareas mostradas.')).toBeVisible();
+  await search.fill(''); await overdue.click(); await expect(overdue).toHaveAttribute('aria-pressed', 'true'); await expect(rows).toHaveCount(TASKS);
+  await overdue.click(); await expect(filters.getByRole('button', { name: /^Todas/ })).toHaveAttribute('aria-pressed', 'true');
+  expect(reads(), 'buscar y filtrar no releen Hoy').toBe(before);
   for (const width of [1440, 390, 320]) {
-    await page.setViewportSize({ width, height: 900 }); await priorities.scrollIntoViewIfNeeded(); await page.screenshot({ path: resolve(output, 'hoy-' + width + '.png') });
+    await page.setViewportSize({ width, height: 900 }); await hoy.scrollIntoViewIfNeeded(); await page.screenshot({ path: resolve(output, 'hoy-' + width + '.png') });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'sin scroll horizontal de página a ' + width).toBeTruthy();
-    // Lo que importa al usuario: nada recortado por la región ni fuera del viewport. (El relleno transparente de «Ver oportunidad» puede rebasar 8 px el fondo de la región a 1440: observación, no defecto visible.)
-    const overflow = await priorities.evaluate(root => { const clipped = getComputedStyle(root).overflowX !== 'visible', box = root.getBoundingClientRect(); return { clipped, beyondViewport: [...root.querySelectorAll('*')].filter(e => e.getBoundingClientRect().right > innerWidth + 1).map(e => e.tagName.toLowerCase() + '.' + (e as HTMLElement).className).slice(0, 5), paddingSlack: Math.max(0, root.scrollWidth - root.clientWidth), box: Math.round(box.width) }; });
-    expect(overflow.clipped, 'región sin recorte horizontal a ' + width + ': ' + JSON.stringify(overflow)).toBe(false); expect(overflow.beyondViewport, 'nada fuera del viewport a ' + width + ': ' + JSON.stringify(overflow)).toEqual([]);
-    sizes['holgura@' + width] = overflow.paddingSlack;
-    // En móvil el texto de «Ver oportunidad» se oculta con font-size:0 (regla preexistente): el botón debe conservar su nombre accesible.
-    await expect(priorities.getByRole('button', { name: 'Ver oportunidad' }), 'botones con nombre accesible a ' + width).toHaveCount(20);
-    for (const name of ['Siguiente', 'Anterior', 'Limpiar búsqueda', 'Mostrar menos']) { const box = await priorities.getByRole('button', { name, exact: true }).boundingBox(); expect(box, name).not.toBeNull(); sizes[name + '@' + width] = Math.round(box!.height); }
+    const beyond = await hoy.evaluate(root => [...root.querySelectorAll('.oc-filters *, .lop-queue-heading *, .lop-search *')].filter(e => e.getBoundingClientRect().right > innerWidth + 1).map(e => e.tagName.toLowerCase() + '.' + (e as HTMLElement).className).slice(0, 5));
+    expect(beyond, 'filtros, acciones y búsqueda dentro del viewport a ' + width).toEqual([]); await expect(dispatch, '«Despachar» visible a ' + width).toBeVisible();
   }
-  console.log('# alturas medidas (px): ' + JSON.stringify(sizes));
-  for (const [key, height] of Object.entries(sizes).filter(([k]) => !k.startsWith('holgura'))) expect(height, 'objetivo táctil ≥ 44 px: ' + key).toBeGreaterThanOrEqual(44);
-  // Teclado: Tab llega al botón de página y Enter lo activa.
-  await page.setViewportSize({ width: 1440, height: 900 }); await search.fill(''); await search.focus(); await page.keyboard.press('Tab');
-  await priorities.getByRole('button', { name: 'Siguiente', exact: true }).focus(); await page.keyboard.press('Enter'); await expect(priorities.getByText('Página 2 de 3')).toBeVisible();
   done(watch); expect(watch.writes).toEqual([]);
 });
 

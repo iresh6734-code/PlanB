@@ -43,7 +43,7 @@ export function LicensePanel() {
       <div>{trial.status === 'available' ? <><p className="lp-current-title">Prueba Pro {TRIAL_DAYS} días en este equipo</p><p className="lp-current-detail">Sin registro y sin conexión: solo se guarda en este navegador la fecha en que empieza. Al terminar vuelves a Personal sin perder nada.</p></>
         : trial.status === 'active' ? <><p className="lp-current-title">Prueba de Pro: {trial.daysLeft === 1 ? 'queda 1 día' : 'quedan ' + trial.daysLeft + ' días'}</p><p className="lp-current-detail">Termina el {day.format(new Date(trial.endsAt!))}. Las funciones Pro se marcan como incluidas mientras dure.</p></>
         : <><p className="lp-current-title">La prueba de Pro terminó el {day.format(new Date(trial.endsAt!))}</p><p className="lp-current-detail">Sigues en Personal. Tus datos, la exportación y la recuperación nunca se bloquean.</p></>}</div>
-      {trial.status === 'available' ? <button type="button" className="button primary" onClick={beginTrial}>Empezar la prueba</button> : null}
+      {trial.status === 'available' ? <button type="button" className={'button '+(draft.trim()?'secondary':'primary')} onClick={beginTrial}>Empezar la prueba</button> : null}
     </article> : null}
     <div className="lp-grid">
       <table className="lp-plans">
@@ -59,7 +59,7 @@ export function LicensePanel() {
         <p id={helpId} className="lp-help">Se comprueba en este equipo, sin conexión, y se guarda solo en este navegador. No se envía a ningún sitio.</p>
         {attempt && attempt.status !== 'active' && attempt.status !== 'grace' ? <p className="lp-error" role="alert"><strong>{attempt.title}.</strong> {attempt.detail}</p> : null}
         {attempt && (attempt.status === 'active' || attempt.status === 'grace') ? <p className="lp-ok" role="status">Licencia activada.</p> : null}
-        <button type="submit" className="button primary" disabled={!draft.trim() || busy}>{busy ? 'Comprobando…' : 'Activar'}</button>
+        <button type="submit" className={'button '+(draft.trim()?'primary':'secondary')} disabled={!draft.trim() || busy}>{busy ? 'Comprobando…' : 'Activar'}</button>
       </form>
     </div>
   </section>;

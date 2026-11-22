@@ -9,6 +9,7 @@ import { pollWhileVisible } from './app-shell/poll.js';
 import { api, post, download } from './api.js';
 import { Spinner } from './components.js';
 import { ManualRecovery } from './ManualRecovery.js';
+import { ReturnPackage } from './ReturnPackage.js';
 import { ChangeHistory } from './ChangeHistory.js';
 import { useContingency } from './app-shell/useContingency.js';
 import { clockTime } from './app-shell/contingency-text.js';
@@ -57,6 +58,9 @@ export function ChangesView({runtime,production=false,spec=null}:{runtime:boolea
     {blocked?<div className="error-box" role={checking&&!hasRead?'status':'alert'}><strong>{checking&&!hasRead?'Comprobando el estado de devolución…':'Devolución bloqueada hasta revisar el estado guardado'}</strong><p>{integrity?.state==='invalid'?INVALID_RECOVERY_MESSAGE:!checking||hasRead?'No se ha podido confirmar la integridad del plan. No se enviarán cambios desde esta pantalla.':'Los controles se habilitarán cuando termine la lectura.'}</p><button type="button" className="button secondary" style={{minHeight:44}} aria-disabled={busy||checking} onClick={()=>{if(action.current||controller.current)return;setError('');void load().catch(()=>{});}}>Actualizar estado guardado</button></div>:null}
     {hasRead&&!blocked&&!changes.length&&!plan&&!manualReport?<p className="muted" role="status">Lo que edites en la copia aparecerá aquí para devolverlo a HubSpot</p>:null}
     {production&&!runtime&&manualReport?<p className="helper">Última comprobación manual: {new Date(manualReport.verifiedAt).toLocaleString('es-ES')}. No se enviaron datos mediante la API.</p>:null}
+    {/* Misión maestra A4: CSV de importación para HubSpot con lo pendiente; solo lee y no marca nada como devuelto. Solo en
+        producción, donde la devolución automática está bloqueada; con datos de prueba ya existe «Devolución revisada». */}
+    {production&&hasRead&&pending>0&&!runtime?<ReturnPackage connected disabled={blocked}/>:null}
     {hasReturn?(production&&!runtime?<ManualRecovery changes={changes.filter(c=>c.id>watermark)} revision={revision} pending={pending} refresh={load} integrityBlocked={blocked}/>:!runtime?<section className="return-section return-wizard" aria-labelledby="return-wizard-title"><header className="return-wizard-head"><div><h2 id="return-wizard-title">Devolución revisada</h2><p className="muted" role="status">{wizard.headline}</p></div><span className="return-wizard-meter" aria-hidden="true"><i style={{width:wizardPercent+'%'}}/></span></header>
       <ol className="return-steps" aria-label="Pasos de la devolución">{wizard.steps.map(step=><li key={step.id} className={'return-step is-'+step.state} aria-current={step.id===wizard.current?'step':undefined}><span className="return-step-mark" aria-hidden="true">{step.state==='done'?<Check size={13}/>:step.n}</span><span className="return-step-text"><strong>{step.title}</strong><small>{step.hint}</small></span><span className="sr-only">{({done:'Hecho',current:'Paso actual',todo:'Pendiente',attention:'Necesita atención',blocked:'En pausa'})[step.state]}</span></li>)}</ol>
       <label className="checkbox-label"><input type="checkbox" checked={simulation} disabled={busy||blocked} onChange={e=>{if(!trusted.current)return;setSimulation(e.target.checked);setReviewed(false);}}/>Usar destino simulado para probar el recorrido (no envía datos a HubSpot)</label>

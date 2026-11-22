@@ -151,3 +151,8 @@ html body .ag-side > .ag-foot { flex: none; margin: auto 0 0; padding: 10px 0 0;
   html body .ag-head-actions > .icon-button { margin-left: auto; }
 }
 @media (prefers-reduced-motion: reduce) { html body .ag-day { transition: none; } }
+
+/* Misión maestra (22/11/2026): el panel del día mide lo que contiene. Un día vacío ya no deja una columna entera en blanco;
+ * con mucho contenido sigue limitado a la altura del calendario y se desplaza por dentro. */
+html body .ag-layout > .ag-side { align-self: start; max-height: 100%; }
+html body .ag-side > .ag-foot { margin-top: 4px; }

@@ -1,0 +1,17 @@
+/* Misión maestra A4 · Paquete de vuelta en Cambios. Solo tokens; una bahía con su regla superior, como el resto de la Consola. */
+html body .return-package { display: grid; gap: 10px; margin: 0 0 16px; padding: 12px 16px; border: 1px solid var(--border); border-top: 2px solid var(--primary); border-radius: var(--r-lg); background: var(--bg-surface); }
+html body .return-package-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px 16px; }
+html body .return-package-head h2 { margin: 0; font-size: var(--fs-lg); }
+html body .return-package-head p { margin: 2px 0 0; max-width: 64ch; font-size: var(--fs-sm); }
+html body .return-package-head .button-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+html body .return-package-body { display: grid; gap: 8px; }
+html body .return-package-summary { display: grid; gap: 2px; margin: 0; padding: 0 0 0 18px; font-size: var(--fs-sm); color: var(--text-2); }
+html body .return-package-files { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--rule); }
+html body .return-package-files li { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--row-h); border-bottom: 1px solid var(--rule); }
+html body .return-package-files li > span { display: grid; min-width: 0; }
+html body .return-package-files strong { overflow: hidden; font-size: var(--fs-sm); text-overflow: ellipsis; white-space: nowrap; }
+html body .return-package-files small, html body .return-package-skipped small { font-size: var(--fs-xs); color: var(--text-3); }
+html body .return-package-skipped summary { cursor: pointer; font-size: var(--fs-sm); font-weight: 600; }
+html body .return-package-skipped ul { display: grid; gap: 6px; margin: 8px 0 0; padding: 0; list-style: none; font-size: var(--fs-sm); }
+html body .return-package-skipped li small { display: block; }
+html body .return-package .helper { margin: 0; font-size: var(--fs-xs); color: var(--text-3); }

@@ -15,7 +15,7 @@ import { ContinuityDay } from ${src('src/ContinuityDay.tsx')};
 import { candidatesFromQueue } from ${src('shared/continuity-day.ts')};
 import { buildResponseQueue } from ${src('shared/response-queue.ts')};
 import { makeDemoSpec, makeFixture } from ${src('shared/fixtures.ts')};
-import ${src('src/styles.css')}; import ${src('src/refinements.css')}; import ${src('src/design-system.css')}; import ${src('src/planb-ui.css')};
+import ${src('src/styles.css')}; import ${src('src/design-system.css')}; import ${src('src/planb-ui.css')};
 const w = window as any; w.__opened = []; w.__net = 0; const realFetch = window.fetch.bind(window); window.fetch = (...a: any[]) => { w.__net++; return (realFetch as any)(...a); };
 const name = new URLSearchParams(location.search).get('s') ?? 'basic';
 const snapshot = makeFixture('agency'), spec = makeDemoSpec(snapshot);

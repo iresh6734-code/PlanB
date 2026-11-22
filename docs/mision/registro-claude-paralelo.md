@@ -196,3 +196,24 @@ Si la lectura del espacio falla y las filas llevan «Reintentar» o una acción,
 - La E2E `tests/e2e/local-integrations.spec.ts` despliega las herramientas antes de revisarlas. Compila; no se ha ejecutado en navegador (falta Chromium 1248).
 - `local-integrations`, `css-unused`, `ui-copy` y `bundle-budget` en verde; `tsc` sin errores.
 - En móvil pasa de 1,84 a 1,75 pantallas; comprobado en la captura de 1440 px.
+
+## 22/11/2026 · B2 · Primera capa retirada: `refinements.css`
+
+**Método.** Referencia visual de las 19 rutas a 1440 y 390 px con `tools/visual/composition.mts`, quitar la capa, volver a capturar y comparar píxel a píxel con `tools/visual/compare-shots.mts`. El comparador es nuevo, sin dependencias, y decodifica en el navegador.
+
+**Lo que se aprendió al quitarla sin más:**
+
+- Las 38 capturas cambiaban: el enlace «Saltar al contenido» quedaba visible arriba.
+- La hoja sostenía además piezas que las capturas no recorren: el velo de la ficha (`.drawer-shade` fijo a toda pantalla, que cierra al pulsar fuera) y la altura máxima de las ventanas.
+- Trasladar regla a regla a `consola.css` habría cambiado el orden de la cascada.
+
+**Solución exacta.** `refinements.css` se cargaba justo después de `styles.css`, así que su contenido se ha añadido al final de `styles.css` y se ha retirado la importación (`src/main.tsx`), la hoja (`git rm`) y sus importaciones en 15 arneses de prueba y en `tools/team-audit/harness.tsx`. La cascada queda idéntica y hay una capa menos (11 → 10).
+
+**Comprobación:**
+
+- **Capturas:** las 38 son iguales a la referencia. Una diferencia inicial en Inicio móvil resultó ser ruido de la propia referencia, con una tarjeta diferida sin pintar; confirmado repitiendo la captura.
+- **En la App:** el velo de la ficha sigue fijo a toda pantalla y el enlace de salto sigue oculto hasta recibir el foco.
+- **Pruebas:** `tsc` sin errores; `color-guard`, `css-unused`, `design-tokens`, `design-k-block` y `bundle-budget` en verde.
+- **Colores fijos:** la línea base de `styles.css` sube de 59 a 100 porque recibe los 41 de `refinements.css`. El total de la app no cambia.
+
+**Siguiente capa:** `operaciones-claras.css`, con el mismo método. La poda automática no encontró aún reglas muertas: el ahorro real llegará al convertir estas reglas a tokens por pantalla.

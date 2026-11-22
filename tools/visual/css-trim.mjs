@@ -14,7 +14,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 
 const write = process.argv.includes('--write');
 // Orden de carga de main.tsx.
-const files = ['styles.css', 'refinements.css', 'sales.css', 'team.css', 'integrations.css', 'design-system.css', 'planb-ui.css', 'operaciones-claras.css', 'faro.css'].map(name => 'src/' + name);
+const files = ['styles.css', 'sales.css', 'team.css', 'integrations.css', 'design-system.css', 'planb-ui.css', 'operaciones-claras.css', 'faro.css'].map(name => 'src/' + name);
 const context = node => { const parts = []; for (let p = node.parent; p && p.type !== 'root'; p = p.parent) parts.unshift(p.type === 'atrule' ? '@' + p.name + ' ' + p.params.replace(/\s+/g, ' ').trim() : '?'); return parts.join(' > '); };
 const inKeyframes = node => { for (let p = node.parent; p; p = p.parent) if (p.type === 'atrule' && /keyframes|font-face/.test(p.name)) return true; return false; };
 function classify(selector) {

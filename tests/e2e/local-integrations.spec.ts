@@ -18,7 +18,7 @@ test.beforeAll(async () => {
   const src = (name: string) => JSON.stringify(path.join(repo, 'src', name).replace(/\\/g, '/'));
   fs.writeFileSync(path.join(root, 'entry.tsx'), `import { createRoot } from 'react-dom/client';
 import { LocalIntegrations } from ${src('LocalIntegrations.tsx')};
-import ${src('styles.css')}; import ${src('refinements.css')}; import ${src('sales.css')}; import ${src('team.css')};
+import ${src('styles.css')}; import ${src('sales.css')}; import ${src('team.css')};
 import ${src('integrations.css')}; import ${src('design-system.css')}; import ${src('planb-ui.css')};
 const w = window as any; w.__connects = 0;
 const root = createRoot(document.getElementById('root')!);

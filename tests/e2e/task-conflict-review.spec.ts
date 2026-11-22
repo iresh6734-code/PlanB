@@ -14,7 +14,7 @@ const ENTRY = `import { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { TaskConflictReview } from ${src('src/TaskConflictReview.tsx')};
 import { makeDemoSpec, makeFixture } from ${src('shared/fixtures.ts')};
-import ${src('src/styles.css')}; import ${src('src/refinements.css')}; import ${src('src/design-system.css')}; import ${src('src/planb-ui.css')}; import ${src('src/local-task-focus.css')};
+import ${src('src/styles.css')}; import ${src('src/design-system.css')}; import ${src('src/planb-ui.css')}; import ${src('src/local-task-focus.css')};
 const w = window as any; w.__proposals = []; w.__keep = 0; w.__net = 0;
 const realFetch = window.fetch.bind(window); window.fetch = (...args: any[]) => { w.__net++; return (realFetch as any)(...args); };
 const snapshot = makeFixture('agency'), spec = makeDemoSpec(snapshot), entity = spec.entities.find(e => e.id === 'tasks')!;

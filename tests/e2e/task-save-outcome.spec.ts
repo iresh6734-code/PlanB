@@ -45,7 +45,7 @@ import { TaskSaveOutcomesPanel } from ${src('TaskSaveOutcomes.tsx')};
 import { createTaskSaveOutcomes, legacyStrategy } from ${src('task-save-outcome.ts')};
 import { browserTransport, loadTask } from ${src('local-task-focus-client.ts')};
 import { buildPatch } from ${src('../shared/local-task-focus.ts')};
-import ${src('styles.css')}; import ${src('refinements.css')}; import ${src('sales.css')}; import ${src('team.css')};
+import ${src('styles.css')}; import ${src('sales.css')}; import ${src('team.css')};
 import ${src('integrations.css')}; import ${src('design-system.css')}; import ${src('planb-ui.css')};
 const w = window as any; w.__queueReads = 0; w.__locked = 0; window.addEventListener('planb:locked', () => { w.__locked++; });
 const controller = createTaskSaveOutcomes({ strategy: legacyStrategy(browserTransport()), onConfirmed: async record => { w.__queueReads++; await w.__readRow(record.id); } });

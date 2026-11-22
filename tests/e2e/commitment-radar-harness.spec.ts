@@ -14,7 +14,7 @@ const NOW = '2026-11-08T12:00:00.000Z';
 const ENTRY_HTML = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Radar · arnés</title></head><body><div id="root"></div><script type="module" src="/src/radar-entry.tsx"></script></body></html>`;
 const ENTRY_TSX = `import React from 'react';
 import { createRoot } from 'react-dom/client';
-import './styles.css'; import './refinements.css'; import './sales.css'; import './team.css'; import './integrations.css'; import './design-system.css'; import './planb-ui.css'; import './customer-dossier.css';
+import './styles.css'; import './sales.css'; import './team.css'; import './integrations.css'; import './design-system.css'; import './planb-ui.css'; import './customer-dossier.css';
 import { CommitmentRadar } from './CommitmentRadar.js';
 function Host() {
   const [pin, setPin] = React.useState<string | null | undefined>(undefined);

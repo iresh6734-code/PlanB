@@ -43,7 +43,7 @@ console.log('LISTEN ' + (app.server.address() as any).port);
 const ENTRY = (src: (name: string) => string) => `import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { LocalTaskFocus } from ${src('LocalTaskFocus.tsx')};
-import ${src('styles.css')}; import ${src('refinements.css')}; import ${src('sales.css')}; import ${src('team.css')};
+import ${src('styles.css')}; import ${src('sales.css')}; import ${src('team.css')};
 import ${src('integrations.css')}; import ${src('design-system.css')}; import ${src('planb-ui.css')};
 const w = window as any; w.__log = []; w.__locked = 0; window.addEventListener('planb:locked', () => { w.__locked++; });
 function Today() {

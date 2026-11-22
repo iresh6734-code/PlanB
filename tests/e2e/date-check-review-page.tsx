@@ -3,7 +3,6 @@ import '../../shared/model.js';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import '../../src/styles.css';
-import '../../src/refinements.css';
 import '../../src/design-system.css';
 import '../../src/planb-ui.css';
 import { DecisionReview } from '../../src/DecisionReview.js';

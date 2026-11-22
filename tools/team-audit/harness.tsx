@@ -5,7 +5,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import '../../src/styles.css';
-import '../../src/refinements.css';
 import '../../src/sales.css';
 import '../../src/team.css';
 import '../../src/integrations.css';

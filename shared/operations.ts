@@ -21,6 +21,8 @@ export interface ContinuityStatus {
   connection?:{accountId:string;mode:'test'|'production_readonly';accountType:string;verifiedAt:string|null;selectedFields:Record<string,string[]>}|null;
   recoveryCopy?:RecoveryCopy|null;
   recoveryIntegrity?:RecoveryIntegrity;
+  /** Misión maestra A2: capturas retenidas porque encogieron frente a la anterior (id → motivo). */
+  quarantine?:Record<string,import('./capture-quarantine.js').QuarantineEntry>;
   operations?:{lastAttempt:string|null;lastSuccess:string|null;error:{at:string;message:string;action:string}|null;paused:boolean};
 }
 export interface RecoveryCopy {

@@ -34,6 +34,7 @@ import { captureLedger, continuityReadiness, copyVitals, drillCalendar, DRILL_EV
 import './continuity-home-hub.css';
 import { DowntimeCard } from './app-shell/DowntimeCard.js';
 import { coverageStatement, notCopiedLine } from './app-shell/coverage.js';
+import { shrinkText } from '../shared/capture-quarantine.js';
 import { BrandPicker } from './app-shell/BrandPicker.js';
 import { readBrand } from './app-shell/brand-store.js';
 import { coveredHours, formatHours } from '../shared/downtime-cost.js';
@@ -85,6 +86,9 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
   const { activeId, latestReadiness: diagnosis } = workspaceCopy(state, status);
   const differentArchive = !!(activeId && latest && latest.id !== activeId);
   const continueActive = !!(status?.session || activeId && (differentArchive || (status?.pendingChanges ?? 0) > 0));
+  // Misión maestra A2: la última captura encogió frente a la anterior y está retenida; se ofrece la anterior o confirmarla.
+  const held=latest&&!continueActive?status?.quarantine?.[latest.id]:undefined;
+  const previousGood=held?status?.captures.find(item=>item.id!==latest!.id&&!status.quarantine?.[item.id]):undefined;
   const canOpenToday = !state.runtime && onOpenToday;
   const captureDateLabel = describeCapture(latest?.at).date;
   const activeDate = describeCapture(state.snapshot?.capturedAt).date;
@@ -164,7 +168,11 @@ export function ContinuityHome({state,workspaceContextRevision,refresh,work,prep
       {latest ? <small>{summary && summary.id === latest.id ? captureRecordCount(summary.records) + ' en esta captura' : 'Recuento de esta captura no disponible'}{activeId && !differentArchive ? ' · Es la copia activa' : ''}</small> : null}
       {differentArchive ? <p><strong>Copia activa:</strong> {activeDate ?? 'fecha no disponible'}. Tu trabajo sigue en esta copia.</p> : null}
       {latest?<div className="continuity-facts"><StatusTag tone={diagnosis?.status==='passed'?'success':diagnosis?.status==='untested'?'warning':'neutral'}>{diagnosis?.status==='passed'?'Prueba vigente':diagnosis?.status==='untested'?'Prueba pendiente':'Verificación por revisar'}</StatusTag>{differentArchive?<span>Prueba de la última captura guardada</span>:null}<span>{status?.pendingChanges??0} cambios locales pendientes</span>{automation?<span>{automation.active?'Capturas automáticas habilitadas':automation.reason}</span>:null}</div>:null}</div>
-      <button className={'button '+(readiness&&readiness.next.id!=='none'?'secondary':'primary')} disabled={busy||!!active} onClick={()=>continueActive?work():latest?run(async()=>{await post('/v2/session/begin',{captureId:latest.id});work();}):state.runtime?setRestore(true):prepare()}>{differentArchive?'Continuar con la copia activa':latest?'Continuar trabajando':state.runtime?'Restaurar archivo':'Preparar aplicación'}<ArrowRight size={17}/></button>
+      {held?<div className="info-box ct-held" role="alert"><div><strong>La última captura tiene menos registros que la anterior</strong>
+        <p>{shrinkText(held)}. Se conserva, pero no se abre para trabajar sin confirmarlo: puede ser un borrado masivo, un cambio de permisos o una lectura incompleta.</p>
+        <div className="button-row">{previousGood?<button type="button" className="button secondary" disabled={busy||!!active} onClick={()=>run(async()=>{await post('/v2/session/begin',{captureId:previousGood.id});work();})}>Abrir la captura anterior</button>:null}
+          <button type="button" className="text-button" disabled={busy||!!active} onClick={()=>run(async()=>{await post('/v2/session/begin',{captureId:latest!.id,confirmQuarantine:latest!.id});work();})}>Sé por qué ha encogido: abrirla igualmente</button></div></div></div>:null}
+      <button className={'button '+(readiness&&readiness.next.id!=='none'?'secondary':'primary')} disabled={busy||!!active||!!held} onClick={()=>continueActive?work():latest?run(async()=>{await post('/v2/session/begin',{captureId:latest.id});work();}):state.runtime?setRestore(true):prepare()}>{differentArchive?'Continuar con la copia activa':latest?'Continuar trabajando':state.runtime?'Restaurar archivo':'Preparar aplicación'}<ArrowRight size={17}/></button>
     </section>
     {outage?<article className="ct-outage" data-tone={outage.tone} aria-labelledby="ct-outage-title"><div className="section-heading"><h2 id="ct-outage-title">Si HubSpot cae ahora</h2><Unplug size={19}/></div>
       <p className="ct-outage-verdict">{outage.headline}</p>

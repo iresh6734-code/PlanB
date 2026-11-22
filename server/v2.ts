@@ -93,7 +93,7 @@ export function registerV2(app:FastifyInstance,store:Store,root:string,runtime=f
     return reply.header('Content-Disposition','attachment; filename="plan-b-simulacro.json"').send(report);
   });
   app.post('/api/v2/session/begin',async request=>{
-    const {captureId}=z.object({captureId:z.string()}).strict().parse(request.body);return continuity.begin(captureId);
+    const {captureId,confirmQuarantine}=z.object({captureId:z.string(),confirmQuarantine:z.string().optional()}).strict().parse(request.body);return continuity.begin(captureId,confirmQuarantine);
   });
   app.post('/api/v2/session/end',async()=>continuity.end());
   app.post('/api/v2/services',async request=>{

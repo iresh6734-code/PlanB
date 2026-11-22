@@ -132,3 +132,22 @@ En Continuidad › Estado:
 - **Lista completa:** dentro de «Ver contenido de esta copia» (el texto se conserva por la E2E `continuity.spec`), con los campos solo de consulta y lo cubierto.
 
 Comprobado en el ensayo con la captura de «Agencia Norte». `tsc` sin errores; `coverage`, `continuity-home-hub`, `css-unused`, `color-guard`, `design-tokens`, `bundle-budget` y `ui-copy` en verde.
+
+## 22/11/2026 · A2 · Cuarentena de capturas que encogen
+
+`addCapture` ya rechazaba capturas incompletas respecto a su manifiesto. Faltaba la captura completa en sí misma que trae muchos menos registros que la anterior (borrado masivo, permisos recortados, integración que vacía datos). Una captura nueva no sustituye sola a la copia activa; el riesgo estaba en abrirla con «Continuar trabajando» en plena caída.
+
+- **Regla** (`shared/capture-quarantine.ts`, 4/4): por objeto, no por total.
+  - Retiene si un objeto con 10 o más registros conserva menos del 80 %, o si cualquier objeto llega a 0.
+  - La primera captura solo se retiene si viene vacía.
+- **Servidor** (`server/capture-quarantine.ts` + `server/continuity.ts`):
+  - Al capturar se compara con la captura guardada más reciente. Si encoge, se guarda el motivo junto a la captura, que se conserva.
+  - `begin` rechaza abrirla (409, con el motivo «Clientes 24 → 0») salvo `confirmQuarantine` con el ID exacto de esa captura. Al confirmarla, sale de la cuarentena.
+  - Si la anterior no se puede leer, no se compara: nunca se pierde una captura por esto.
+  - `GET /api/v2/continuity` incluye `quarantine`.
+- **Continuidad** (`src/ContinuityHome.tsx`): si la última captura está retenida, aviso con el motivo, «Abrir la captura anterior» y «Sé por qué ha encogido: abrirla igualmente». «Continuar trabajando» queda deshabilitado mientras tanto.
+- **Comprobación:**
+  - `tests/capture-quarantine-api.test.ts`: rechazo, confirmación ligada al ID, estado y liberación.
+  - Una mutación (sin la puerta en `begin`) hace fallar la prueba.
+  - `tsc` sin errores; pruebas de Continuidad y de captura en verde; inventario de API al día (183).
+  - En el ensayo, el estado trae `quarantine: {}` y no hay aviso. No se ha provocado un encogimiento real en la App en marcha (exigiría una captura de HubSpot).

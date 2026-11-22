@@ -10,6 +10,7 @@ import type { ContinuityStatus, DrillReport } from '../shared/operations.js';
 import type { ContinuityBundle } from '../shared/model.js';
 import { planDrill } from './drill-plan.js';
 import { assessDrill, summarizeCapture } from './assessment.js';
+import { quarantineFor, quarantined, requireReleased, saveQuarantine } from './capture-quarantine.js';
 import type { SavedConnection } from './connection.js';
 import { recoveryCopyStatus } from './recovery-copy.js';
 
@@ -29,7 +30,7 @@ export class Continuity {
       session:this.store.get('continuitySession',null),schedule:this.store.get('schedule',{enabled:false,intervalMinutes:60,lastAttempt:null}),
       connected:!this.store.disconnected,protected:!!this.store.get('password',null),accountId:this.store.snapshot?.source.accountId??null,
       changes:this.store.changesCount,pendingChanges:this.store.pendingChangesCount,runtime:this.runtime,realDataEnabled:this.store.get<{mode?:string}|null>('connectionPublic',null)?.mode==='production_readonly',connection:this.store.get('connectionPublic',null),recoveryCopy:recoveryCopyStatus(this.store),
-      recoveryIntegrity,operations:{lastAttempt:this.store.get('captureLastAttempt',null)??this.store.get<{lastAttempt:string|null}>('schedule',{lastAttempt:null}).lastAttempt,
+      recoveryIntegrity,quarantine:quarantined(this.store),operations:{lastAttempt:this.store.get('captureLastAttempt',null)??this.store.get<{lastAttempt:string|null}>('schedule',{lastAttempt:null}).lastAttempt,
         lastSuccess:this.store.get('captureLastSuccess',null),error:this.store.get('operationError',null),paused:this.runtime||this.store.disconnected||!!this.store.get('continuitySession',null)||recoveryIntegrity.state==='invalid'}};
   }
   private secretKey(){return localKey(dirname(this.store.filename));}
@@ -60,9 +61,11 @@ export class Continuity {
         signal.throwIfAborted();
         if(snapshot.records.length>10000)throw new AppError(413,'El piloto admite hasta 10.000 registros totales.');
         if(snapshot.source.accountId!==connection.accountId)throw new AppError(422,'La captura pertenece a otro portal.');
+        const shrink=quarantineFor(this.store,snapshot,new Date().toISOString());
         const id=this.store.transaction(()=>{
           this.store.assertRecoveryIntegrity();
           const captureId=this.store.addCapture(snapshot);
+          if(shrink)saveQuarantine(this.store,captureId,shrink); // se conserva, pero no se abre sin confirmarla
           this.store.set('captureLastSuccess',new Date().toISOString());
           this.store.set('operationError',null);
           this.store.set('scheduleError',null);
@@ -74,11 +77,12 @@ export class Continuity {
       }
     });
   }
-  begin(captureId:string) {
+  begin(captureId:string,confirmQuarantine?:string) {
     this.store.assertRecoveryIntegrity();
     if(this.status().session)throw new AppError(409,'Ya hay una sesión de continuidad abierta. Continúa trabajando o ciérrala antes de abrir otra copia.');
     if(this.jobs.list().some(j=>['queued','running'].includes(j.status)))throw new AppError(409,'Espera a que termine el trabajo actual.');
     if(this.store.pendingChangesCount)throw new AppError(409,'Conserva y cierra los cambios pendientes antes de abrir otra captura.');
+    requireReleased(this.store,captureId,confirmQuarantine);
     const snapshot=this.store.capture(captureId);
     this.store.importSnapshot(snapshot,true);this.store.saveGeneration(makeDemoSpec(snapshot),{provider:'demo',model:null,generatedAt:new Date().toISOString(),prompt:'',approved:false});
     this.store.activate();const session={id:randomUUID(),captureId,startedAt:new Date().toISOString()};

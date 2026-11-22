@@ -6,7 +6,8 @@ import { readHubspotForVerifica } from '../server/verifica/hubspot-reader.js';
 import { VerificaReadError } from '../shared/verifica/hubspot.js';
 import { importInvoices, InvoiceImportError, type InvoiceImport } from '../shared/verifica/invoices.js';
 import type { VerificaCapture } from '../shared/verifica/model.js';
-import { buildVerificaReport, reportToJson } from '../shared/verifica/report.js';
+import { CleanRoomError, releaseReport } from '../shared/verifica/clean-room.js';
+import { reportToJson } from '../shared/verifica/report.js';
 // Verifica · fase 1: lectura COMPLETA de un portal de PRUEBAS de HubSpot con historial, para validar el lector antes de
 // prometer nada a un cliente. Solo lectura (GET y búsquedas de recuento), solo cuentas DEVELOPER_TEST o SANDBOX.
 // Solo en el ordenador personal: nunca en un equipo de la empresa ni contra una cuenta real.
@@ -118,7 +119,14 @@ export async function runCli(argv: string[], deps: CliDeps): Promise<number> {
         '  columnas: ' + Object.entries(imported.columns).map(([k, v]) => k + '=«' + v + '»').join(', '), ...imported.warnings.map(w => '  aviso: ' + w));
     }
     // Sal nueva en cada informe: en un portal de pruebas no hace falta poder repetir los seudónimos.
-    const report = buildVerificaReport({ asOf: capture.capturedAt, previous, latest: capture, invoices: imported?.invoices ?? null, declarations: {}, salt: randomBytes(32).toString('hex') });
+    // Pasa por la misma barrera que la sala limpia; para la copia custodiada, usa scripts/verifica-sala-limpia.ts.
+    let report;
+    try { report = releaseReport({ asOf: capture.capturedAt, previous, latest: capture, invoices: imported?.invoices ?? null, declarations: {}, salt: randomBytes(32).toString('hex') }); }
+    catch (e) {
+      deps.out(lines.join('\n') + '\n');
+      deps.err((e instanceof CleanRoomError ? e.message : 'El informe no se pudo generar.') + ' La captura sí se guardó; scripts/verifica-sala-limpia.ts --show-leaks dice qué lo ha parado.\n');
+      return 1;
+    }
     if (!await save(args.report, reportToJson(report))) return 1;
     lines.push('', 'Informe guardado en ' + args.report + ' · huella ' + report.fingerprint.slice(0, 16) + '…');
     for (const f of report.findings) lines.push('  ' + (f.alarm ? 'ALARMA ' : f.basis === 'unverified' ? 'sin comprobar ' : 'normal ') + '· ' + f.title);

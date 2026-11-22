@@ -333,6 +333,79 @@ Abrir `verifica.html`, pulsar «Abrir un informe» → `informe.json`, y comprob
 2. La huella prueba que el informe no se ha tocado, pero no quién lo hizo: cualquiera puede fabricar un informe con huella coherente. Lo que lo ata a los datos es la copia custodiada, y lo que lo ata al vendedor es el contrato que cite las dos huellas. Una firma digital es una decisión abierta (ver pendientes).
 3. La copia lleva las capturas enteras y la sal: quien tenga la copia y la llave ve todo el CRM. La llave nunca debe viajar con el informe ni con la copia.
 
+## Verifica · Fase 3 · Vigilancia · GitHub Copilot
+
+### Reserva · antes de editar
+
+22/11/2026, 17:30 Europe/Madrid. La usuaria: «ve a ello» (fase 3). Según el plan: «Capturas semanales y aviso si la cartera se vacía o desaparecen contactos en bloque», con la captura retenida y un informe al cierre.
+
+Alcance, todo código puro y pruebas sin red:
+
+- **`shared/verifica/watch.ts` (nuevo), el motor de vigilancia:**
+  - parte de la captura de la firma y compara cada captura semanal con la última aceptada;
+  - tres avisos: registros borrados en bloque; cartera que se vacía (perdida, borrada o rebajada, nunca lo ganado); semana sin captura;
+  - la captura que encoge queda **retenida** (cuarentena A2, `assessShrink`) y no pasa a ser la base de comparación hasta que las partes la acepten;
+  - **parte al cierre**: firma frente a última captura, con huella y seudónimos.
+- **`shared/verifica/empresa-vigilada.ts` (nuevo):** la empresa con trampas vigilada 5 semanas. Con trampas: contactos borrados, cartera vaciada y una semana sin captura. Sin trampas: actividad normal sin avisos. Lo esperado se anota mientras se siembra.
+- **La barrera de la sala limpia** se aplica también al parte de vigilancia.
+- **`scripts/verifica-vigilancia.ts` (nuevo):** sin conexión, de capturas guardadas a parte de vigilancia. `scripts/verifica-ejemplo.ts` escribe también las capturas semanales.
+- **Interfaz, `src/verifica/`:** `verifica.html` abre también un parte de vigilancia y comprueba su huella. Un solo botón relleno por vista; se mide el paquete.
+- **Pruebas:** `tests/verifica-vigilancia.test.ts` y casos en `tests/verifica-pagina.test.ts`.
+
+Sin servidores, navegador, PowerShell, DPAPI, red ni datos reales. Dueño provisional: GitHub Copilot, como en la fase 2.
+
+### Hecho · 22/11/2026 · cómo se comprueba
+
+Hecho todo lo reservado. Salida de la fase 3: la empresa vigilada pasa cinco semanas después de la firma. Cada trampa sale en su semana, la captura que encoge queda retenida, y el parte al cierre suma lo que se perdió. Todo sale con seudónimos y sin ningún texto del CRM. Sin trampas, ni un aviso.
+
+| Pieza | Qué hace |
+|---|---|
+| `shared/verifica/watch.ts` | **El motor.** Para los avisos, compara cada captura con la anterior. Hay cinco: contactos, empresas u oportunidades borrados en bloque (mismos umbrales que el informe, 10 registros y 5 %); cartera abierta que se vacía; y semana sin captura. La cartera se vacía si al menos 3 oportunidades abiertas y el 10 % del importe pasan a perdidas, se borran o bajan de importe; lo ganado no cuenta. Falta una semana si pasan más de 7 + 3 días entre dos capturas. Para retener, compara con la **última captura aceptada** (`assessShrink`, la cuarentena A2): la captura que encoge no pasa a ser la base hasta que alguien la acepta (`--accept <huella>`). Hay además un aviso de «ahora mismo» si a la fecha del parte ya falta la captura que tocaba. El parte al cierre compara la firma con la última captura. Lleva huella, `parseWatchReport` para leerlo desde fuera y la barrera de la sala limpia (`releaseWatchReport`). |
+| `shared/verifica/empresa-vigilada.ts` | **La empresa vigilada:** la empresa con trampas, sana, firmada el 20/11/2026 y seguida 5 semanas. Semana 2: borran 80 contactos. Semana 3: no hay captura. Semana 4: las 18 oportunidades abiertas más grandes pasan a perdidas, se borran 6 y 4 se dejan a cero. Lo esperado se anota trampa por trampa al sembrarlas; no sale de aplicar los umbrales. La actividad normal no toca lo que ya usa una trampa. |
+| `shared/verifica/clean-room.ts` | La barrera, generalizada a cualquier lista de capturas (`leaksIn`, `sensitiveTextsOf`), para que sirva también al parte. |
+| `scripts/verifica-vigilancia.ts` | **Sin conexión:** de la captura de la firma y las semanales a un parte de vigilancia. La sal va en un archivo que crea la primera vez y reutiliza después, para que los seudónimos sean los mismos semana tras semana. Nunca la imprime. Si la barrera para el parte, no escribe nada (`--show-leaks` dice qué lo ha parado, solo en pantalla). Códigos de salida: 0 bien, 1 parado o error al escribir, 2 mal uso. |
+| `scripts/verifica-ejemplo.ts` | Escribe también `firma.json` y `semana-N.json`. Con trampas falta `semana-3.json`. |
+| `src/verifica/` (`verifica.html`) | **El parte en la página.** En el ejemplo, «Informe · Vigilancia» junto al nombre del producto, con las variantes con y sin trampas. «Abrir un informe» reconoce también un parte de vigilancia. La vista muestra: «Ahora mismo» (solo si falta una captura), «Semana a semana» (fecha, estado de la captura, avisos con sus referencias), «Al cierre» y la huella. Un solo botón relleno en el ejemplo, «Descargar parte», y ninguno en un parte abierto, porque no hay nada que comprobar con copia. Cabecera, referencias y huella son ahora piezas comunes (`Masthead.tsx`, `documents.ts`). |
+
+**Cómo se comprueba aquí (sin red):**
+
+- `npx tsc --noEmit -p tsconfig.json`: limpio.
+- `node tools/safe-tests.mjs verifica orphan-components css-unused color-guard design-tokens dev-only-files`: 10 de 10 archivos. `node tools/css-unused.mjs`: 0 muertos.
+- `tests/verifica-vigilancia.test.ts`, 7 casos:
+  - cada trampa en su semana con sus cifras: semana 2, 324 → 246 contactos; semana 4, falta la captura de 14 días y la cartera se vacía en 538.800 € de 1.596.200 € (33,8 %);
+  - las capturas retenidas, y la base de comparación una vez aceptadas;
+  - el cierre: 90 contactos borrados y 36,6 % de la cartera vaciada;
+  - sin trampas, ningún aviso;
+  - capturas desordenadas o un parte anterior a la última captura → error;
+  - la barrera y la huella;
+  - el script con dependencias en memoria.
+- `tests/verifica-pagina.test.ts`, 4 casos nuevos:
+  - el parte de ejemplo con sus avisos y retenidas, sin textos del CRM y un solo botón relleno;
+  - sin trampas, ningún sello;
+  - un parte abierto, sin botón relleno y señalado si se ha tocado;
+  - la captura atrasada arriba, una sola vez.
+- Prueba de mutación: con la retención ciega, o contando lo ganado como cartera vaciada, fallan los casos de trampas y de empresa limpia. Se deshizo después.
+- Paquete (`vite build` a una carpeta temporal): la página Verifica pasa de 30,2 a 44,6 KB de JS (de 10,8 a 15,0 KB comprimido) por el motor y la empresa de ejemplo, y de 8,8 a 10,0 KB de CSS. La App no importa nada de `src/verifica/`.
+
+**Recorrido a mano en el ordenador personal** (aquí no se abre navegador):
+
+```
+npx tsx scripts/verifica-ejemplo.ts ejemplo
+npx tsx scripts/verifica-vigilancia.ts --signing ejemplo/firma.json --capture ejemplo/semana-1.json --capture ejemplo/semana-2.json --capture ejemplo/semana-4.json --capture ejemplo/semana-5.json --salt sal.txt --report parte.json --as-of 2026-12-26
+```
+
+Abrir `verifica.html`, pulsar «Abrir un informe» → `parte.json`. Debe mostrar las mismas semanas y avisos que «Vigilancia · Con trampas» del ejemplo; los seudónimos cambian porque la sal es otra. Para aceptar una retenida, se vuelve a ejecutar con `--accept <huella completa de esa captura>`.
+
+**Con un CRM real** (solo en el ordenador personal, con el portal de pruebas): una captura por semana con `scripts/verifica-hubspot.ts` (pasos en «Verifica · Fase 1»), guardando siempre la misma `sal.txt`, y el parte con `scripts/verifica-vigilancia.ts`.
+
+**Límites que hay que saber:**
+
+1. Los avisos son heurísticas con umbrales fijos: 10 registros y 5 % para los borrados, 3 oportunidades y 10 % para la cartera, 7 + 3 días para la cadencia. Pueden pasar por alto un goteo lento por debajo de los umbrales. El parte al cierre lo recoge en total, pero no dice en qué semana pasó.
+2. No hay canal de aviso: el parte se genera cuando alguien ejecuta el script. Ni las capturas ni los avisos salen solos.
+3. Aceptar una retenida es a mano y por huella. La herramienta no decide si un borrado era legítimo.
+4. La sal la guarda quien genera el parte. Si se pierde, los seudónimos de las semanas siguientes no casan con los anteriores, aunque las cifras siguen valiendo.
+5. «Cartera abierta» son las oportunidades con estado `open` en la captura, que el lector saca de las etapas. Si el vendedor cambia las etapas del pipeline entre semanas, el aviso puede dispararse o callarse sin motivo.
+
 ## Verifica · Pendientes (lista viva)
 
 Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
@@ -345,6 +418,10 @@ Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
 - [ ] A6 y A7 del relevo anterior. Con Verifica, A6 pierde sentido y A7 gana importancia.
 - [ ] *(nuevo, fase 2)* ¿Firma digital del informe? Hoy la huella prueba que no se ha tocado, pero no quién lo emitió. Opciones: firma de Plan B Verifica como tercero, firma del vendedor, o solo el contrato citando las huellas.
 - [ ] *(nuevo, fase 2)* Quién genera la copia y la llave y cómo se entregan: en mano, por un canal distinto del informe, o depositadas ante notario.
+- [ ] *(nuevo, fase 3)* Quién hace la captura semanal entre la firma y el cierre: el vendedor con nuestra herramienta, nosotros con un acceso de solo lectura, o un tercero. Y qué pasa si una semana no la hace.
+- [ ] *(nuevo, fase 3)* Cómo llega un aviso al comprador: correo, llamada o solo el parte cuando se pide. Hoy no hay canal: el parte sale cuando alguien ejecuta el script.
+- [ ] *(nuevo, fase 3)* Quién acepta una captura retenida (comprador, vendedor o los dos) y cómo queda constancia.
+- [ ] *(nuevo, fase 3)* Precio y forma de la vigilancia: la estrategia habla de 1.000–2.000 €/mes. ¿Va por meses, por operación o incluida en el informe?
 
 **Abogados y seguro (antes de la fase 5, la venta; no bloquean construir)**
 
@@ -354,6 +431,8 @@ Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
 - [ ] Si la huella del informe y de la copia custodiada valen como anexo de las garantías del contrato, y quién guarda la copia y la llave (abogado o notario).
 - [ ] *(nuevo, fase 2)* Que la sala limpia sea una heurística (límite 1 de «Verifica · Fase 2») es aceptable si el contrato lo dice; si no, hay que revisar a mano cada informe antes de soltarlo.
 - [ ] *(nuevo, fase 2)* Cuánto tiempo se guarda la copia custodiada y cómo se destruye, porque lleva el CRM entero del vendedor.
+- [ ] *(nuevo, fase 3)* Cómo entra la vigilancia en el contrato de compraventa: obligación del vendedor de no tocar la cartera entre firma y cierre, y qué consecuencia tiene un aviso (ajuste de precio, garantía, derecho a no cerrar). Los umbrales de los avisos (límite 1 de «Verifica · Fase 3») tendrían que salir del contrato o citarse en él.
+- [ ] *(nuevo, fase 3)* Si mirar el CRM del vendedor cada semana necesita un permiso aparte en el acuerdo de tratamiento de datos.
 
 **En el ordenador personal (aquí no se puede)**
 
@@ -364,11 +443,15 @@ Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
 - [ ] *(nuevo, fase 2)* Recorrido a mano de la sala limpia y el verificador con `scripts/verifica-ejemplo.ts`. Pasos en «Verifica · Fase 2».
 - [ ] *(nuevo, fase 2)* Revisión visual de `verifica.html` con un informe abierto y la comprobación de la copia: escritorio y móvil, tema claro y oscuro, foco con teclado en «Abrir un informe» y «Elegir archivo». Aquí no se ha visto pintado; solo está probado el HTML.
 - [ ] *(nuevo, fase 2)* Tamaño real de la copia con el portal de pruebas. El verificador acepta copias de hasta 64 MB; hay que ver cuánto ocupa un CRM con historial.
+- [ ] *(nuevo, fase 3)* Recorrido a mano de la vigilancia con `scripts/verifica-ejemplo.ts` y `scripts/verifica-vigilancia.ts`, y abrir `parte.json` en `verifica.html`. Pasos en «Verifica · Fase 3».
+- [ ] *(nuevo, fase 3)* Revisión visual de «Vigilancia» en `verifica.html`: escritorio y móvil, tema claro y oscuro, las pestañas «Informe · Vigilancia» con teclado, y la impresión del parte. Aquí solo está probado el HTML.
+- [ ] *(nuevo, fase 3)* Dos o tres capturas semanales reales del portal de pruebas, haciendo a propósito un borrado en bloque y una oportunidad perdida, para ver que el aviso salta con datos de HubSpot y no solo con la empresa ficticia.
 
 **Fases siguientes**
 
 - [x] ~~Fase 2 · Informe y sala limpia~~: hecha el 22/11/2026 con la empresa con trampas. Falta lo marcado «fase 2» en las listas de arriba.
-- [ ] Fase 3 · Vigilancia: capturas semanales y aviso si la cartera se vacía o desaparecen contactos en bloque.
+- [x] ~~Fase 3 · Vigilancia~~: hecha el 22/11/2026 con la empresa vigilada. Falta lo marcado «fase 3» en las listas de arriba.
+- [ ] *(nuevo, fase 3)* La vigilancia sin intervención: un recordatorio cuando toca la captura y el parte generado solo. Necesita un servidor o una tarea programada, así que se hace en el ordenador personal o en la fase 5.
 - [ ] Fase 4 · Después del cierre: migración verificada al CRM del comprador.
 - [ ] Fase 5 · Salir a vender.
 

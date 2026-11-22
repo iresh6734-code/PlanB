@@ -62,15 +62,15 @@ export function buildVerificaReport(input: ReportInput): VerificaReport {
   const ctx: RuleContext = { asOf: input.asOf, previous: input.previous, latest: input.latest, invoices: input.invoices, declarations: input.declarations, pseudonym: pseudonymizer(input.salt), fingerprints };
   const results = RULES.map(rule => rule(ctx));
   const sources: ReportSource[] = [
-    ...(input.previous && fingerprints.previous ? [{ role: 'previous' as const, at: input.previous.capturedAt, fingerprint: fingerprints.previous, detail: describe(input.previous) }] : []),
-    { role: 'latest', at: input.latest.capturedAt, fingerprint: fingerprints.latest, detail: describe(input.latest) },
+    ...(input.previous && fingerprints.previous ? [{ role: 'previous' as const, at: input.previous.capturedAt, fingerprint: fingerprints.previous, detail: describeCapture(input.previous) }] : []),
+    { role: 'latest', at: input.latest.capturedAt, fingerprint: fingerprints.latest, detail: describeCapture(input.latest) },
     ...(input.invoices && fingerprints.invoices ? [{ role: 'invoices' as const, at: null, fingerprint: fingerprints.invoices, detail: input.invoices.length + ' facturas' }] : []),
   ];
   const body = { format: REPORT_FORMAT, asOf: input.asOf, sources, findings: results.map(r => r.finding), notVerified: results.flatMap(r => r.notVerified) } as const;
   return { ...body, fingerprint: reportFingerprint(body) };
 }
 
-function describe(capture: VerificaCapture): string {
+export function describeCapture(capture: VerificaCapture): string {
   return capture.source + ' · ' + capture.companies.length + ' empresas, ' + capture.contacts.length + ' contactos, ' + capture.deals.length + ' oportunidades' + (capture.historyAvailable ? ', con historial' : ', sin historial');
 }
 

@@ -29,7 +29,7 @@ export interface TrapCompany {
 }
 
 /** mulberry32: pequeño, determinista y suficiente para importes de prueba. */
-function seeded(seed: number) {
+export function seeded(seed: number) {
   let state = seed >>> 0;
   return () => {
     state = (state + 0x6d2b79f5) >>> 0;

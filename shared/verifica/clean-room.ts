@@ -18,7 +18,10 @@ const fold = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/
  * Correos y NIF: tal cual. IDs: entre comillas, es decir, como valor exacto de un campo del JSON.
  */
 export function sensitiveTexts(input: Pick<ReportInput, 'previous' | 'latest' | 'invoices'>): { folded: string[]; quoted: string[] } {
-  const captures = [input.previous, input.latest].filter((c): c is VerificaCapture => c !== null);
+  return sensitiveTextsOf([input.previous, input.latest].filter((c): c is VerificaCapture => c !== null), input.invoices);
+}
+
+export function sensitiveTextsOf(captures: readonly VerificaCapture[], invoices: readonly VerificaInvoice[] | null): { folded: string[]; quoted: string[] } {
   const names = new Set<string>(), exact = new Set<string>(), ids = new Set<string>();
   const name = (value: string | null | undefined) => { if (value) { const f = fold(value); if (f.length >= 8 && f.includes(' ')) names.add(f); } };
   for (const capture of captures) {
@@ -27,15 +30,20 @@ export function sensitiveTexts(input: Pick<ReportInput, 'previous' | 'latest' | 
     for (const p of capture.contacts) { ids.add(p.id); name(p.name); if (p.email) exact.add(fold(p.email)); }
     for (const d of capture.deals) { ids.add(d.id); name(d.name); }
   }
-  for (const invoice of input.invoices ?? [] as VerificaInvoice[]) ids.add(invoice.id);
+  for (const invoice of invoices ?? []) ids.add(invoice.id);
   return { folded: [...names, ...exact], quoted: [...ids].map(id => JSON.stringify(id)) };
+}
+
+/** Textos de esas capturas y facturas que aparecen en un JSON que va a salir (informe o parte de vigilancia). */
+export function leaksIn(json: string, captures: readonly VerificaCapture[], invoices: readonly VerificaInvoice[] | null): string[] {
+  const folded = fold(json);
+  const { folded: texts, quoted } = sensitiveTextsOf(captures, invoices);
+  return [...texts.filter(text => folded.includes(text)), ...quoted.filter(id => json.includes(id))];
 }
 
 /** Textos del CRM que aparecen en el informe. Solo para mostrarlos en el equipo del vendedor, nunca en un mensaje que salga. */
 export function findLeaks(report: VerificaReport, input: Pick<ReportInput, 'previous' | 'latest' | 'invoices'>): string[] {
-  const json = reportToJson(report), folded = fold(json);
-  const { folded: texts, quoted } = sensitiveTexts(input);
-  return [...texts.filter(text => folded.includes(text)), ...quoted.filter(id => json.includes(id))];
+  return leaksIn(reportToJson(report), [input.previous, input.latest].filter((c): c is VerificaCapture => c !== null), input.invoices);
 }
 
 /** Cuántos textos del CRM aparecen en el informe. No dice cuáles, para no sacarlos por el mensaje de error. */

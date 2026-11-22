@@ -37,6 +37,11 @@ code { font-family: var(--vf-mono); font-size: 12px; font-variant-numeric: tabul
 .vf-head { display: grid; gap: 12px; }
 .vf-head-row { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; }
 .vf-product { margin: 0; font-weight: 600; font-size: 13px; color: var(--vf-text-2); }
+.vf-head-start { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 20px; }
+.vf-docs { display: flex; gap: 16px; }
+.vf-doc { min-height: 28px; padding: 0; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--vf-text-3); font: inherit; font-size: 13px; cursor: pointer; }
+.vf-doc:hover { color: var(--vf-text-1); }
+.vf-doc[aria-pressed="true"] { border-bottom-color: var(--vf-primary); color: var(--vf-text-1); font-weight: 600; }
 .vf-fiction { margin: 0; padding: 2px 8px; border: 1px dashed var(--vf-control); border-radius: 2px; font-size: 12px; color: var(--vf-text-2); }
 .vf-head h1 { margin: 8px 0 0; font-size: 28px; line-height: 1.2; font-weight: 650; letter-spacing: -0.01em; text-wrap: balance; }
 .vf-lede { margin: 0; max-width: 65ch; font-size: 16px; color: var(--vf-text-2); }
@@ -83,6 +88,16 @@ code { font-family: var(--vf-mono); font-size: 12px; font-variant-numeric: tabul
 .vf-refs li { break-inside: avoid; padding: 2px 0; }
 .vf-trace { margin: 0; font-family: var(--vf-mono); font-size: 12px; color: var(--vf-text-3); }
 
+.vf-capture-status { padding: 0 6px; border: 1px solid var(--vf-rule-strong); border-radius: 2px; color: var(--vf-text-1); font-size: 12px; font-weight: 600; }
+.vf-capture-status[data-tone="ok"] { border-color: transparent; background: var(--vf-subtle); color: var(--vf-text-2); font-weight: 400; }
+.vf-capture-status[data-tone="held"] { border-color: transparent; background: var(--vf-warn-bg); color: var(--vf-warn-text); }
+.vf-held { margin: 0; max-width: 70ch; font-size: 13px; color: var(--vf-warn-text); }
+.vf-alerts { list-style: none; margin: 4px 0 0; padding: 0; display: grid; }
+.vf-alert { display: grid; gap: 4px; padding: 10px 0; border-top: 1px solid var(--vf-rule); }
+.vf-alert:last-child { padding-bottom: 4px; }
+.vf-alert h4 { margin: 0; font-size: 14px; font-weight: 600; color: var(--vf-seal-text); }
+.vf-rules { margin: 0 0 16px; max-width: 70ch; font-size: 13px; color: var(--vf-text-2); }
+
 .vf-unverified { margin: 0; padding: 0 0 0 18px; display: grid; gap: 8px; max-width: 70ch; }
 .vf-unverified strong { font-weight: 600; }
 .vf-empty { margin: 0; color: var(--vf-text-2); }
@@ -126,7 +141,7 @@ code { font-family: var(--vf-mono); font-size: 12px; font-variant-numeric: tabul
 @media print {
   body { background: none; }
   .vf-page { padding: 0; max-width: none; }
-  .vf-actions, .vf-error, .vf-custody { display: none; }
+  .vf-actions, .vf-error, .vf-custody, .vf-docs { display: none; }
   .vf-sheet, .vf-foot { border: 0; padding: 0; }
   .vf-sheet-next { break-before: page; }
   .vf-refs ul { columns: 3; }

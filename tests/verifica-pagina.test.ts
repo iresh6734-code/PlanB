@@ -2,7 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { VerificaReportView, readReportText, referenceReport, type ReportOrigin, type Variant } from '../src/verifica/VerificaReport.js';
+import { VerificaReportView, referenceReport } from '../src/verifica/VerificaReport.js';
+import { WatchReportView, referenceWatch } from '../src/verifica/WatchReport.js';
+import type { ReportOrigin, Variant } from '../src/verifica/Masthead.js';
+import { readDocumentText } from '../src/verifica/documents.js';
+import { buildWatchedCompany } from '../shared/verifica/empresa-vigilada.js';
+import { buildWatchReport, watchReportToJson, type WatchReport } from '../shared/verifica/watch.js';
 import { checkCustody } from '../src/verifica/custody-check.js';
 import { buildTrapCompany } from '../shared/verifica/empresa-con-trampas.js';
 import { runCleanRoom } from '../shared/verifica/clean-room.js';
@@ -10,6 +15,7 @@ import { newCustodyKey } from '../shared/verifica/custody.js';
 import { reportToJson, verifyReport, type VerificaReport } from '../shared/verifica/report.js';
 
 const renderWith = (report: VerificaReport, origin: ReportOrigin) => renderToStaticMarkup(createElement(VerificaReportView, { report, origin }));
+const readReportText = (text: string) => { const doc = readDocumentText(text); return typeof doc === 'string' ? doc : doc.kind === 'report' ? doc.report : 'es un parte'; };
 const render = (variant: Variant) => {
   const report = referenceReport(variant);
   return { report, html: renderWith(report, { kind: 'reference', variant }) };
@@ -58,7 +64,7 @@ test('Verifica · abrir un informe: rechaza lo que no lo es y señala el que se 
   const report = referenceReport('traps');
   assert.equal(readReportText('no es json'), 'no es un archivo JSON válido');
   for (const broken of [{}, { ...report, format: 'otro' }, { ...report, findings: [report.findings[0], report.findings[0]] }, { ...report, findings: [{ ...report.findings[0], items: [{ ref: 7 }] }] }]) {
-    assert.equal(readReportText(JSON.stringify(broken)), 'no es un informe de Verifica');
+    assert.equal(readReportText(JSON.stringify(broken)), 'no es un informe ni un parte de vigilancia de Verifica');
   }
   const touched = structuredClone(report);
   touched.findings[0]!.figures.moved = 0;
@@ -87,4 +93,56 @@ test('Verifica · comprobar la copia custodiada en el navegador', async () => {
   const result = await checkCustody(touched, text, key);
   assert.equal(result.ok, false);
   assert.match(result.message, /se ha tocado después/);
+});
+
+const renderWatch = (report: WatchReport, origin: ReportOrigin) => renderToStaticMarkup(createElement(WatchReportView, { report, origin }));
+
+test('Verifica · parte de vigilancia: cada trampa sale en su semana, la retenida se señala y el cierre suma lo perdido', () => {
+  const report = referenceWatch('traps');
+  const html = renderWatch(report, { kind: 'reference', variant: 'traps', doc: 'watch' });
+  assert.equal(html.match(/class="vf-capture-status"/g)?.length, 5, 'firma y cuatro capturas: la de la semana 3 falta');
+  assert.equal(html.match(/data-tone="held"/g)?.length, 3);
+  assert.equal(html.match(/class="vf-alert"/g)?.length, 3, 'contactos borrados, semana sin captura y cartera vaciada');
+  assert.match(html, /3 avisos en 4 capturas semanales\. 3 retenidas/);
+  assert.ok(!html.includes('Ahora mismo'), 'a la fecha del parte no falta ninguna captura');
+  assert.match(html, /Al cierre: la firma frente a la captura del/);
+  assert.equal(html.match(/class="vf-primary"/g)?.length, 1);
+  assert.match(html, /aria-pressed="true"[^>]*>Vigilancia</);
+  assert.ok(html.includes(report.fingerprint) && /Coincide con el contenido/.test(html));
+  const leaked = buildWatchedCompany({ traps: true }).forbidden.filter(text => html.includes(text));
+  assert.deepEqual(leaked, [], 'filtrados: ' + leaked.slice(0, 5).join(', '));
+});
+
+test('Verifica · parte de vigilancia sin trampas: ni avisos ni retenidas', () => {
+  const html = renderWatch(referenceWatch('clean'), { kind: 'reference', variant: 'clean', doc: 'watch' });
+  assert.equal(html.match(/data-alarm="true"/g), null);
+  assert.match(html, /Ninguna de las 5 capturas semanales se sale de lo normal/);
+  assert.match(html, /nada se sale de lo normal/);
+  assert.ok(!html.includes('Ahora mismo'));
+});
+
+test('Verifica · abrir un parte de vigilancia: se reconoce, no tiene botón relleno y señala si se ha tocado', () => {
+  const report = referenceWatch('traps');
+  const doc = readDocumentText(watchReportToJson(report));
+  assert.ok(typeof doc !== 'string' && doc.kind === 'watch');
+  const html = renderWatch(doc.report, { kind: 'opened', name: 'parte.json' });
+  assert.equal(html.match(/class="vf-primary"/g), null);
+  assert.ok(!html.includes('Empresa ficticia') && !html.includes('vf-docs'));
+  assert.equal(html.split(report.fingerprint).length - 1, 1, 'la huella del parte sale una sola vez');
+  const touched = structuredClone(report);
+  touched.entries[2]!.alerts = [];
+  const opened = readDocumentText(JSON.stringify(touched));
+  assert.ok(typeof opened !== 'string' && opened.kind === 'watch');
+  assert.match(renderWatch(opened.report, { kind: 'opened', name: 'x.json' }), /No coincide: el parte se ha tocado/);
+  assert.equal(readDocumentText(JSON.stringify({ ...report, entries: 'nada' })), 'no es un informe ni un parte de vigilancia de Verifica');
+});
+
+test('Verifica · parte de vigilancia con la captura atrasada: el aviso va arriba, una sola vez', () => {
+  const company = buildWatchedCompany({ traps: false });
+  const asOf = new Date(Date.parse(company.asOf) + 20 * 86_400_000).toISOString();
+  const report = buildWatchReport({ signing: company.signing, captures: company.captures, asOf, salt: company.salt });
+  const html = renderWatch(report, { kind: 'opened', name: 'parte.json' });
+  assert.match(html, /Ahora mismo/);
+  assert.equal(html.split(report.overdue!.summary).length - 1, 1);
+  assert.match(html, /1 aviso en 5 capturas semanales\./);
 });

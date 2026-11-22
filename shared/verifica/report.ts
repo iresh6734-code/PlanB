@@ -3,7 +3,7 @@
 // Página 2: lo que no se pudo comprobar y por qué. Ningún nombre sale del lado del vendedor:
 // las referencias son seudónimos con una sal que no viaja en el informe.
 import { sha256Hex } from '../sha256.js';
-import type { NotVerified, VerificaCapture, VerificaDeclarations, VerificaFinding, VerificaInvoice } from './model.js';
+import { RULE_IDS, type NotVerified, type VerificaCapture, type VerificaDeclarations, type VerificaFinding, type VerificaInvoice } from './model.js';
 import { RULES, type RuleContext } from './rules.js';
 
 export const REPORT_FORMAT = 'planb-verifica-report-v1';
@@ -75,3 +75,48 @@ function describe(capture: VerificaCapture): string {
 }
 
 export const reportToJson = (report: VerificaReport): string => JSON.stringify(report, null, 2) + '\n';
+
+export class ReportFormatError extends Error { constructor(message: string) { super(message); this.name = 'ReportFormatError'; } }
+
+/**
+ * Comprueba que un JSON de fuera tiene la forma de un informe, para poder pintarlo. No comprueba la huella: un informe
+ * bien formado pero retocado se acepta aquí y `verifyReport` dice después que no coincide.
+ */
+export function parseReport(value: unknown): VerificaReport {
+  const fail = (where: string): never => { throw new ReportFormatError('No es un informe de Verifica (' + where + ').'); };
+  const obj = (v: unknown, where: string) => (typeof v === 'object' && v !== null && !Array.isArray(v) ? v as Record<string, unknown> : fail(where));
+  const list = (v: unknown, where: string) => (Array.isArray(v) ? v as unknown[] : fail(where));
+  const text = (v: unknown, where: string) => (typeof v === 'string' ? v : fail(where));
+  const hex = (v: unknown, where: string) => (typeof v === 'string' && /^[0-9a-f]{64}$/.test(v) ? v : fail(where));
+  const r = obj(value, 'raíz');
+  if (r.format !== REPORT_FORMAT) fail('formato');
+  text(r.asOf, 'fecha');
+  hex(r.fingerprint, 'huella');
+  for (const s of list(r.sources, 'fuentes').map(v => obj(v, 'fuente'))) {
+    if (!['previous', 'latest', 'invoices'].includes(s.role as string)) fail('fuente');
+    if (s.at !== null) text(s.at, 'fuente');
+    hex(s.fingerprint, 'fuente'); text(s.detail, 'fuente');
+  }
+  const rules = new Set<string>();
+  for (const f of list(r.findings, 'hallazgos').map(v => obj(v, 'hallazgo'))) {
+    const rule = text(f.rule, 'hallazgo');
+    if (!RULES_BY_ID.has(rule) || rules.has(rule)) fail('hallazgo');
+    rules.add(rule);
+    text(f.title, 'hallazgo'); text(f.summary, 'hallazgo');
+    if (typeof f.alarm !== 'boolean' || !['observed', 'declared', 'unverified'].includes(f.basis as string)) fail('hallazgo');
+    if (!Object.values(obj(f.figures, 'cifras')).every(n => typeof n === 'number')) fail('cifras');
+    for (const item of list(f.items, 'referencias').map(v => obj(v, 'referencia'))) {
+      text(item.ref, 'referencia');
+      if (item.amount !== null && typeof item.amount !== 'number') fail('referencia');
+      if (item.note !== undefined) text(item.note, 'referencia');
+    }
+    list(f.captures, 'capturas').forEach(c => text(c, 'capturas'));
+  }
+  for (const n of list(r.notVerified, 'sin comprobar').map(v => obj(v, 'sin comprobar'))) {
+    if (!RULES_BY_ID.has(text(n.rule, 'sin comprobar'))) fail('sin comprobar');
+    text(n.topic, 'sin comprobar'); text(n.reason, 'sin comprobar');
+  }
+  return value as VerificaReport;
+}
+
+const RULES_BY_ID = new Set<string>(RULE_IDS);

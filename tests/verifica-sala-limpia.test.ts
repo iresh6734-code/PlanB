@@ -7,6 +7,7 @@ import { CustodyError, custodyFingerprint, newCustodyKey, openCustody, sealCusto
 import { RULE_IDS } from '../shared/verifica/model.js';
 import { buildVerificaReport, fingerprintOf, reportToJson, verifyReport, type ReportInput, type VerificaReport } from '../shared/verifica/report.js';
 import { runCli } from '../scripts/verifica-sala-limpia.js';
+import { exampleFiles } from '../scripts/verifica-ejemplo.js';
 
 const fold = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
@@ -93,12 +94,7 @@ test('Verifica · la barrera para el informe si lleva un nombre, correo, NIF o I
 
 test('Verifica · script de sala limpia: escribe informe, copia y llave por separado, sin imprimir la llave ni sobrescribir', async () => {
   const company = buildTrapCompany({ traps: true });
-  const names = new Map(company.latest.companies.map(c => [c.id, c.name]));
-  const csv = ['Núm.;Fecha;Contacto;Base imponible;Referencia', ...company.invoices.map(f => [f.id, f.issuedAt.slice(8, 10) + '/' + f.issuedAt.slice(5, 7) + '/' + f.issuedAt.slice(0, 4), '"' + names.get(f.companyId!) + '"', f.amount.toFixed(2).replace('.', ','), f.dealRef ?? ''].join(';'))].join('\n');
-  const files = new Map<string, string>([
-    ['antes.json', JSON.stringify(company.previous)], ['ahora.json', JSON.stringify(company.latest)],
-    ['facturas.csv', csv], ['declara.json', JSON.stringify(company.declarations)],
-  ]);
+  const files = exampleFiles(true);
   const run = async (argv: string[], store = files) => {
     let out = '', err = '';
     const code = await runCli(argv, {
@@ -108,7 +104,7 @@ test('Verifica · script de sala limpia: escribe informe, copia y llave por sepa
     });
     return { code, out, err };
   };
-  const base = ['--previous', 'antes.json', '--latest', 'ahora.json', '--invoices', 'facturas.csv', '--declarations', 'declara.json'];
+  const base = ['--previous', 'antes.json', '--latest', 'ahora.json', '--invoices', 'facturas.csv', '--declarations', 'declaraciones.json'];
 
   const ok = await run([...base, '--report', 'informe.json', '--custody', 'copia.json', '--key-out', 'llave.txt']);
   assert.equal(ok.code, 0, ok.err);

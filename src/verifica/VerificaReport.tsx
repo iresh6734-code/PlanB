@@ -1,10 +1,12 @@
-// Plan B Verifica · el informe de la empresa con trampas (fase 0). Lo pinta tal como lo entrega shared/verifica:
-// página 1 con los hallazgos, página 2 con lo que no se pudo comprobar, y la huella al pie.
+// Plan B Verifica · el informe (fases 0 y 2). Pinta el de la empresa con trampas o uno abierto desde un archivo, tal como lo
+// entrega shared/verifica: página 1 con los hallazgos, página 2 con lo que no se pudo comprobar, y la huella al pie.
+// Con un informe abierto, además, se comprueba contra su copia custodiada. Nada sale del navegador.
 // Cada cifra sale una sola vez, en la frase de su hallazgo; no se repite en tablas.
 import React, { useMemo, useState } from 'react';
 import { buildTrapCompany } from '../../shared/verifica/empresa-con-trampas.js';
-import { buildVerificaReport, reportToJson, verifyReport, type ReportSource, type VerificaReport } from '../../shared/verifica/report.js';
+import { buildVerificaReport, parseReport, reportToJson, verifyReport, ReportFormatError, type ReportSource, type VerificaReport } from '../../shared/verifica/report.js';
 import type { VerificaBasis } from '../../shared/verifica/model.js';
+import { CustodyCheck } from './CustodyCheck.js';
 
 export type Variant = 'traps' | 'clean';
 
@@ -29,7 +31,29 @@ function download(report: VerificaReport) {
   URL.revokeObjectURL(url);
 }
 
-export function VerificaReportView({ report, variant, onVariant }: { report: VerificaReport; variant: Variant; onVariant?: (variant: Variant) => void }) {
+const MAX_REPORT_FILE = 5 * 1024 * 1024;
+
+/** Lee un informe de un archivo. Devuelve el informe o por qué no se puede abrir («no es…»). */
+export function readReportText(text: string): VerificaReport | string {
+  try { return parseReport(JSON.parse(text)); }
+  catch (error) { return error instanceof ReportFormatError ? 'no es un informe de Verifica' : 'no es un archivo JSON válido'; }
+}
+
+export type ReportOrigin =
+  | { kind: 'reference'; variant: Variant; onVariant?: (variant: Variant) => void }
+  | { kind: 'opened'; name: string; onReference?: () => void };
+
+function OpenReport({ label, onOpen }: { label: string; onOpen?: (file: File) => void }) {
+  return (
+    <label className="vf-secondary">
+      <input className="vf-file-input" type="file" accept=".json,application/json"
+        onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) onOpen?.(file); }} />
+      {label}
+    </label>
+  );
+}
+
+export function VerificaReportView({ report, origin, onOpen, openError }: { report: VerificaReport; origin: ReportOrigin; onOpen?: (file: File) => void; openError?: string | null }) {
   const alarms = report.findings.filter(f => f.alarm).length;
   const intact = verifyReport(report);
   return (
@@ -37,20 +61,30 @@ export function VerificaReportView({ report, variant, onVariant }: { report: Ver
       <header className="vf-head">
         <div className="vf-head-row">
           <p className="vf-product">Plan B Verifica</p>
-          <p className="vf-fiction" role="note">Empresa ficticia · todos los datos son inventados</p>
+          {origin.kind === 'reference'
+            ? <p className="vf-fiction" role="note">Empresa ficticia · todos los datos son inventados</p>
+            : <p className="vf-origin">{origin.name} · abierto en este navegador, no se envía a ningún sitio</p>}
         </div>
         <h1>Informe de verificación de la cartera</h1>
         <p className="vf-lede">
           Corte del {day(report.asOf)}. {alarms === 0 ? 'Ninguna de las ' + report.findings.length + ' comprobaciones se sale de lo normal.' : alarms + ' de ' + report.findings.length + ' comprobaciones se salen de lo normal.'}
         </p>
         <div className="vf-actions">
-          <div className="vf-switch" role="group" aria-label="Variante de la empresa de referencia">
-            {(Object.keys(VARIANT) as Variant[]).map(key => (
-              <button key={key} type="button" className="vf-switch-option" aria-pressed={variant === key} onClick={() => onVariant?.(key)}>{VARIANT[key]}</button>
-            ))}
+          {origin.kind === 'reference'
+            ? (
+              <div className="vf-switch" role="group" aria-label="Variante de la empresa de referencia">
+                {(Object.keys(VARIANT) as Variant[]).map(key => (
+                  <button key={key} type="button" className="vf-switch-option" aria-pressed={origin.variant === key} onClick={() => origin.onVariant?.(key)}>{VARIANT[key]}</button>
+                ))}
+              </div>
+            )
+            : <button type="button" className="vf-link" onClick={() => origin.onReference?.()}>Volver al ejemplo</button>}
+          <div className="vf-actions-end">
+            <OpenReport label={origin.kind === 'reference' ? 'Abrir un informe' : 'Abrir otro informe'} onOpen={onOpen} />
+            {origin.kind === 'reference' && <button type="button" className="vf-primary" onClick={() => download(report)}>Descargar informe</button>}
           </div>
-          <button type="button" className="vf-primary" onClick={() => download(report)}>Descargar informe</button>
         </div>
+        {openError && <p className="vf-error" role="alert">{openError}</p>}
       </header>
 
       <section className="vf-sheet" aria-labelledby="vf-findings">
@@ -113,12 +147,27 @@ export function VerificaReportView({ report, variant, onVariant }: { report: Ver
         </p>
         <p className="vf-note">Los nombres no salen del lado del vendedor: cada referencia es un seudónimo con una sal que no viaja en el informe.</p>
       </footer>
+
+      {origin.kind === 'opened' && <CustodyCheck key={report.fingerprint} report={report} />}
     </main>
   );
 }
 
 export default function VerificaReportPage() {
   const [variant, setVariant] = useState<Variant>('traps');
-  const report = useMemo(() => referenceReport(variant), [variant]);
-  return <VerificaReportView report={report} variant={variant} onVariant={setVariant} />;
+  const [opened, setOpened] = useState<{ name: string; report: VerificaReport } | null>(null);
+  const [openError, setOpenError] = useState<string | null>(null);
+  const reference = useMemo(() => referenceReport(variant), [variant]);
+  const open = (file: File) => {
+    if (file.size > MAX_REPORT_FILE) { setOpenError('«' + file.name + '» es demasiado grande para ser un informe de Verifica. El informe que ves no ha cambiado.'); return; }
+    file.text().then(text => {
+      const result = readReportText(text);
+      if (typeof result === 'string') setOpenError('«' + file.name + '» ' + result + '. El informe que ves no ha cambiado.');
+      else { setOpened({ name: file.name, report: result }); setOpenError(null); }
+    }, () => setOpenError('No se pudo leer «' + file.name + '».'));
+  };
+  const toReference = () => { setOpened(null); setOpenError(null); };
+  return opened
+    ? <VerificaReportView report={opened.report} origin={{ kind: 'opened', name: opened.name, onReference: toReference }} onOpen={open} openError={openError} />
+    : <VerificaReportView report={reference} origin={{ kind: 'reference', variant, onVariant: setVariant }} onOpen={open} openError={openError} />;
 }

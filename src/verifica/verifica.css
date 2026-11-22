@@ -49,6 +49,17 @@ code { font-family: var(--vf-mono); font-size: 12px; font-variant-numeric: tabul
 .vf-switch-option[aria-pressed="true"] { background: var(--vf-primary-subtle); color: var(--vf-primary-text); font-weight: 600; }
 .vf-primary { min-height: 32px; padding: 0 16px; border: 1px solid var(--vf-primary); border-radius: 3px; background: var(--vf-primary); color: var(--vf-on-primary); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
 .vf-primary:hover { background: var(--vf-primary-hover); border-color: var(--vf-primary-hover); }
+.vf-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.vf-primary:disabled:hover { background: var(--vf-primary); border-color: var(--vf-primary); }
+.vf-actions-end { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-left: auto; }
+.vf-secondary { position: relative; display: inline-flex; align-items: center; min-height: 32px; padding: 0 14px; border: 1px solid var(--vf-rule-strong); border-radius: 3px; background: var(--vf-sheet); color: var(--vf-text-1); font-size: 13px; font-weight: 600; cursor: pointer; }
+.vf-secondary:hover { background: var(--vf-subtle); border-color: var(--vf-control); }
+.vf-secondary:has(.vf-file-input:focus-visible) { outline: 2px solid var(--vf-primary); outline-offset: 2px; }
+.vf-file-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.vf-link { min-height: 32px; padding: 0; border: 0; background: none; color: var(--vf-primary-text); font: inherit; font-size: 13px; cursor: pointer; text-underline-offset: 3px; }
+.vf-link:hover { text-decoration: underline; }
+.vf-origin { margin: 0; font-size: 12px; color: var(--vf-text-3); overflow-wrap: anywhere; }
+.vf-error { margin: 0; max-width: 70ch; font-size: 13px; color: var(--vf-seal-text); }
 
 .vf-sheet, .vf-foot { background: var(--vf-sheet); border: 1px solid var(--vf-rule); border-top: 1px solid var(--vf-rule-strong); border-radius: 4px; padding: 24px; }
 .vf-sheet h2, .vf-foot h2 { margin: 0 0 16px; font-size: 13px; font-weight: 650; color: var(--vf-text-2); }
@@ -87,17 +98,35 @@ code { font-family: var(--vf-mono); font-size: 12px; font-variant-numeric: tabul
 .vf-check[data-ok="false"] { background: var(--vf-warn-bg); color: var(--vf-warn-text); }
 .vf-note { margin: 12px 0 0; max-width: 70ch; font-size: 13px; color: var(--vf-text-3); }
 
+.vf-custody-intro { margin: -8px 0 16px; max-width: 70ch; color: var(--vf-text-2); }
+.vf-custody-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; align-items: end; gap: 12px 16px; }
+.vf-field { display: grid; gap: 6px; min-width: 0; }
+.vf-field-label { font-size: 13px; font-weight: 600; color: var(--vf-text-2); }
+.vf-file-row { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 32px; }
+.vf-file-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: var(--vf-text-3); }
+.vf-input { min-height: 32px; padding: 0 10px; border: 1px solid var(--vf-rule-strong); border-radius: 3px; background: var(--vf-sheet); color: var(--vf-text-1); font-family: var(--vf-mono); font-size: 13px; }
+.vf-input::placeholder { color: var(--vf-text-3); }
+.vf-input:hover { border-color: var(--vf-control); }
+.vf-input:focus-visible { outline-offset: 0; border-color: var(--vf-primary); }
+.vf-result-area:not(:empty) { display: grid; gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--vf-rule); }
+.vf-result { width: fit-content; margin: 0; padding: 2px 8px; border-radius: 2px; background: var(--vf-warn-bg); color: var(--vf-warn-text); font-weight: 600; }
+.vf-result[data-ok="true"] { background: var(--vf-ok-bg); color: var(--vf-ok-text); }
+.vf-result-print { display: grid; gap: 4px; margin: 0; font-size: 13px; color: var(--vf-text-3); }
+.vf-result-print code { overflow-wrap: anywhere; color: var(--vf-text-1); }
+
 @media (max-width: 600px) {
   .vf-page { padding: 24px 12px 48px; gap: 16px; }
   .vf-head h1 { font-size: 22px; }
   .vf-sheet, .vf-foot { padding: 16px; }
   .vf-sources div { grid-template-columns: 1fr; }
+  .vf-custody-form { grid-template-columns: 1fr; align-items: stretch; }
+  .vf-custody-form .vf-primary { justify-self: start; }
 }
 
 @media print {
   body { background: none; }
   .vf-page { padding: 0; max-width: none; }
-  .vf-actions { display: none; }
+  .vf-actions, .vf-error, .vf-custody { display: none; }
   .vf-sheet, .vf-foot { border: 0; padding: 0; }
   .vf-sheet-next { break-before: page; }
   .vf-refs ul { columns: 3; }

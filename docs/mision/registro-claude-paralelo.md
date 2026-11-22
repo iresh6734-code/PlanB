@@ -186,3 +186,13 @@ Comprobado en el ensayo con la captura de «Agencia Norte». `tsc` sin errores; 
 Los datos salen de `/v2/changes`: el plan con el estado de cada operación y el informe de la comprobación manual.
 
 `tests/incident-report.test.ts` pasa de 6 a 8 pruebas; `tsc` sin errores. El JSON firmado incluye el campo nuevo y la huella lo cubre.
+
+## 22/11/2026 · B4.8 · Integraciones según capacidades reales
+
+`src/LocalIntegrations.tsx`: sin espacio de equipo configurado, las cinco herramientas de Google van plegadas en «Ver herramientas de Google Workspace», igual que cuando el espacio existe (lo hizo Copilot). La nota común dice qué falta (`PLANB_TEAM_ORIGIN`).
+
+Si la lectura del espacio falla y las filas llevan «Reintentar» o una acción, no se pliegan: un error nunca se esconde.
+
+- La E2E `tests/e2e/local-integrations.spec.ts` despliega las herramientas antes de revisarlas. Compila; no se ha ejecutado en navegador (falta Chromium 1248).
+- `local-integrations`, `css-unused`, `ui-copy` y `bundle-budget` en verde; `tsc` sin errores.
+- En móvil pasa de 1,84 a 1,75 pantallas; comprobado en la captura de 1440 px.

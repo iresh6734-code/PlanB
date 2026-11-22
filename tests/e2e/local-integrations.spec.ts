@@ -99,6 +99,8 @@ test('sin cuenta: Conexiones primero, HubSpot guía a protección, sin botones i
   await expect(hubspot).toContainText('no indica que HubSpot esté conectado ahora');
   await hubspot.getByRole('button', { name: 'Configurar protección' }).click();
   expect(await page.evaluate(() => (window as any).__connects)).toBe(1);
+  // Misión maestra B4.8: sin espacio de equipo las herramientas van plegadas; se despliegan para revisarlas.
+  await teamTools(page).click();
   for (const name of ['Gmail', 'Google Calendar', 'Google Drive', 'Google Docs', 'Google Sheets']) {
     const row = rowFor(page, name);
     await expect(row).toContainText('Espacio de equipo sin configurar');

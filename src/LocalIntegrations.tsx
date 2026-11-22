@@ -96,7 +96,10 @@ export function LocalIntegrations({ onConnectHubspot }: { onConnectHubspot: () =
           <summary>Ver herramientas de Google Workspace</summary>
           <div className="lint-rehearsal-body">{teamRows}</div>
         </details>
-      </> : teamRows}
+      </> : view.teamOrigin?.ok || view.team.some(item => item.retry || item.action) ? teamRows // un error con «Reintentar» nunca se esconde
+        // Misión maestra B4.8: sin espacio de equipo, las cinco herramientas no sirven aquí; la nota común dice qué falta y
+        // las filas quedan plegadas, como cuando el espacio sí existe.
+        : <details className="lint-rehearsal"><summary>Ver herramientas de Google Workspace</summary><div className="lint-rehearsal-body">{teamRows}</div></details>}
     </section>
 
     <details className="lint-rehearsal">

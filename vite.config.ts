@@ -32,6 +32,6 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
-    rollupOptions: { input: { app: 'index.html', landing: landingSource } },
+    rollupOptions: { input: { app: 'index.html', landing: landingSource, verifica: 'verifica.html' } },
   },
 });

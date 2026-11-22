@@ -8,7 +8,6 @@ import './integrations.css';
 import './design-system.css';
 import './print.css';
 import './planb-ui.css';
-import './operaciones-claras.css';
 import './faro.css';
 import './consola.css';
 import { applyDensity, applyTheme, storedDensity, storedTheme } from './app-shell/theme.js';

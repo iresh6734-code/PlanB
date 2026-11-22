@@ -10,7 +10,6 @@ import '../../src/team.css';
 import '../../src/integrations.css';
 import '../../src/design-system.css';
 import '../../src/planb-ui.css';
-import '../../src/operaciones-claras.css';
 import '../../src/faro.css';
 import { applyTheme, storedTheme } from '../../src/app-shell/theme.js';
 import { TeamSpaceCreate } from '../../src/TeamSpaceCreate.js';

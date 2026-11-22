@@ -65,11 +65,15 @@ test('estilo: sin gradientes ni cristal esmerilado en la capa nueva', () => {
 });
 
 // 11/11/2026 · «Operaciones claras» (CLAUDE-OPUS-UI-OPERACIONES-CLARAS) va DESPUÉS de planb-ui.css: redefine sus tokens y debe ganar la cascada.
-test('orden de carga: planb-ui.css, operaciones-claras.css, faro.css y consola.css son las últimas hojas globales de main.tsx', () => {
+// Misión maestra B2 (22/11/2026): operaciones-claras.css se fundió al FINAL de planb-ui.css (misma cascada, una capa menos);
+// sus tokens se leen ahora del bloque marcado dentro de planb-ui.css.
+test('orden de carga: planb-ui.css (con Operaciones claras al final), faro.css y consola.css son las últimas hojas globales de main.tsx', () => {
   const main = readFileSync(new URL('../src/main.tsx', import.meta.url), 'utf8');
   const imports = [...main.matchAll(/import '\.\/([a-z-]+\.css)'/g)].map(m => m[1]);
-  assert.deepEqual(imports.slice(-4), ['planb-ui.css', 'operaciones-claras.css', 'faro.css', 'consola.css']);
-  const claras = readFileSync(new URL('../src/operaciones-claras.css', import.meta.url), 'utf8');
+  assert.deepEqual(imports.slice(-3), ['planb-ui.css', 'faro.css', 'consola.css']);
+  const marker = 'B2 · OPERACIONES CLARAS';
+  assert.ok(css.includes(marker), 'el bloque de Operaciones claras está al final de planb-ui.css');
+  const claras = css.slice(css.indexOf(marker));
   const own = new Map([...(/:root\s*\{([\s\S]*?)\n\}/.exec(claras)?.[1] ?? '').matchAll(/--([a-z0-9-]+)\s*:\s*([^;]+);/g)].map(m => [m[1], m[2].trim()]));
   for (const text of ['text-1', 'text-2', 'text-3']) for (const surface of ['bg-surface', 'bg-canvas', 'bg-subtle'])
     assert.ok(contrast(own.get(text)!, own.get(surface)!) >= 4.5, 'operaciones-claras --' + text + ' sobre --' + surface);

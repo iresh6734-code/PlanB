@@ -217,3 +217,12 @@ Si la lectura del espacio falla y las filas llevan «Reintentar» o una acción,
 - **Colores fijos:** la línea base de `styles.css` sube de 59 a 100 porque recibe los 41 de `refinements.css`. El total de la app no cambia.
 
 **Siguiente capa:** `operaciones-claras.css`, con el mismo método. La poda automática no encontró aún reglas muertas: el ahorro real llegará al convertir estas reglas a tokens por pantalla.
+
+## 22/11/2026 · B2 · Segunda capa retirada: `operaciones-claras.css`
+
+Mismo método exacto: su contenido va al final de `planb-ui.css` (la hoja que se cargaba justo antes), dentro del bloque marcado «B2 · OPERACIONES CLARAS». Se retiran la importación de `src/main.tsx`, la del arnés `tools/team-audit/harness.tsx` y la entrada de `tools/visual/css-trim.mjs`. Capas globales: 10 → 9.
+
+- **Capturas:** 19 rutas a 1440 y 390 px, comparadas con una referencia tomada justo antes: las 38 son iguales. Al ocupar la misma posición en la cascada, el modo oscuro tampoco cambia.
+- **Prueba de orden de carga** (`tests/design-tokens.test.ts`): ahora exige `planb-ui`, `faro` y `consola` al final, y lee los tokens de Operaciones claras del bloque marcado, con el mismo control de contraste AA.
+- **Colores fijos:** la línea base de `planb-ui.css` pasa de 3 a 6 (recibe los 3 de la hoja retirada); el total no cambia.
+- **Pruebas:** `tsc` sin errores; `color-guard`, `css-unused`, `design-tokens`, `design-k-block`, `bundle-budget` y `record-sheet` en verde.

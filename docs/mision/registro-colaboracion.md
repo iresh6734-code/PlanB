@@ -424,6 +424,57 @@ Alcance, todo código puro y pruebas sin red:
 
 Sin servidores, navegador, PowerShell, DPAPI, red ni datos reales. Dueño provisional: GitHub Copilot, como en las fases 2 y 3.
 
+### Hecho · 22/11/2026 · cómo se comprueba
+
+Hecho todo lo reservado (commits `92bfba4` motor y `dbc1bd2` interfaz). Salida de la fase 4: la empresa vigilada, ya cerrada, se migra a un Pipedrive ficticio del comprador. Con trampas, el informe de equivalencia encuentra exactamente lo sembrado, con seudónimos y sin ningún texto del CRM. Sin trampas dice «Sin diferencias en lo que compara el mapa», nunca «migración íntegra».
+
+| Pieza | Qué hace |
+|---|---|
+| `shared/verifica/equivalence.ts` | **El formato del informe de equivalencia**, sin `zod`: veredicto, tabla por objeto (al cierre, en el destino, llegaron igual), hallazgos y huella. «Llegaron igual» descuenta también los que llegaron con una relación rota, que el verificador de migraciones da por idénticos. Lleva `parseEquivalenceReport` y `verifyEquivalenceReport` para leerlo y comprobarlo desde fuera. Siete clases de hallazgo: no llegaron, llegaron con otro valor y relaciones rotas (diferencias confirmadas); sobran en el destino (confirmada); valores que no se entienden, ambiguos y sin concluir (no se concluye). |
+| `shared/verifica/migration.ts` | **El motor**, sobre `compareMigration` de `shared/migration-verifier.ts`, sin cambiarlo. Convierte la captura del cierre en exportación de origen, compara con el destino según el mapa y saca el informe sin valores: dice qué campo cambió («amount → value»), no de qué a qué. Con el parte de vigilancia comprueba que la captura del cierre es su última captura (si no, `WATCH_MISMATCH`; si el parte se ha tocado, `WATCH_TAMPERED`). Pasa por la barrera de la sala limpia (`releaseEquivalence`). La lista de trabajo (`equivalenceWorkList`) es un CSV aparte con los IDs reales, con las celdas que una hoja de cálculo ejecutaría escapadas. Con el destino exportado a medias, lo que no se encuentra sale como «sin concluir», no como perdido. |
+| `shared/verifica/empresa-migrada.ts` | **La empresa migrada:** la vigilada con trampas, cerrada en su última captura (25/12/2026) y migrada el 15/01/2027. Trampas: 12 contactos que no llegan, 2 contactos duplicados en el destino (ambiguos), 5 importes mal convertidos, 3 fechas en un formato que no se entiende, 4 oportunidades colgadas de otra empresa o sin enlace y 3 empresas que sobran. Lo esperado se anota al sembrar. Sin trampas, migración idéntica. |
+| `scripts/verifica-migracion.ts` | **Sin conexión:** de cierre, destino y mapa al informe. `--target` acepta una exportación de migración o una captura de Verifica. Con `--watch` exige la sal que ya existe, para que los seudónimos casen con el parte. `--work-list` escribe la lista con IDs reales, que no se imprime. Nunca sobrescribe. Códigos de salida: 0 bien, 1 parado o error al escribir, 2 mal uso. |
+| `scripts/verifica-ejemplo.ts` | Escribe también `cierre.json` (igual que la última semana), `destino.json` y `mapa.json`. |
+| `src/verifica/` (`verifica.html`) | **Pestaña «Migración»** junto a «Informe · Vigilancia». La entradilla da las fechas y el veredicto («Hay diferencias en 4 puntos; 2 más no se pueden concluir»). Después: «Objeto a objeto» (la tabla, con «Llegaron igual» en rojo si no llegaron todos), «Diferencias confirmadas», «Lo que no se pudo concluir ni comparar» (en la segunda página al imprimir), «Lo que este informe no dice» y la huella. Los recuentos solo salen en la tabla. El ejemplo se carga aparte al pulsar la pestaña («Preparando el ejemplo…»), porque arrastra `zod`. «Abrir un informe» reconoce también un informe de equivalencia. Un solo botón relleno en el ejemplo, «Descargar informe de equivalencia», y ninguno en uno abierto. |
+
+**Cómo se comprueba aquí (sin red):**
+
+- `npx tsc --noEmit -p tsconfig.json`: limpio.
+- `node tools/safe-tests.mjs verifica orphan-components css-unused color-guard design-tokens dev-only-files`: 11 de 11 archivos. `node tools/css-unused.mjs`: 0 muertos.
+- `tests/verifica-migracion.test.ts`, 7 casos:
+  - con trampas, exactamente lo sembrado, y los contadores del verificador cuadran;
+  - sin trampas, ninguna diferencia;
+  - el enlace con el parte de vigilancia, y el parte tocado o de otra captura;
+  - la huella, la barrera y la lectura desde fuera;
+  - el destino a medias («sin concluir», no perdido) y un mapa sin contactos, que lo dice;
+  - la lista de trabajo con IDs reales y celdas escapadas;
+  - el script con dependencias en memoria.
+- `tests/verifica-pagina.test.ts`, 4 casos nuevos:
+  - el ejemplo con trampas: tabla, cuatro diferencias arriba y dos abiertas en la segunda página, un solo botón relleno, la huella una vez y sin textos del CRM;
+  - sin trampas, sin sellos y sin decir «íntegra»;
+  - un informe abierto, sin botón relleno y señalado si se ha tocado; y la espera del ejemplo, sin botón;
+  - el destino a medias: la entradilla dice por qué no se puede concluir.
+- Prueba de mutación del motor: dejando ciegos los que no llegan y las relaciones rotas, fallan dos casos con tres problemas concretos. Se deshizo después.
+- Paquete (`vite build` a una carpeta temporal): la página Verifica pasa de 44,6 a 52,5 KB de JS (de 15,0 a 17,0 KB comprimido) y de 10,0 a 10,9 KB de CSS. El ejemplo de migración va aparte (27,8 KB, se carga al pulsar la pestaña); `zod` no está en el paquete principal.
+
+**Recorrido a mano en el ordenador personal** (aquí no se abre navegador):
+
+```
+npx tsx scripts/verifica-ejemplo.ts ejemplo
+npx tsx scripts/verifica-vigilancia.ts --signing ejemplo/firma.json --capture ejemplo/semana-1.json --capture ejemplo/semana-2.json --capture ejemplo/semana-4.json --capture ejemplo/semana-5.json --salt sal.txt --report parte.json --as-of 2026-12-26
+npx tsx scripts/verifica-migracion.ts --closing ejemplo/cierre.json --target ejemplo/destino.json --map ejemplo/mapa.json --salt sal.txt --watch parte.json --report equivalencia.json --work-list lista.csv --as-of 2027-01-16
+```
+
+El último debe decir «Hay diferencias» y salir con 0. Abrir `verifica.html`, pulsar «Abrir un informe» → `equivalencia.json`. Debe mostrar la misma tabla y los mismos hallazgos que «Migración · Con trampas»; los seudónimos cambian porque la sal es otra. `lista.csv` lleva los IDs reales: se borra al terminar.
+
+**Límites que hay que saber:**
+
+1. Solo se compara lo que dice el mapa, y el mapa lo escribe y confirma una persona. Un mapa equivocado da un informe equivocado dentro de su alcance. Lo que el mapa no cubre sale en «Lo que no se pudo concluir ni comparar», empezando por los comerciales, que no se comparan.
+2. No hay lector del CRM del comprador: el destino tiene que llegar ya como exportación de migración o como captura de Verifica. Hoy solo existe el lector de HubSpot.
+3. El informe no lleva valores: dice qué campo llegó distinto, no de qué a qué. Para corregir hace falta la lista de trabajo, que lleva IDs reales y no pasa por la barrera.
+4. La captura del cierre no se sella en una copia custodiada; su respaldo es la huella y el enlace con el parte de vigilancia.
+5. Lo ambiguo no se resuelve: un contacto con dos candidatos en el destino queda abierto hasta que alguien elija.
+
 ## Verifica · Pendientes (lista viva)
 
 Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
@@ -440,6 +491,9 @@ Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
 - [ ] *(nuevo, fase 3)* Cómo llega un aviso al comprador: correo, llamada o solo el parte cuando se pide. Hoy no hay canal: el parte sale cuando alguien ejecuta el script.
 - [ ] *(nuevo, fase 3)* Quién acepta una captura retenida (comprador, vendedor o los dos) y cómo queda constancia.
 - [ ] *(nuevo, fase 3)* Precio y forma de la vigilancia: la estrategia habla de 1.000–2.000 €/mes. ¿Va por meses, por operación o incluida en el informe?
+- [ ] *(nuevo, fase 4)* Quién escribe y confirma el mapa de campos: nosotros, el integrador que hace la migración o el comprador. El informe solo es tan bueno como el mapa (límite 1 de «Verifica · Fase 4»).
+- [ ] *(nuevo, fase 4)* Quién recibe la lista de trabajo con los IDs reales, por qué canal y cuándo se borra.
+- [ ] *(nuevo, fase 4)* Precio del informe de equivalencia: ¿aparte, dentro de la vigilancia o como cierre del encargo? Y si se repite tras cada corrección de la migración.
 
 **Abogados y seguro (antes de la fase 5, la venta; no bloquean construir)**
 
@@ -451,6 +505,8 @@ Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
 - [ ] *(nuevo, fase 2)* Cuánto tiempo se guarda la copia custodiada y cómo se destruye, porque lleva el CRM entero del vendedor.
 - [ ] *(nuevo, fase 3)* Cómo entra la vigilancia en el contrato de compraventa: obligación del vendedor de no tocar la cartera entre firma y cierre, y qué consecuencia tiene un aviso (ajuste de precio, garantía, derecho a no cerrar). Los umbrales de los avisos (límite 1 de «Verifica · Fase 3») tendrían que salir del contrato o citarse en él.
 - [ ] *(nuevo, fase 3)* Si mirar el CRM del vendedor cada semana necesita un permiso aparte en el acuerdo de tratamiento de datos.
+- [ ] *(nuevo, fase 4)* Texto del informe de equivalencia: «sin diferencias en lo que compara el mapa», nunca «migración íntegra». Y si puede servir para liberar un pago aplazado o una retención del precio.
+- [ ] *(nuevo, fase 4)* La exportación del CRM del comprador y la lista de trabajo llevan datos de las dos partes: quién es responsable del tratamiento en esa fase.
 
 **En el ordenador personal (aquí no se puede)**
 
@@ -464,13 +520,18 @@ Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
 - [ ] *(nuevo, fase 3)* Recorrido a mano de la vigilancia con `scripts/verifica-ejemplo.ts` y `scripts/verifica-vigilancia.ts`, y abrir `parte.json` en `verifica.html`. Pasos en «Verifica · Fase 3».
 - [ ] *(nuevo, fase 3)* Revisión visual de «Vigilancia» en `verifica.html`: escritorio y móvil, tema claro y oscuro, las pestañas «Informe · Vigilancia» con teclado, y la impresión del parte. Aquí solo está probado el HTML.
 - [ ] *(nuevo, fase 3)* Dos o tres capturas semanales reales del portal de pruebas, haciendo a propósito un borrado en bloque y una oportunidad perdida, para ver que el aviso salta con datos de HubSpot y no solo con la empresa ficticia.
+- [ ] *(nuevo, fase 4)* Recorrido a mano de la migración con `scripts/verifica-ejemplo.ts`, `scripts/verifica-vigilancia.ts` y `scripts/verifica-migracion.ts`, y abrir `equivalencia.json` en `verifica.html`. Pasos en «Verifica · Fase 4».
+- [ ] *(nuevo, fase 4)* Revisión visual de «Migración» en `verifica.html`: escritorio y móvil (la tabla), tema claro y oscuro, la espera mientras carga el ejemplo, las tres pestañas con teclado y la impresión. Aquí solo está probado el HTML.
+- [ ] *(nuevo, fase 4)* Una migración real de prueba: del portal de pruebas de HubSpot a una cuenta de prueba de otro CRM, con un mapa escrito a mano, para ver el informe con datos que no son de la empresa ficticia.
 
 **Fases siguientes**
 
 - [x] ~~Fase 2 · Informe y sala limpia~~: hecha el 22/11/2026 con la empresa con trampas. Falta lo marcado «fase 2» en las listas de arriba.
 - [x] ~~Fase 3 · Vigilancia~~: hecha el 22/11/2026 con la empresa vigilada. Falta lo marcado «fase 3» en las listas de arriba.
 - [ ] *(nuevo, fase 3)* La vigilancia sin intervención: un recordatorio cuando toca la captura y el parte generado solo. Necesita un servidor o una tarea programada, así que se hace en el ordenador personal o en la fase 5.
-- [ ] Fase 4 · Después del cierre: migración verificada al CRM del comprador.
+- [x] ~~Fase 4 · Después del cierre~~: hecha el 22/11/2026 con la empresa migrada. Falta lo marcado «fase 4» en las listas de arriba.
+- [ ] *(nuevo, fase 4)* Lector del CRM del comprador: hoy el destino tiene que llegar ya como exportación de migración o como captura de Verifica. El primero, probablemente Pipedrive, junto con su historial (ya pendiente arriba).
+- [ ] *(nuevo, fase 4)* Sellar la captura del cierre en una copia custodiada, como el informe de la fase 2, para que el informe de equivalencia se pueda rehacer meses después.
 - [ ] Fase 5 · Salir a vender.
 
 ## Pendiente para el agente del otro ordenador

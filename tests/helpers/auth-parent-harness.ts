@@ -13,7 +13,6 @@ export const authParentFixtureState = {
   runtime: true,
   ready: false,
   changes: 0,
-  aiConfigured: false,
   hubspotConfigured: false,
   usage: { usedUsd: 0, reservedUsd: 0, limitUsd: 0, requests: 0 },
   lastError: null,

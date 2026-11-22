@@ -6,7 +6,6 @@ import { DatabaseSync } from 'node:sqlite';
 import { Store } from '../server/store.js';
 import { makeFixture, makeDemoSpec } from '../shared/fixtures.js';
 import { decodePortable, encodePortable } from '../server/crypto.js';
-import { applyAppSpecPatch } from '../server/ai-patch.js';
 import { Recovery, simulatedRemote, type Remote } from '../server/recovery.js';
 import { Jobs } from '../server/jobs.js';
 import { Continuity } from '../server/continuity.js';
@@ -28,12 +27,6 @@ test('v2: promoción detecta ediciones posteriores a confirmar una sustitución'
   const store=new Store(':memory:');prepare(store);store.saveRecord('contacts',{phone:'1'},'contact-1');
   store.importSnapshot(makeFixture('distribution'),true);store.saveGeneration(makeDemoSpec(store.candidate!.snapshot),{provider:'demo',model:null,generatedAt:new Date().toISOString(),prompt:'',approved:false});
   store.saveRecord('contacts',{phone:'2'},'contact-1');assert.throws(()=>store.activate(),/nuevos/);assert.equal(store.record('contacts','contact-1')!.values.phone,'2');store.close();
-});
-test('v2: AppSpecPatch conserva campos y exige procedencia para reglas nuevas',()=>{
-  const snapshot=makeFixture(),prompt='El importe mínimo es 100';
-  const patch={title:null,description:null,views:[{entity:'contacts',columns:['firstname','email']}],rules:[{id:'user-min',entity:'deals',kind:'min',field:'amount',value:'100',whenField:null,whenValue:null,origin:'user',description:'Importe mínimo 100',evidence:prompt}],unsupported:[]};
-  const spec=applyAppSpecPatch(snapshot,patch,prompt);assert.deepEqual(spec.entities[0].fields,snapshot.entities[0].fields);assert.equal(spec.rules.length,snapshot.rules.length+1);
-  assert.throws(()=>applyAppSpecPatch(snapshot,patch,'otra instrucción'));assert.throws(()=>applyAppSpecPatch(snapshot,{...patch,views:[{entity:'contacts',columns:['inventado']}]},prompt));
 });
 test('v2: copia cifrada se recupera y detecta contraseña incorrecta o alteraciones',()=>{
   const store=new Store(':memory:');prepare(store);const original=store.bundle(),text=encodePortable(original,'recuperacion-segura-2026');

@@ -16,7 +16,7 @@ type Props = {
   /** Recuentos para los avisos del menú; null = sin dato. */ signals: Signals;
   step: number; preparationOpen: boolean;
   setPage: (page: PageId) => void; setSelected: (value: null) => void; setPreparationOpen: Toggle;
-  setGlobalSearch: (open: boolean) => void; setModal: (modal: 'settings') => void;
+  setGlobalSearch: (open: boolean) => void;
   openEntity: (entity: EntityName) => void; openPreparation: (step?: number) => void;
   /** F5 · Fichas ancladas de esta copia (ya con su nombre leído de la copia). */ pins?: { key: string; label: string; title: string; open: () => void }[];
 };
@@ -31,7 +31,7 @@ const ITEM_ICON: Record<string, ComponentType<{ size?: number }>> = {
  * Navegación principal en cinco lugares (Inicio, Hoy, Clientes, Continuidad y Ajustes). Solo cambia de apartado; no lee
  * ni guarda datos.
  */
-export function Sidebar({ state, page, entityName, selected, signals, step, preparationOpen, setPage, setSelected, setPreparationOpen, setGlobalSearch, setModal, openEntity, openPreparation, pins }: Props) {
+export function Sidebar({ state, page, entityName, selected, signals, step, preparationOpen, setPage, setSelected, setPreparationOpen, setGlobalSearch, openEntity, openPreparation, pins }: Props) {
   const context = { runtime: !!state.runtime, testData: state.snapshot?.source.isTestData !== false, ready: !!state.ready };
   const groups = navigationGroups(context), current = groupOfPage(page);
   const [open, setOpen] = useState<Set<GroupId>>(() => new Set([current]));
@@ -50,7 +50,6 @@ export function Sidebar({ state, page, entityName, selected, signals, step, prep
     : null;
   const go = (target: NavTarget) => {
     if (target.kind === 'entity') openEntity(target.entity);
-    else if (target.kind === 'settings') setModal('settings');
     else if (target.kind === 'prepare') openPreparation();
     else { setPage(target.page); setSelected(null); }
   };

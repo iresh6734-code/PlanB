@@ -151,7 +151,7 @@ test('UI downloads a real encrypted package; its bundled Node restores edited re
     await restore.getByRole('button', { name: 'Validar y restaurar', exact: true }).click(); await expect(restore).toHaveCount(0);
     expect(restoreStatuses).toEqual([422, 422, 200]);
     const restored = await page.request.get(portable.url + '/api/v2/state').then(r => r.json());
-    expect(restored).toMatchObject({ ready: true, runtime: true, disconnected: true, aiConfigured: false, hubspotConfigured: false, changes: 1 });
+    expect(restored).toMatchObject({ ready: true, runtime: true, disconnected: true, hubspotConfigured: false, changes: 1 });
     expect(restored.snapshot).toEqual(sourceState.snapshot); expect(restored.spec).toEqual(sourceState.spec);
     expect(digest(await page.request.get(portable.url + '/api/records').then(r => r.json()))).toBe(digest(records));
     expect((await page.request.get(portable.url + '/api/v2/changes').then(r => r.json())).changes).toEqual(changes.changes);

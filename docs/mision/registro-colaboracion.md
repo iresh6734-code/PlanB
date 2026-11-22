@@ -325,6 +325,54 @@ Sin equipo configurado, que es lo normal en esta instalación, el menú no cambi
 - Las herramientas de publicación del espacio completo.
 - `ABRIR PLAN B.cmd`.
 
+### Hecho · tanda 3 · IA local aparcada · 22/11/2026
+
+**Qué sale de la App local.**
+
+- La pantalla «Proveedor de IA» (`src/Settings.tsx`), con su entrada del menú Ajustes y su orden de la paleta.
+- En Preparar: el botón «Generar con mi IA», el cuadro de instrucciones y el aviso sobre qué se envía al modelo. Queda un solo botón relleno, «Crear especificación de ensayo», y un solo cuadro informativo.
+- En el servidor: `server/provider.ts` (la clave en `.ai.local.json`), `server/ai.ts` (la llamada al modelo), `server/ai-patch.ts` (solo lo usaba `ai.ts`) y las rutas `GET` y `PUT /api/settings/ai`.
+- `POST /api/generate` solo acepta `{ mode: 'demo' }`. El modo `ai` o un campo `prompt` dan 422.
+- `aiConfigured` y `aiSettings` salen del estado (`AppState`) y de las opciones del servidor.
+
+**Qué se queda.**
+
+- La generación de ensayo y las importaciones. `registerGenerator` ahora recibe `(app, store)`.
+- La tabla `usage` del almacén, con `usage()` y `reserveUsage`, y `AppState.usage`. Son parte del núcleo congelado y del esquema de la base de datos.
+- `provider: 'ai'` en el tipo `Generation`, para poder leer propuestas guardadas antes.
+- La línea de `.ai.local.json` en `.gitignore` y las guardas del paquete (`verify-package.py` comprueba ahora que el estado no trae `aiConfigured`).
+
+**Medida.**
+
+| Dónde | Antes | Ahora |
+|---|---|---|
+| Menú › Ajustes, con datos de prueba | Integraciones, Proveedor de IA, Plan y licencia | Integraciones, Plan y licencia |
+| Menú › Ajustes, con datos reales | Integraciones, Plan y licencia | sin cambios |
+| Paleta, con datos de prueba | con «Proveedor de IA» | una orden menos |
+| Preparar › paso 1 | 2 botones (IA rellena y ensayo), cuadro de instrucciones y 2 avisos | 1 botón relleno y 1 aviso |
+| `docs/api.md` | 121 rutas (`main` 121) | 119 rutas (`main` 119) |
+| Código | | 39 archivos, 524 líneas menos y 72 más; 5 archivos borrados |
+
+Se podaron 8 selectores de CSS sin uso (669 B). `design-system.css` baja de 22 a 21 colores fijos en `tests/color-guard-baseline.json`. La comprobación de alcance vuelve a dar 25 módulos sin conectar, los mismos de antes. `server/ai-patch.ts` salió por eso: era el único huérfano nuevo.
+
+**Ajustes en pruebas, guías y herramientas.**
+
+- `generation-integrity`: quedan las barreras de recuperación y el control de ensayo. Un caso nuevo comprueba que el modo `ai` y las instrucciones dan 422 sin tocar ninguna tabla, y que `/api/settings/ai` da 404. Las pruebas del generador inyectado se archivaron con la IA.
+- `core`, `production`, `v2` (sin el caso de `AppSpecPatch`), `preparation-review`, `independent-return-barriers`, `workspace-state-consistency-459` (lee `hubspotConfigured`, en el mismo punto) y `navigation-model` (el proveedor no se ofrece ni con datos de prueba).
+- `server-modules`, el arnés `auth-parent-harness` y las cuatro `task-revision-*`, que ahora esperan `aiConfigured` ausente.
+- Pruebas de navegador: `menu.ts`, `continuity.spec.ts` (el caso móvil se llama ahora «navegación y edición») y `portable-lifecycle.spec.ts`. `v3.spec.ts` ya esperaba que el botón no estuviera.
+- `scripts/audit-ui.mjs`: sin la captura «10-configuracion».
+- `LEEME.md` y `LEEME-V2.md`: la sección de IA dice que está aparcada.
+- `docs/api.md`: salen las dos filas de `/api/settings/ai`; «sin versión» pasa de 19 a 17 rutas.
+
+**Cómo se comprueba.**
+
+- `npx tsc --noEmit -p tsconfig.json` termina con 0 errores.
+- Con `NODE_ENV=test`, la lista de la tanda 2 más `core generation-integrity production preparation-review workspace-state-consistency-459 v2` pasa 32 de 32 archivos.
+- `node tools/css-unused.mjs` da 0 selectores muertos.
+- `git grep -n -E "aiConfigured|ProviderSettings|generateWithAI|Proveedor de IA" -- src server shared` no encuentra nada.
+- No corren aquí, porque abren procesos: `independent-return-barriers` y las cuatro `task-revision-*`. Están en la lista viva.
+
 ## Verifica · Fase 1 · GitHub Copilot
 
 ### Reserva · antes de editar
@@ -684,7 +732,7 @@ Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
 
 **Decide la usuaria**
 
-- [x] ~~Destinos de cada parte: motor, congelado, aparcado o fuera~~: confirmados el 22/11/2026 tal como están en el plan. Se aparcan por tandas; la 1 (Laboratorio) y la 2 (aplicación de equipos) están hechas, falta la 3 (IA local).
+- [x] ~~Destinos de cada parte: motor, congelado, aparcado o fuera~~: confirmados el 22/11/2026 tal como están en el plan. Se aparcaron por tandas: la 1 (Laboratorio), la 2 (aplicación de equipos) y la 3 (IA local), todas hechas el 22/11/2026.
 - [x] ~~Qué agente coordina y quién es dueño de cada carpeta~~: coordina GitHub Copilot (22/11/2026).
 - [ ] Mover las 11 carpetas `planb-local-*` y `planb-hubspot-*` fuera del repositorio. Lo hace la usuaria; los agentes no las tocan.
 - [ ] A6 y A7 del relevo anterior. Con Verifica, A6 pierde sentido y A7 gana importancia.
@@ -739,6 +787,7 @@ Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
   - `continuity-home-hub.spec.ts:24`, con la cadena `'team-sync'`.
 - [ ] *(nuevo, fase 0 · tanda 2)* `npm uninstall` de las dependencias que solo usaba la aplicación de equipos, para que `package-lock.json` se rehaga allí: `@azure/msal-node`, `@firebase/*`, `@google-cloud/tasks`, `@microsoft/agents-copilotstudio-client`, `firebase-admin`, `google-auth-library`, `pg` y `@electric-sql/pglite`. Antes, comprobar con `git grep` que nada vivo las importa.
 - [ ] *(nuevo, fase 0 · tanda 2)* Herramientas del espacio completo que aún nombran el piloto 4334 o la App de equipo: `workspace-preflight.mjs`, `start-full-workspace.cjs` y su prueba, `workspace-release.test.mjs:295`, la expresión de `workspace-manifest.mjs`, `scripts/audit-ui.mjs` y `tools/duet`. También `ABRIR PLAN B.cmd`, en la raíz, que abre `localhost:4334/team`. Decidir si se aparcan o se adaptan.
+- [ ] *(nuevo, fase 0 · tanda 3)* Ejecutar las pruebas que abren procesos y aquí no corren: `independent-return-barriers`, `task-revision-generation-launcher`, `task-revision-launcher-client`, `task-revision-mount` y `task-revision-runtime`. Y las de navegador `continuity.spec.ts` y `portable-lifecycle.spec.ts`, ajustadas sin ejecutar.
 
 **Fases siguientes**
 
@@ -748,6 +797,7 @@ Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
 - [x] ~~Fase 4 · Después del cierre~~: hecha el 22/11/2026 con la empresa migrada. Falta lo marcado «fase 4» en las listas de arriba.
 - [ ] *(nuevo, fase 4)* Lector del CRM del comprador: hoy el destino tiene que llegar ya como exportación de migración o como captura de Verifica. El primero, probablemente Pipedrive, junto con su historial (ya pendiente arriba).
 - [ ] *(nuevo, fase 4)* Sellar la captura del cierre en una copia custodiada, como el informe de la fase 2, para que el informe de equivalencia se pueda rehacer meses después.
+- [ ] *(nuevo, fase 0 · tanda 3)* La tabla `usage` del almacén, con `usage()`, `reserveUsage` y `AppState.usage`, ya no la usa nadie: era el contador de gasto de la IA. Se quedó porque el núcleo y el esquema de la base de datos están congelados. Decidir si sale en una migración, o si vuelve con la IA.
 - [ ] *(nuevo, fase 0)* Los lectores de Pipedrive y Zendesk (`shared/` y `server/` `source-reading*`, `pipedrive-source`, `zendesk-source`, `src/SourceReadingHistory.tsx` y `SourceStatusRow.tsx`) ya no estaban conectados a nada antes de aparcar el Laboratorio. Se quedan porque pueden servir de lector del CRM del comprador (fase 4). Decidir: adaptarlos a Verifica o aparcarlos también.
 - [ ] Fase 5 · Salir a vender. **Preparada el 22/11/2026:** las cinco pruebas en `scripts/verifica-pruebas.ts` (pasan las fases 1 a 4; la 0 está pendiente) y `docs/verifica-salir-a-vender.md`. Queda abierta hasta la primera conversación con alguien de fuera, que no se tiene antes de cerrar la lista de la sección 1 de ese documento.
 

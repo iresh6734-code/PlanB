@@ -105,7 +105,7 @@ for filename, runtime in [(f"Plan-B-CRM-v{VERSION}.zip", False), (f"Plan-B-indep
                 api("/v2/services", {"enabled": False}, "POST")
                 state = api("/state")
             assert state["ready"] and state["disconnected"] and state["runtime"] == runtime
-            assert not state["aiConfigured"] and not state["hubspotConfigured"]
+            assert "aiConfigured" not in state and not state["hubspotConfigured"]
             api("/records/contacts/contact-1", {"values": {"phone": "600 999 888"}}, "PATCH")
             api("/records/deals/deal-1", {"values": {"dealstage": "proposal"}}, "PATCH")
             task = api("/records/tasks", {"values": {"subject": "Creada desde el ZIP sin red", "due_date": "2026-11-12", "status": "pending"}}, "POST")["record"]

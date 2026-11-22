@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowRight, Check, CheckCircle2, ChevronRight, Database, Info, Link2, ShieldCheck, Sparkles } from 'lucide-react';
+import { ArrowRight, Check, CheckCircle2, Database, Info, Link2, ShieldCheck } from 'lucide-react';
 import type { AppState } from '../shared/model.js';
 import { api, post, ApiError } from './api.js';
 import { Modal, Spinner } from './components.js';
@@ -8,13 +8,12 @@ import './preparation-review.css';
 
 interface Props {
   state: AppState; step: number; setStep: (step: number) => void; refresh: () => Promise<AppState>;
-  openWorkspace: () => void; configure: () => void; onConnect:()=>void; onError: (error: string) => void;
+  openWorkspace: () => void; onConnect:()=>void; onError: (error: string) => void;
 }
-export function Preparation({ state:sourceState, step, setStep, refresh, openWorkspace, configure, onConnect, onError }: Props) {
+export function Preparation({ state:sourceState, step, setStep, refresh, openWorkspace, onConnect, onError }: Props) {
   const target=preparationTarget(sourceState);
   const [profile, setProfile] = useState<'agency' | 'distribution'>('agency');
   const [busy, setBusy] = useState(false);
-  const [prompt, setPrompt] = useState(target.generation?.prompt ?? '');
   const [reviewed, setReviewed] = useState<string|null>(null);
   const [reviewResponse,setReviewResponse]=useState<{key:string;data:ActivationReview}|null>(null),[reviewError,setReviewError]=useState<{key:string;message:string}|null>(null),[nonce,setNonce]=useState(0);
   const alive=useRef(true),flight=useRef(false),controller=useRef<AbortController|null>(null);
@@ -75,13 +74,9 @@ export function Preparation({ state:sourceState, step, setStep, refresh, openWor
       <div className="import-report">{state.snapshot.entities.map(entity => <div key={entity.id}><strong>{state.reconciliation?.counts[entity.id]?.actual ?? 0}</strong><span>{entity.label}</span><small>{entity.fields.length} campos</small></div>)}<div><strong>{state.reconciliation?.actualLinks}</strong><span>Relaciones</span><small>Con destino verificado</small></div></div>
       <div className="process-grid"><div><h3>Etapas de oportunidades</h3><div className="stage-chips">{state.snapshot.stages.map(stage => <span key={stage.id}><i style={{ background: stage.color }} />{stage.label}</span>)}</div>
         <h3>Reglas recuperadas</h3><RuleList rules={state.snapshot.rules} />
-      </div><div>{production?<div className="info-box"><Info size={18}/><div><strong>Configuración importada</strong><p>Se conservarán los campos y reglas de esta captura. La IA está desactivada para datos reales; revisa el alcance y las funciones pendientes antes de activar.</p></div></div>:<><label className="field"><span>¿Qué más debe respetar la aplicación?</span><textarea rows={6} value={prompt} maxLength={8000} onChange={event => setPrompt(event.target.value)} placeholder="Ejemplo: el importe de una oportunidad debe ser de al menos 100 euros." /></label>
-        <p className="helper">La IA puede proponer reglas de campos obligatorios, correos, importes y transiciones. Cada regla nueva conservará una cita de tu instrucción. Revísala antes de activar.</p>
-        <div className="info-box"><Info size={18} /><div><strong>Configura la IA cuando quieras</strong><p>Sin proveedor puedes probar una especificación de ensayo. Esta opción conserva las reglas importadas y no interpreta instrucciones nuevas.</p><button className="text-button" onClick={configure}>Configurar proveedor<ChevronRight size={14} /></button></div></div></>}</div></div>
+      </div><div><div className="info-box"><Info size={18}/><div><strong>{production?'Configuración importada':'Especificación de ensayo'}</strong><p>Se conservarán los campos y reglas de esta captura. Revisa el alcance y las funciones pendientes antes de activar.</p></div></div></div></div>
       <footer className="prepare-footer"><button className="text-button" onClick={() => setStep(0)}>Volver al origen</button><div className="button-row">
-        <button className="button secondary" disabled={busy} onClick={() => run(() => post('/generate', { mode: 'demo' }), 2)}>{busy ? <Spinner /> : state.snapshot?.source.isTestData===false?'Preparar con la configuración importada':'Crear especificación de ensayo'}</button>
-        {!production?<button className="button primary" disabled={busy || !state.aiConfigured || state.disconnected} onClick={() => run(() => post('/generate', { mode: 'ai', prompt }), 2)}><Sparkles size={17} />Generar con mi IA</button>:null}</div></footer>
-      {!production&&!state.aiConfigured ? <p className="helper align-right">Añade tu proveedor para habilitar la generación real.</p> : null}
+        <button className="button primary" disabled={busy} onClick={() => run(() => post('/generate', { mode: 'demo' }), 2)}>{busy ? <Spinner /> : state.snapshot?.source.isTestData===false?'Preparar con la configuración importada':'Crear especificación de ensayo'}</button></div></footer>
     </> : <>
       <div className="preparation-review-tools"><button type="button" className="button secondary" disabled={busy} onClick={()=>{setReviewed(null);setNonce(n=>n+1);}}>Actualizar revisión</button><p className="helper">La activación debe corresponder exactamente al contenido que revisas aquí.</p></div>
       {!review?(reviewError?.key===reviewKey?<p className="error-box" role="alert">{reviewError.message}</p>:<Spinner text="Leyendo la versión que se activará…"/>):<>

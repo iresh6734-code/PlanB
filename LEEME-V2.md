@@ -80,13 +80,9 @@ Copiar únicamente una base cifrada a otro usuario de Windows no transfiere DPAP
 
 Los archivos v1 válidos se importan desde Restaurar archivo sin contraseña. La importación comprueba coherencia del historial con la captura y el estado final. La base activa no se sustituye si falla esa comprobación.
 
-## IA posterior y presupuesto
+## IA
 
-Proveedor de IA permite configurar OpenRouter, Gemini compatible, DeepSeek, Ollama u otro endpoint compatible con Chat Completions y JSON. No hay dependencia de una cuenta de OpenAI.
-
-La aplicación base se construye sin IA. El modelo solo propone un **AppSpecPatch**: vistas, texto y reglas de usuario con citas de la instrucción. No recibe registros de clientes, no modifica definiciones importadas ni ejecuta código. Se conserva revisión humana antes de activar una propuesta.
-
-Indica modelo, endpoint y tarifas de entrada/salida; el límite estimado local es 25 USD mensuales. Las tarifas las declara el usuario y no sustituyen la factura o límite del proveedor. Las reservas inciertas no se liberan silenciosamente. No hay recargas ni llamadas repetidas automáticas.
+La generación con un proveedor de IA está aparcada en Verifica: el código se conserva en la rama `archivo/aparcado-2026-11-22`. La app no llama a ningún modelo ni guarda claves de IA.
 
 ## Validación y límites
 

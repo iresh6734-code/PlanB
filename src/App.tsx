@@ -40,7 +40,7 @@ import { type AlertTarget } from './app-shell/continuity-alerts.js';
 import { useContinuityState } from './app-shell/useContinuityState.js';
 import { readinessFor } from './app-shell/continuity-insights.js';
 // Apartados que se descargan al visitarlos por primera vez (misma interfaz de uso que los originales).
-import { Agenda, ChangesView, CommandPalette, ContingencyBand, ContinuityHome, CsvImport, FocusRun, GuidedDrill, LicensePanel, LocalIntegrations, PortableExport, Preparation, QuickActivity, RecordTimeline, SequencePicker, Settings, ShortcutsHelp, WeeklyReview, WhatsNew } from './app-shell/lazy-pages.js';
+import { Agenda, ChangesView, CommandPalette, ContingencyBand, ContinuityHome, CsvImport, FocusRun, GuidedDrill, LicensePanel, LocalIntegrations, PortableExport, Preparation, QuickActivity, RecordTimeline, SequencePicker, ShortcutsHelp, WeeklyReview, WhatsNew } from './app-shell/lazy-pages.js';
 import type { WorkspaceSearchContext } from '../shared/workspace-search.js';
 
 type LocalAppState = AppState & { workspaceSearchContext?: WorkspaceSearchContext | null };
@@ -108,7 +108,7 @@ export default function App() {
     document.addEventListener('keydown', key); return () => document.removeEventListener('keydown', key);
   }, [auth, state?.ready, selected]);
   useEffect(() => { if (auth !== 'open' || !state?.ready) setGlobalSearch(false); }, [auth, state?.ready]);
-  const [modal, setModal] = useState<'settings' | 'coverage' | 'csv' | null>(null);
+  const [modal, setModal] = useState<'coverage' | 'csv' | null>(null);
   // Propuestas de agentes: solo sin copia o con una copia de datos de prueba.
   const testData = state?.snapshot?.source.isTestData !== false;
   useShortcuts({ active: auth === 'open' && !!state, ready: !!state?.ready, runtime: !!state?.runtime, blocked: !!selected, onRecords: page === 'workspace',
@@ -287,7 +287,6 @@ export default function App() {
     ...(state.ready ? [{ id: 'search', label: 'Buscar en toda la copia', group: 'Acción', hint: 'Ctrl K', run: () => setGlobalSearch(true) }, { id: 'coverage', label: 'Ver la cobertura de la copia', group: 'Acción', run: () => void viewCoverage() }] : []),
     ...(state.ready && !state.runtime && !busy ? [{ id: 'services', label: state.disconnected ? 'Habilitar servicios' : 'Desconectar servicios', group: 'Acción', run: () => void toggleServices(!!state.disconnected) }] : []),
     ...(!state.runtime ? [{ id: 'prepare', label: 'Configurar Plan B', group: 'Ir a', run: () => openPreparation() }] : []),
-    ...(!state.runtime && state.snapshot?.source.isTestData !== false ? [{ id: 'provider', label: 'Proveedor de IA', group: 'Ajustes', run: () => setModal('settings') }] : []),
     ...(undoable ? [{ id: 'undo', label: 'Deshacer el último guardado', group: 'Acción', run: () => void undoLast() }] : []),
     { id: 'lock', label: 'Proteger o bloquear Plan B', group: 'Acción', run: () => void protect() },
     { id: 'theme', label: typeof document !== 'undefined' && document.documentElement?.dataset?.theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro', group: 'Acción', run: toggleTheme },
@@ -324,7 +323,7 @@ export default function App() {
   return <TaskOutcomesHost refreshState={refresh} onOpenTask={openTaskFromOutcomes} onClosed={(summary,reason)=>{setLockedOutcomes(previous=>addLockSummary(previous,summary));if(summary.dispatched+summary.notDispatched>0)setLockFailed(reason==='lock-not-completed');}} controlRef={outcomesControl}><div className={'app-shell ' + (selected ? 'has-drawer' : '')}>
     <a className="skip-link" href="#main-content">Saltar al contenido</a>
     <Sidebar pins={sidebarPins} state={state} page={page} entityName={entityName} selected={!!selected} signals={{ ...signals, copy: copySignal, readiness: readinessDot }} step={step} preparationOpen={preparationOpen}
-      setPage={setPage} setSelected={setSelected} setPreparationOpen={setPreparationOpen} setGlobalSearch={setGlobalSearch} setModal={setModal}
+      setPage={setPage} setSelected={setSelected} setPreparationOpen={setPreparationOpen} setGlobalSearch={setGlobalSearch}
       openEntity={openEntity} openPreparation={openPreparation} />
     <div className="mobile-brand"><Brand /><span className="badge">{state.snapshot?.source.isTestData===false?'Producción · lectura':'Datos de prueba'}</span></div>
     <main id="main-content" className="main-content" tabIndex={-1}><TopBar state={state} pageLabel={pageLabel} openContinuity={() => { setPage('continuity'); setSelected(null); }} openChanges={state.ready ? () => { setPage('changes'); setSelected(null); } : undefined} openHelp={() => setHelp(true)}     openCommands={() => setCommandsOpen(true)} onProtect={() => void protect()} onContingency={canContingency && !contingency ? beginContingency : undefined}
@@ -344,7 +343,7 @@ export default function App() {
       :page==='week'&&state.ready&&spec?<WeeklyReview spec={spec} revision={(state.snapshot?.capturedAt??'')+':'+(state.changes??0)} title={state.snapshot?.name??'Plan B'} saveField={saveField} createTask={createTask} onOpenRecord={record=>{openEntity(record.entity);setRecords([record]);setSelected(record);}}/>
       :page==='agenda'&&state.ready&&spec?<Agenda spec={spec} revision={(state.snapshot?.capturedAt??'')+':'+(state.changes??0)} saveField={saveField} onOpenOverdue={()=>{setTodayFilter('overdue');setPage('today');setSelected(null);}} onOpenRecord={record=>{openEntity(record.entity);setRecords([record]);setSelected(record);}}/>
       :page === 'prepare' ? <Preparation state={state.candidate?{...state,...state.candidate,lastError:state.candidate.error}:state} step={step} setStep={setStep} refresh={refresh}
-        openWorkspace={() => setPage('workspace')} configure={() => setModal('settings')} onConnect={()=>{setPage('continuity');setConnectRequest(n=>n+1);}} onError={setError} />
+        openWorkspace={() => setPage('workspace')} onConnect={()=>{setPage('continuity');setConnectRequest(n=>n+1);}} onError={setError} />
       : !state.ready || !spec || !entity ? <section className="empty-state"><ShieldCheck size={36} /><h1>Revisa la preparación</h1><p>La captura y las reglas deben estar verificadas antes de editar.</p>
           <button className="button primary" onClick={() => openPreparation(2)}>Revisar aplicación</button></section>
       : <RecordsPage state={state} spec={spec} entity={entity} entityName={entityName} rows={rows} records={records} total={total} offset={offset} setOffset={setOffset}
@@ -362,7 +361,6 @@ export default function App() {
       extra={selected === 'new' ? undefined : dirty => <><RelatedPanel spec={spec} record={selected} dirty={dirty} onOpen={record => { openEntity(record.entity); setRecords([record]); setSelected(record); }} />{canLogActivity(spec, selected) ? <><QuickActivity key={selected.entity + ':' + selected.id} spec={spec} record={selected} name={recordName(selected, spec)} createTask={createTask} /><SequencePicker key={'seq:' + selected.entity + ':' + selected.id} spec={spec} record={selected} name={recordName(selected, spec)} createTask={createTask} /></> : null}<RecordTimeline spec={spec} record={selected} records={records} /></>}
       close={() => { setSelected(null); setPreset(null); }} saved={async (_record, change) => { const target = selected !== 'new' ? undoTarget(change) : null; await refresh(); setSelected(null); setPreset(null); setUndoable(target); setNotice('Guardado en tu copia local.'); }} /></> : null}
     {notice ? <div className="toast" role="status"><CheckCircle2 size={19} />{notice}{undoable ? <button type="button" className="toast-action" onClick={() => void undoLast()}>Deshacer</button> : null}</div> : null}
-    {modal === 'settings' ? <Settings state={state} close={() => setModal(null)} done={async () => { await refresh(); setNotice('Proveedor guardado.'); }} /> : null}
     {modal === 'csv' && spec && state.ready ? <CsvImport spec={spec} initialEntity={page === 'workspace' ? entityName : 'contacts'} close={() => setModal(null)} done={async (target, created) => { openEntity(target); setDataRevision(r => r + 1); await refresh(); setNotice(created + (created === 1 ? ' registro importado' : ' registros importados') + ' en tu copia local. Quedan en Cambios.'); }} /> : null}
     {help ? <ShortcutsHelp close={() => setHelp(false)} /> : null}
     <MobileNav page={page} entityName={entityName} runtime={!!state.runtime} ready={!!state.ready} overdue={signals.overdue} changes={state.changes ?? 0} go={next => { setPage(next); setSelected(null); }} openEntity={openEntity} openMore={() => setCommandsOpen(true)} />

@@ -6,7 +6,7 @@ import type { PageId } from './session.js';
 export type GroupId = 'home' | 'today' | 'clients' | 'continuity' | 'settings';
 
 /** Destino de una entrada: un apartado, un tipo de registro, la ventana del proveedor de IA o la preparación. */
-export type NavTarget = { kind: 'page'; page: PageId } | { kind: 'entity'; entity: EntityName } | { kind: 'settings' } | { kind: 'prepare' };
+export type NavTarget = { kind: 'page'; page: PageId } | { kind: 'entity'; entity: EntityName } | { kind: 'prepare' };
 
 export type NavItem = { id: string; label: string; target: NavTarget; badge?: 'overdue' | 'changes' | 'copy'; needsReady?: boolean };
 export type NavGroup = { id: GroupId; label: string; target: NavTarget; items: NavItem[]; badge?: NavItem['badge']; needsReady?: boolean };
@@ -39,7 +39,6 @@ export function navigationGroups(context: NavContext): NavGroup[] {
   ] });
   const settings: NavItem[] = [
     ...(!context.runtime ? [{ id: 'integrations', label: 'Integraciones', target: { kind: 'page', page: 'integrations' } } satisfies NavItem] : []),
-    ...(!context.runtime && context.testData ? [{ id: 'provider', label: 'Proveedor de IA', target: { kind: 'settings' } } satisfies NavItem] : []),
     ...(!context.runtime ? [{ id: 'plan', label: 'Plan y licencia', target: { kind: 'page', page: 'plan' } } satisfies NavItem] : []),
   ];
   if (settings.length) groups.push({ id: 'settings', label: 'Ajustes', target: settings[0].target, items: settings });

@@ -2,7 +2,6 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { createBaseApp } from './app.js';
 import { registerGenerator } from './generator.js';
-import { ProviderSettings } from './provider.js';
 import { importHubspot } from './hubspot.js';
 import { hubspotRemote } from './hubspot-remote.js';
 import { lockInstance } from './instance.js';
@@ -18,19 +17,16 @@ import { registerCsvImport } from './csv-import.js';
 const root = process.cwd();
 const releaseLock=lockInstance(resolve(process.env.PLANB_DATA_DIR || join(root,'data')));
 if (existsSync(join(root, '.env.local'))) process.loadEnvFile(join(root, '.env.local'));
-const providers = new ProviderSettings(join(root, '.ai.local.json'));
 const { app, store, security } = await createBaseApp({
   dbPath: resolve(process.env.PLANB_DATA_DIR || join(root, 'data'), 'planb.sqlite'),
   root, staticDir: join(root, 'dist'),
   taskRevisions: true,
-  aiConfigured: () => !!providers.read(),
-  aiPublic: () => providers.public(),
   hubspotConfigured: () => !!process.env.PLANB_HUBSPOT_TOKEN
   ,external:{capture:importHubspot,remote:hubspotRemote,inspect:inspectConnection}
 });
 mountHubspotReadCheck(app, store, security);
 mountRelayRehearsal(app, store, security);
-registerGenerator(app, store, providers);
+registerGenerator(app, store);
 registerCopyInspection(app,store);
 registerTaskIntents(app, store);
 // Módulos compartidos con la App portátil (evidencia y resumen de trabajo): ver server/modules.ts.

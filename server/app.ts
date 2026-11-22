@@ -25,7 +25,6 @@ export function csvCell(value: unknown) {
 }
 export interface AppOptions {
   dbPath: string; root: string; staticDir: string; runtime?: boolean;
-  aiConfigured?: () => boolean; aiPublic?: () => AppState['aiSettings'];
   hubspotConfigured?: () => boolean;
   /** Enable only for launchers that enforce one cooperative writer per data directory. */
   taskRevisions?: boolean;
@@ -66,10 +65,8 @@ export async function createBaseApp(options: AppOptions): Promise<{ app: Fastify
     snapshot: store.snapshot, spec: store.spec, generation: store.generation,
     reconciliation: store.reconciliation, disconnected: store.disconnected, runtime: !!options.runtime,
     ready: store.ready, changes: store.changesCount, usage: store.usage(),
-    aiConfigured: !options.runtime && (options.aiConfigured?.() ?? false),
     hubspotConfigured: !options.runtime && (!!store.get('hubspotConnection',null)||(options.hubspotConfigured?.() ?? false)),
-    lastError: store.get<string | null>('lastError', null),
-    aiSettings: options.runtime ? null : options.aiPublic?.() ?? null
+    lastError: store.get<string | null>('lastError', null)
     ,candidate: store.candidate, workspaceSearchContext: workspaceSearchIdentity(store)
   });
   const readState = async () => {

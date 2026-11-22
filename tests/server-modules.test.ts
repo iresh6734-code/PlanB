@@ -6,7 +6,7 @@ import path from 'node:path';
 import { build } from 'esbuild';
 import { SHARED_MODULES } from '../server/modules.js';
 
-const MAIN_ONLY = ['registerGenerator', 'ProviderSettings', 'importHubspot', 'hubspotRemote', 'inspectConnection', 'registerCopyInspection', 'mountRelayRehearsal', 'mountHubspotReadCheck'];
+const MAIN_ONLY = ['registerGenerator', 'importHubspot', 'hubspotRemote', 'inspectConnection', 'registerCopyInspection', 'mountRelayRehearsal', 'mountHubspotReadCheck'];
 
 test('el registro tiene identificadores únicos y una razón por módulo', () => {
   const ids = SHARED_MODULES.map(m => m.id);
@@ -32,7 +32,7 @@ test('el paquete portátil compilado sigue sin generador, proveedores, conectore
   const bundle = fs.readFileSync(path.join(out, 'runtime.mjs'), 'utf8');
   for (const name of MAIN_ONLY) assert.ok(!new RegExp('\\b' + name + '\\b').test(bundle), 'el portátil no contiene ' + name);
   const inputs = Object.keys(result.metafile!.inputs).map(p => p.replace(/\\/g, '/'));
-  for (const file of ['server/generator.ts', 'server/provider.ts', 'server/hubspot.ts', 'server/copy-inspection.ts', 'server/relay-rehearsal-mount.ts']) {
+  for (const file of ['server/generator.ts', 'server/hubspot.ts', 'server/copy-inspection.ts', 'server/relay-rehearsal-mount.ts']) {
     assert.ok(!inputs.some(p => p.endsWith(file)), 'el portátil no incluye ' + file);
   }
   for (const file of ['server/modules.ts', 'server/continuity-evidence-api.ts', 'server/work-summary-api.ts']) assert.ok(inputs.some(p => p.endsWith(file)), 'sí incluye ' + file);

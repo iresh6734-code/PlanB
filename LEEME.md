@@ -24,25 +24,11 @@ La primera ejecución crea **data/planb.sqlite**. Los siguientes arranques utili
 
 Para comparar configuraciones, entra en Preparación → Origen y elige Distribuidora Atlas. Verás Código de cliente, Referencia del pedido, Fecha de entrega y otras etapas. El servidor exige una referencia para pasar a En entrega. Si hay cambios locales, exporta primero y marca la casilla de sustitución. La importación guarda además un archivo interno de la copia previa en SQLite; no hay una interfaz de restauración de archivos internos en esta versión.
 
-## Tu proveedor de IA, más adelante
+## IA
 
-Abre **Proveedor de IA**. Se puede configurar sin modificar código:
+La generación con un proveedor de IA está aparcada en Verifica: el código se conserva en la rama `archivo/aparcado-2026-11-22`. La app no llama a ningún modelo ni guarda claves de IA.
 
-- OpenRouter: API compatible en https://openrouter.ai/api/v1
-- Google Gemini: API compatible en https://generativelanguage.googleapis.com/v1beta/openai
-- DeepSeek: https://api.deepseek.com/v1, modo JSON
-- Ollama: http://127.0.0.1:11434/v1, con un modelo que tengas instalado
-- Otra API que admita Chat Completions y respuesta JSON.
-
-Indica el identificador exacto del modelo, su clave, la dirección y las tarifas de entrada/salida por millón de tokens. El modelo debe poder devolver la especificación completa; el valor inicial de salida es 8192 tokens y puedes aumentarlo hasta 24000. JSON Schema depende del modelo. Si el proveedor rechaza ese formato, elige JSON. Ambos pasan las mismas validaciones locales. Una clave de otro proveedor no sirve en un endpoint de OpenAI.
-
-La clave se guarda en **.ai.local.json**, en esta carpeta, con permisos heredados de tu usuario en Windows. No se devuelve en la API ni se incluye en los paquetes descargados. No la pegues en chats. La app nunca reutiliza una clave guardada para otra dirección. No utiliza automáticamente una antigua variable OPENAI_API_KEY.
-
-Generar con mi IA envía únicamente configuración de campos, etapas, reglas e instrucciones; no envía los registros del CRM. Las instrucciones y evidencias pueden contener lo que escribas: usa datos de ensayo. No se ejecuta código producido por el modelo.
-
-La opción **Crear especificación de ensayo** es determinista y gratuita. Conserva las reglas de la captura; NO interpreta la instrucción ni simula una generación de IA. Se identifica como ensayo en todas las vistas.
-
-El contador mensual local tiene un límite preventivo de **25 USD** y reserva el coste máximo antes de cada petición con las tarifas que indiques. Es una estimación, no una lectura de tu saldo o factura. Configura también un límite en tu proveedor. Si una petición queda interrumpida, la reserva se mantiene por precaución. No hay recargas ni nuevas peticiones automáticas.
+La opción **Crear especificación de ensayo** es determinista y gratuita. Conserva las reglas de la captura y se identifica como ensayo en todas las vistas.
 
 ## HubSpot de prueba
 

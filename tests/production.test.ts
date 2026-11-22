@@ -9,7 +9,6 @@ import { Recovery, simulatedRemote, type Remote } from '../server/recovery.js';
 import { verifyManualRecovery } from '../server/manual-recovery.js';
 import { runtimeZip } from '../server/exporter.js';
 import { createBaseApp } from '../server/app.js';
-import { generateWithAI } from '../server/ai.js';
 
 function prepare(){
   const store=new Store(':memory:'),snapshot=makeFixture(),spec=makeDemoSpec(snapshot);
@@ -60,7 +59,7 @@ test('edición concurrente invalida comprobación sin cerrar pendientes',async()
 test('producción rechaza IA, paquete sin cifrar y devolución automática',async()=>{
   const store=prepare();store.saveRecord('contacts',{phone:'600999888'},'contact-1');const remote={...simulatedRemote(store),source:'hubspot' as const};
   await assert.rejects(new Recovery(store).preview(remote),/comprobación manual/);await assert.rejects(new Recovery(store).apply('cualquiera',remote),/bloqueadas/);
-  await assert.rejects(generateWithAI(store,store.snapshot!,'',null),/desactivada/);await assert.rejects(runtimeZip(store.bundle(),'.'),/requieren cifrado/);store.close();
+  await assert.rejects(runtimeZip(store.bundle(),'.'),/requieren cifrado/);store.close();
 });
 test('todas las entradas de captura aplican el máximo total',()=>{
   const snapshot=makeFixture(),template=snapshot.records[0];for(let n=snapshot.records.length;n<=MAX_RECORDS;n++)snapshot.records.push({...template,id:'extra-'+n});

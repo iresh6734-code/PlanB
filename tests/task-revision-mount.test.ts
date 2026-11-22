@@ -90,7 +90,7 @@ test('independent runtime opts in to local revisions without enabling external s
   const f = await fixture(true, true); try {
     assert.equal((await f.app.inject({ url, headers })).statusCode, 200);
     const state = (await f.app.inject({ url: '/api/v2/state', headers })).json();
-    assert.equal(state.runtime, true); assert.equal(state.aiConfigured, false);
+    assert.equal(state.runtime, true); assert.equal(state.aiConfigured, undefined);
     const reconnect = await f.app.inject({ method: 'POST', url: '/api/disconnect', headers, payload: { disconnected: false } });
     assert.equal(reconnect.statusCode, 403);
   } finally { await f.app.close(); }

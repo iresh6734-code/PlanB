@@ -76,11 +76,6 @@ test('preparación y continuidad con todo el tráfico externo bloqueado', async 
   await expect(page.getByText('Prueba completada. Los cambios locales siguen pendientes de devolución real.',{exact:true})).toBeVisible({timeout:30000});
   await page.locator('.changes-page').evaluate(el=>el.parentElement?.scrollTo(0,0));
   await page.screenshot({path:resolve(output,'plan-b-v0.3.0-devolucion.png'),fullPage:true});
-  await openSection(page, 'Proveedor de IA');
-  await expect(page.getByRole('dialog', { name: 'Tu proveedor de IA' })).toBeVisible();
-  await page.getByRole('combobox', { name: 'Proveedor', exact: true }).selectOption('deepseek');
-  await expect(page.getByLabel('Dirección de la API', { exact: true })).toHaveValue('https://api.deepseek.com/v1');
-  await page.getByRole('button', { name: 'Ahora no', exact: true }).click();
   expect(external).toEqual([]); expect(errors).toEqual([]);
 });
 test('segunda configuración cambia campos, etapas y regla requerida sin tocar la aplicación', async ({ page, request }) => {
@@ -102,7 +97,7 @@ test('segunda configuración cambia campos, etapas y regla requerida sin tocar l
   await expect(page.getByRole('alert')).toContainText('Indica la referencia');
   await page.getByRole('button', { name: 'Cerrar edición', exact: true }).click();
 });
-test('móvil: navegación, edición y configuración sin desbordamiento de página', async ({ page }) => {
+test('móvil: navegación y edición sin desbordamiento de página', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   await page.screenshot({path:resolve(output,'plan-b-v0.3.0-movil-continuidad.png'),fullPage:true});
@@ -112,13 +107,8 @@ test('móvil: navegación, edición y configuración sin desbordamiento de pági
   await expect(page.getByLabel('Código de cliente', { exact: false })).toBeVisible();
   await page.screenshot({ path: resolve(output, 'plan-b-v0.3.0-movil.png') });
   await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
-  await page.getByRole('navigation',{name:'Navegación rápida'}).getByRole('button',{name:'Más',exact:true}).click();
-  await page.getByRole('combobox',{name:'Escribe una orden o un nombre'}).fill('Proveedor de IA');
-  await page.getByRole('option',{name:/Proveedor de IA/}).first().click();
-  await expect(page.getByLabel('Modelo', { exact: true })).toBeVisible();
   const overflow = await page.evaluate(() => [...document.querySelectorAll('*')].filter(el => el.getBoundingClientRect().right > window.innerWidth + 1 && getComputedStyle(el).position !== 'fixed').map(el => ({ tag: el.tagName, cls: el.className, width: el.getBoundingClientRect().width, right: el.getBoundingClientRect().right })).slice(-18));
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), JSON.stringify(overflow)).toBeTruthy();
-  await page.getByRole('button', { name: 'Ahora no', exact: true }).click();
 });
 test('simulacro en proceso aislado y sesión de continuidad desde el historial',async({page,browser})=>{
   await page.goto('/');

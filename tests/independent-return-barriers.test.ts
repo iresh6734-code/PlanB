@@ -24,7 +24,6 @@ const { verifyManualRecovery } = await load('server/manual-recovery.ts') as type
 const { Continuity } = await load('server/continuity.ts') as typeof import('../server/continuity.js');
 const { createBaseApp } = await load('server/app.ts') as typeof import('../server/app.js');
 const { registerGenerator } = await load('server/generator.ts') as typeof import('../server/generator.js');
-const { ProviderSettings } = await load('server/provider.ts') as typeof import('../server/provider.js');
 const { registerCopyInspection } = await load('server/copy-inspection.ts') as typeof import('../server/copy-inspection.js');
 const { rememberExport, confirmRecoveryCopy, recoveryCopyStatus, exportSummary } = await load('server/recovery-copy.ts') as typeof import('../server/recovery-copy.js');
 const { makeFixture, makeDemoSpec } = await load('shared/fixtures.ts') as typeof import('../shared/fixtures.js');
@@ -336,7 +335,7 @@ check('custodia · tras corromper, una copia confirmada deja de ser actual, no c
 // ======================================================================================================================
 async function httpCtx(bad: boolean) {
   const d = dir('http'); const { app, store } = await createBaseApp({ dbPath: path.join(d, 'planb.sqlite'), root: d, staticDir: path.join(d, 'none') }) as any;
-  registerGenerator(app, store, new ProviderSettings(path.join(d, '.ai.local.json'))); registerCopyInspection(app, store);
+  registerGenerator(app, store); registerCopyInspection(app, store);
   seed(store); edit(store); const eng = new Recovery(store); const remote = backingRemote(store); const plan = await eng.preview(remote); eng.approve(plan.id);
   const other: any = seed(new Store(':memory:')); const bundleText = JSON.stringify(other.bundle()); other.close();
   const captureId = store.captures()[0].id;

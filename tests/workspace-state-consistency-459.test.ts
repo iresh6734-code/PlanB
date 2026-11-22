@@ -37,7 +37,7 @@ async function fixture(t: TestContext) {
   let reads = 0;
   const { app, store } = await createBaseApp({
     root, dbPath, staticDir: path.join(root, 'no-assets'),
-    aiConfigured: () => { reads++; action?.(); return false; },
+    hubspotConfigured: () => { reads++; action?.(); return false; },
   });
   const writer = new Store(dbPath);
   t.after(async () => {

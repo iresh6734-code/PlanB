@@ -22,7 +22,6 @@ export const ChangesView = deferred(() => import('../ChangesView.js').then(m => 
 export const PortableExport = deferred(() => import('../PortableExport.js').then(m => m.PortableExport), 'Abriendo Exportar…');
 export const LocalIntegrations = deferred(() => import('../LocalIntegrations.js').then(m => m.LocalIntegrations), 'Abriendo Integraciones…');
 export const LicensePanel = deferred(() => import('../LicensePanel.js').then(m => m.LicensePanel), 'Abriendo tu plan…');
-export const Settings = deferred(() => import('../Settings.js').then(m => m.Settings), 'Abriendo los ajustes…');
 export const WeeklyReview = deferred(() => import('./WeeklyReview.js').then(m => m.WeeklyReview), 'Abriendo la revisión semanal…');
 export const Agenda = deferred(() => import('./Agenda.js').then(m => m.Agenda), 'Abriendo la agenda…');
 // Diálogos que solo se abren a petición: fuera del JS inicial.

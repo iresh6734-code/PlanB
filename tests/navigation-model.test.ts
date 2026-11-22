@@ -13,9 +13,8 @@ test('cinco lugares de primer nivel y ningún Laboratorio, con datos de prueba o
   for (const page of ['radar', 'date-check', 'outage-lab']) assert.ok(!(PAGES as readonly string[]).includes(page), page);
 });
 
-test('con datos reales no se ofrece el proveedor de IA', () => {
-  assert.ok(!allItems(ctx({ testData: false })).includes('provider'));
-  assert.ok(allItems(ctx()).includes('provider'), 'con datos de prueba sí se ofrece');
+test('el proveedor de IA está aparcado: no se ofrece ni con datos de prueba', () => {
+  for (const testData of [true, false]) assert.ok(!allItems(ctx({ testData })).includes('provider'));
 });
 
 test('la copia independiente no ofrece Hoy, Propuestas, Integraciones, copia de equipo ni Preparación', () => {

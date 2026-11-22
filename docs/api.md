@@ -14,8 +14,8 @@ Generado por `node tools/api/inventory.mjs` a partir de los servidores reales: c
 | v3 | 4 | 4 | 2 |
 | v4 | 10 | 10 | 10 |
 | v7 | 38 | 38 | 36 |
-| sin versión | 19 | 19 | 13 |
-| **Total** | **121** | **121** | **95** |
+| sin versión | 17 | 17 | 13 |
+| **Total** | **119** | **119** | **95** |
 
 ## v2
 
@@ -159,6 +159,4 @@ Generado por `node tools/api/inventory.mjs` a partir de los servidores reales: c
 | GET | `/api/records/:entity` | ● | ● | `server/app.ts` |
 | POST | `/api/records/:entity` | ● | ● | `server/app.ts` |
 | PATCH | `/api/records/:entity/:id` | ● | ● | `server/app.ts` |
-| GET | `/api/settings/ai` | ● |  | `server/generator.ts` |
-| PUT | `/api/settings/ai` | ● |  | `server/generator.ts` |
 | GET | `/api/state` | ● | ● | `server/app.ts` |

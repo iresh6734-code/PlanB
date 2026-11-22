@@ -14,7 +14,6 @@ for(const [id,name] of [['01-hoy','Hoy'],['02-continuidad','Continuidad'],['03-t
   if(name==='Clientes'){const work=page.getByRole('button',{name:'Trabajar',exact:true});if(await work.getAttribute('aria-expanded')==='false')await work.click();}
   await page.getByRole('button',{name,exact:true}).click();await capture(id);
 }
-await page.getByRole('button',{name:'Proveedor de IA',exact:true}).click();await page.getByRole('dialog').waitFor();await page.screenshot({path:resolve(out,'10-configuracion.png'),fullPage:true});await page.getByRole('button',{name:'Cerrar',exact:true}).click();
 await page.setViewportSize({width:390,height:900});await page.getByRole('button',{name:'Hoy',exact:true}).click();await capture('11-movil-hoy');
 await page.setViewportSize({width:1440,height:1000});await page.goto('http://127.0.0.1:4332/team?view=commercial');await page.getByRole('heading',{name:'Cada seguimiento, preparado.',exact:true}).waitFor();
 for(const [id,name] of [['12-equipo-comercial','Comercial'],['13-equipo-clientes','Contactos'],['14-equipo-personas','Equipo'],['15-equipo-trabajos','Trabajos'],['16-equipo-hubspot','HubSpot'],['17-equipo-dispositivos','Dispositivos']]){await page.getByRole('button',{name,exact:true}).click();await capture(id);}

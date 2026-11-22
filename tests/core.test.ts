@@ -5,7 +5,6 @@ import { join, resolve } from 'node:path';
 import { makeDemoSpec, makeFixture } from '../shared/fixtures.js';
 import { reconcile, validateSpec, validateRecord, type Generation } from '../shared/model.js';
 import { Store, AppError } from '../server/store.js';
-import { ProviderSettings } from '../server/provider.js';
 import { createBaseApp } from '../server/app.js';
 import { registerGenerator } from '../server/generator.js';
 
@@ -109,9 +108,8 @@ test('el presupuesto reserva antes de gastar y conserva reservas al reiniciar', 
 });
 test('API local: origen, flujo real de ensayo, desconexión y exportaciones sin credenciales', async () => {
   const folder = mkdtempSync(join(scratch, 'api-'));
-  const providers = new ProviderSettings(join(folder, '.ai.local.json'));
-  const { app, store } = await createBaseApp({ dbPath: ':memory:', root: resolve('.'), staticDir: join(folder, 'none'), aiPublic: () => providers.public() });
-  registerGenerator(app, store, providers);
+  const { app, store } = await createBaseApp({ dbPath: ':memory:', root: resolve('.'), staticDir: join(folder, 'none') });
+  registerGenerator(app, store);
   const request = async (method: 'GET' | 'POST' | 'PUT', url: string, payload?: unknown, headers = {}) =>
     await app.inject({ method, url, payload: payload === undefined ? undefined : JSON.stringify(payload),
       headers: { host: '127.0.0.1:4317', 'content-type': 'application/json', ...headers } });
@@ -119,19 +117,17 @@ test('API local: origen, flujo real de ensayo, desconexión y exportaciones sin 
     assert.equal((await request('GET', '/api/state', undefined, { origin: 'https://evil.example' })).statusCode, 403);
     assert.equal((await request('GET', '/api/state', undefined, { host: 'evil.example' })).statusCode, 403);
     assert.equal((await request('POST', '/api/import/fixture', { profile: 'agency' })).statusCode, 200);
-    assert.equal((await request('POST', '/api/generate', { mode: 'ai' })).statusCode, 503);
+    assert.equal((await request('POST', '/api/generate', { mode: 'ai' })).statusCode, 422, 'la IA está aparcada');
     assert.equal(store.ready, false);
     assert.equal((await request('POST', '/api/generate', { mode: 'demo' })).statusCode, 200);
     assert.equal((await request('POST', '/api/activate', { reviewed: false })).statusCode, 422);
     assert.equal((await request('POST', '/api/activate', { reviewed: true })).statusCode, 200);
-    const config = { preset: 'custom', baseUrl: 'https://provider.example/v1', model: 'test', apiKey: 'test-only-secret-canary', inputUsdPerMillion: 1, outputUsdPerMillion: 2, outputMode: 'json_object', maxOutputTokens: 8192 };
-    assert.equal((await request('PUT', '/api/settings/ai', config)).statusCode, 200);
-    assert.ok(!(await request('GET', '/api/state')).body.includes(config.apiKey));
+    assert.equal((await request('PUT', '/api/settings/ai', {})).statusCode, 404);
+    assert.ok(!('aiConfigured' in (await request('GET', '/api/state')).json()));
     assert.equal((await request('POST', '/api/disconnect', { disconnected: true })).statusCode, 200);
-    const json = await request('GET', '/api/export/bundle'); assert.equal(json.statusCode, 200); assert.ok(!json.body.includes(config.apiKey));
+    const json = await request('GET', '/api/export/bundle'); assert.equal(json.statusCode, 200);
     assert.equal((await request('GET', '/api/export/changes?format=csv')).headers['content-type'], 'text/csv; charset=utf-8');
     assert.equal((await request('POST', '/api/probe', {})).json().passed, true);
     assert.equal((await request('POST', '/api/import/hubspot', { accountId: '123', confirmedTestAccount: true })).statusCode, 409);
-    assert.equal((await request('POST', '/api/generate', { mode: 'ai' })).statusCode, 409);
   } finally { await app.close(); rmSync(folder, { recursive: true, force: true }); }
 });

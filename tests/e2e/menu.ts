@@ -10,7 +10,7 @@ const SECTIONS: Record<string, [string, string]> = {
   'Tareas de hoy': ['Hoy', 'Tareas de hoy'], 'Revisión semanal': ['Hoy', 'Revisión semanal'], Agenda: ['Hoy', 'Agenda'],
   Clientes: ['Clientes', 'Clientes'], Empresas: ['Clientes', 'Empresas'], Oportunidades: ['Clientes', 'Oportunidades'], Tareas: ['Clientes', 'Tareas'],
   Estado: ['Continuidad', 'Estado'], Cambios: ['Continuidad', 'Cambios'], Exportar: ['Continuidad', 'Exportar'], 'Copia de equipo': ['Continuidad', 'Copia de equipo'],
-  Integraciones: ['Ajustes', 'Integraciones'], 'Proveedor de IA': ['Ajustes', 'Proveedor de IA'], Preparación: ['Continuidad', 'Configurar Plan B'], 'Configurar Plan B': ['Continuidad', 'Configurar Plan B'],
+  Integraciones: ['Ajustes', 'Integraciones'], Preparación: ['Continuidad', 'Configurar Plan B'], 'Configurar Plan B': ['Continuidad', 'Configurar Plan B'],
   Radar: ['Laboratorio', 'Radar'], 'Comprobar una fecha': ['Laboratorio', 'Comprobar fecha'],
 };
 
@@ -28,7 +28,7 @@ export const menuItem = (page: Page, section: string): Locator => {
 const COMMANDS: Record<string, string> = {
   'Tareas de hoy': 'Ir a Hoy', 'Revisión semanal': 'Ir a Revisión semanal', Agenda: 'Ir a Agenda', Propuestas: 'Ir a Propuestas (datos de prueba)', Clientes: 'Ir a Clientes', Empresas: 'Ir a Empresas', Oportunidades: 'Ir a Oportunidades', Tareas: 'Ir a Tareas',
   Estado: 'Ir a Continuidad', Cambios: 'Ir a Cambios', Exportar: 'Ir a Exportar', 'Copia de equipo': 'Ir a Copia de equipo',
-  Integraciones: 'Ir a Integraciones', 'Proveedor de IA': 'Proveedor de IA', Preparación: 'Configurar Plan B', 'Configurar Plan B': 'Configurar Plan B',
+  Integraciones: 'Ir a Integraciones', Preparación: 'Configurar Plan B', 'Configurar Plan B': 'Configurar Plan B',
   Radar: 'Laboratorio: Radar de compromisos', 'Comprobar una fecha': 'Laboratorio: Comprobar una fecha',
 };
 

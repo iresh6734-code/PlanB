@@ -137,15 +137,9 @@ export interface AppState {
   runtime: boolean;
   ready: boolean;
   changes: number;
-  aiConfigured: boolean;
   hubspotConfigured: boolean;
   usage: { usedUsd: number; reservedUsd: number; limitUsd: number; requests: number };
   lastError: string | null;
-  aiSettings: {
-    preset: string; baseUrl: string; model: string; hasKey: boolean;
-    inputUsdPerMillion: number | null; outputUsdPerMillion: number | null;
-    outputMode: 'json_schema' | 'json_object'; maxOutputTokens: number;
-  } | null;
   candidate?: { snapshot: CrmSnapshot; spec: AppSpec | null; generation: Generation | null; reconciliation: Reconciliation; error: string | null } | null;
 }
 export const RecoveryPlanSchema=z.object({

@@ -21,7 +21,8 @@ export interface VerificaDeal {
   history: { amount: HistoryEntry[]; closeDate: HistoryEntry[] } | null;
 }
 
-export interface VerificaCompany { id: string; name: string; customer: boolean }
+/** `taxId` (NIF o CIF) solo sirve para cruzar facturas; el lector lo trae si el CRM tiene una propiedad para él. */
+export interface VerificaCompany { id: string; name: string; customer: boolean; taxId?: string | null }
 export interface VerificaContact { id: string; name: string; email: string | null; companyId: string | null }
 export interface VerificaOwner { id: string; name: string }
 

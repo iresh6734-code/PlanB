@@ -12,7 +12,6 @@ type Toggle = (update: (open: boolean) => boolean) => void;
 type Signals = { overdue: number | null; copy?: { count: number; tone: 'danger' | 'warn'; titles: string[] } | null; readiness?: ReadinessSignal | null };
 type Props = {
   state: AppState; page: PageId; entityName: EntityName;
-  teamConfigured: boolean;
   /** Hay una ficha abierta: la búsqueda global se desactiva. */ selected: boolean;
   /** Recuentos para los avisos del menú; null = sin dato. */ signals: Signals;
   step: number; preparationOpen: boolean;
@@ -25,15 +24,15 @@ type Props = {
 const GROUP_ICON: Record<GroupId, ComponentType<{ size?: number }>> = { home: Home, today: CalendarDays, clients: Users, continuity: ShieldCheck, settings: SlidersHorizontal };
 const ITEM_ICON: Record<string, ComponentType<{ size?: number }>> = {
   today: CalendarDays, agents: Inbox, contacts: Users, companies: Building2, deals: GitBranch, tasks: ListTodo,
-  continuity: ShieldCheck, changes: GitBranch, export: Download, 'team-sync': Building2, integrations: PlugZap, provider: Settings2, plan: BadgeCheck,
+  continuity: ShieldCheck, changes: GitBranch, export: Download, integrations: PlugZap, provider: Settings2, plan: BadgeCheck,
 };
 
 /**
  * Navegación principal en cinco lugares (Inicio, Hoy, Clientes, Continuidad y Ajustes). Solo cambia de apartado; no lee
  * ni guarda datos.
  */
-export function Sidebar({ state, page, entityName, teamConfigured, selected, signals, step, preparationOpen, setPage, setSelected, setPreparationOpen, setGlobalSearch, setModal, openEntity, openPreparation, pins }: Props) {
-  const context = { runtime: !!state.runtime, testData: state.snapshot?.source.isTestData !== false, ready: !!state.ready, teamConfigured };
+export function Sidebar({ state, page, entityName, selected, signals, step, preparationOpen, setPage, setSelected, setPreparationOpen, setGlobalSearch, setModal, openEntity, openPreparation, pins }: Props) {
+  const context = { runtime: !!state.runtime, testData: state.snapshot?.source.isTestData !== false, ready: !!state.ready };
   const groups = navigationGroups(context), current = groupOfPage(page);
   const [open, setOpen] = useState<Set<GroupId>>(() => new Set([current]));
   // Al cambiar de lugar queda desplegado solo el suyo (el menú no crece al navegar); dentro del mismo lugar se respeta lo que la persona abra o cierre.

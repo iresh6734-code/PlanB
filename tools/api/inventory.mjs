@@ -4,7 +4,7 @@
 //   node tools/api/inventory.mjs            regenera docs/api.md
 //   node tools/api/inventory.mjs --check    falla (código 1) si docs/api.md no coincide con los servidores
 //   node tools/api/inventory.mjs --json     imprime el inventario completo (con número de línea)
-//   Opciones: --entries main,runtime,team   --out <archivo>   --doc <archivo a comprobar>
+//   Opciones: --entries main,runtime   --out <archivo>   --doc <archivo a comprobar>
 //
 // Cada entrada se arranca en una carpeta temporal nueva, con datos vacíos, NODE_ENV=test, la red exterior
 // bloqueada (scripts/block-external.cjs) y Fastify sustituido por fastify-capture.mjs, que termina el proceso
@@ -25,8 +25,6 @@ export const ENTRIES = {
   runtime: { label: 'runtime', title: 'App independiente (paquete portátil)', entry: 'server/runtime.ts', env: () => ({}),
     // Solo se comprueba que exista: con él la entrada arranca sin restaurar ninguna copia.
     files: { 'continuity.encrypted.json': '{}' } },
-  team: { label: 'equipo', title: 'Servicio de equipo en modo demo', entry: 'server/team/main.ts',
-    env: work => ({ PLANB_TEAM_DEMO: '1', PLANB_TEAM_DATA_DIR: join(work, 'team'), PLANB_TEAM_PORT: '1' }), files: {} },
 };
 
 const KEEP_ENV = ['path', 'systemroot', 'windir', 'comspec', 'pathext', 'temp', 'tmp', 'tmpdir', 'lang', 'tz'];
@@ -75,12 +73,11 @@ export function captureEntry(id, { repo = REPO, timeoutMs = 300_000 } = {}) {
 export function groupOf(url) {
   const version = /^\/api\/(v\d+)\//.exec(url);
   if (version) return version[1];
-  if (url.startsWith('/api/team/') || url === '/api/team') return 'team';
   if (url.startsWith('/api/')) return 'sin versión';
   return 'fuera de /api';
 }
 
-const GROUP_ORDER = ['v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8', 'v9', 'sin versión', 'team', 'fuera de /api'];
+const GROUP_ORDER = ['v2', 'v3', 'v4', 'v5', 'v6', 'v7', 'v8', 'v9', 'sin versión', 'fuera de /api'];
 const rank = group => { const i = GROUP_ORDER.indexOf(group); return i < 0 ? GROUP_ORDER.length : i; };
 
 /** Une las rutas de varias entradas: una fila por método y ruta, con las entradas que la sirven y su origen. */
@@ -117,7 +114,7 @@ export function renderMarkdown(rows, entryIds) {
     '',
     '**Entradas:** ' + entryIds.map(id => '`' + ENTRIES[id].label + '` = ' + ENTRIES[id].title + ' (`' + ENTRIES[id].entry + '`)').join(' · '),
     '',
-    '**Límites:** solo aparecen las rutas que cada entrada declara con su configuración por defecto. El servicio de equipo se inventaría en modo demo: faltan las rutas del piloto local (`PLANB_TEAM_LOCAL_PILOT`), las del modo gestionado (por ejemplo `/internal/dispatch`) y las que dependen de credenciales (OAuth de HubSpot, Google, Copilot o identidad gestionada). Tampoco están los servidores propios de la sala y la cápsula de rescate (`server/rescue-room-api.ts`, `server/rescue-capsule-api.ts`), que solo arrancan desde sus scripts de demostración. `HEAD` se omite porque Fastify lo añade a cada `GET`. Tampoco aparece la ruta de archivos estáticos (`/*`), que solo se registra cuando existe `dist/`. La comprobación de permisos de cada ruta no forma parte de este inventario.',
+    '**Límites:** solo aparecen las rutas que cada entrada declara con su configuración por defecto; faltan las que dependen de credenciales (por ejemplo, OAuth de HubSpot). Tampoco están los servidores propios de la sala y la cápsula de rescate (`server/rescue-room-api.ts`, `server/rescue-capsule-api.ts`), que solo arrancan desde sus scripts de demostración. `HEAD` se omite porque Fastify lo añade a cada `GET`. Tampoco aparece la ruta de archivos estáticos (`/*`), que solo se registra cuando existe `dist/`. La comprobación de permisos de cada ruta no forma parte de este inventario.',
     '',
     '## Resumen',
     '',
@@ -232,7 +229,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   try { process.exitCode = main(process.argv.slice(2)); }
   catch (error) {
     console.error(error instanceof Error ? error.message : error);
-    if (error instanceof UsageError) console.error('Uso: node tools/api/inventory.mjs [--check [--doc ARCHIVO] | --json | --out ARCHIVO] [--entries main,runtime,team]');
+    if (error instanceof UsageError) console.error('Uso: node tools/api/inventory.mjs [--check [--doc ARCHIVO] | --json | --out ARCHIVO] [--entries main,runtime]');
     process.exitCode = 2;
   }
 }

@@ -251,6 +251,80 @@ La paleta tiene 3 órdenes menos y la ayuda de atajos 2 líneas menos.
 - `node tools/css-unused.mjs` da 0 selectores muertos.
 - Para recuperar algo: `git checkout archivo/aparcado-2026-11-22 -- <ruta>`.
 
+### Hecho · tanda 2 · aplicación de equipos aparcada · 22/11/2026
+
+**Qué sale de la App local.**
+
+- La aplicación de equipos entera: la ruta `/team`, su servidor `server/team/` y las tres piezas que se compilaban aparte (`team.mjs`, `copilot-worker.mjs` y `pilot-alias.mjs`).
+- Continuidad › «Copia de equipo» (`/continuidad/equipo`) y su servidor `server/team-sync.ts`, con las rutas `/api/v5/team-sync*`, `/api/v6/team-sync/edit` y `/api/v6/workspace`.
+- El enlace «Espacio de equipo» de la barra superior.
+- Dos órdenes de la paleta: «Ir a Copia de equipo» e «Ir al espacio comercial».
+- La sección «Google Workspace · espacio de equipo» de Integraciones, con sus cinco filas. Esta sección solo enlazaba a la aplicación de equipos.
+- Los scripts `start:team` y `start:google-pilot`, más los de OAuth de Google y del alias del piloto.
+
+Un apartado o una dirección guardados de antes abren Inicio.
+
+**Qué se queda en Integraciones:** HubSpot, «Espacio local» y «Ver capacidades de ensayo». Integraciones está congelada, así que solo se le quitó lo que apuntaba a la aplicación de equipos. Ahora lee dos fuentes (`/v2/continuity` y `/v4/integrations`) en lugar de tres.
+
+**Qué se borró** (133 archivos).
+
+- 59 archivos de la aplicación de equipos:
+  - `server/team/*` y `server/team-sync.ts`;
+  - las pantallas `src/Team*.tsx`, `LocalPilotGate.tsx` y `app-shell/team-conflict.tsx`, con sus cuatro hojas de estilo;
+  - cuatro scripts del piloto;
+  - `tools/team-audit`;
+  - las guías `COPILOT-STUDIO.md`, `GOOGLE-PILOTO-LOCAL.md` e `INTEGRACIONES-PILOTO.md`.
+- 26 módulos que solo usaba esa aplicación:
+  - espacio comercial, correo, informe y prioridades de venta, cliente, ficha, archivos, contexto de HubSpot y estado de integraciones;
+  - en `shared/` y `src/`, con sus cinco hojas de estilo.
+- 38 pruebas unitarias y 10 pruebas de navegador que solo probaban lo borrado. Las pruebas de navegador no se ejecutaron aquí.
+- 399 selectores de CSS sin uso: 40,1 KB. Casi todos eran reglas de `.team-*`, del espacio comercial y de la copia de equipo en `planb-ui.css`, `faro.css` y `design-system.css`.
+
+La comprobación de alcance (`files/reach.cjs` de la sesión) da los mismos 25 módulos sin conectar que antes de la tanda: no queda ningún huérfano nuevo.
+
+**Medida.**
+
+| Dónde | Antes | Ahora |
+|---|---|---|
+| Menú › Continuidad, con equipo configurado | con «Copia de equipo» | sin ella (una entrada menos) |
+| Paleta, con equipo configurado | +2 órdenes | sin ellas |
+| Barra superior | enlace «Espacio de equipo» | sin enlace |
+| Integraciones | HubSpot + sección Google con 5 filas | solo HubSpot (las 5 filas de Google salen) |
+| `docs/api.md` | 183 rutas (`main` 128) | 121 rutas (`main` 121) |
+
+Sin equipo configurado, que es lo normal en esta instalación, el menú no cambia.
+
+**Ajustes en pruebas y herramientas.**
+
+- Pruebas:
+  - `local-integrations` e `independent-local-integrations`: dos fuentes, sin filas de equipo y sin validación de origen;
+  - `ui-journeys`: quedan TabList, modales y FIX-020;
+  - `security-hardening`: queda C2, el CSV;
+  - `independent-interface-contexts`: sin la sección F;
+  - `navigation-model`, `navigation-group-header`, `server-modules` y el arnés `main-app-readiness-harness`;
+  - cuatro pruebas de navegador que montaban `registerTeamSync`;
+  - `api-inventory`.
+- Publicación:
+  - `prepare-release-candidate`, `candidate-integrity`, `tools/e2e/isolated.mjs` y `playwright.isolated.config.ts`: tres piezas en lugar de seis;
+  - las tres pruebas `release-candidate-*` y `candidate-integrity`.
+- `tools/api/inventory.mjs`: sin la entrada `team`. `docs/api.md` se rehízo con las propias funciones del inventario (`mergeInventory` y `renderMarkdown`) a partir de sus filas, quitando las 62 rutas aparcadas. No se arrancaron servidores.
+- `tests/color-guard-baseline.json`: sale `commercial-email.css`; `design-system.css` baja de 28 a 22, `sales.css` de 5 a 1, `planb-ui.css` de 6 a 5 y `styles.css` de 96 a 95.
+- `package.json`: la línea `build` ya no compila las tres piezas de equipo.
+
+**Cómo se comprueba.**
+
+- `npx tsc --noEmit -p tsconfig.json` termina con 0 errores.
+- Con `NODE_ENV=test`, `node tools/safe-tests.mjs verifica orphan-components css-unused color-guard design-tokens dev-only-files navigation-model navigation-group-header url-routes server-modules record-sheet continuity-lab local-integrations independent-local-integrations ui-journeys security-hardening independent-interface-contexts` pasa 23 de 23 archivos.
+- `node tools/css-unused.mjs` da 0 selectores muertos.
+- No corren aquí, porque abren procesos: `api-inventory`, `release-candidate-*` y `candidate-integrity`. Están en la lista viva.
+
+**Pendiente de esta tanda** (en la lista viva):
+
+- Las dependencias npm que solo usaba la aplicación de equipos siguen en `package.json`, para no tocar `package-lock.json` desde aquí.
+- Las pruebas de navegador mixtas.
+- Las herramientas de publicación del espacio completo.
+- `ABRIR PLAN B.cmd`.
+
 ## Verifica · Fase 1 · GitHub Copilot
 
 ### Reserva · antes de editar
@@ -610,7 +684,7 @@ Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
 
 **Decide la usuaria**
 
-- [x] ~~Destinos de cada parte: motor, congelado, aparcado o fuera~~: confirmados el 22/11/2026 tal como están en el plan. Se aparcan por tandas; la 1 (Laboratorio) está hecha, faltan la 2 (aplicación de equipos) y la 3 (IA local).
+- [x] ~~Destinos de cada parte: motor, congelado, aparcado o fuera~~: confirmados el 22/11/2026 tal como están en el plan. Se aparcan por tandas; la 1 (Laboratorio) y la 2 (aplicación de equipos) están hechas, falta la 3 (IA local).
 - [x] ~~Qué agente coordina y quién es dueño de cada carpeta~~: coordina GitHub Copilot (22/11/2026).
 - [ ] Mover las 11 carpetas `planb-local-*` y `planb-hubspot-*` fuera del repositorio. Lo hace la usuaria; los agentes no las tocan.
 - [ ] A6 y A7 del relevo anterior. Con Verifica, A6 pierde sentido y A7 gana importancia.
@@ -656,6 +730,15 @@ Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
 - [ ] *(nuevo, fase 4)* Revisión visual de «Migración» en `verifica.html`: escritorio y móvil (la tabla), tema claro y oscuro, la espera mientras carga el ejemplo, las tres pestañas con teclado y la impresión. Aquí solo está probado el HTML.
 - [ ] *(nuevo, fase 4)* Una migración real de prueba: del portal de pruebas de HubSpot a una cuenta de prueba de otro CRM, con un mapa escrito a mano, para ver el informe con datos que no son de la empresa ficticia.
 - [ ] *(nuevo, fase 5)* Un lector para el portal del cliente (hoy `verifica-hubspot.ts` solo admite portales de pruebas), con el mismo «solo lectura» y la autorización explícita. Va después de validar el lector en el portal de pruebas.
+- [ ] *(nuevo, fase 0 · tanda 2)* Ejecutar las pruebas que abren procesos y aquí no corren: `api-inventory` (y `node tools/api/inventory.mjs --check`, que debe dar `docs/api.md` al día), `release-candidate-adversarial`, `release-candidate-completeness` y `candidate-integrity`.
+- [ ] *(nuevo, fase 0 · tanda 2)* Ajustar las pruebas de navegador que mezclan la App local con la de equipos:
+  - `ui-redesign` y `full-workspace`;
+  - el segundo caso de `v6`;
+  - `local-integrations.spec.ts`, con las filas de Google y del espacio de equipo;
+  - `preparation-navigation.spec.ts:186`, con «Espacio de equipo sin configurar» ×5;
+  - `continuity-home-hub.spec.ts:24`, con la cadena `'team-sync'`.
+- [ ] *(nuevo, fase 0 · tanda 2)* `npm uninstall` de las dependencias que solo usaba la aplicación de equipos, para que `package-lock.json` se rehaga allí: `@azure/msal-node`, `@firebase/*`, `@google-cloud/tasks`, `@microsoft/agents-copilotstudio-client`, `firebase-admin`, `google-auth-library`, `pg` y `@electric-sql/pglite`. Antes, comprobar con `git grep` que nada vivo las importa.
+- [ ] *(nuevo, fase 0 · tanda 2)* Herramientas del espacio completo que aún nombran el piloto 4334 o la App de equipo: `workspace-preflight.mjs`, `start-full-workspace.cjs` y su prueba, `workspace-release.test.mjs:295`, la expresión de `workspace-manifest.mjs`, `scripts/audit-ui.mjs` y `tools/duet`. También `ABRIR PLAN B.cmd`, en la raíz, que abre `localhost:4334/team`. Decidir si se aparcan o se adaptan.
 
 **Fases siguientes**
 

@@ -21,7 +21,7 @@ test('con datos reales no se ofrece el proveedor de IA', () => {
 test('la copia independiente no ofrece Hoy, Propuestas, Integraciones, copia de equipo ni Preparación', () => {
   const runtime = ctx({ runtime: true, testData: false });
   assert.deepEqual(ids(runtime), ['home', 'clients', 'continuity']);
-  for (const id of ['today', 'agents', 'integrations', 'team-sync', 'prepare', 'provider', 'plan']) assert.ok(!allItems(runtime).includes(id), id);
+  for (const id of ['today', 'agents', 'integrations', 'prepare', 'provider', 'plan']) assert.ok(!allItems(runtime).includes(id), id);
   assert.equal(fallbackPage('plan', runtime), 'home');
   assert.equal(groupOfPage('plan'), 'settings');
   assert.ok(allItems(ctx({ testData: false })).includes('plan'), 'Plan y licencia también con datos reales');
@@ -60,10 +60,4 @@ test('B3.1 Propuestas sale de Hoy y Configurar Plan B pertenece a Continuidad', 
     assert.equal(groupOfPage('prepare'), 'continuity');
     assert.ok(!groups.find(g => g.id === 'settings')!.items.some(item => item.id === 'prepare'));
   }
-});
-
-test('B3.1 Copia de equipo solo se ofrece con servicio configurado, nunca en la independiente', () => {
-  assert.ok(!allItems(ctx()).includes('team-sync'));
-  assert.ok(allItems(ctx({ teamConfigured: true })).includes('team-sync'));
-  assert.ok(!allItems(ctx({ teamConfigured: true, runtime: true })).includes('team-sync'));
 });

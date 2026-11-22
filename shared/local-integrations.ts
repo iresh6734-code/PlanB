@@ -1,8 +1,7 @@
 import type { IntegrationId } from './agents.js';
 
 // Proyección pura del estado de Integraciones de la app principal. Recibe lo que ya declaran
-// GET /api/v2/continuity, /api/v4/integrations y /api/v6/workspace; no llama a HubSpot, a Google
-// ni al espacio de equipo. «Declarado» nunca se presenta como «comprobado ahora».
+// GET /api/v2/continuity y /api/v4/integrations; no llama a HubSpot ni a Google. «Declarado» nunca se presenta como «comprobado ahora».
 
 export type CapabilityMode = 'simulation' | 'readonly' | 'unavailable';
 export interface CatalogEntry { id: IntegrationId; label: string; mode: CapabilityMode; description: string; actions: string[]; }
@@ -12,9 +11,8 @@ export interface LocalContinuity {
   capture: { name: string | null; capturedAt: string | null; records: number | null; source: 'fixture' | 'hubspot' | 'archive' | null } | null;
   lastSuccessAt: string | null; lastError: { at: string | null; message: string } | null;
 }
-export interface WorkspaceInfo { origin: string | null; }
 export interface SourceState<T> { data: T | null; failed: boolean; loading: boolean; }
-export type SourceName = 'continuity' | 'catalog' | 'workspace';
+export type SourceName = 'continuity' | 'catalog';
 
 const IDS: readonly IntegrationId[] = ['hubspot', 'gmail', 'calendar', 'drive', 'docs', 'sheets'];
 const MODES: readonly CapabilityMode[] = ['simulation', 'readonly', 'unavailable'];
@@ -57,37 +55,8 @@ export function parseCatalog(raw: unknown): CatalogEntry[] | null {
   }
   return entries;
 }
-export function parseWorkspace(raw: unknown): WorkspaceInfo | null {
-  if (!isObject(raw) || !('origin' in raw) || (raw.origin !== null && typeof raw.origin !== 'string')) return null;
-  return { origin: raw.origin };
-}
-
-// --- Dirección del espacio de equipo ---
-export type OriginCheck = { ok: true; origin: string; host: string } | { ok: false; reason: string };
-const LOOPBACK = /^(localhost|127(\.\d{1,3}){3}|\[::1\]|[a-z0-9-]+\.localhost)$/;
-const IPV4 = /^\d{1,3}(\.\d{1,3}){3}$/;
-// Solo se acepta un origen simple y canónico: http(s), sin credenciales, ruta, consulta ni fragmento.
-// http únicamente en bucle local; https exige un nombre de dominio, no una IP ni un nombre sin punto.
-export function validateTeamOrigin(value: unknown): OriginCheck {
-  if (typeof value !== 'string' || !value.trim()) return { ok: false, reason: 'vacía' };
-  if (value.length > 2048 || /[\s\\\u0000-\u001f\u007f?#@%]/.test(value)) return { ok: false, reason: 'caracteres no admitidos' };
-  let url: URL;
-  try { url = new URL(value); } catch { return { ok: false, reason: 'no es una URL' }; }
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') return { ok: false, reason: 'protocolo no admitido' };
-  if (url.username || url.password) return { ok: false, reason: 'incluye credenciales' };
-  if (url.pathname !== '/' || url.search || url.hash) return { ok: false, reason: 'no es un origen simple' };
-  if (value.toLowerCase().replace(/\/$/, '') !== url.protocol + '//' + url.host) return { ok: false, reason: 'no es un origen canónico' };
-  const loopback = LOOPBACK.test(url.hostname);
-  if (url.protocol === 'http:' && !loopback) return { ok: false, reason: 'http solo se admite en este equipo' };
-  if (url.protocol === 'https:' && !loopback && (IPV4.test(url.hostname) || url.hostname.startsWith('[') || !url.hostname.includes('.'))) return { ok: false, reason: 'host no admitido' };
-  return { ok: true, origin: url.origin, host: url.host };
-}
-export type TeamTool = 'gmail' | 'calendar' | 'drive' | 'docs' | 'sheets';
-// CommercialWorkspace abre «Archivos» con tool=docs|drive e «Importar» con tool=sheets; el resto cae en seguimientos.
-export const teamLink = (origin: string, tool: TeamTool) => origin + '/team?view=commercial' + (tool === 'docs' || tool === 'drive' || tool === 'sheets' ? '&tool=' + tool : '');
-
 // --- Proyección ---
-export type RowState = 'loading' | 'error' | 'unavailable' | 'not_connected' | 'not_configured' | 'invalid_config' | 'declared' | 'paused' | 'unchecked';
+export type RowState = 'loading' | 'error' | 'unavailable' | 'not_connected' | 'declared' | 'paused';
 export type Tone = 'neutral' | 'info' | 'warning' | 'danger';
 export type RowAction = { kind: 'callback'; label: string } | { kind: 'link'; label: string; href: string } | null;
 export interface IntegrationRow {
@@ -98,21 +67,20 @@ export interface SpaceItem { label: string; value: string; tone: Tone; }
 export interface SpaceView { status: 'loading' | 'error' | 'ok'; items: SpaceItem[]; notes: string[]; }
 export interface StaleNotice { source: SourceName; message: string; }
 export interface RehearsalView { status: 'loading' | 'error' | 'empty' | 'ok'; entries: (CatalogEntry & { modeLabel: string })[]; refreshFailed: boolean; }
-export interface IntegrationsView { space: SpaceView; hubspot: IntegrationRow; team: IntegrationRow[]; rehearsal: RehearsalView; stale: StaleNotice[]; teamOrigin: OriginCheck | null; }
+export interface IntegrationsView { space: SpaceView; hubspot: IntegrationRow; rehearsal: RehearsalView; stale: StaleNotice[]; }
 
 export const stateLabels: Record<RowState, string> = {
   loading: 'Comprobando…', error: 'No se pudo consultar', unavailable: 'No disponible en este paquete', not_connected: 'Sin conectar',
-  not_configured: 'Espacio de equipo sin configurar', invalid_config: 'Dirección no válida', declared: 'Lectura configurada',
-  paused: 'Servicios deshabilitados', unchecked: 'Sin comprobar aquí',
+  declared: 'Lectura configurada', paused: 'Servicios deshabilitados',
 };
-const tones: Record<RowState, Tone> = { loading: 'neutral', error: 'danger', unavailable: 'neutral', not_connected: 'warning', not_configured: 'warning', invalid_config: 'danger', declared: 'info', paused: 'warning', unchecked: 'neutral' };
+const tones: Record<RowState, Tone> = { loading: 'neutral', error: 'danger', unavailable: 'neutral', not_connected: 'warning', declared: 'info', paused: 'warning' };
 const summaries: Record<IntegrationId, string> = {
   hubspot: 'Capturas, ficha comercial y comparación de cambios.', gmail: 'Borradores internos y envío con revisión.', calendar: 'Disponibilidad propia e invitaciones revisadas.',
   drive: 'Archivos autorizados vinculados a clientes.', docs: 'Propuestas desde borradores y contexto documental.', sheets: 'Importación con vista previa e informes verificados.',
 };
 const labels: Record<IntegrationId, string> = { hubspot: 'HubSpot', gmail: 'Gmail', calendar: 'Google Calendar', drive: 'Google Drive', docs: 'Google Docs', sheets: 'Google Sheets' };
-export const issueLabels: Record<SourceName, string> = { continuity: 'el estado de la instalación', catalog: 'el catálogo de capacidades', workspace: 'la dirección del espacio de equipo' };
-const modeLabels: Record<CapabilityMode, string> = { simulation: 'Ensayo local', readonly: 'Lectura existente', unavailable: 'Se gestiona en el espacio de equipo' };
+export const issueLabels: Record<SourceName, string> = { continuity: 'el estado de la instalación', catalog: 'el catálogo de capacidades' };
+const modeLabels: Record<CapabilityMode, string> = { simulation: 'Ensayo local', readonly: 'Lectura existente', unavailable: 'No disponible en esta instalación' };
 const sourceLabels = { fixture: 'datos de ensayo', hubspot: 'HubSpot', archive: 'archivo importado' } as const;
 
 export function formatMadrid(iso: string | null): string {
@@ -172,32 +140,11 @@ function hubspotRow(continuity: SourceState<LocalContinuity>, catalog: SourceSta
   });
 }
 
-function teamRows(workspace: SourceState<WorkspaceInfo>, catalog: SourceState<CatalogEntry[]>, runtime: boolean | null, check: OriginCheck | null): IntegrationRow[] {
-  const tools: TeamTool[] = ['gmail', 'calendar', 'drive', 'docs', 'sheets'];
-  return tools.map(id => {
-    if (runtime) return row(id, 'unavailable', { next: 'El paquete independiente no contiene conectores ni acceso al espacio de equipo.' });
-    if (!workspace.data) {
-      if (workspace.loading && !workspace.failed) return row(id, 'loading');
-      return row(id, 'error', { facts: ['No se pudo leer la dirección del espacio de equipo.'], next: 'Reintenta la consulta.', retry: 'workspace' });
-    }
-    if (workspace.data.origin === null) return row(id, 'not_configured', { facts: ['Esta instalación no tiene una dirección de espacio de equipo.'], next: 'Quien instala Plan B debe indicar la dirección del espacio de equipo (variable PLANB_TEAM_ORIGIN) al iniciarlo. Después vuelve aquí.' });
-    if (!check?.ok) return row(id, 'invalid_config', { facts: ['La dirección configurada se ha rechazado (' + (check?.reason ?? 'no válida') + ') y no se ofrece como enlace.'], next: 'Corrige la dirección del espacio de equipo (PLANB_TEAM_ORIGIN): origen http(s) simple, sin ruta ni credenciales; http solo en este equipo.' });
-    const simulated = (id === 'gmail' || id === 'calendar') && catalog.data?.find(entry => entry.id === id)?.mode === 'simulation';
-    const facts = ['No se sabe aquí si hay una cuenta de Google conectada ni qué operaciones se han hecho: se comprueba en el espacio de equipo (' + check.host + ').'];
-    if (simulated) facts.push('En esta instalación local ' + labels[id] + ' solo existe como ensayo: no envía ni reserva nada.');
-    if (id === 'gmail') facts.push('Un envío aceptado por Gmail no prueba su entrega.');
-    return row(id, 'unchecked', { facts, next: 'Abre el espacio comercial para ver si ' + labels[id] + ' está autorizado y qué puede hacer.', action: { kind: 'link', label: 'Abrir ' + labels[id] + ' en el espacio comercial', href: teamLink(check.origin, id) } });
-  });
-}
-
-export function projectIntegrations(input: { continuity: SourceState<LocalContinuity>; catalog: SourceState<CatalogEntry[]>; workspace: SourceState<WorkspaceInfo> }): IntegrationsView {
-  const { continuity, catalog, workspace } = input;
-  const teamOrigin = workspace.data?.origin != null ? validateTeamOrigin(workspace.data.origin) : null;
-  const stale: StaleNotice[] = [];
-  for (const [source, state] of [['continuity', continuity], ['workspace', workspace]] as const)
-    if (state.data && state.failed) stale.push({ source, message: 'No se pudo actualizar ' + issueLabels[source] + '. Se muestran los últimos datos recibidos.' });
+export function projectIntegrations(input: { continuity: SourceState<LocalContinuity>; catalog: SourceState<CatalogEntry[]> }): IntegrationsView {
+  const { continuity, catalog } = input;
+  const stale: StaleNotice[] = continuity.data && continuity.failed ? [{ source: 'continuity', message: 'No se pudo actualizar ' + issueLabels.continuity + '. Se muestran los últimos datos recibidos.' }] : [];
   const rehearsal: RehearsalView = catalog.data
     ? { status: catalog.data.length ? 'ok' : 'empty', entries: catalog.data.map(entry => ({ ...entry, modeLabel: modeLabels[entry.mode] })), refreshFailed: catalog.failed }
     : { status: catalog.failed ? 'error' : 'loading', entries: [], refreshFailed: false };
-  return { space: spaceView(continuity), hubspot: hubspotRow(continuity, catalog), team: teamRows(workspace, catalog, continuity.data ? continuity.data.runtime : null, teamOrigin), rehearsal, stale, teamOrigin };
+  return { space: spaceView(continuity), hubspot: hubspotRow(continuity, catalog), rehearsal, stale };
 }

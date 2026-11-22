@@ -15,7 +15,6 @@ export type NavContext = {
   /** Copia independiente (paquete portátil): sin Hoy, Agentes, Integraciones, copia de equipo ni preparación. */ runtime: boolean;
   /** La copia activa es de datos de prueba: solo entonces se ofrece el proveedor de IA. */ testData: boolean;
   /** Hay copia con datos, reglas y aplicación activadas. */ ready: boolean;
-  /** El servidor local ya ha comunicado un origen de equipo configurado. */ teamConfigured?: boolean;
 };
 
 /** Grupos visibles, en orden. Como máximo cinco. */
@@ -36,7 +35,6 @@ export function navigationGroups(context: NavContext): NavGroup[] {
     { id: 'continuity', label: 'Estado', target: { kind: 'page', page: 'continuity' }, badge: 'copy' },
     { id: 'changes', label: 'Cambios', target: { kind: 'page', page: 'changes' }, badge: 'changes', needsReady: true },
     { id: 'export', label: 'Exportar', target: { kind: 'page', page: 'export' }, needsReady: true },
-    ...(!context.runtime && context.teamConfigured ? [{ id: 'team-sync', label: 'Copia de equipo', target: { kind: 'page', page: 'team-sync' } } satisfies NavItem] : []),
     ...(!context.runtime ? [{ id: 'prepare', label: 'Configurar Plan B', target: { kind: 'prepare' } } satisfies NavItem] : []),
   ] });
   const settings: NavItem[] = [
@@ -54,7 +52,7 @@ export function groupOfPage(page: PageId): GroupId {
     case 'home': return 'home';
     case 'today': case 'week': case 'agenda': case 'agents': return 'today';
     case 'workspace': return 'clients';
-    case 'continuity': case 'changes': case 'export': case 'team-sync': case 'prepare': return 'continuity';
+    case 'continuity': case 'changes': case 'export': case 'prepare': return 'continuity';
     case 'integrations': case 'plan': return 'settings';
   }
 }
@@ -82,6 +80,6 @@ export function itemActive(item: NavItem, page: PageId, entity: EntityName): boo
  * equipo en una copia independiente. null = el apartado sirve.
  */
 export function fallbackPage(page: PageId, context: NavContext): PageId | null {
-  if (context.runtime && (page === 'today' || page === 'week' || page === 'agenda' || page === 'agents' || page === 'integrations' || page === 'team-sync' || page === 'plan')) return 'home';
+  if (context.runtime && (page === 'today' || page === 'week' || page === 'agenda' || page === 'agents' || page === 'integrations' || page === 'plan')) return 'home';
   return null;
 }

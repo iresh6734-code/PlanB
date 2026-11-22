@@ -6,7 +6,7 @@ import { describeCapture } from './workspace-copy.js';
 import './mobile-copy-alert.css';
 
 /** Barra superior: dónde estás, antigüedad de la copia (ámbar a partir de 75 minutos, el mismo umbral que avisa Continuidad) y modo de datos. */
-export function TopBar({ state, pageLabel, teamOrigin, openContinuity, openChanges, openHelp, openCommands, onProtect, reminder, news, onContingency }: { state: AppState; pageLabel: string; teamOrigin: string | null; openContinuity: () => void; openHelp: () => void; openCommands: () => void;
+export function TopBar({ state, pageLabel, openContinuity, openChanges, openHelp, openCommands, onProtect, reminder, news, onContingency }: { state: AppState; pageLabel: string; openContinuity: () => void; openHelp: () => void; openCommands: () => void;
   /** R1 · «HubSpot no responde»: la persona activa el modo contingencia. Sin función (ya activo o sin copia), no se muestra. */ onContingency?: () => void;
   /** Recordatorio de tareas con hora (H4): un componente con su propio reloj, para no repintar la barra entera. */ reminder?: ReactNode;
   /** N5 · Novedades de la versión: pieza diferida con su propio estado, junto a los demás iconos. */ news?: ReactNode;
@@ -29,7 +29,6 @@ export function TopBar({ state, pageLabel, teamOrigin, openContinuity, openChang
       </button> : null}
       {reminder}
       <span className="gx-mode" data-mode={production ? 'production' : 'test'}>{production ? 'Producción · lectura' : 'Datos de prueba'}</span>
-      {teamOrigin ? <a className="text-button gx-team-link" href={teamOrigin + '/team?view=commercial'}>Espacio de equipo <ArrowRight size={13} /></a> : null}
       <span className="gx-tools">
         {onContingency ? <button type="button" className="gx-contingency" aria-label="HubSpot no responde: activar el modo contingencia" title="Activar el modo contingencia: Hoy se centra en lo urgente y Plan B cronometra el incidente" onClick={onContingency}><Siren size={14} aria-hidden="true" /><span>¿HubSpot caído?</span></button> : null}
         {news}

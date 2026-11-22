@@ -48,7 +48,7 @@ test('B3.1 Sidebar abre Configurar Plan B en Continuidad, conserva los pasos y n
   let opened = 0;
   const view = new View(rt, Sidebar, {
     state: { runtime: false, ready: true, snapshot: { source: { isTestData: true } } },
-    page: 'prepare', entityName: 'contacts', teamConfigured: false, selected: false,
+    page: 'prepare', entityName: 'contacts', selected: false,
     signals: { overdue: null }, step: 0, preparationOpen: true,
     setPage() {}, setSelected() {}, setPreparationOpen() {}, setGlobalSearch() {}, setModal() {}, openEntity() {},
     openPreparation() { opened++; },
@@ -63,8 +63,6 @@ test('B3.1 Sidebar abre Configurar Plan B en Continuidad, conserva los pasos y n
     assert.equal(view.all({ tag: 'button', text: 'Copia de equipo' }).length, 0);
     view.click(view.find({ tag: 'button', text: '2Procesos' }));
     assert.equal(opened, 1);
-    view.update({ teamConfigured: true });
-    assert.equal(view.all({ tag: 'button', text: 'Copia de equipo' }).length, 1);
     assert.equal(view.all({ tag: 'button', className: /\bprimary\b/ }).length, 0);
   } finally { view.unmount(); restore(); }
 });

@@ -3,7 +3,7 @@ import { ArrowRight, RefreshCw } from 'lucide-react';
 import { api } from './api.js';
 import { IntegrationLogo } from './IntegrationLogo.js';
 import { HubspotReadCheck } from './HubspotReadCheck.js';
-import { issueLabels, parseCatalog, parseContinuity, parseWorkspace, projectIntegrations, type IntegrationRow, type SourceName, type SourceState } from '../shared/local-integrations.js';
+import { issueLabels, parseCatalog, parseContinuity, projectIntegrations, type IntegrationRow, type SourceName, type SourceState } from '../shared/local-integrations.js';
 import './local-integrations.css';
 
 const TIMEOUT_MS = 15_000;
@@ -51,23 +51,15 @@ function Row({ item, onConnect, onRetry }: { item: IntegrationRow; onConnect: ()
 
 export function LocalIntegrations({ onConnectHubspot }: { onConnectHubspot: () => void }) {
   const [reloadKey, setReloadKey] = useState(0);
-  const continuity = useSource('/v2/continuity', parseContinuity), catalog = useSource('/v4/integrations', parseCatalog), workspace = useSource('/v6/workspace', parseWorkspace);
-  const view = projectIntegrations({ continuity, catalog, workspace });
-  const reload: Record<SourceName, () => void> = { continuity: continuity.reload, catalog: catalog.reload, workspace: workspace.reload };
-  const busy = continuity.loading || catalog.loading || workspace.loading;
-  const refresh = () => { continuity.reload(); catalog.reload(); workspace.reload(); setReloadKey(value => value + 1); };
-
-  // Si todas las herramientas del equipo comparten el mismo siguiente paso (sin acción propia), se dice una vez para el grupo, no en cada fila.
-  const sharedNext = view.team.length > 1 && view.team.every(item => !!item.next && item.next === view.team[0].next && !item.action && !item.retry) ? view.team[0].next : null;
-  // Y si además comparten estado y hechos, la nota común los lleva y las filas quedan como una rejilla de herramientas.
-  const sharedState = sharedNext && view.team.every(item => item.stateLabel === view.team[0].stateLabel && item.facts.join('\n') === view.team[0].facts.join('\n')) ? view.team[0] : null;
-  const teamOrigin = view.teamOrigin?.ok && view.team.every(item => item.state === 'unchecked') ? view.teamOrigin.origin : null;
-  const teamRows = <ul className="lint-rows" data-shared={sharedState ? 'all' : sharedNext ? 'true' : undefined}>{view.team.map(item =>
-    <Row key={item.id} item={sharedState ? { ...item, next: '', facts: [] } : sharedNext || teamOrigin ? { ...item, next: '' } : item} onConnect={onConnectHubspot} onRetry={source => reload[source]()} />)}</ul>
+  const continuity = useSource('/v2/continuity', parseContinuity), catalog = useSource('/v4/integrations', parseCatalog);
+  const view = projectIntegrations({ continuity, catalog });
+  const reload: Record<SourceName, () => void> = { continuity: continuity.reload, catalog: catalog.reload };
+  const busy = continuity.loading || catalog.loading;
+  const refresh = () => { continuity.reload(); catalog.reload(); setReloadKey(value => value + 1); };
   return <section className="lint" aria-labelledby="lint-title" aria-busy={busy}>
     <header className="page-header"><div><h1 id="lint-title">Integraciones</h1><p className="page-subtitle">Qué está conectado, qué falta y el siguiente paso en cada herramienta.</p></div>
       <button type="button" className="button secondary" onClick={refresh}><RefreshCw size={14} aria-hidden="true" />Actualizar estado</button></header>
-    <p className="lint-scope">Al abrir o actualizar esta pantalla se consulta el estado guardado en Plan B. La lectura de HubSpot se comprueba cuando autorizas expresamente las cinco solicitudes. Las cuentas de Google se revisan en el espacio de equipo.</p>
+    <p className="lint-scope">Al abrir o actualizar esta pantalla se consulta el estado guardado en Plan B. La lectura de HubSpot se comprueba cuando autorizas expresamente las cinco solicitudes.</p>
     {view.stale.length ? <div className="lint-alert" role="alert">{view.stale.map(notice => <p key={notice.source}>{notice.message} <button type="button" className="text-button" onClick={reload[notice.source]}>Reintentar</button></p>)}</div> : null}
 
     <h2 className="lint-h2">Conexiones</h2>
@@ -82,25 +74,6 @@ export function LocalIntegrations({ onConnectHubspot }: { onConnectHubspot: () =
     <section aria-labelledby="lint-hubspot-h"><h3 id="lint-hubspot-h" className="lint-group">CRM · HubSpot</h3>
       <ul className="lint-rows"><Row item={view.hubspot} onConnect={onConnectHubspot} onRetry={source => reload[source]()} /></ul>
       {continuity.data && !continuity.data.runtime ? <HubspotReadCheck portalId={continuity.data.connection?.accountId ?? null} mode={continuity.data.connection?.mode ?? 'unknown'} reloadKey={reloadKey} /> : null}</section>
-    <section aria-labelledby="lint-team-h"><h3 id="lint-team-h" className="lint-group">Google Workspace · espacio de equipo</h3>
-      <p className="lint-muted lint-explain">Gmail, Calendar, Drive, Docs y Sheets se autorizan en el espacio de equipo, que es otro servicio: guarda sus propios datos y las autorizaciones de Google no se comparten con esta copia local.</p>
-      {sharedNext ? <div className="lint-shared-next">
-        {sharedState ? <span className={'lint-badge lint-' + sharedState.tone}>{sharedState.stateLabel}</span> : null}
-        <p>{sharedState?.facts.length ? sharedState.facts.join(' ') + ' ' : ''}<strong>Siguiente paso para todas.</strong> {sharedNext}</p>
-      </div> : null}
-      {teamOrigin ? <>
-        <div className="lint-next"><a className="button secondary" href={teamOrigin + '/team?view=connections'} target="_blank" rel="noopener noreferrer">
-          Abrir Integraciones del equipo <ArrowRight size={14} aria-hidden="true" /><span className="lint-sr"> (se abre en una pestaña nueva)</span>
-        </a></div>
-        <details className="lint-rehearsal">
-          <summary>Ver herramientas de Google Workspace</summary>
-          <div className="lint-rehearsal-body">{teamRows}</div>
-        </details>
-      </> : view.teamOrigin?.ok || view.team.some(item => item.retry || item.action) ? teamRows // un error con «Reintentar» nunca se esconde
-        // Misión maestra B4.8: sin espacio de equipo, las cinco herramientas no sirven aquí; la nota común dice qué falta y
-        // las filas quedan plegadas, como cuando el espacio sí existe.
-        : <details className="lint-rehearsal"><summary>Ver herramientas de Google Workspace</summary><div className="lint-rehearsal-body">{teamRows}</div></details>}
-    </section>
 
     <details className="lint-rehearsal">
       <summary>Ver capacidades de ensayo</summary>

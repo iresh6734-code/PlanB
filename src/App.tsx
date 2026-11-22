@@ -40,7 +40,7 @@ import { type AlertTarget } from './app-shell/continuity-alerts.js';
 import { useContinuityState } from './app-shell/useContinuityState.js';
 import { readinessFor } from './app-shell/continuity-insights.js';
 // Apartados que se descargan al visitarlos por primera vez (misma interfaz de uso que los originales).
-import { Agenda, ChangesView, CommandPalette, ContingencyBand, ContinuityHome, CsvImport, FocusRun, GuidedDrill, LicensePanel, LocalIntegrations, PortableExport, Preparation, QuickActivity, RecordTimeline, SequencePicker, Settings, ShortcutsHelp, TeamSync, WeeklyReview, WhatsNew } from './app-shell/lazy-pages.js';
+import { Agenda, ChangesView, CommandPalette, ContingencyBand, ContinuityHome, CsvImport, FocusRun, GuidedDrill, LicensePanel, LocalIntegrations, PortableExport, Preparation, QuickActivity, RecordTimeline, SequencePicker, Settings, ShortcutsHelp, WeeklyReview, WhatsNew } from './app-shell/lazy-pages.js';
 import type { WorkspaceSearchContext } from '../shared/workspace-search.js';
 
 type LocalAppState = AppState & { workspaceSearchContext?: WorkspaceSearchContext | null };
@@ -73,8 +73,6 @@ export default function App() {
   const [preparationOpen,setPreparationOpen]=useState(false);
   // En la tira de navegación móvil, el apartado activo queda siempre a la vista.
   useEffect(()=>{if(typeof window==='undefined'||!window.matchMedia?.('(max-width: 760px)').matches)return;const frame=requestAnimationFrame(()=>document.querySelector('.sidebar [aria-current="page"]')?.scrollIntoView({inline:'center',block:'nearest'}));return()=>cancelAnimationFrame(frame);},[page,entityName]);
-  const [teamOrigin,setTeamOrigin]=useState<string|null>(null);
-  useEffect(()=>{if(!state||state.runtime)return;let active=true;void api<{origin:string|null}>('/v6/workspace').then(value=>{if(active)setTeamOrigin(value.origin);}).catch(()=>{});return()=>{active=false;};},[state?.runtime]);
   const [step, setStep] = useState(0);
   const [connectRequest,setConnectRequest]=useState(0);
   const [selected, setSelected] = useState<CrmRecord | 'new' | null>(null);
@@ -226,7 +224,7 @@ export default function App() {
   const focusWhenReady = (id: string, tries = 20) => { const node = document.getElementById(id); if (node) node.focus(); else if (tries > 0) setTimeout(() => focusWhenReady(id, tries - 1), 50); };
   const openAlert = (target: AlertTarget) => { setSelected(null); if (target === 'export') { setPage('export'); focusWhenReady('main-content'); return; } setContinuityTab(target); setPage('continuity'); focusWhenReady('ct-tab-' + target); };
   const readinessDot = readinessFor(state, continuityStatus, new Date());
-  const pageLabel = page==='workspace'?(entity?.label??'Trabajar'):({home:'Inicio',today:'Hoy',week:'Revisión semanal',agenda:'Agenda',changes:'Cambios',agents:'Propuestas',continuity:'Continuidad','team-sync':'Copia de equipo',export:'Exportar',integrations:'Integraciones',prepare:'Preparación',plan:'Plan y licencia'} as Record<string,string>)[page]??'';
+  const pageLabel = page==='workspace'?(entity?.label??'Trabajar'):({home:'Inicio',today:'Hoy',week:'Revisión semanal',agenda:'Agenda',changes:'Cambios',agents:'Propuestas',continuity:'Continuidad',export:'Exportar',integrations:'Integraciones',prepare:'Preparación',plan:'Plan y licencia'} as Record<string,string>)[page]??'';
   // Mover una oportunidad de etapa desde el tablero: misma validación y mismo guardado que la ficha. Devuelve el motivo si no se puede.
   // Cambiar un campo desde la tabla o el tablero: misma validación y mismo guardado que la ficha. Devuelve el motivo si no se puede.
   // Escribir un campo con la validación de la ficha, sin refrescar: lo usan el guardado suelto y el cambio en bloque.
@@ -279,7 +277,6 @@ export default function App() {
     ...(state.ready ? [{ id: 'changes', label: 'Ir a Cambios', group: 'Ir a', hint: 'G M', run: goTo('changes') }] : []),
     ...(!state.runtime && testData ? [{ id: 'agents', label: 'Ir a Propuestas (datos de prueba)', group: 'Ir a', run: goTo('agents') }] : []),
     { id: 'continuity', label: 'Ir a Continuidad', group: 'Ir a', hint: 'G N', run: goTo('continuity') },
-    ...(!state.runtime && teamOrigin ? [{ id: 'team-sync', label: 'Ir a Copia de equipo', group: 'Ir a', run: goTo('team-sync') }] : []),
     ...(!state.runtime ? [{ id: 'integrations', label: 'Ir a Integraciones', group: 'Ir a', run: goTo('integrations') }, { id: 'plan', label: 'Ir a Plan y licencia', group: 'Ir a', run: goTo('plan') }] : []),
     ...(state.ready ? [{ id: 'export', label: 'Ir a Exportar', group: 'Ir a', hint: 'G X', run: goTo('export') }] : []),
     ...(state.ready && spec ? spec.entities.map(item => ({ id: 'new-' + item.id, label: 'Crear: ' + item.singular, group: 'Crear', run: () => { openEntity(item.id); setSelected('new'); } })) : []),
@@ -291,7 +288,6 @@ export default function App() {
     ...(state.ready && !state.runtime && !busy ? [{ id: 'services', label: state.disconnected ? 'Habilitar servicios' : 'Desconectar servicios', group: 'Acción', run: () => void toggleServices(!!state.disconnected) }] : []),
     ...(!state.runtime ? [{ id: 'prepare', label: 'Configurar Plan B', group: 'Ir a', run: () => openPreparation() }] : []),
     ...(!state.runtime && state.snapshot?.source.isTestData !== false ? [{ id: 'provider', label: 'Proveedor de IA', group: 'Ajustes', run: () => setModal('settings') }] : []),
-    ...(!state.runtime && teamOrigin ? [{ id: 'commercial', label: 'Ir al espacio comercial', group: 'Ir a', run: () => { location.href = teamOrigin + '/team?view=company'; } }] : []),
     ...(undoable ? [{ id: 'undo', label: 'Deshacer el último guardado', group: 'Acción', run: () => void undoLast() }] : []),
     { id: 'lock', label: 'Proteger o bloquear Plan B', group: 'Acción', run: () => void protect() },
     { id: 'theme', label: typeof document !== 'undefined' && document.documentElement?.dataset?.theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro', group: 'Acción', run: toggleTheme },
@@ -327,11 +323,11 @@ export default function App() {
   const sidebarPins = spec ? recordShortcuts.entries.filter(entry => entry.pinned).map(entry => { const name = recordName(entry.record, spec); return { key: entry.ref.entity + ':' + entry.ref.id, label: name, title: singularOf(entry.ref.entity) + ' · ' + name, open: () => openRecord(entry.record) }; }) : [];
   return <TaskOutcomesHost refreshState={refresh} onOpenTask={openTaskFromOutcomes} onClosed={(summary,reason)=>{setLockedOutcomes(previous=>addLockSummary(previous,summary));if(summary.dispatched+summary.notDispatched>0)setLockFailed(reason==='lock-not-completed');}} controlRef={outcomesControl}><div className={'app-shell ' + (selected ? 'has-drawer' : '')}>
     <a className="skip-link" href="#main-content">Saltar al contenido</a>
-    <Sidebar pins={sidebarPins} state={state} page={page} entityName={entityName} teamConfigured={!!teamOrigin} selected={!!selected} signals={{ ...signals, copy: copySignal, readiness: readinessDot }} step={step} preparationOpen={preparationOpen}
+    <Sidebar pins={sidebarPins} state={state} page={page} entityName={entityName} selected={!!selected} signals={{ ...signals, copy: copySignal, readiness: readinessDot }} step={step} preparationOpen={preparationOpen}
       setPage={setPage} setSelected={setSelected} setPreparationOpen={setPreparationOpen} setGlobalSearch={setGlobalSearch} setModal={setModal}
       openEntity={openEntity} openPreparation={openPreparation} />
     <div className="mobile-brand"><Brand /><span className="badge">{state.snapshot?.source.isTestData===false?'Producción · lectura':'Datos de prueba'}</span></div>
-    <main id="main-content" className="main-content" tabIndex={-1}><TopBar state={state} pageLabel={pageLabel} teamOrigin={teamOrigin} openContinuity={() => { setPage('continuity'); setSelected(null); }} openChanges={state.ready ? () => { setPage('changes'); setSelected(null); } : undefined} openHelp={() => setHelp(true)}     openCommands={() => setCommandsOpen(true)} onProtect={() => void protect()} onContingency={canContingency && !contingency ? beginContingency : undefined}
+    <main id="main-content" className="main-content" tabIndex={-1}><TopBar state={state} pageLabel={pageLabel} openContinuity={() => { setPage('continuity'); setSelected(null); }} openChanges={state.ready ? () => { setPage('changes'); setSelected(null); } : undefined} openHelp={() => setHelp(true)}     openCommands={() => setCommandsOpen(true)} onProtect={() => void protect()} onContingency={canContingency && !contingency ? beginContingency : undefined}
       news={<WhatsNew onOpen={next => { setPage(next); setSelected(null); }} />}
       reminder={<DueReminder active={auth === 'open' && !!state.ready} spec={state.spec} revision={dataRevision + ':' + (state.changes ?? 0)} onOpen={record => { openEntity('tasks'); setRecords([record]); setSelected(record); }} />} />
           {canContingency && (contingency || closedIncident) ? <ContingencyBand active={contingency} closed={closedIncident} copyAt={state.snapshot?.capturedAt} onOpenContinuity={() => { setPage('continuity'); setSelected(null); }} onOpenToday={() => { setPage('today'); setSelected(null); }} onEnd={finishContingency} onDismiss={() => setClosedIncident(null)} onDownload={(window, format) => import('./app-shell/incident-download.js').then(module => module.downloadIncident(window, format, entityLabels))} /> : null}
@@ -342,7 +338,6 @@ export default function App() {
       :page==='continuity'?<ContinuityHome initialTab={continuityTab??'estado'} onStatus={receiveContinuity} onGuidedDrill={state.ready && !state.runtime ? startGuidedDrill : undefined} state={state} workspaceContextRevision={state.workspaceSearchContext?.contextRevision??null} refresh={refresh} work={()=>openEntity('contacts')} prepare={()=>openPreparation(0)} protect={()=>void protect()} exportCopy={()=>setPage('export')} onCoverage={state.ready?()=>void viewCoverage():undefined} connectRequest={connectRequest} onOpenToday={()=>{setPage('today');setSelected(null);}} onOpenIntegrations={()=>{setIntegrationsFrom('continuity');setPage('integrations');setSelected(null);}} returnedFrom={returnedFrom} drillNote={drillNote} onReturnHandled={()=>setReturnedFrom(null)}/>
       :page==='today'||page==='agents'?<><LocalOperations key={page} view={page} filterRequest={page==='today'?todayFilter:null} onFilterHandled={()=>setTodayFilter(null)} onDispatch={state.ready && spec ? () => setFocusOpen('overdue') : undefined} onOpenTasks={()=>openEntity('tasks')} onOpenDeals={()=>openEntity('deals')} onOpenProposals={()=>setPage('changes')} onPrepare={()=>openPreparation(0)} onRecordSaved={refresh} openTaskRequest={taskRequest} onOpenTaskHandled={()=>setTaskRequest(null)}/></>
         :page==='integrations'?<>{integrationsFrom?<p className="back-link"><button type="button" className="text-button" onClick={()=>{setIntegrationsFrom(null);setPage('continuity');setSelected(null);setReturnedFrom('integrations');}}>← Volver a Continuidad</button></p>:null}<LocalIntegrations onConnectHubspot={()=>{setPage('continuity');setSelected(null);setConnectRequest(n=>n+1);}}/></>
-      :page==='team-sync'?<TeamSync/>
       :page==='plan'?<LicensePanel/>
       :page==='changes'?<ChangesView runtime={state.runtime} production={state.snapshot?.source.isTestData===false} spec={state.spec}/>
       :page==='export'?<PortableExport/>

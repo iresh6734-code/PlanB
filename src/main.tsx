@@ -3,7 +3,6 @@ import { createRoot } from 'react-dom/client';
 import App from './App.js';
 import './styles.css';
 import './sales.css';
-import './team.css';
 import './integrations.css';
 import './design-system.css';
 import './print.css';
@@ -19,5 +18,4 @@ window.addEventListener('beforeprint', () => {
   const copy = document.querySelector('.sidebar-bottom > span')?.textContent?.trim() || 'Plan B';
   document.body.setAttribute('data-print-stamp', copy + ' · ' + new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid', dateStyle: 'long', timeStyle: 'short' }));
 });
-const TeamApp=React.lazy(()=>import('./TeamApp.js'));
-createRoot(document.getElementById('root')!).render(<React.StrictMode>{location.pathname.startsWith('/team')?<React.Suspense fallback={<main className="loading-page">Abriendo el equipo…</main>}><TeamApp/></React.Suspense>:<App />}</React.StrictMode>);
+createRoot(document.getElementById('root')!).render(<React.StrictMode><App /></React.StrictMode>);

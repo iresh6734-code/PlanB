@@ -18,8 +18,6 @@ export default defineConfig({
   use: { baseURL: 'http://127.0.0.1:4337', launchOptions: { executablePath }, viewport: { width: 1536, height: 1024 }, headless: true, actionTimeout: 12000, trace: 'retain-on-failure' },
   webServer: [
     { command: 'node --require "' + block + '" build/server.mjs', cwd: work, url: 'http://127.0.0.1:4337/api/health', reuseExistingServer: false, timeout: 180000,
-      env: { PLANB_PORT: '4337', PLANB_DATA_DIR: resolve(work, 'data-' + stamp), PLANB_TEAM_ORIGIN: 'http://127.0.0.1:4341', PLANB_TEAM_DEMO: '1' } },
-    { command: 'node --require "' + block + '" build/team.mjs', cwd: work, url: 'http://127.0.0.1:4341/api/team/health', reuseExistingServer: false, timeout: 180000,
-      env: { PLANB_TEAM_DEMO: '1', PLANB_TEAM_PORT: '4341', PLANB_TEAM_DATA_DIR: resolve(work, 'team-' + stamp) } },
+      env: { PLANB_PORT: '4337', PLANB_DATA_DIR: resolve(work, 'data-' + stamp) } },
   ],
 });

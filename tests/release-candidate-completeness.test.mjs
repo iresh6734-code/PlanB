@@ -9,8 +9,8 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const script = process.env.CANDIDATE_TEST_SCRIPT ? path.resolve(process.env.CANDIDATE_TEST_SCRIPT) : path.join(root, 'scripts/prepare-release-candidate.mjs');
 const parent = path.join(root, 'tests/.tmp/assets057'); fs.mkdirSync(parent, { recursive: true });
-const entries = ['server/main.ts','server/runtime.ts','server/drill-worker.ts','server/team/main.ts','server/team/copilot-worker.ts','server/team/pilot-alias.ts'];
-const tests = ['continuity-lab','response-queue','response-queue-api','capture-comparison','capture-comparison-api','recovery-preflight','recovery-preflight-cli','customer-combobox','ui-journeys','design-tokens'];
+const entries = ['server/main.ts','server/runtime.ts','server/drill-worker.ts'];
+const tests = ['continuity-lab','response-queue','response-queue-api','capture-comparison','capture-comparison-api','recovery-preflight','recovery-preflight-cli','ui-journeys','design-tokens'];
 const secrets = ['QA057_PASSPHRASE','QA057_PRIVATE_KEY','QA057_CREDENTIALS','QA057_COOKIE','QA057_AUTH_HEADER','QA057_ACCESS_KEY','QA057_PASSWD','QA057_BEARER','QA057_API_KEY','QA057_TOKEN','QA057_BENIGN'];
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
 function write(folder, name, bytes) { const p = path.join(folder, name); fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, bytes, { flag: 'wx' }); }
@@ -67,7 +67,7 @@ test('all invented credential-shaped and benign variables are absent from check 
   const flags=JSON.parse(log.split(/\r?\n/).find(line=>line.startsWith('CANARY_FLAGS:')).slice('CANARY_FLAGS:'.length));
   for(const key of secrets)assert.equal(flags[key],false,'Unexpected inherited variable: '+key);
   for(const key of secrets)assert.ok(!log.includes('invented-value-'+key));
-  for(const output of ['server.mjs','runtime.mjs','drill.mjs','team.mjs','copilot-worker.mjs','pilot-alias.mjs']){
+  for(const output of ['server.mjs','runtime.mjs','drill.mjs']){
     assert.ok(result.manifest.checks.some(check=>check.name==='bundle-'+output&&check.ok));
     assert.ok(fs.existsSync(path.join(result.manifest.runtime,output)));
     assert.ok(fs.existsSync(path.join(result.candidate,'logs/bundle-'+output+'.log')),'each bundle uses the sanitized runner');

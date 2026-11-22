@@ -1,13 +1,12 @@
 {
-  "commercial-email.css": 2,
   "continuity-day.css": 2,
-  "design-system.css": 28,
+  "design-system.css": 22,
   "faro.css": 98,
   "landing/story.css": 27,
   "landing/styles.css": 20,
-  "planb-ui.css": 6,
+  "planb-ui.css": 5,
   "rescue-capsule.css": 10,
   "rescue-room.css": 15,
-  "sales.css": 5,
-  "styles.css": 96
+  "sales.css": 1,
+  "styles.css": 95
 }

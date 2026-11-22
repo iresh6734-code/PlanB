@@ -12,8 +12,8 @@ const {inspectCandidate,CANDIDATE_LIMITS}=await import(pathToFileURL(moduleFile)
 const base=path.join(root,'tests/.tmp/candidate-integrity095');fs.mkdirSync(base,{recursive:true});
 const sha=b=>createHash('sha256').update(b).digest('hex');
 const rootFiles=['package.json','tsconfig.json','vite.config.ts','playwright.config.ts','index.html'];
-const entries=['server/main.ts','server/runtime.ts','server/drill-worker.ts','server/team/main.ts','server/team/copilot-worker.ts','server/team/pilot-alias.ts'];
-const backends=['server.mjs','runtime.mjs','drill.mjs','team.mjs','copilot-worker.mjs','pilot-alias.mjs'];
+const entries=['server/main.ts','server/runtime.ts','server/drill-worker.ts'];
+const backends=['server.mjs','runtime.mjs','drill.mjs'];
 const sourceRoots=['src','shared','server','scripts','tests','tools','public'];
 function fixture(){
   const workspaceRoot=fs.mkdtempSync(path.join(base,'ws-')),candidate='tests/.tmp/release-candidates/candidate-'+randomUUID(),folder=path.join(workspaceRoot,candidate),source=path.join(folder,'source'),runtime=path.join(folder,'runtime');fs.mkdirSync(source,{recursive:true});fs.mkdirSync(runtime);

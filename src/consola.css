@@ -153,7 +153,6 @@ html body .gx-topbar .gx-due-alert small { font-size: var(--fs-xs); font-weight:
 @media (prefers-reduced-motion: reduce) { html body .gx-topbar .gx-due-alert { animation: none; } }
 html body .gx-topbar .gx-mode { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border: 1px dashed var(--pencil); border-radius: var(--r-sm); color: var(--text-2); font-size: var(--fs-xs); font-weight: 600; white-space: nowrap; }
 html body .gx-topbar .gx-mode[data-mode="production"] { border-style: solid; border-color: var(--warning-border); background: var(--warning-bg); color: var(--warning); }
-html body .gx-topbar .gx-team-link { font-size: var(--fs-sm); }
 html body .gx-topbar .gx-tools { display: inline-flex; align-items: center; gap: 2px; margin-left: auto; }
 html body .gx-topbar .gx-help, html body .gx-topbar .gx-help.gx-cmd { display: inline-grid; place-items: center; width: 28px; height: 28px; min-width: 28px; padding: 0; border: 0; border-radius: var(--r-md); background: transparent; color: var(--text-3); font-size: var(--fs-md); font-weight: 650; box-shadow: none; }
 html body .gx-topbar .gx-help:hover { background: var(--bg-hover); color: var(--text-1); }

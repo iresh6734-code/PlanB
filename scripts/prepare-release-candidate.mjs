@@ -13,12 +13,11 @@ const rootFiles = ['package.json', 'tsconfig.json', 'vite.config.ts', 'playwrigh
 const excluded = new Set(['.tmp', 'outputs', 'node_modules', 'dist', 'build', 'test-results', '.git']);
 const entries = {
   'server.mjs': 'server/main.ts', 'runtime.mjs': 'server/runtime.ts', 'drill.mjs': 'server/drill-worker.ts',
-  'team.mjs': 'server/team/main.ts', 'copilot-worker.mjs': 'server/team/copilot-worker.ts', 'pilot-alias.mjs': 'server/team/pilot-alias.ts',
 };
 const tests = [
   'continuity-lab.test.ts', 'response-queue.test.ts', 'response-queue-api.test.ts', 'capture-comparison.test.ts',
   'capture-comparison-api.test.ts', 'recovery-preflight.test.ts', 'recovery-preflight-cli.test.ts',
-  'customer-combobox.test.ts', 'ui-journeys.test.ts', 'design-tokens.test.ts',
+  'ui-journeys.test.ts', 'design-tokens.test.ts',
 ];
 export function candidateSourceSelection(sourceRoot = root) {
   const files = [...rootFiles], excludedPaths = [];

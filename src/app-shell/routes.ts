@@ -1,6 +1,6 @@
 // Direcciones de la App local (mejora B1 del informe; CLAUDE-URL-ROUTES, 17/11/2026). Lógica pura y sin dependencias:
 // cada apartado y cada ficha tienen una dirección propia, así se pueden enlazar, recargar y recorrer con Atrás/Adelante.
-// La raíz «/» no fija apartado (se abre el recordado). «/team» pertenece a la App de equipo y no pasa por aquí.
+// La raíz «/» no fija apartado (se abre el recordado).
 import type { EntityName } from '../../shared/model.js';
 import type { PageId } from './session.js';
 
@@ -9,7 +9,7 @@ export type Place = { page: PageId; entity?: EntityName; recordId?: string };
 const ENTITY_PATH: Record<EntityName, string> = { contacts: 'clientes', companies: 'empresas', deals: 'oportunidades', tasks: 'tareas' };
 const PAGE_PATH: Record<Exclude<PageId, 'workspace'>, string> = {
   home: '/inicio', today: '/hoy', week: '/hoy/semana', agenda: '/hoy/agenda', agents: '/hoy/propuestas',
-  continuity: '/continuidad', changes: '/continuidad/cambios', export: '/continuidad/exportar', 'team-sync': '/continuidad/equipo',
+  continuity: '/continuidad', changes: '/continuidad/cambios', export: '/continuidad/exportar',
   integrations: '/ajustes/integraciones', prepare: '/ajustes/preparacion', plan: '/ajustes/plan',
 };
 

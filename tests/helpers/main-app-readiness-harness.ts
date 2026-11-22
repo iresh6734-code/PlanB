@@ -46,18 +46,17 @@ export async function buildMainApp(candidate: Candidate) {
     logLevel: 'warn', build: { outDir: dist, emptyOutDir: false } });
   const entry = path.join(candidate.root, 'backend-entry.ts');
   const from = (rel: string) => JSON.stringify(path.join(candidate.source, rel).replaceAll('\\', '/'));
-  fs.writeFileSync(entry, `export{createBaseApp}from${from('server/app.ts')};export{makeFixture,makeDemoSpec}from${from('shared/fixtures.ts')};export{registerTeamSync}from${from('server/team-sync.ts')};`);
+  fs.writeFileSync(entry, `export{createBaseApp}from${from('server/app.ts')};export{makeFixture,makeDemoSpec}from${from('shared/fixtures.ts')};`);
   const esbuild = await import('esbuild');
   await esbuild.build({ entryPoints: [entry], bundle: true, packages: 'external', platform: 'node', format: 'esm', outfile: path.join(candidate.root, 'backend.mjs'), logLevel: 'warning' });
   return dist;
 }
 
 export async function startMainApp(candidate: Candidate, active: boolean, port = 0) {
-  const runtime = await import(pathToFileURL(path.join(candidate.root, 'backend.mjs')).href) as typeof import('../../server/app.js') & typeof import('../../shared/fixtures.js') & typeof import('../../server/team-sync.js');
+  const runtime = await import(pathToFileURL(path.join(candidate.root, 'backend.mjs')).href) as typeof import('../../server/app.js') & typeof import('../../shared/fixtures.js');
   const fixture = await runtime.createBaseApp({ root: candidate.root, dbPath: ':memory:', staticDir: path.join(candidate.root, 'dist') });
   const snapshot = runtime.makeFixture('agency'); fixture.store.importSnapshot(snapshot);
   if (active) { fixture.store.saveGeneration(runtime.makeDemoSpec(snapshot), { provider: 'demo', model: null, generatedAt: new Date().toISOString(), prompt: '', approved: false }); fixture.store.activate(); }
-  runtime.registerTeamSync(fixture.app, fixture.store, undefined, false);
   try { await fixture.app.listen({ host: '127.0.0.1', port }); }
   catch (error) { await fixture.app.close(); throw error; }
   const address = fixture.app.server.address();

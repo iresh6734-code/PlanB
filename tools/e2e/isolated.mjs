@@ -19,7 +19,7 @@ const pilot = [join(repo, 'dist', 'index.html'), join(repo, 'build', 'server.mjs
 if (build) {
   rmSync(work, { recursive: true, force: true }); mkdirSync(join(work, 'build'), { recursive: true });
   run('node', ['node_modules/vite/bin/vite.js', 'build', '--outDir', join(work, 'dist'), '--emptyOutDir', '--logLevel', 'warn']);
-  const entries = { 'server/main.ts': 'server', 'server/runtime.ts': 'runtime', 'server/drill-worker.ts': 'drill', 'server/team/main.ts': 'team', 'server/team/copilot-worker.ts': 'copilot-worker', 'server/team/pilot-alias.ts': 'pilot-alias' };
+  const entries = { 'server/main.ts': 'server', 'server/runtime.ts': 'runtime', 'server/drill-worker.ts': 'drill' };
   for (const [entry, name] of Object.entries(entries)) run('npx', ['esbuild', entry, '--bundle', '--platform=node', '--format=esm', '--packages=external', '--outfile=' + join(work, 'build', name + '.mjs'), '--log-level=warning']);
 } else if (!existsSync(join(work, 'build', 'server.mjs'))) { console.error('No hay compilación aislada: ejecuta sin --no-build.'); process.exit(2); }
 

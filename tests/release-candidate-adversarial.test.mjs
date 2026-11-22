@@ -44,9 +44,9 @@ const WORK = fs.mkdtempSync(path.join((fs.mkdirSync(BASE, { recursive: true }), 
 test.after(() => { if (!process.env.QA056_KEEP) fs.rmSync(WORK, { recursive: true, force: true }); }); // QA056_KEEP=1 conserva los workspaces para depurar
 
 let linkOk = true;
-const ENTRIES = ['server/main.ts', 'server/runtime.ts', 'server/drill-worker.ts', 'server/team/main.ts', 'server/team/copilot-worker.ts', 'server/team/pilot-alias.ts'];
-const BUNDLES = ['server.mjs', 'runtime.mjs', 'drill.mjs', 'team.mjs', 'copilot-worker.mjs', 'pilot-alias.mjs'];
-const TESTS = ['continuity-lab', 'response-queue', 'response-queue-api', 'capture-comparison', 'capture-comparison-api', 'recovery-preflight', 'recovery-preflight-cli', 'customer-combobox', 'ui-journeys', 'design-tokens'];
+const ENTRIES = ['server/main.ts', 'server/runtime.ts', 'server/drill-worker.ts'];
+const BUNDLES = ['server.mjs', 'runtime.mjs', 'drill.mjs'];
+const TESTS = ['continuity-lab', 'response-queue', 'response-queue-api', 'capture-comparison', 'capture-comparison-api', 'recovery-preflight', 'recovery-preflight-cli', 'ui-journeys', 'design-tokens'];
 // Nombres inventados solo para los hijos; ningún valor real y ninguno se imprime. QA052 distinguía «lista negra» de «resto»; con la lista permitida
 // todos deben desaparecer, así que ya no se separan: credenciales por forma, inocuos, nombres de sistema operativo y variantes de mayúsculas.
 const CANARY_CREDENTIAL = ['QA056_API_KEY', 'QA056_TOKEN', 'QA056_SECRET', 'QA056_PASSWORD', 'QA056_PASSPHRASE', 'QA056_PRIVATE_KEY', 'QA056_CREDENTIALS', 'QA056_COOKIE', 'QA056_AUTH_HEADER', 'QA056_ACCESS_KEY', 'QA056_BEARER', 'HUBSPOT_QA056', 'OPENAI_QA056', 'ANTHROPIC_QA056', 'AZURE_QA056', 'AWS_QA056', 'FIREBASE_QA056', 'GOOGLE_QA056', 'PGHOST_QA056', 'PLANB_QA056', 'DATABASE_URL_QA056', 'qa056_lowercase_secret'];
@@ -352,12 +352,12 @@ test('5b · un bundle que falla (esbuild por CLI) detiene la candidata en ese bu
   if (!linkOk) return t.skip('sin enlace a node_modules');
   const root = makeWorkspace('bundlefail');
   // El typecheck rechazaría la importación inexistente; @ts-ignore la deja pasar para que el fallo ocurra en esbuild.
-  write(root, 'server/team/copilot-worker.ts', "// @ts-ignore\nimport './no-existe-qa056';\nexport const entry = 'x';\n");
+  write(root, 'server/drill-worker.ts', "// @ts-ignore\nimport './no-existe-qa056';\nexport const entry = 'x';\n");
   const run = prepare(root); assert.equal(run.code, 1); const m = run.manifest;
-  assert.equal(m.state, 'incomplete'); assert.match(m.error, /No supera bundle-copilot-worker\.mjs/);
-  const names = m.checks.map(c => c.name); assert.deepEqual(names.slice(-1), ['bundle-copilot-worker.mjs']); assert.equal(m.checks.at(-1).ok, false); assert.ok(m.checks.slice(0, -1).every(c => c.ok));
-  assert.match(fs.readFileSync(path.join(m.folder, 'logs', 'bundle-copilot-worker.mjs.log'), 'utf8'), /no-existe-qa056|Could not resolve/);
-  assert.ok(!names.includes('bundle-pilot-alias.mjs'), 'no sigue con el bundle siguiente'); assert.deepEqual(m.artifacts, []);
+  assert.equal(m.state, 'incomplete'); assert.match(m.error, /No supera bundle-drill\.mjs/);
+  const names = m.checks.map(c => c.name); assert.deepEqual(names.slice(-1), ['bundle-drill.mjs']); assert.equal(m.checks.at(-1).ok, false); assert.ok(m.checks.slice(0, -1).every(c => c.ok));
+  assert.match(fs.readFileSync(path.join(m.folder, 'logs', 'bundle-drill.mjs.log'), 'utf8'), /no-existe-qa056|Could not resolve/);
+  assert.ok(!names.includes('public-assets'), 'no sigue con la comprobación siguiente'); assert.deepEqual(m.artifacts, []);
 });
 
 // ------------------------------------------------------------------ fallos de captura (rápidos: ocurren antes de cualquier compilación)

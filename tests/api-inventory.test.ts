@@ -25,7 +25,6 @@ test('agrupa por versión de API y deja aparte lo que no es /api', () => {
   assert.equal(groupOf('/api/v2/records/:entity'), 'v2');
   assert.equal(groupOf('/api/v7/ejemplo/:id'), 'v7');
   assert.equal(groupOf('/api/v12/futuro'), 'v12', 'versiones de dos cifras');
-  assert.equal(groupOf('/api/team/spaces'), 'team');
   assert.equal(groupOf('/api/health'), 'sin versión');
   assert.equal(groupOf('/api/version2/x'), 'sin versión');
   assert.equal(groupOf('/internal/jobs/:tenant/:id'), 'fuera de /api');
@@ -74,7 +73,7 @@ test('la entrada portátil no sirve rutas que solo existen en la App completa', 
   const { routes } = captureEntry('runtime') as { routes: Route[] };
   assert.ok(routes.some(r => r.method === 'GET' && r.url === '/api/health'));
   assert.ok(!routes.some(r => r.url === '/api/import/fixture'), 'el generador no se monta en la entrada portátil');
-  assert.ok(Object.keys(ENTRIES).includes('team'));
+  assert.deepEqual(Object.keys(ENTRIES), ['main', 'runtime'], 'el servicio de equipo está aparcado');
 });
 
 test('--check acepta un documento recién generado y rechaza uno al que le falta una ruta, sin tocar docs/api.md', t => {
@@ -105,18 +104,6 @@ test('el proceso hijo no hereda secretos ni configuración de quien lanza el inv
   assert.deepEqual(Object.keys(env).sort(), ['NODE_ENV', 'PLANB_API_CAPTURE_OUT', 'PLANB_DATA_DIR', 'PLANB_PORT', 'Path', 'SystemRoot', 'TEMP'].sort());
   assert.equal(env.NODE_ENV, 'test');
   assert.equal(env.PLANB_DATA_DIR, path.join(work, 'data'), 'los datos son siempre los de la carpeta temporal');
-  const team = childEnvironment(parent, 'team', work, out) as Record<string, string>;
-  assert.equal(team.PLANB_TEAM_DEMO, '1');
-  assert.equal(team.PLANB_TEAM_DATA_DIR, path.join(work, 'team'));
-  assert.ok(!('DATABASE_URL' in team) && !('PLANB_HUBSPOT_TOKEN' in team));
-});
-
-test('captura el servicio de equipo en modo demo con su base incrustada temporal', () => {
-  const { routes, endpointWritten } = captureEntry('team') as { routes: Route[]; endpointWritten: boolean };
-  assert.equal(endpointWritten, false);
-  assert.ok(routes.length > 20);
-  assert.ok(routes.every(r => r.file?.startsWith('server/team/') || r.file?.startsWith('server/')), 'orígenes dentro de server/');
-  assert.ok(routes.some(r => r.method === 'GET' && r.url === '/api/team/health'));
 });
 
 test('la línea de órdenes se valida antes de capturar, leer o escribir', () => {
@@ -138,7 +125,7 @@ test('la línea de órdenes se valida antes de capturar, leer o escribir', () =>
     [['--check', '--check'], /repetida/],
   ];
   for (const [argv, message] of bad) assert.throws(() => parseArgs(argv), (e: unknown) => e instanceof UsageError && message.test((e as Error).message), argv.join(' '));
-  assert.deepEqual(parseArgs([]), { mode: 'write', entries: ['main', 'runtime', 'team'], out: undefined, doc: undefined });
+  assert.deepEqual(parseArgs([]), { mode: 'write', entries: ['main', 'runtime'], out: undefined, doc: undefined });
   assert.equal(parseArgs(['--json', '--entries', 'main']).mode, 'json', 'una selección parcial a la salida estándar no sustituye nada');
   assert.deepEqual(parseArgs(['--check', '--entries', 'main', '--doc', 'x.md']).entries, ['main']);
 });

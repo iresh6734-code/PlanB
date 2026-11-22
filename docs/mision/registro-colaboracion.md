@@ -175,6 +175,87 @@ Sin servidores, navegador, PowerShell, DPAPI, red ni datos reales. Dueño provis
 
 **Sigue abierto (decide la usuaria):** destinos de cada parte (motor, congelado, aparcado o fuera), coordinador y dueños de carpetas, y sacar las carpetas de instalaciones del repositorio. Sin eso, la salida de la fase 0 «un solo producto en el menú» no está hecha.
 
+## Verifica · Fase 1 · GitHub Copilot
+
+### Reserva · antes de editar
+
+22/11/2026, 16:40 Europe/Madrid. La usuaria: «ves a ello», sobre los puntos 1 a 3 de la fase 1 que se pueden hacer en el equipo de la empresa.
+
+Antes de reservar se miraron los lectores que ya hay. Ninguno trae lo que piden las reglas:
+
+- `server/hubspot.ts` no pide la fecha de creación, el comercial ni el historial, y no sabe qué etapas son ganada o perdida.
+- `server/pipedrive-source.ts` es del Radar: como mucho 500 registros y sin importes.
+
+Por eso hace falta un lector propio de Verifica, que no toca a los existentes.
+
+Alcance:
+
+- **`shared/verifica/hubspot.ts` (nuevo):** traduce las respuestas de HubSpot a la captura de Verifica. Incluye el historial de importe y fecha de cierre (`propertiesWithHistory`) y el estado ganada o perdida que dan las etapas.
+- **`server/verifica/hubspot-reader.ts` (nuevo):** recorre HubSpot en solo lectura con un `fetch` inyectado. Solo GET y las búsquedas de recuento.
+- **`shared/verifica/invoices.ts` (nuevo):** importa un CSV de facturas emitidas (el libro de Holded guardado como CSV) y lo cruza con las empresas del CRM por NIF o nombre.
+- **`shared/verifica/model.ts`:** NIF opcional en la empresa.
+- **`scripts/verifica-hubspot.ts` (nuevo):** solo para el ordenador personal y el portal de pruebas. Aquí no se ejecuta.
+- **Pruebas:** `tests/verifica-*.test.ts`. La empresa con trampas pasa por un HubSpot simulado en memoria y por un CSV de facturas, y debe seguir dando las seis alarmas y ningún falso aviso.
+
+Sin servidores, navegador, PowerShell, DPAPI, red ni datos reales. El lector no importa `server/store.ts`, porque lleva el cifrado local. Dueño provisional de `shared/verifica/` y `server/verifica/`: GitHub Copilot.
+
+### Hecho · 22/11/2026, 16:50 · cómo se comprueba
+
+Hechos los puntos 1 a 3 de la fase 1, tal como se reservaron. La empresa con trampas ya pasa por los lectores reales, no solo por el fixture: con un HubSpot simulado y un CSV de facturas da las seis alarmas con las cifras de referencia, y la variante sana no da ningún aviso.
+
+| Pieza | Qué hace |
+|---|---|
+| `shared/verifica/hubspot.ts` | Traduce las respuestas de HubSpot a una captura de Verifica. El historial llega del más reciente al más antiguo y se ordena al revés, con fechas en ISO o en milisegundos. El estado ganada o perdida sale de `metadata.isClosed` y `probability` de cada etapa. Si falta el historial en una sola oportunidad, se quita en todas y la captura queda «sin historial». |
+| `server/verifica/hubspot-reader.ts` | Recorre comerciales, etapas, empresas, contactos y oportunidades (páginas de 50 con `propertiesWithHistory=amount,closedate`). Solo GET a `api.hubapi.com`, más un POST de recuento por objeto. La credencial va en la cabecera, sin redirecciones. Antes de leer datos comprueba el portal y el tipo de cuenta (pruebas: `DEVELOPER_TEST` o `SANDBOX`; producción en lectura: `STANDARD`). Para la lectura entera si el recuento no cuadra, si un cursor se repite o si se pasa de páginas o registros. Reintenta dos veces tras 429 o 5xx. |
+| `shared/verifica/invoices.ts` | Importa un CSV de facturas emitidas: separador `;`, `,` o tabulador, comillas, BOM, importes y fechas en formato español. Usa la base imponible; si solo hay total, lo usa y avisa. Cruza con las empresas del CRM por NIF y, si no hay, por nombre sin tildes ni forma societaria. Los nombres repetidos no se asignan. Descarta líneas malas y números repetidos, diciendo la línea y el motivo. |
+| `scripts/verifica-hubspot.ts` | Lectura completa de un **portal de pruebas**, solo en el ordenador personal. Exige `--authorized-full-read`, toma la credencial por la entrada estándar, nunca sobrescribe y dice si llegó el historial. Con `--previous`, `--invoices` y `--report` escribe además el informe. |
+| `shared/verifica/model.ts` | NIF opcional en la empresa, solo para cruzar facturas. |
+
+**Cómo se comprueba aquí (sin red):**
+
+- `npx tsc --noEmit -p tsconfig.json`: limpio.
+- `node tools/safe-tests.mjs verifica orphan-components css-unused color-guard design-tokens dev-only-files`: 8 de 8 archivos.
+- `tests/verifica-lectores.test.ts`, 9 casos:
+  - las dos variantes de la empresa leídas por los lectores reales;
+  - solo lectura y credencial fuera de la URL;
+  - historial ausente → «sin comprobar»;
+  - cuenta equivocada o de producción en modo de pruebas → para sin leer datos;
+  - recuento distinto, cursor repetido, 401, 403 y 5xx → ninguna captura;
+  - importes y fechas en español;
+  - cruce de facturas;
+  - el script: sin autorización hace 0 peticiones, y no imprime la credencial.
+- Prueba de mutación: sin ordenar el historial, o usando el total en vez de la base, fallan los dos casos de extremo a extremo. Se deshizo después.
+- No toca la App: ningún archivo de `src/`, así que el paquete inicial no cambia.
+
+**Falta validar en el ordenador personal, con el portal de pruebas** (supuestos sacados de la documentación pública, nunca vistos en una respuesta real):
+
+1. Que `propertiesWithHistory` llegue junto con `associations=companies` en la misma petición, y en `/crm/v3`.
+2. El formato de `timestamp` del historial; se aceptan los dos.
+3. Que `metadata.isClosed` y `probability` de las etapas vengan como texto `"true"` y `"1.0"` (o como número).
+4. Las cabeceras reales del libro de facturas emitidas de Holded. Se admiten las de `INVOICE_COLUMNS`; si no cuadran, el importador dice qué columna falta.
+
+Pasos: crear en el portal de pruebas unas oportunidades, cambiarles importe y fecha de cierre, y ejecutar:
+
+```
+<credencial> | npx tsx scripts/verifica-hubspot.ts --portal <ID> --authorized-full-read --out antes.json
+```
+
+Una semana después, o tras borrar contactos:
+
+```
+<credencial> | npx tsx scripts/verifica-hubspot.ts --portal <ID> --authorized-full-read --out ahora.json --previous antes.json --report informe.json
+```
+
+Si dice «Historial: NO», la regla de aplazamientos no se puede prometer con HubSpot hasta resolverlo.
+
+**Sigue pendiente de la fase 1** (no se puede hacer en este equipo):
+
+- validar lo anterior en el portal de pruebas;
+- el historial de Pipedrive;
+- subir el prototipo `billing-check`, que sigue sin estar en el repositorio.
+
+La salida de la fase 1 (la empresa con trampas da las seis alarmas por los lectores reales) queda cumplida con lectores simulados. Falta confirmarla con el portal de pruebas.
+
 ## Pendiente para el agente del otro ordenador
 
 ### Relevo de GitHub Copilot · 21/11/2026, 18:35 Europe/Madrid · leer primero

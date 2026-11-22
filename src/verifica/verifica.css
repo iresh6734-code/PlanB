@@ -98,7 +98,18 @@ code { font-family: var(--vf-mono); font-size: 12px; font-variant-numeric: tabul
 .vf-alert h4 { margin: 0; font-size: 14px; font-weight: 600; color: var(--vf-seal-text); }
 .vf-rules { margin: 0 0 16px; max-width: 70ch; font-size: 13px; color: var(--vf-text-2); }
 
+.vf-table-wrap { overflow-x: auto; }
+.vf-objects { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+.vf-objects th, .vf-objects td { padding: 10px 12px; border-top: 1px solid var(--vf-rule); text-align: right; vertical-align: baseline; }
+.vf-objects thead th { padding-top: 0; border-top: 0; font-size: 13px; font-weight: 600; color: var(--vf-text-3); white-space: nowrap; }
+.vf-objects tr > :first-child { padding-left: 0; text-align: left; }
+.vf-objects tr > :last-child { padding-right: 0; }
+.vf-objects tbody th { font-weight: 600; color: var(--vf-text-1); }
+.vf-objects td[data-short="true"] { color: var(--vf-seal-text); font-weight: 600; }
+.vf-target { display: block; font-family: var(--vf-mono); font-size: 12px; font-weight: 400; color: var(--vf-text-3); }
+
 .vf-unverified { margin: 0; padding: 0 0 0 18px; display: grid; gap: 8px; max-width: 70ch; }
+.vf-findings + .vf-unverified { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--vf-rule); }
 .vf-unverified strong { font-weight: 600; }
 .vf-empty { margin: 0; color: var(--vf-text-2); }
 

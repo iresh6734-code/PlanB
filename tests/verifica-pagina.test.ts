@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { VerificaReportView, referenceReport } from '../src/verifica/VerificaReport.js';
 import { WatchReportView, referenceWatch } from '../src/verifica/WatchReport.js';
 import type { ReportOrigin, Variant } from '../src/verifica/Masthead.js';
-import { readDocumentText } from '../src/verifica/documents.js';
+import { NOT_A_DOCUMENT, readDocumentText } from '../src/verifica/documents.js';
 import { buildWatchedCompany } from '../shared/verifica/empresa-vigilada.js';
 import { buildWatchReport, watchReportToJson, type WatchReport } from '../shared/verifica/watch.js';
 import { checkCustody } from '../src/verifica/custody-check.js';
@@ -13,6 +13,11 @@ import { buildTrapCompany } from '../shared/verifica/empresa-con-trampas.js';
 import { runCleanRoom } from '../shared/verifica/clean-room.js';
 import { newCustodyKey } from '../shared/verifica/custody.js';
 import { reportToJson, verifyReport, type VerificaReport } from '../shared/verifica/report.js';
+import { EquivalencePending, EquivalenceReportView } from '../src/verifica/EquivalenceReport.js';
+import { referenceEquivalence } from '../src/verifica/reference-equivalence.js';
+import { buildMigratedCompany } from '../shared/verifica/empresa-migrada.js';
+import { equivalenceToJson, type EquivalenceReport } from '../shared/verifica/equivalence.js';
+import { releaseEquivalence } from '../shared/verifica/migration.js';
 
 const renderWith = (report: VerificaReport, origin: ReportOrigin) => renderToStaticMarkup(createElement(VerificaReportView, { report, origin }));
 const readReportText = (text: string) => { const doc = readDocumentText(text); return typeof doc === 'string' ? doc : doc.kind === 'report' ? doc.report : 'es un parte'; };
@@ -64,7 +69,7 @@ test('Verifica · abrir un informe: rechaza lo que no lo es y señala el que se 
   const report = referenceReport('traps');
   assert.equal(readReportText('no es json'), 'no es un archivo JSON válido');
   for (const broken of [{}, { ...report, format: 'otro' }, { ...report, findings: [report.findings[0], report.findings[0]] }, { ...report, findings: [{ ...report.findings[0], items: [{ ref: 7 }] }] }]) {
-    assert.equal(readReportText(JSON.stringify(broken)), 'no es un informe ni un parte de vigilancia de Verifica');
+    assert.equal(readReportText(JSON.stringify(broken)), NOT_A_DOCUMENT);
   }
   const touched = structuredClone(report);
   touched.findings[0]!.figures.moved = 0;
@@ -134,7 +139,7 @@ test('Verifica · abrir un parte de vigilancia: se reconoce, no tiene botón rel
   const opened = readDocumentText(JSON.stringify(touched));
   assert.ok(typeof opened !== 'string' && opened.kind === 'watch');
   assert.match(renderWatch(opened.report, { kind: 'opened', name: 'x.json' }), /No coincide: el parte se ha tocado/);
-  assert.equal(readDocumentText(JSON.stringify({ ...report, entries: 'nada' })), 'no es un informe ni un parte de vigilancia de Verifica');
+  assert.equal(readDocumentText(JSON.stringify({ ...report, entries: 'nada' })), NOT_A_DOCUMENT);
 });
 
 test('Verifica · parte de vigilancia con la captura atrasada: el aviso va arriba, una sola vez', () => {
@@ -145,4 +150,62 @@ test('Verifica · parte de vigilancia con la captura atrasada: el aviso va arrib
   assert.match(html, /Ahora mismo/);
   assert.equal(html.split(report.overdue!.summary).length - 1, 1);
   assert.match(html, /1 aviso en 5 capturas semanales\./);
+});
+
+const renderEquivalence = (report: EquivalenceReport, origin: ReportOrigin) => renderToStaticMarkup(createElement(EquivalenceReportView, { report, origin }));
+
+test('Verifica · informe de equivalencia: tabla por objeto, diferencias arriba y lo abierto en la segunda página', () => {
+  const report = referenceEquivalence('traps');
+  const html = renderEquivalence(report, { kind: 'reference', variant: 'traps', doc: 'migration' });
+  assert.match(html, /Hay diferencias en 4 puntos; 2 más no se pueden concluir\./);
+  assert.equal(html.match(/<tbody>.*<\/tbody>/)?.[0].match(/<tr>/g)?.length, 3);
+  assert.equal(html.match(/data-short="true"/g)?.length, 2, 'contactos y oportunidades no llegaron enteros');
+  assert.equal(html.match(/data-alarm="true"/g)?.length, 4);
+  assert.equal(html.match(/data-alarm="false"/g)?.length, 2);
+  assert.ok(html.indexOf('Contactos: no llegaron') < html.indexOf('vf-pending') && html.indexOf('Contactos: ambiguos') > html.indexOf('vf-pending'));
+  assert.equal(html.match(/class="vf-primary"[^>]*>Descargar informe de equivalencia</g)?.length, 1);
+  assert.equal(html.match(/class="vf-primary"/g)?.length, 1);
+  assert.match(html, /aria-pressed="true"[^>]*>Migración</);
+  assert.equal(html.split(report.fingerprint).length - 1, 1, 'la huella del informe sale una sola vez');
+  assert.ok(html.includes('la última del parte de vigilancia ' + report.closing.watch!.slice(0, 12)));
+  assert.ok(!html.includes(report.closing.detail) && !html.includes(report.target.detail), 'los recuentos solo salen en la tabla');
+  const leaked = buildMigratedCompany({ traps: true }).forbidden.filter(text => html.includes(text));
+  assert.deepEqual(leaked, [], 'filtrados: ' + leaked.slice(0, 5).join(', '));
+});
+
+test('Verifica · informe de equivalencia sin trampas: ninguna diferencia, sin prometer más de lo que compara el mapa', () => {
+  const html = renderEquivalence(referenceEquivalence('clean'), { kind: 'reference', variant: 'clean', doc: 'migration' });
+  assert.match(html, /Sin diferencias en lo que compara el mapa\./);
+  assert.equal(html.match(/data-alarm=/g), null);
+  assert.equal(html.match(/data-short="true"/g), null);
+  assert.match(html, /Oportunidades: ownerId, createdAt\./);
+  assert.ok(!html.replace('nunca acredita que la migración esté íntegra', '').includes('íntegr'), 'nunca dice que la migración es íntegra');
+});
+
+test('Verifica · abrir un informe de equivalencia: se reconoce, no tiene botón relleno y señala si se ha tocado', () => {
+  const report = referenceEquivalence('traps');
+  const doc = readDocumentText(equivalenceToJson(report));
+  assert.ok(typeof doc !== 'string' && doc.kind === 'migration');
+  const html = renderEquivalence(doc.report, { kind: 'opened', name: 'equivalencia.json' });
+  assert.equal(html.match(/class="vf-primary"/g), null);
+  assert.ok(!html.includes('Empresa ficticia') && !html.includes('vf-docs'));
+  const touched = structuredClone(report);
+  touched.objects[1]!.intact = touched.objects[1]!.closing;
+  const opened = readDocumentText(JSON.stringify(touched));
+  assert.ok(typeof opened !== 'string' && opened.kind === 'migration');
+  assert.match(renderEquivalence(opened.report, { kind: 'opened', name: 'x.json' }), /No coincide: el informe se ha tocado/);
+  assert.equal(readDocumentText(JSON.stringify({ ...report, objects: 'nada' })), NOT_A_DOCUMENT);
+  const waiting = renderToStaticMarkup(createElement(EquivalencePending, { origin: { kind: 'reference', variant: 'traps', doc: 'migration' }, failed: false }));
+  assert.match(waiting, /Preparando el ejemplo/);
+  assert.equal(waiting.match(/class="vf-primary"/g), null, 'nada que descargar hasta que llega');
+});
+
+test('Verifica · informe de equivalencia con el destino a medias: el resumen dice por qué no se puede concluir', () => {
+  const m = buildMigratedCompany({ traps: false });
+  const target = structuredClone(m.target);
+  target.objects.find(o => o.objectType === 'persons')!.coverage = 'partial';
+  const { report } = releaseEquivalence({ asOf: m.asOf, closing: m.closing, target, map: m.map, salt: m.salt, watch: m.watch });
+  assert.equal(report.verdict, 'inconclusive');
+  const html = renderEquivalence(report, { kind: 'opened', name: 'equivalencia.json' });
+  assert.match(html, /No se puede concluir\. Exportación parcial o muestra en: contacts\./);
 });

@@ -1,13 +1,16 @@
-// Plan B Verifica · el informe (fases 0 y 2) y la página que lo sirve junto al parte de vigilancia (fase 3). Pinta el de
+// Plan B Verifica · el informe (fases 0 y 2) y la página que lo sirve junto al parte de vigilancia (fase 3) y al informe de
+// equivalencia (fase 4), cuyo ejemplo se carga aparte. Pinta el de
 // la empresa con trampas o uno abierto desde un archivo, tal como lo entrega shared/verifica: página 1 con los hallazgos,
 // página 2 con lo que no se pudo comprobar, y la huella al pie. Con un informe abierto, además, se comprueba contra su
 // copia custodiada. Nada sale del navegador. Cada cifra sale una sola vez, en la frase de su hallazgo; no se repite en tablas.
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { buildTrapCompany } from '../../shared/verifica/empresa-con-trampas.js';
+import type { EquivalenceReport } from '../../shared/verifica/equivalence.js';
 import { buildVerificaReport, reportToJson, verifyReport, type ReportSource, type VerificaReport } from '../../shared/verifica/report.js';
 import type { VerificaBasis } from '../../shared/verifica/model.js';
 import { CustodyCheck } from './CustodyCheck.js';
 import { day, downloadJson, MAX_DOCUMENT_FILE, readDocumentText, short, type VerificaDocument } from './documents.js';
+import { EquivalencePending, EquivalenceReportView } from './EquivalenceReport.js';
 import { Fingerprint, Masthead, Refs, type DocKind, type ReportOrigin, type Variant } from './Masthead.js';
 import { referenceWatch, WatchReportView } from './WatchReport.js';
 
@@ -88,7 +91,21 @@ export default function VerificaReportPage() {
   const [doc, setDoc] = useState<DocKind>('report');
   const [opened, setOpened] = useState<Opened | null>(null);
   const [openError, setOpenError] = useState<string | null>(null);
-  const reference = useMemo<VerificaDocument>(() => doc === 'watch' ? { kind: 'watch', report: referenceWatch(variant) } : { kind: 'report', report: referenceReport(variant) }, [doc, variant]);
+  const [equivalence, setEquivalence] = useState<Partial<Record<Variant, EquivalenceReport>>>({});
+  const [equivalenceFailed, setEquivalenceFailed] = useState(false);
+  useEffect(() => {
+    if (doc !== 'migration' || equivalence[variant]) return;
+    let live = true;
+    import('./reference-equivalence.js').then(
+      module => { if (live) setEquivalence(prev => ({ ...prev, [variant]: module.referenceEquivalence(variant) })); },
+      () => { if (live) setEquivalenceFailed(true); });
+    return () => { live = false; };
+  }, [doc, variant, equivalence]);
+  const reference = useMemo<VerificaDocument | null>(() => {
+    if (doc === 'watch') return { kind: 'watch', report: referenceWatch(variant) };
+    if (doc === 'migration') { const report = equivalence[variant]; return report ? { kind: 'migration', report } : null; }
+    return { kind: 'report', report: referenceReport(variant) };
+  }, [doc, variant, equivalence]);
   const open = (file: File) => {
     const keep = '. Lo que ves no ha cambiado.';
     if (file.size > MAX_DOCUMENT_FILE) { setOpenError('«' + file.name + '» es demasiado grande para ser un documento de Verifica' + keep); return; }
@@ -103,7 +120,11 @@ export default function VerificaReportPage() {
   const origin: ReportOrigin = opened
     ? { kind: 'opened', name: opened.name, onReference: toReference }
     : { kind: 'reference', variant, onVariant: setVariant, doc, onDoc: setDoc };
-  return shown.kind === 'watch'
-    ? <WatchReportView report={shown.report} origin={origin} onOpen={open} openError={openError} />
-    : <VerificaReportView report={shown.report} origin={origin} onOpen={open} openError={openError} />;
+  return shown === null
+    ? <EquivalencePending origin={origin} failed={equivalenceFailed} onOpen={open} openError={openError} />
+    : shown.kind === 'watch'
+      ? <WatchReportView report={shown.report} origin={origin} onOpen={open} openError={openError} />
+      : shown.kind === 'migration'
+        ? <EquivalenceReportView report={shown.report} origin={origin} onOpen={open} openError={openError} />
+        : <VerificaReportView report={shown.report} origin={origin} onOpen={open} openError={openError} />;
 }

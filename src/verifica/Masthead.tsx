@@ -1,5 +1,6 @@
-// Plan B Verifica · piezas comunes del informe y del parte de vigilancia. La cabecera lleva producto, origen, título,
-// frase de resumen, variantes o vuelta al ejemplo, abrir un archivo y, solo en el ejemplo, el único botón relleno (descargar).
+// Plan B Verifica · piezas comunes del informe, el parte de vigilancia y el informe de equivalencia. La cabecera lleva
+// producto, origen, título, frase de resumen, variantes o vuelta al ejemplo, abrir un archivo y, solo en el ejemplo ya
+// cargado, el único botón relleno (descargar).
 import React, { type ReactNode } from 'react';
 import type { FindingItem } from '../../shared/verifica/model.js';
 
@@ -28,14 +29,14 @@ export function Fingerprint({ label, value, intact, broken }: { label: string; v
 }
 
 export type Variant = 'traps' | 'clean';
-export type DocKind = 'report' | 'watch';
+export type DocKind = 'report' | 'watch' | 'migration';
 
 export type ReportOrigin =
   | { kind: 'reference'; variant: Variant; onVariant?: (variant: Variant) => void; doc?: DocKind; onDoc?: (doc: DocKind) => void }
   | { kind: 'opened'; name: string; onReference?: () => void };
 
 const VARIANT: Record<Variant, string> = { traps: 'Con trampas', clean: 'Sin trampas' };
-const DOC: Record<DocKind, string> = { report: 'Informe', watch: 'Vigilancia' };
+const DOC: Record<DocKind, string> = { report: 'Informe', watch: 'Vigilancia', migration: 'Migración' };
 
 function OpenReport({ label, onOpen }: { label: string; onOpen?: (file: File) => void }) {
   return (
@@ -50,7 +51,7 @@ function OpenReport({ label, onOpen }: { label: string; onOpen?: (file: File) =>
 export function Masthead({ origin, title, lede, onOpen, openError, download }: {
   origin: ReportOrigin; title: string; lede: ReactNode;
   onOpen?: (file: File) => void; openError?: string | null;
-  download: { label: string; run: () => void };
+  download?: { label: string; run: () => void };
 }) {
   return (
     <header className="vf-head">
@@ -83,7 +84,7 @@ export function Masthead({ origin, title, lede, onOpen, openError, download }: {
           : <button type="button" className="vf-link" onClick={() => origin.onReference?.()}>Volver al ejemplo</button>}
         <div className="vf-actions-end">
           <OpenReport label={origin.kind === 'reference' ? 'Abrir un informe' : 'Abrir otro informe'} onOpen={onOpen} />
-          {origin.kind === 'reference' && <button type="button" className="vf-primary" onClick={download.run}>{download.label}</button>}
+          {origin.kind === 'reference' && download && <button type="button" className="vf-primary" onClick={download.run}>{download.label}</button>}
         </div>
       </div>
       {openError && <p className="vf-error" role="alert">{openError}</p>}

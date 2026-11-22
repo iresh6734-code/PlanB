@@ -42,7 +42,7 @@ export const fingerprintOf = (value: unknown): string => sha256Hex(stableJson(va
 
 export function pseudonymizer(salt: string) {
   if (salt.length < 16) throw new Error('La sal del informe debe tener al menos 16 caracteres.');
-  return (kind: 'deal' | 'company' | 'owner', id: string) => kind + ':' + sha256Hex(salt + '|' + kind + '|' + id).slice(0, 10);
+  return (kind: 'deal' | 'company' | 'owner' | 'contact', id: string) => kind + ':' + sha256Hex(salt + '|' + kind + '|' + id).slice(0, 10);
 }
 
 export function reportFingerprint(report: Omit<VerificaReport, 'fingerprint'> | VerificaReport): string {

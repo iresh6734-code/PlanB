@@ -406,6 +406,24 @@ Abrir `verifica.html`, pulsar «Abrir un informe» → `parte.json`. Debe mostra
 4. La sal la guarda quien genera el parte. Si se pierde, los seudónimos de las semanas siguientes no casan con los anteriores, aunque las cifras siguen valiendo.
 5. «Cartera abierta» son las oportunidades con estado `open` en la captura, que el lector saca de las etapas. Si el vendedor cambia las etapas del pipeline entre semanas, el aviso puede dispararse o callarse sin motivo.
 
+## Verifica · Fase 4 · Después del cierre · GitHub Copilot
+
+### Reserva · antes de editar
+
+22/11/2026, 18:00 Europe/Madrid. La usuaria: «continúa a por la fase 4». Según el plan: «Copia custodiada desde el primer día y migración verificada al CRM del comprador», con un «informe de equivalencia».
+
+Se reaprovecha el verificador de migraciones que ya existe (`shared/migration-verifier.ts`, `compareMigration`): empareja solo por las claves de un mapa que confirma una persona, no resuelve lo ambiguo y nunca dice «migración íntegra». No se cambia su comportamiento.
+
+Alcance, todo código puro y pruebas sin red:
+
+- **`shared/verifica/equivalence.ts` (nuevo):** el informe de equivalencia. Parte de la captura del cierre (la última de la vigilancia, misma huella) y de la exportación del CRM del comprador. Dice, por objeto, qué llegó igual, qué falta, qué llegó distinto, qué sobra, qué es ambiguo y qué relaciones se rompieron. Lleva seudónimos con la misma sal, huella, lectura desde fuera y la barrera de la sala limpia.
+- **`shared/verifica/empresa-migrada.ts` (nuevo):** la empresa vigilada, ya cerrada, migrada a un CRM ficticio de otro proveedor. Con trampas: contactos que no llegan, importes mal convertidos, fechas en un formato que no se entiende, oportunidades colgadas de otra empresa, contactos duplicados y empresas borradas que reviven. Sin trampas: equivalente. Lo esperado se anota al sembrar.
+- **`scripts/verifica-migracion.ts` (nuevo):** sin conexión, de la captura del cierre, la exportación del destino y el mapa al informe de equivalencia. Opcional: comprobar que la captura del cierre es la del parte de vigilancia y escribir una lista de trabajo con los IDs reales para quien corrige la migración (no sale en el informe). `scripts/verifica-ejemplo.ts` escribe también el destino y el mapa.
+- **Interfaz, `src/verifica/`:** pestaña «Migración» en `verifica.html` y apertura de un informe de equivalencia. El ejemplo se carga aparte, solo al pulsar la pestaña, para que el verificador no cargue `zod`. Un solo botón relleno por vista; se mide el paquete.
+- **Pruebas:** `tests/verifica-migracion.test.ts` y casos en `tests/verifica-pagina.test.ts`.
+
+Sin servidores, navegador, PowerShell, DPAPI, red ni datos reales. Dueño provisional: GitHub Copilot, como en las fases 2 y 3.
+
 ## Verifica · Pendientes (lista viva)
 
 Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.

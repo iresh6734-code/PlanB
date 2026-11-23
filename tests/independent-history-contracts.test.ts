@@ -302,8 +302,10 @@ test('H3d QA079 (determinista): una cifra que ESTÁ en la fecha presentada (las 
   } finally { await h.app.close(); }
 });
 
-test('H9a CARACTERIZACIÓN HISTÓRICA (no es garantía): el corte baseline075 devolvía todo el historial al buscar el año; el corte actual no', async () => {
+test('H9a CARACTERIZACIÓN HISTÓRICA (no es garantía): el corte baseline075 devolvía todo el historial al buscar el año; el corte actual no', async t => {
   const BASELINE = process.env.QA079_BASELINE_ROOT ? path.resolve(process.env.QA079_BASELINE_ROOT) : path.resolve(fileURLToPath(new URL('..', import.meta.url)), 'tests/.tmp/qa075-d90acf90-f891-4979-be03-376b0a4f31e4/source');
+  // Sin QA079_BASELINE_ROOT, la copia por defecto vive en tests/.tmp, que git no guarda: un clon nuevo no la tiene. Se salta; H3c, H3d y H9 siguen cubriendo el contrato.
+  if (!process.env.QA079_BASELINE_ROOT && !fs.existsSync(path.join(BASELINE, 'shared/change-history.ts'))) { t.skip('sin copia del corte baseline075 en este equipo (defínela con QA079_BASELINE_ROOT)'); return; }
   assert.ok(fs.existsSync(path.join(BASELINE, 'shared/change-history.ts')), 'falta la copia del corte baseline075 en ' + BASELINE + ' (defínela con QA079_BASELINE_ROOT)');
   const old = await import(pathToFileURL(path.join(BASELINE, 'shared/change-history.ts')).href) as typeof import('../shared/change-history.js');
   const { h, real } = await build();

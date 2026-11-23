@@ -18,19 +18,50 @@ import { createTaskSaveOutcomes, type SaveStrategy, type SubmitInput } from '../
 registerHooks({ load: (url, context, next) => url.endsWith('.css') ? { format: 'module', source: '', shortCircuit: true } : next(url, context) });
 const { LocalTaskFocus, classifyUnapplied, verdictFromOperation } = await import('../src/LocalTaskFocus.js');
 
-const sha = (file: string) => createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+// Huella del texto con finales LF: en Windows, git entrega los archivos con CRLF y la huella cambiaría sin que cambie nada.
+const sha = (file: string) => createHash('sha256').update(fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n')).digest('hex');
 const source = fs.readFileSync('src/LocalTaskFocus.tsx', 'utf8');
 
 test('huella: U1 no toca las fuentes de 123 que reutiliza (solo LocalTaskFocus.tsx y su CSS) y fija el gestor de 136 tal como lo deja el contrato 170', () => {
+  // El CSS de resultados ya no se fija por huella: un cambio de color o de token la rompía sin cambiar nada que importe. Su contrato está en la prueba siguiente.
   const pinned: Record<string, string> = {
     'shared/task-save-outcome.ts': 'df91db8cddf8b0b76c20ccb32c1533ee17385335992bf01b2fab7b26b3df3a5a',
     'src/task-save-outcome.ts': '05ef5e399331f0d2c68b205fb7a3c06cdbda7c1990d4c27a4b0cfb87f04f9582',
     'src/TaskSaveOutcomes.tsx': '8b9de460ecb74581ae093d67b378993fedf0d0e0286abb273425f5a1029ab3c8',
-    'src/task-save-outcomes.css': '7f975c77e94759276466c44c0a229b78a54c5c6bc958a8a64c499088b748582c',
     'shared/local-task-focus.ts': 'e41df640594532587bc0fb90a28f1a538063c5bf2e598460ce892462777358d5',
     'src/local-task-focus-client.ts': '59dda342d954b659aebb750b63bc726d3c0b382142bea0ca9baf496e779ca501',
   };
   for (const [file, hash] of Object.entries(pinned)) assert.equal(sha(file), hash, file);
+});
+
+test('CSS de resultados: sin estilos globales, cada clase ltso- que pinta la superficie existe, el foco se ve y en móvil los controles miden 44 px', () => {
+  const css = fs.readFileSync('src/task-save-outcomes.css', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const rules: { at: string; selectors: string[]; body: string }[] = [];
+  const walk = (text: string, at: string) => {
+    for (let i = 0; i < text.length;) {
+      const open = text.indexOf('{', i); if (open < 0) break;
+      const head = text.slice(i, open).trim();
+      let depth = 1, j = open + 1; for (; j < text.length && depth; j++) depth += text[j] === '{' ? 1 : text[j] === '}' ? -1 : 0;
+      const inner = text.slice(open + 1, j - 1);
+      if (head.startsWith('@')) walk(inner, head); else rules.push({ at, selectors: head.split(',').map(part => part.trim()), body: inner });
+      i = j;
+    }
+  };
+  walk(css, '');
+  assert.ok(rules.length > 20, 'se leyeron ' + rules.length + ' reglas');
+  for (const rule of rules) for (const selector of rule.selectors) assert.match(selector, /^(body )?\.ltso(?![\w-])|^\.ltso-[a-z]+/, 'selector global: ' + selector);
+  const defined = new Set(rules.flatMap(rule => rule.selectors.flatMap(selector => selector.match(/\.ltso(-[a-z]+)?/g) ?? [])).map(name => name.slice(1)));
+  const tsx = fs.readFileSync('src/TaskSaveOutcomes.tsx', 'utf8');
+  const used = new Set([...tsx.matchAll(/className=(?:"([^"]+)"|\{'([^']+)')/g)].flatMap(match => (match[1] ?? match[2]).split(/\s+/)).filter(name => /^ltso(-[a-z]+)?$/.test(name)));
+  assert.ok(used.size >= 10, 'clases ltso usadas: ' + [...used].join(' '));
+  for (const name of used) assert.ok(defined.has(name), 'la ficha usa .' + name + ' y el CSS no la define');
+  for (const tone of ['success', 'warning', 'danger']) assert.ok(defined.has('ltso-' + tone), 'falta el tono .ltso-' + tone + ' (info usa el color base de .ltso-box)');
+  const ruleFor = (selector: string, at = '') => rules.find(rule => rule.at.replace(/\s+/g, '') === at.replace(/\s+/g, '') && rule.selectors.includes(selector))?.body ?? '';
+  for (const selector of ['.ltso-chip:focus-visible', '.ltso button:focus-visible', '.ltso-written>summary:focus-visible']) assert.match(ruleFor(selector), /outline:\s*2px solid/, 'foco visible en ' + selector);
+  const mobile = '@media (max-width:600px)';
+  for (const selector of ['.ltso-chip', 'body .ltso .button', 'body .ltso .text-button', '.ltso-written>summary']) assert.match(ruleFor(selector, mobile), /min-height:\s*44px/, 'objetivo táctil de 44 px en ' + selector);
+  assert.match(ruleFor('.ltso *', '@media (prefers-reduced-motion:reduce)'), /transition:\s*none/, 'sin animación con movimiento reducido');
+  assert.match(ruleFor('.ltso-chip[aria-pressed="true"]'), /color:\s*var\(--text-inverse/, 'el chip activo usa el token de texto inverso');
 });
 
 // ── Operaciones reales del gestor con una estrategia que devuelve un resultado fijo ──────────────────────────────────────────────────────

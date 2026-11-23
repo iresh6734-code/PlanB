@@ -816,6 +816,35 @@ Archivos: `src/local-task-intents-client.ts`, `src/task-save-intent-strategy.ts`
 - `npx tsc --noEmit -p tsconfig.json`: 0 errores.
 - `ci-compare` (que lee `known-failures.json`) abre procesos: va al ordenador personal, con las demás de ese tipo.
 
+## Pruebas seguras · Huellas con CRLF, contrato del CSS de resultados y H9a · GitHub Copilot
+
+### Reserva · antes de editar
+
+23/11/2026, 16:10 Europe/Madrid. Solo pruebas, sin interfaz: `tests/task-focus-outcomes.test.ts` y `tests/independent-history-contracts.test.ts`. Cierra las dos pruebas seguras que quedaban rojas en este equipo y el pendiente «sustituir la huella SHA-256 de `src/task-save-outcomes.css` por una aserción de comportamiento».
+
+### Hecho · 23/11/2026
+
+- **`tests/task-focus-outcomes.test.ts`:**
+  - La huella se calcula sobre el texto con finales LF. En Windows, git entrega los archivos con CRLF y las seis huellas fallaban sin que cambiara nada; con LF, las cinco de fuentes coinciden.
+  - Fuera la huella de `src/task-save-outcomes.css`. Cambió con razón en `73b1887` (guardia de color K6: `#fff` pasó a `var(--text-inverse,#fff)`) y cualquier ajuste de token la rompía.
+  - En su lugar, un contrato de comportamiento:
+    - ningún selector global (todos empiezan por `.ltso`);
+    - cada clase `ltso-*` que usa `TaskSaveOutcomes.tsx` está definida, y existen los tonos `success`, `warning` y `danger`;
+    - foco visible en chips, botones y el desplegable;
+    - 44 px de objetivo táctil en móvil;
+    - sin animación con movimiento reducido;
+    - el chip activo usa el token de texto inverso.
+- **`tests/independent-history-contracts.test.ts` (H9a):** si no se define `QA079_BASELINE_ROOT` y la copia por defecto de `tests/.tmp` no existe, la prueba se salta con un mensaje. Esa carpeta no está en git, así que un clon nuevo nunca la tiene. Si se define `QA079_BASELINE_ROOT`, la copia sigue siendo obligatoria. H3c, H3d y H9 cubren el contrato actual.
+
+**Cómo se comprueba:**
+
+- `NODE_ENV=test node tools/safe-tests.mjs task-focus-outcomes independent-history-contracts`: 2 de 2 (H9a sale como «skipped» en este equipo).
+- Batería segura entera: 243 de 244. Solo falló `rescue-room`, que pasó sola 6 veces seguidas: es intermitente bajo carga y queda en la lista viva.
+- Prueba de mutación hecha a mano y revertida con `git checkout`:
+  - bajar el chip móvil a 40 px hace fallar «objetivo táctil de 44 px en .ltso-chip»;
+  - añadir `button{color:red}` hace fallar «selector global: button».
+- `npx tsc --noEmit -p tsconfig.json`: 0 errores.
+
 ## Verifica · Pendientes (lista viva)
 
 Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
@@ -870,7 +899,8 @@ Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
 - [ ] *(nuevo, fase 4)* Revisión visual de «Migración» en `verifica.html`: escritorio y móvil (la tabla), tema claro y oscuro, la espera mientras carga el ejemplo, las tres pestañas con teclado y la impresión. Aquí solo está probado el HTML.
 - [ ] *(nuevo, fase 4)* Una migración real de prueba: del portal de pruebas de HubSpot a una cuenta de prueba de otro CRM, con un mapa escrito a mano, para ver el informe con datos que no son de la empresa ficticia.
 - [x] ~~Un lector para el portal del cliente~~: hecho el 23/11/2026 con el HubSpot simulado (`--client-authorization`). La primera lectura real de un cliente va después de validar el lector en el portal de pruebas.
-- [ ] *(nuevo, 23/11/2026)* Tres pruebas seguras que ya fallaban antes del aparcado (ver «Verifica · Batería segura completa»): `task-focus-outcomes` (CRLF en Windows: ¿normalizar los finales en la prueba o `.gitattributes` con `eol=lf` para esos archivos?), `independent-history-contracts` (sin la copia de `baseline075` aquí) y ~~`task-intent-consumer-independent-322`~~ (arreglada el 23/11/2026: «CRM congelado · Arreglos de la sonda 322»). Mirar en el ordenador personal si allí pasan las otras dos.
+- [x] *(nuevo, 23/11/2026; cerrado el mismo día)* Tres pruebas seguras que ya fallaban antes del aparcado (ver «Verifica · Batería segura completa»): ~~`task-focus-outcomes`~~ (huella con finales LF y contrato del CSS), ~~`independent-history-contracts`~~ (H9a se salta si falta la copia de `baseline075`; ver «Pruebas seguras · Huellas con CRLF, contrato del CSS de resultados y H9a») y ~~`task-intent-consumer-independent-322`~~ («CRM congelado · Arreglos de la sonda 322»).
+- [ ] *(nuevo, 23/11/2026)* `tests/rescue-room.test.ts` falló una vez dentro de la batería segura entera y pasó sola 6 veces seguidas. Es intermitente bajo carga. Si se repite, guardar la salida completa de `node tools/safe-tests.mjs` (el motivo sale debajo de la línea `FAIL`) y buscar la causa.
 - [ ] *(nuevo, fase 0 · tanda 2)* Ejecutar las pruebas que abren procesos y aquí no corren: `api-inventory` (y `node tools/api/inventory.mjs --check`, que debe dar `docs/api.md` al día), `release-candidate-adversarial`, `release-candidate-completeness` y `candidate-integrity`.
 - [ ] *(nuevo, fase 0 · tanda 2)* Ajustar las pruebas de navegador que mezclan la App local con la de equipos:
   - `ui-redesign` y `full-workspace`;
@@ -952,7 +982,7 @@ Decisiones pendientes:
 
 **Otros pendientes** que sí puede hacer un agente sin decisiones:
 
-1. Sustituir la huella SHA-256 de `src/task-save-outcomes.css` en `tests/task-focus-outcomes.test.ts`, línea 21, por una aserción de comportamiento. Sigue pendiente.
+1. ~~Sustituir la huella SHA-256 de `src/task-save-outcomes.css` en `tests/task-focus-outcomes.test.ts` por una aserción de comportamiento.~~ Hecho el 23/11/2026: ver «Pruebas seguras · Huellas con CRLF, contrato del CSS de resultados y H9a».
 2. Arreglar el arnés `auth-parent-harness` para que simule `useContinuityState`. Por esa carencia fallan `auth-parent` e `independent-interface-contexts`, igual en `HEAD` limpio, desde `607a835`.
 3. Ejecutar `tests/relay-rehearsal-mount.test.ts`. Lleva una aserción nueva de manifiesto sin `recovery-rehearsal`, y `tools/safe-tests.mjs` lo omite porque arranca procesos.
 4. Retirar o adaptar las pruebas de navegador de la antigua cola de Hoy: `tests/e2e/today-work-queue.spec.ts` y el bloque «Hoy» de `tests/e2e/independent-workspace-flows.spec.ts`. Buscan `.work-queue-count`, que ya no se monta.
@@ -969,7 +999,7 @@ Nota de convivencia (21/11/2026): B4.3 ya está cerrado, así que `ChangesView.t
 Al hacer `git pull`, leer `docs/mision/00-LEEME.md` y, en este orden:
 
 1. **Revisión cruzada hecha por Copilot el 21/11:** tabla por propuesta más abajo. Seguir el orden vigente de `00-LEEME.md`, no el reparto histórico de este apartado.
-2. **Fase 1:** A0-L hecho en `7fcb771`. Sigue pendiente sustituir la huella SHA-256 de `src/task-save-outcomes.css` en `tests/task-focus-outcomes.test.ts` por una aserción de comportamiento.
+2. **Fase 1:** A0-L hecho en `7fcb771`. La huella SHA-256 de `src/task-save-outcomes.css` ya es un contrato de comportamiento (23/11/2026).
 3. **Antes de tocar** archivos del ámbito de interfaz (`src/consola.css`, `src/faro.css`, `src/ui/**`, `TopBar.tsx`, `Sidebar.tsx`, `navigation.ts`, `HomeOverview.tsx`, `ContinuityHome.tsx`), anotar aquí la tarea para no editar a la vez.
 
 ## Revisión cruzada · GitHub Copilot · 21/11/2026 (Europe/Madrid)

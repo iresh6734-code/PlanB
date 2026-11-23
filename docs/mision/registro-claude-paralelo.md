@@ -226,3 +226,17 @@ Mismo método exacto: su contenido va al final de `planb-ui.css` (la hoja que se
 - **Prueba de orden de carga** (`tests/design-tokens.test.ts`): ahora exige `planb-ui`, `faro` y `consola` al final, y lee los tokens de Operaciones claras del bloque marcado, con el mismo control de contraste AA.
 - **Colores fijos:** la línea base de `planb-ui.css` pasa de 3 a 6 (recibe los 3 de la hoja retirada); el total no cambia.
 - **Pruebas:** `tsc` sin errores; `color-guard`, `css-unused`, `design-tokens`, `design-k-block`, `bundle-budget` y `record-sheet` en verde.
+
+## 23/11/2026 · Verifica · Dirección visual «Dictamen» en verifica.html
+
+**Por qué.** La usuaria veía la interfaz igual que antes y no le gustaba el diseño. El plan de producto no pedía rediseño, y el recorrido de pasos del plan («Dirección de la app», punto 4) no estaba hecho. Se prepararon dos direcciones en un lienzo (A «Dictamen», B «Sala de control») y la usuaria eligió A.
+
+**Qué cambia (solo `src/verifica/` y sus pruebas):**
+
+- Marco común (`Masthead.tsx` → `Frame`): barra con producto, origen, abrir y descargar; a la izquierda, los pasos del encargo. Los pasos 1 a 3 (Operación, Fuentes, Capturas) solo se nombran, porque se hacen con el lector. Hallazgos e informe, Vigilancia y Después del cierre navegan con `aria-current="page"`. En un archivo abierto no navegan.
+- Informe: el `h1` es la conclusión, con hasta tres cifras clave encima de los hallazgos. Cada hallazgo lleva número, cifra clave a la derecha y de qué fuente sale, con fechas en vez de huellas. Debajo, en dos tarjetas, lo que no se pudo comprobar y el sello con la huella y las fuentes.
+- `summary.ts` (nuevo, puro): conclusión, cifra clave, cifras del resumen y procedencia, todo sacado de `figures`. La conclusión no habla de «% de la cartera abierta», porque la regla de la ventana suma también oportunidades ya ganadas o perdidas.
+- Vigilancia: el `h1` nombra los avisos. Equivalencia: el `h1` es el veredicto.
+- `verifica.css` reescrita: serifa del sistema para titulares y cifras, rojo solo para lo que se sale de lo normal; claro y oscuro. No se descargan fuentes (decisión 17/11): la página sigue funcionando sin conexión.
+
+**Comprobación.** `verifica-pagina` adaptada en tres puntos (navegación con `aria-current`, veredicto en el `h1`, motivo de la exportación parcial en la frase de resumen) y `verifica-resumen` nueva: 83/83 junto con `color-guard`, `css-unused`, `design-tokens`, `ui-copy` y `bundle-budget`. `tsc` sin errores. `scripts/verifica-pruebas.ts`: fases 1 a 4 pasan; la 0 sigue pendiente de declarar. Capturas con Chromium sin interfaz a 1440 y 390 px y en oscuro, sin errores en consola ni desbordes, con `tests/.tmp/verifica-vista/shots.mts`. Vista previa sin recorrer las instalaciones: configuración `verifica` de `.claude/launch.json` (`tests/.tmp/verifica-vista/vite.config.ts`). Sin commit.

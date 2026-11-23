@@ -5,7 +5,7 @@ import React from 'react';
 import { buildWatchedCompany } from '../../shared/verifica/empresa-vigilada.js';
 import { buildWatchReport, verifyWatchReport, watchReportToJson, WATCH_RULES, type WatchAlert, type WatchEntry, type WatchReport } from '../../shared/verifica/watch.js';
 import { day, downloadJson, short } from './documents.js';
-import { Fingerprint, Masthead, Refs, type ReportOrigin, type Variant } from './Masthead.js';
+import { Fingerprint, Frame, Refs, type ReportOrigin, type Variant } from './Masthead.js';
 
 export function referenceWatch(variant: Variant): WatchReport {
   const company = buildWatchedCompany({ traps: variant === 'traps' });
@@ -51,13 +51,17 @@ export function WatchReportView({ report, origin, onOpen, openError }: { report:
   const retained = weekly.filter(entry => entry.status === 'retained').length;
   const last = report.entries.at(-1)!;
   const intact = verifyWatchReport(report);
+  // La conclusión nombra lo que pasó; la frase de debajo da las fechas y los recuentos.
+  const titles = [...new Set([...(report.overdue ? [report.overdue.title] : []), ...weekly.flatMap(entry => entry.alerts.map(alert => alert.title))])]
+    .map(title => title.charAt(0).toLocaleLowerCase('es-ES') + title.slice(1));
+  const headline = titles.length === 0 ? 'Desde la firma, nada se sale de lo normal.'
+    : 'Desde la firma: ' + (titles.length === 1 ? titles[0] : titles.slice(0, -1).join(', ') + ' y ' + titles.at(-1)) + '.';
   const lede = 'Firma del ' + day(report.signedAt) + ', parte del ' + day(report.asOf) + '. '
     + (alerts === 0 ? 'Ninguna de las ' + plural(weekly.length, 'captura semanal', 'capturas semanales') + ' se sale de lo normal.' : plural(alerts, 'aviso', 'avisos') + ' en ' + plural(weekly.length, 'captura semanal', 'capturas semanales') + '.')
     + (retained > 0 ? ' ' + (retained === 1 ? 'Una retenida' : retained + ' retenidas') + ' hasta que alguien las revise.' : '');
   return (
-    <main className="vf-page">
-      <Masthead origin={origin} title="Parte de vigilancia hasta el cierre" lede={lede} onOpen={onOpen} openError={openError}
-        download={{ label: 'Descargar parte', run: () => downloadJson(watchReportToJson(report), 'verifica-vigilancia-' + short(report.fingerprint) + '.json') }} />
+    <Frame origin={origin} current="watch" eyebrow={'Parte de vigilancia hasta el cierre · ' + day(report.asOf)} title={headline} lede={lede} onOpen={onOpen} openError={openError}
+      download={{ label: 'Descargar parte', run: () => downloadJson(watchReportToJson(report), 'verifica-vigilancia-' + short(report.fingerprint) + '.json') }}>
 
       {report.overdue && (
         <section className="vf-sheet" aria-labelledby="vf-overdue">
@@ -106,6 +110,6 @@ export function WatchReportView({ report, origin, onOpen, openError }: { report:
         <Fingerprint label="Huella del parte" value={report.fingerprint} intact={intact} broken="No coincide: el parte se ha tocado" />
         <p className="vf-note">Los nombres no salen del lado del vendedor: cada referencia es un seudónimo con la misma sal que el informe, que no viaja en el parte.</p>
       </footer>
-    </main>
+    </Frame>
   );
 }

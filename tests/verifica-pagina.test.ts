@@ -112,7 +112,8 @@ test('Verifica · parte de vigilancia: cada trampa sale en su semana, la retenid
   assert.ok(!html.includes('Ahora mismo'), 'a la fecha del parte no falta ninguna captura');
   assert.match(html, /Al cierre: la firma frente a la captura del/);
   assert.equal(html.match(/class="vf-primary"/g)?.length, 1);
-  assert.match(html, /aria-pressed="true"[^>]*>Vigilancia</);
+  assert.match(html, /aria-current="page"><span class="vf-step-n">05<\/span><span class="vf-step-text"><span class="vf-step-label">Vigilancia</, 'el paso de vigilancia es la página actual');
+  assert.equal(html.match(/aria-current="page"/g)?.length, 1);
   assert.ok(html.includes(report.fingerprint) && /Coincide con el contenido/.test(html));
   const leaked = buildWatchedCompany({ traps: true }).forbidden.filter(text => html.includes(text));
   assert.deepEqual(leaked, [], 'filtrados: ' + leaked.slice(0, 5).join(', '));
@@ -165,7 +166,8 @@ test('Verifica · informe de equivalencia: tabla por objeto, diferencias arriba 
   assert.ok(html.indexOf('Contactos: no llegaron') < html.indexOf('vf-pending') && html.indexOf('Contactos: ambiguos') > html.indexOf('vf-pending'));
   assert.equal(html.match(/class="vf-primary"[^>]*>Descargar informe de equivalencia</g)?.length, 1);
   assert.equal(html.match(/class="vf-primary"/g)?.length, 1);
-  assert.match(html, /aria-pressed="true"[^>]*>Migración</);
+  assert.match(html, /aria-current="page"><span class="vf-step-n">06<\/span><span class="vf-step-text"><span class="vf-step-label">Después del cierre</, 'el paso de después del cierre es la página actual');
+  assert.match(html, /<h1>Hay diferencias en 4 puntos; 2 más no se pueden concluir\.<\/h1>/, 'el veredicto es la conclusión');
   assert.equal(html.split(report.fingerprint).length - 1, 1, 'la huella del informe sale una sola vez');
   assert.ok(html.includes('la última del parte de vigilancia ' + report.closing.watch!.slice(0, 12)));
   assert.ok(!html.includes(report.closing.detail) && !html.includes(report.target.detail), 'los recuentos solo salen en la tabla');
@@ -207,5 +209,6 @@ test('Verifica · informe de equivalencia con el destino a medias: el resumen di
   const { report } = releaseEquivalence({ asOf: m.asOf, closing: m.closing, target, map: m.map, salt: m.salt, watch: m.watch });
   assert.equal(report.verdict, 'inconclusive');
   const html = renderEquivalence(report, { kind: 'opened', name: 'equivalencia.json' });
-  assert.match(html, /No se puede concluir\. Exportación parcial o muestra en: contacts\./);
+  assert.match(html, /<h1>No se puede concluir\.<\/h1>/);
+  assert.match(html, /class="vf-lede">[^<]*Exportación parcial o muestra en: contacts\./, 'la frase de resumen dice por qué');
 });

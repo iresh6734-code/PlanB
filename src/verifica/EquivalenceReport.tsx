@@ -5,7 +5,7 @@
 import React from 'react';
 import { equivalenceToJson, OBJECT_LABEL, VERDICT_TEXT, verifyEquivalenceReport, type EquivalenceFinding, type EquivalenceReport } from '../../shared/verifica/equivalence.js';
 import { day, downloadJson, short } from './documents.js';
-import { Fingerprint, Masthead, Refs, type ReportOrigin } from './Masthead.js';
+import { Fingerprint, Frame, Refs, type ReportOrigin } from './Masthead.js';
 
 const TITLE = 'Informe de equivalencia de la migración';
 const plural = (n: number, one: string, many: string) => n + ' ' + (n === 1 ? one : many);
@@ -32,12 +32,11 @@ export function EquivalenceReportView({ report, origin, onOpen, openError }: { r
   const tail = confirmed.length > 0
     ? ' en ' + plural(confirmed.length, 'punto', 'puntos') + (pending.length > 0 ? '; ' + pending.length + ' más ' + (pending.length === 1 ? 'no se puede concluir' : 'no se pueden concluir') : '')
     : pending.length > 0 ? ': ' + plural(pending.length, 'punto queda abierto', 'puntos quedan abiertos') : '';
-  const lede = 'Cierre del ' + day(report.closing.at) + ', destino exportado el ' + day(report.target.exportedAt) + '. '
-    + VERDICT_TEXT[report.verdict] + tail + '.' + (partial ? ' ' + partial : '');
+  // El veredicto es la conclusión (h1); la frase de debajo dice qué se comparó y, si la hay, la exportación parcial.
+  const lede = 'Captura del cierre del ' + day(report.closing.at) + ' frente al destino exportado el ' + day(report.target.exportedAt) + '.' + (partial ? ' ' + partial : '');
   return (
-    <main className="vf-page">
-      <Masthead origin={origin} title={TITLE} lede={lede} onOpen={onOpen} openError={openError}
-        download={{ label: 'Descargar informe de equivalencia', run: () => downloadJson(equivalenceToJson(report), 'verifica-equivalencia-' + short(report.fingerprint) + '.json') }} />
+    <Frame origin={origin} current="migration" eyebrow={TITLE + ' · cierre del ' + day(report.closing.at)} title={VERDICT_TEXT[report.verdict] + tail + '.'} lede={lede} onOpen={onOpen} openError={openError}
+      download={{ label: 'Descargar informe de equivalencia', run: () => downloadJson(equivalenceToJson(report), 'verifica-equivalencia-' + short(report.fingerprint) + '.json') }}>
 
       <section className="vf-sheet" aria-labelledby="vf-objects">
         <h2 id="vf-objects">Objeto a objeto</h2>
@@ -101,15 +100,14 @@ export function EquivalenceReportView({ report, origin, onOpen, openError }: { r
         <Fingerprint label="Huella del informe" value={report.fingerprint} intact={intact} broken="No coincide: el informe se ha tocado" />
         <p className="vf-note">Los nombres no salen del lado del vendedor: cada referencia es un seudónimo con la misma sal que el parte de vigilancia. Lo que solo está en el destino lleva su propio seudónimo.</p>
       </footer>
-    </main>
+    </Frame>
   );
 }
 
 /** Mientras llega el ejemplo, que se carga aparte. */
 export function EquivalencePending({ origin, failed, onOpen, openError }: { origin: ReportOrigin; failed: boolean; onOpen?: (file: File) => void; openError?: string | null }) {
   return (
-    <main className="vf-page" aria-busy={!failed}>
-      <Masthead origin={origin} title={TITLE} lede={<span role="status">{failed ? 'No se pudo cargar el ejemplo. Recarga la página para intentarlo de nuevo.' : 'Preparando el ejemplo…'}</span>} onOpen={onOpen} openError={openError} />
-    </main>
+    <Frame origin={origin} current="migration" eyebrow={TITLE} title={failed ? 'No se pudo cargar el ejemplo' : 'Preparando el ejemplo…'} busy={!failed}
+      lede={<span role="status">{failed ? 'Recarga la página para intentarlo de nuevo.' : 'El informe de equivalencia de la empresa de ejemplo se carga aparte.'}</span>} onOpen={onOpen} openError={openError} />
   );
 }

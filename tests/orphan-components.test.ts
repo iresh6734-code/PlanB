@@ -8,8 +8,6 @@ import path from 'node:path';
 const KNOWN_ORPHANS: Record<string, string> = {
   'src/RescueCapsule.tsx': 'E4 aplazada: necesita el servidor aparte del Modo Rescate (scripts/demo-rescue-room.ts)',
   'src/RescueRoom.tsx': 'E4 aplazada: necesita el servidor aparte del Modo Rescate (scripts/demo-rescue-room.ts)',
-  'src/SourceReadingHistory.tsx': 'E3 aplazada: el diario de lecturas solo se llena leyendo proveedores externos',
-  'src/SourceStatusRow.tsx': 'E3 aplazada: falta la ruta de estado y requiere lecturas de proveedores externos',
 };
 
 const ROOT = path.resolve('.');

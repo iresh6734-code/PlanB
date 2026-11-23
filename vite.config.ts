@@ -3,9 +3,8 @@ import react from '@vitejs/plugin-react';
 
 const landingSource = 'src/landing/plan-b.html';
 const landingPage = 'plan-b.html';
-const billingSource = 'src/billing/facturacion.html';
-const billingPage = 'facturacion.html';
-const publicPages = new Map([[landingPage, landingSource], [billingPage, billingSource]]);
+// El prototipo de facturación se aparcó el 23/11/2026 (mega plan 2, fase C): queda en el commit 65a8e97.
+const publicPages = new Map([[landingPage, landingSource]]);
 
 export default defineConfig({
   plugins: [
@@ -37,6 +36,6 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
-    rollupOptions: { input: { app: 'index.html', landing: landingSource, billing: billingSource, verifica: 'verifica.html' } },
+    rollupOptions: { input: { app: 'index.html', landing: landingSource, verifica: 'verifica.html' } },
   },
 });

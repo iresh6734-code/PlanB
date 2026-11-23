@@ -12,7 +12,7 @@ import type { SourceStop } from '../shared/source-reading.js';
 // no publican nada ni provocan un rechazo no atendido. La limpieza (cancelar el cuerpo) se lanza sin esperarla: una limpieza no cooperativa no puede volver a bloquear la lectura. Los temporizadores y el
 // oyente de la señal del llamador se retiran siempre al terminar. Lo que se rechaza se cuenta en `blocked` con un código corto, sin copiar la URL ni cabeceras.
 export interface TransportOptions {
-  /** Origen exacto (`https://acme.zendesk.com`). Debe pasar `allowOrigin`. */
+  /** Origen exacto (`https://api.pipedrive.com`). Debe pasar `allowOrigin`. */
   origin: string;
   allowOrigin: (origin: string) => boolean;
   allowPath: (pathname: string) => boolean;

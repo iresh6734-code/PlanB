@@ -839,7 +839,7 @@ Archivos: `src/local-task-intents-client.ts`, `src/task-save-intent-strategy.ts`
 **Cómo se comprueba:**
 
 - `NODE_ENV=test node tools/safe-tests.mjs task-focus-outcomes independent-history-contracts`: 2 de 2 (H9a sale como «skipped» en este equipo).
-- Batería segura entera: 243 de 244. Solo falló `rescue-room`, que pasó sola 6 veces seguidas: es intermitente bajo carga y queda en la lista viva.
+- Batería segura entera: 243 de 244. Solo falló `rescue-room`, que pasó sola 6 veces seguidas: es intermitente bajo carga y queda en la lista viva. Repetida después de `a5b49c0`: 244 de 244.
 - Prueba de mutación hecha a mano y revertida con `git checkout`:
   - bajar el chip móvil a 40 px hace fallar «objetivo táctil de 44 px en .ltso-chip»;
   - añadir `button{color:red}` hace fallar «selector global: button».
@@ -892,6 +892,7 @@ Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
 - [ ] *(nuevo, fase 4)* Precio del informe de equivalencia: ¿aparte, dentro de la vigilancia o como cierre del encargo? Y si se repite tras cada corrección de la migración.
 - [ ] *(nuevo, fase 5)* Cuándo y con quién es la primera conversación de fuera: ¿una agencia de HubSpot, un abogado de compraventas o un search fund? Es la salida de la fase 5.
 - [ ] *(nuevo, fase 5)* Quién guarda la copia custodiada y la llave en el primer encargo, y quién firma el encargo por parte de Plan B.
+- [ ] *(nuevo, 23/11/2026, propuesta)* Límite 1 de «Verifica · Fase 3»: un goteo lento por debajo de los umbrales semanales solo sale en el parte al cierre, sin decir en qué semana. Se podría añadir a cada captura un aviso «desde la firma» la primera semana en que lo acumulado cruza el umbral. Cambia el formato del parte y su vista en `verifica.html`, y los umbrales dependen del contrato (abogados), así que no se hace sin tu visto bueno.
 
 **Abogados y seguro (antes de la fase 5, la venta; no bloquean construir)**
 
@@ -925,7 +926,7 @@ Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
 - [ ] *(nuevo, fase 4)* Una migración real de prueba: del portal de pruebas de HubSpot a una cuenta de prueba de otro CRM, con un mapa escrito a mano, para ver el informe con datos que no son de la empresa ficticia.
 - [x] ~~Un lector para el portal del cliente~~: hecho el 23/11/2026 con el HubSpot simulado (`--client-authorization`). La primera lectura real de un cliente va después de validar el lector en el portal de pruebas.
 - [x] *(nuevo, 23/11/2026; cerrado el mismo día)* Tres pruebas seguras que ya fallaban antes del aparcado (ver «Verifica · Batería segura completa»): ~~`task-focus-outcomes`~~ (huella con finales LF y contrato del CSS), ~~`independent-history-contracts`~~ (H9a se salta si falta la copia de `baseline075`; ver «Pruebas seguras · Huellas con CRLF, contrato del CSS de resultados y H9a») y ~~`task-intent-consumer-independent-322`~~ («CRM congelado · Arreglos de la sonda 322»).
-- [ ] *(nuevo, 23/11/2026)* `tests/rescue-room.test.ts` falló una vez dentro de la batería segura entera y pasó sola 6 veces seguidas. Es intermitente bajo carga. Si se repite, guardar la salida completa de `node tools/safe-tests.mjs` (el motivo sale debajo de la línea `FAIL`) y buscar la causa.
+- [ ] *(nuevo, 23/11/2026)* `tests/rescue-room.test.ts` falló una vez dentro de la batería segura entera y pasó sola 6 veces seguidas; la batería siguiente dio 244 de 244. Es intermitente bajo carga. Si se repite, guardar la salida completa de `node tools/safe-tests.mjs` (el motivo sale debajo de la línea `FAIL`) y buscar la causa.
 - [ ] *(nuevo, fase 0 · tanda 2)* Ejecutar las pruebas que abren procesos y aquí no corren: `api-inventory` (y `node tools/api/inventory.mjs --check`, que debe dar `docs/api.md` al día), `release-candidate-adversarial`, `release-candidate-completeness` y `candidate-integrity`.
 - [ ] *(nuevo, fase 0 · tanda 2)* Ajustar las pruebas de navegador que mezclan la App local con la de equipos:
   - `ui-redesign` y `full-workspace`;

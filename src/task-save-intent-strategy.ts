@@ -129,6 +129,8 @@ export function createTaskSaveIntentStrategy(options: TaskSaveIntentOptions): Ta
       async verify(request: VerifyRequest): Promise<Verification> {
         if (!request.attemptId) return { kind: 'unknown' };
         const result = await check({ attemptId: request.attemptId, context: request.context });
+        // El intento de otra tarea no acredita nada sobre esta.
+        if ((result.kind === 'read' || result.kind === 'unavailable') && (result.operation.taskId !== request.taskId || (result.kind === 'read' && result.record.id !== request.taskId))) return { kind: 'unknown' };
         if (result.kind === 'read') return { kind: 'read', evidence: result.evidence, record: result.record };
         if (result.kind === 'unavailable') return result.reason === 'task-missing' ? { kind: 'missing' } : { kind: 'unknown' };
         return result.kind === 'locked' ? { kind: 'locked' } : result.kind === 'context-changed' ? { kind: 'context-changed' } : { kind: 'unknown' };

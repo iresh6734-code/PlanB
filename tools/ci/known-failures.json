@@ -1,6 +1,6 @@
 {
   "description": "Fallos conocidos de la batería unitaria con NODE_ENV=test. Cada uno con causa y responsable; se retira en cuanto pasa. Ver tools/ci/README.md.",
-  "updated": "2026-11-22",
+  "updated": "2026-11-23",
   "failures": [
     {
       "file": "tests/continuity-evidence-mount.test.ts",
@@ -57,24 +57,6 @@
       "cause": "Cuenta las carpetas rescue106-* de todo el directorio compartido tests/.tmp: el 14/11 había 133 restos de ejecuciones anteriores (desde el 02/11) y otras ejecuciones en paralelo crean más, así que el recuento no coincide. Falla igual sin los cambios del 14/11; pasa o falla según los restos y lo que otros procesos creen a la vez, por eso va marcada como inestable. Arreglo propuesto: comparar solo las carpetas que crea la propia prueba.",
       "owner": "Claude (CLAUDE-RESCUE-KIT-116, sin sesión activa)",
       "flaky": true
-    },
-    {
-      "file": "tests/task-intent-consumer-independent-322.test.ts",
-      "name": "322 · abortar dentro de onDispatch impide el POST, el escritor y el historial",
-      "cause": "Sonda independiente de CODEX-A4-CONSUMER-REVIEW-322 sobre el cliente A4: aborto dentro de onDispatch, 401 tras vencer la consulta y verificación con el intento de otra tarea. Documenta defectos abiertos.",
-      "owner": "Claude A (CLAUDE-A4-CLIENT-STRATEGY, devuelta por Codex)"
-    },
-    {
-      "file": "tests/task-intent-consumer-independent-322.test.ts",
-      "name": "322 · el adaptador no verifica una tarea con el intento válido de otra",
-      "cause": "Sonda independiente de CODEX-A4-CONSUMER-REVIEW-322 sobre el cliente A4: aborto dentro de onDispatch, 401 tras vencer la consulta y verificación con el intento de otra tarea. Documenta defectos abiertos.",
-      "owner": "Claude A (CLAUDE-A4-CLIENT-STRATEGY, devuelta por Codex)"
-    },
-    {
-      "file": "tests/task-intent-consumer-independent-322.test.ts",
-      "name": "322 · un 401 real tras vencer la consulta anterior no bloquea la sesión nueva",
-      "cause": "Sonda independiente de CODEX-A4-CONSUMER-REVIEW-322 sobre el cliente A4: aborto dentro de onDispatch, 401 tras vencer la consulta y verificación con el intento de otra tarea. Documenta defectos abiertos.",
-      "owner": "Claude A (CLAUDE-A4-CLIENT-STRATEGY, devuelta por Codex)"
     }
   ]
 }

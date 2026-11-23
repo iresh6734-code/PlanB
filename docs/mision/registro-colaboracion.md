@@ -790,6 +790,32 @@ Sin interfaz: solo una prueba y una compilación de medida. En las tandas del ap
 - `NODE_ENV=test node tools/safe-tests.mjs`: 241 de 244; fallan solo los tres que ya fallaban antes del aparcado.
 - `npx tsc --noEmit -p tsconfig.json`: 0 errores.
 
+## CRM congelado · Arreglos de la sonda 322 · GitHub Copilot
+
+### Reserva · antes de editar
+
+23/11/2026, 15:25 Europe/Madrid. La usuaria: «continua haciendo cosas y mejorando, sin romper reglas». Lo congelado solo recibe arreglos (plan, «Destinos»), y estos son tres defectos abiertos que documenta `tests/task-intent-consumer-independent-322.test.ts` y que están en `tools/ci/known-failures.json`:
+
+1. Si la puerta `onDispatch` cancela la señal, el cliente responde «no enviado», pero el POST sale igualmente y el servidor escribe.
+2. El 401 de una consulta que ya había vencido dispara `planb:locked` y bloquea una sesión nueva.
+3. `verify` da por buena la lectura de un intento de otra tarea.
+
+Archivos: `src/local-task-intents-client.ts`, `src/task-save-intent-strategy.ts` y `tools/ci/known-failures.json`. Sin cambios de interfaz visible. Pruebas en proceso con `NODE_ENV=test`.
+
+### Hecho · 23/11/2026
+
+- **`src/local-task-intents-client.ts` (`exchange`):**
+  - Tras cruzar la puerta `onDispatch`, si la señal ya se canceló (o venció el plazo), no se entrega la petición al transporte. Antes respondía «no enviado» y el POST salía igual: el servidor escribía la tarea y la persona leía que no se había guardado.
+  - El evento `planb:locked` solo sale si el 401 llega mientras alguien espera la respuesta. El 401 tardío de una consulta vencida ya no bloquea una sesión nueva.
+- **`src/task-save-intent-strategy.ts` (`asSaveStrategy().verify`):** si el intento leído es de otra tarea, o el registro leído no es la tarea pedida, el resultado es `unknown`. Antes acreditaba el resultado de `task-2` para `task-1`.
+- **`tools/ci/known-failures.json`:** fuera las tres entradas de la 322, que ya pasan; quedan 8, todas de otras pruebas.
+
+**Cómo se comprueba:**
+
+- `NODE_ENV=test node tools/safe-tests.mjs local-task-intents-client task-save-intent-strategy task-intent-consumer-independent-322`: 3 de 3. Antes del arreglo, la 322 fallaba en sus tres casos.
+- `npx tsc --noEmit -p tsconfig.json`: 0 errores.
+- `ci-compare` (que lee `known-failures.json`) abre procesos: va al ordenador personal, con las demás de ese tipo.
+
 ## Verifica · Pendientes (lista viva)
 
 Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
@@ -844,7 +870,7 @@ Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
 - [ ] *(nuevo, fase 4)* Revisión visual de «Migración» en `verifica.html`: escritorio y móvil (la tabla), tema claro y oscuro, la espera mientras carga el ejemplo, las tres pestañas con teclado y la impresión. Aquí solo está probado el HTML.
 - [ ] *(nuevo, fase 4)* Una migración real de prueba: del portal de pruebas de HubSpot a una cuenta de prueba de otro CRM, con un mapa escrito a mano, para ver el informe con datos que no son de la empresa ficticia.
 - [x] ~~Un lector para el portal del cliente~~: hecho el 23/11/2026 con el HubSpot simulado (`--client-authorization`). La primera lectura real de un cliente va después de validar el lector en el portal de pruebas.
-- [ ] *(nuevo, 23/11/2026)* Tres pruebas seguras que ya fallaban antes del aparcado (ver «Verifica · Batería segura completa»): `task-focus-outcomes` (CRLF en Windows: ¿normalizar los finales en la prueba o `.gitattributes` con `eol=lf` para esos archivos?), `independent-history-contracts` (sin la copia de `baseline075` aquí) y `task-intent-consumer-independent-322` (1 envío donde espera 0). Mirar en el ordenador personal si allí pasan.
+- [ ] *(nuevo, 23/11/2026)* Tres pruebas seguras que ya fallaban antes del aparcado (ver «Verifica · Batería segura completa»): `task-focus-outcomes` (CRLF en Windows: ¿normalizar los finales en la prueba o `.gitattributes` con `eol=lf` para esos archivos?), `independent-history-contracts` (sin la copia de `baseline075` aquí) y ~~`task-intent-consumer-independent-322`~~ (arreglada el 23/11/2026: «CRM congelado · Arreglos de la sonda 322»). Mirar en el ordenador personal si allí pasan las otras dos.
 - [ ] *(nuevo, fase 0 · tanda 2)* Ejecutar las pruebas que abren procesos y aquí no corren: `api-inventory` (y `node tools/api/inventory.mjs --check`, que debe dar `docs/api.md` al día), `release-candidate-adversarial`, `release-candidate-completeness` y `candidate-integrity`.
 - [ ] *(nuevo, fase 0 · tanda 2)* Ajustar las pruebas de navegador que mezclan la App local con la de equipos:
   - `ui-redesign` y `full-workspace`;

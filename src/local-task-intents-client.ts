@@ -79,17 +79,20 @@ function exchange(options: Exchange): Promise<Raw> {
   const { fetcher, url, init, timeoutMs, limit, signal, beforeSend } = options;
   if (signal?.aborted) return Promise.resolve({ got: false, cause: 'cancelled', status: null, dispatched: false });
   const controller = new AbortController();
-  let dispatched = false, timer: ReturnType<typeof setTimeout> | undefined, onAbort: (() => void) | undefined;
+  let dispatched = false, settled = false, timer: ReturnType<typeof setTimeout> | undefined, onAbort: (() => void) | undefined;
   const stop = new Promise<Raw>(resolve => {
-    timer = setTimeout(() => { resolve({ got: false, cause: 'timeout', status: null, dispatched }); controller.abort(); }, timeoutMs);
-    if (signal) { onAbort = () => { resolve({ got: false, cause: 'cancelled', status: null, dispatched }); controller.abort(); }; signal.addEventListener('abort', onAbort, { once: true }); }
+    timer = setTimeout(() => { settled = true; resolve({ got: false, cause: 'timeout', status: null, dispatched }); controller.abort(); }, timeoutMs);
+    if (signal) { onAbort = () => { settled = true; resolve({ got: false, cause: 'cancelled', status: null, dispatched }); controller.abort(); }; signal.addEventListener('abort', onAbort, { once: true }); }
   });
   const work = (async (): Promise<Raw> => {
     try { beforeSend?.(); } catch { return { got: false, cause: 'gate-closed', status: null, dispatched: false }; }   // la puerta se cruza en el mismo turno que la entrega al transporte
+    // Si la puerta canceló, ya se respondió «no enviado»: entregar la petición lo desmentiría.
+    if (settled || controller.signal.aborted) return { got: false, cause: 'cancelled', status: null, dispatched: false };
     let response: Response; dispatched = true;
     try { response = await fetcher(url, { ...init, signal: controller.signal }); } catch { return { got: false, cause: 'no-response', status: null, dispatched }; }
     if (response.status === 401) {
-      if (typeof window !== 'undefined') window.dispatchEvent(new Event('planb:locked'));
+      // Una respuesta que llega después del plazo o de la cancelación es de una consulta que ya nadie espera: no bloquea la sesión de ahora.
+      if (!settled && typeof window !== 'undefined') window.dispatchEvent(new Event('planb:locked'));
       if (response.body) void response.body.cancel().catch(() => undefined);
       return { got: true, status: 401, json: null };
     }

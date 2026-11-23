@@ -845,6 +845,31 @@ Archivos: `src/local-task-intents-client.ts`, `src/task-save-intent-strategy.ts`
   - añadir `button{color:red}` hace fallar «selector global: button».
 - `npx tsc --noEmit -p tsconfig.json`: 0 errores.
 
+## Verifica · Fase 5 · Revisión previa de la autorización (`--check-only`) · GitHub Copilot
+
+### Reserva · antes de editar
+
+23/11/2026, 16:40 Europe/Madrid. Sin interfaz: `scripts/verifica-hubspot.ts`, `tests/verifica-lectores.test.ts` y `docs/verifica-salir-a-vender.md`. Hasta ahora la autorización solo se comprobaba justo antes de pedir la credencial, el mismo día de la lectura. Un error en el JSON o un PDF distinto se descubría con el cliente delante.
+
+### Hecho · 23/11/2026
+
+- **`scripts/verifica-hubspot.ts`:** nueva opción `--check-only`, solo con `--client-authorization` y `--authorization-document`.
+  - Revisa la autorización con las mismas comprobaciones que el día de la lectura: forma, portal, fechas de Madrid, alcance y huella del documento.
+  - Dice quién autoriza, para qué encargo y cuántos días le quedan. Avisa si son menos de 7.
+  - No lee la credencial, no hace ninguna petición y no escribe nada.
+  - `--out` y `--record` pasan a ser opcionales con `--check-only`, para que valga la misma orden del día de la lectura añadiéndole la opción.
+  - Si algo no cuadra, sale con el código 2 y el mismo motivo que daría el día de la lectura (`EXPIRED`, `DOCUMENT_MISMATCH`, `WRONG_PORTAL`…).
+- **`docs/verifica-salir-a-vender.md`** («Autorización de lectura»): el paso previo con su orden.
+
+**Cómo se comprueba:**
+
+- `NODE_ENV=test node tools/safe-tests.mjs verifica-lectores`: el caso nuevo «--check-only revisa la autorización…» cubre:
+  - plazo largo, 2 días con aviso y último día;
+  - la misma orden con `--out` y `--record`;
+  - caducada, documento retocado, otro portal, sin autorización y sin documento.
+  En todos, la credencial, la red y la escritura no se tocan (`touched` vacío).
+- `npx tsc --noEmit -p tsconfig.json`: 0 errores.
+
 ## Verifica · Pendientes (lista viva)
 
 Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
@@ -983,7 +1008,7 @@ Decisiones pendientes:
 **Otros pendientes** que sí puede hacer un agente sin decisiones:
 
 1. ~~Sustituir la huella SHA-256 de `src/task-save-outcomes.css` en `tests/task-focus-outcomes.test.ts` por una aserción de comportamiento.~~ Hecho el 23/11/2026: ver «Pruebas seguras · Huellas con CRLF, contrato del CSS de resultados y H9a».
-2. Arreglar el arnés `auth-parent-harness` para que simule `useContinuityState`. Por esa carencia fallan `auth-parent` e `independent-interface-contexts`, igual en `HEAD` limpio, desde `607a835`.
+2. ~~Arreglar el arnés `auth-parent-harness` para que simule `useContinuityState`.~~ Ya no hace falta: el 23/11/2026 `auth-parent` e `independent-interface-contexts` pasan (2 de 2 con `node tools/safe-tests.mjs auth-parent independent-interface-contexts`); el arnés se ajustó en el aparcado del equipo.
 3. Ejecutar `tests/relay-rehearsal-mount.test.ts`. Lleva una aserción nueva de manifiesto sin `recovery-rehearsal`, y `tools/safe-tests.mjs` lo omite porque arranca procesos.
 4. Retirar o adaptar las pruebas de navegador de la antigua cola de Hoy: `tests/e2e/today-work-queue.spec.ts` y el bloque «Hoy» de `tests/e2e/independent-workspace-flows.spec.ts`. Buscan `.work-queue-count`, que ya no se monta.
 5. Revisión visual y geometría de B4.3 a B4.5, que no se hizo aquí. También quedan de B4.5 «Guardar vista» dentro de «Más» y las tarjetas móviles de dos líneas.

@@ -109,6 +109,13 @@ Sin una autorización válida, el lector no hace ni una petición. La autorizaci
 - La huella del documento sale con `Get-FileHash documento-firmado.pdf -Algorithm SHA256` (o `sha256sum`). Si alguien retoca el PDF, el lector se para.
 - Las fechas son días de Madrid; `validUntil` incluido. Una autorización caducada, de otro portal, con un campo mal escrito o con menos alcance que las cuatro partes no sirve.
 - El lector solo acepta una cuenta `STANDARD`: un portal de pruebas no pasa por el modo cliente, y uno real no pasa por el de pruebas.
+- **Antes del día de la lectura**, conviene comprobar que la autorización y el documento casan. Con `--check-only`, la orden revisa portal, fechas, alcance y huella, dice cuántos días le quedan y avisa si son menos de 7. No pide la credencial, no hace ninguna petición y no escribe nada:
+
+```
+npx tsx scripts/verifica-hubspot.ts --check-only --portal 12345678 --client-authorization autorizacion.json --authorization-document documento-firmado.pdf
+```
+
+El día de la lectura:
 
 ```
 <credencial por entrada estándar> | npx tsx scripts/verifica-hubspot.ts --portal 12345678 --client-authorization autorizacion.json --authorization-document documento-firmado.pdf --out captura-h0.json --record acta-h0.json

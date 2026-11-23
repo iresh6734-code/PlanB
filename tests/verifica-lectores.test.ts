@@ -379,3 +379,49 @@ test('Verifica · el script en modo cliente: sin autorización válida no hace n
   assert.equal(twice.code, 1, 'no sobrescribe un acta');
   assert.match(twice.err, /sin acta: no la uses/);
 });
+
+test('Verifica · --check-only revisa la autorización y el documento sin leer la credencial, sin red y sin escribir', async () => {
+  const files = new Map<string, string>([
+    ['larga.json', JSON.stringify(authorizationFor())], ['corta.json', JSON.stringify(authorizationFor({ validUntil: '2026-05-12' }))],
+    ['hoy.json', JSON.stringify(authorizationFor({ validUntil: '2026-05-10' }))], ['caducada.json', JSON.stringify(authorizationFor({ validUntil: '2026-05-09' }))],
+  ]);
+  const documents = new Map<string, Uint8Array>([['firmada.pdf', SIGNED], ['retocada.pdf', new TextEncoder().encode('%PDF-1.4 otro')]]);
+  const touched: string[] = [];
+  const run = async (argv: string[]) => {
+    let out = '', err = '';
+    const code = await runCli(argv, {
+      stdin: { isTTY: false, [Symbol.asyncIterator]() { touched.push('stdin'); throw new Error('no debe leer la credencial'); } },
+      out: s => { out += s; }, err: s => { err += s; }, now: () => new Date('2026-05-10T10:00:00Z'),
+      fetch: (async () => { touched.push('fetch'); throw new Error('no debe hacer peticiones'); }) as typeof fetch,
+      readText: async path => { const text = files.get(path); if (text === undefined) throw new Error('no existe'); return text; },
+      readBytes: async path => { const bytes = documents.get(path); if (bytes === undefined) throw new Error('no existe'); return bytes; },
+      writeNew: async path => { touched.push('write ' + path); },
+    });
+    return { code, out, err };
+  };
+  const check = (authorization: string, document = 'firmada.pdf', more: string[] = []) => ['--check-only', '--portal', PORTAL, '--client-authorization', authorization, '--authorization-document', document, ...more];
+
+  const long = await run(check('larga.json'));
+  assert.equal(long.code, 0, long.err);
+  assert.match(long.out, /Autorización válida para leer el portal 4400123 hoy \(2026-05-10\)/);
+  assert.match(long.out, /Encargo VF-2026-001 · autoriza Ana Ruiz \(Directora general, Cliente de prueba S\.L\.\)/);
+  assert.doesNotMatch(long.out, /renovación/);
+  assert.match((await run(check('corta.json'))).out, /quedan 2 días más\. Si la lectura no cabe en ese plazo, pide la renovación ya\./);
+  assert.match((await run(check('hoy.json'))).out, /hoy es el último día\./);
+  const sameLine = await run(check('larga.json', 'firmada.pdf', ['--out', 'captura.json', '--record', 'acta.json']));
+  assert.equal(sameLine.code, 0, 'la misma orden del día de la lectura, con --check-only, solo comprueba');
+
+  const refusals: [string[], RegExp][] = [
+    [check('caducada.json'), /EXPIRED/],
+    [check('larga.json', 'retocada.pdf'), /DOCUMENT_MISMATCH/],
+    [check('larga.json').map(a => a === PORTAL ? '999' : a), /WRONG_PORTAL/],
+    [['--check-only', '--portal', PORTAL, '--authorized-full-read', '--out', 'captura.json'], /--check-only revisa una autorización de cliente/],
+    [check('larga.json').filter(a => a !== '--authorization-document' && a !== 'firmada.pdf'), /--authorization-document/],
+  ];
+  for (const [argv, message] of refusals) {
+    const refused = await run(argv);
+    assert.equal(refused.code, 2, argv.join(' '));
+    assert.match(refused.err, message);
+  }
+  assert.deepEqual(touched, [], 'ni credencial, ni peticiones, ni archivos');
+});

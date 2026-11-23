@@ -21,10 +21,13 @@ import { buildReadRecord, checkReadAuthorization, madridDay, parseReadAuthorizat
 
 const USAGE = 'Uso: <credencial por entrada estándar> | npx tsx scripts/verifica-hubspot.ts --portal <ID> --out <captura.json> [--tax-property <propiedad>] [--customer-stages customer,evangelist] y además, '
   + 'para un portal de pruebas: --authorized-full-read [--previous <captura-anterior.json>] [--invoices <facturas.csv>] [--report <informe.json>]; '
-  + 'para el portal de un cliente: --client-authorization <autorizacion.json> --authorization-document <documento-firmado> --record <acta.json>';
+  + 'para el portal de un cliente: --client-authorization <autorizacion.json> --authorization-document <documento-firmado> --record <acta.json>. '
+  + 'Para revisar la autorización antes del día de la lectura, sin credencial ni red: npx tsx scripts/verifica-hubspot.ts --check-only --portal <ID> --client-authorization <autorizacion.json> --authorization-document <documento-firmado>';
 
 export interface CliArgs {
   mode: 'test' | 'client';
+  /** Solo comprueba la autorización contra el documento y la fecha: no lee la credencial, no hace peticiones y no escribe nada. */
+  checkOnly: boolean;
   portal: string; out: string; previous: string | null; invoices: string | null; report: string | null;
   taxProperty: string | null; customerStages: string[] | null;
   authorization: string | null; authorizationDocument: string | null; record: string | null;
@@ -32,12 +35,13 @@ export interface CliArgs {
 export class CliUsageError extends Error { constructor(message: string) { super(message); this.name = 'CliUsageError'; } }
 
 export function parseArgs(argv: string[]): CliArgs {
-  const args: CliArgs = { mode: 'test', portal: '', out: '', previous: null, invoices: null, report: null, taxProperty: null, customerStages: null, authorization: null, authorizationDocument: null, record: null };
+  const args: CliArgs = { mode: 'test', checkOnly: false, portal: '', out: '', previous: null, invoices: null, report: null, taxProperty: null, customerStages: null, authorization: null, authorizationDocument: null, record: null };
   let authorized = false;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i], next = () => { const v = argv[++i]; if (v === undefined || v.startsWith('--')) throw new CliUsageError('Falta el valor de ' + a + '.'); return v; };
     if (a === '--portal') args.portal = next();
     else if (a === '--authorized-full-read') authorized = true;
+    else if (a === '--check-only') args.checkOnly = true;
     else if (a === '--out') args.out = next();
     else if (a === '--previous') args.previous = next();
     else if (a === '--invoices') args.invoices = next();
@@ -50,12 +54,13 @@ export function parseArgs(argv: string[]): CliArgs {
     else throw new CliUsageError('Argumento no reconocido (posición ' + (i + 1) + '). La credencial no se pasa como argumento: va por la entrada estándar. ' + USAGE);
   }
   if (!/^\d{1,20}$/.test(args.portal)) throw new CliUsageError('Indica --portal con el ID numérico del portal. ' + USAGE);
-  if (!args.out) throw new CliUsageError('Indica --out con el archivo donde guardar la captura. ' + USAGE);
+  if (args.checkOnly && args.authorization === null) throw new CliUsageError('--check-only revisa una autorización de cliente: indica --client-authorization y --authorization-document.');
+  if (!args.out && !args.checkOnly) throw new CliUsageError('Indica --out con el archivo donde guardar la captura. ' + USAGE);
   if (args.authorization !== null) {
     if (authorized) throw new CliUsageError('Elige un modo: --authorized-full-read es para portales de pruebas y --client-authorization para el portal de un cliente.');
     if (!args.authorizationDocument) throw new CliUsageError('El modo cliente necesita --authorization-document: el documento firmado cuya huella está en la autorización.');
-    if (!args.record) throw new CliUsageError('El modo cliente necesita --record: el archivo donde guardar el acta de la lectura.');
-    if (resolve(args.record) === resolve(args.out)) throw new CliUsageError('La captura y el acta van en dos archivos distintos.');
+    if (!args.record && !args.checkOnly) throw new CliUsageError('El modo cliente necesita --record: el archivo donde guardar el acta de la lectura.');
+    if (args.record && args.out && resolve(args.record) === resolve(args.out)) throw new CliUsageError('La captura y el acta van en dos archivos distintos.');
     if (args.previous || args.invoices || args.report) throw new CliUsageError('En modo cliente el informe no se escribe aquí: sale por la sala limpia (scripts/verifica-sala-limpia.ts), con copia custodiada y llave aparte.');
     args.mode = 'client';
     return args;
@@ -103,7 +108,16 @@ export async function runCli(argv: string[], deps: CliDeps): Promise<number> {
     if (args.invoices) invoiceText = await readText(args.invoices);
     if (args.mode === 'client') {
       authorization = parseReadAuthorization(JSON.parse(await readText(args.authorization!)));
-      checkReadAuthorization(authorization, { portalId: args.portal, today: madridDay(now()), documentSha256: sha256Hex(await readBytes(args.authorizationDocument!)) });
+      const today = madridDay(now());
+      checkReadAuthorization(authorization, { portalId: args.portal, today, documentSha256: sha256Hex(await readBytes(args.authorizationDocument!)) });
+      if (args.checkOnly) {
+        const daysLeft = Math.round((Date.parse(authorization.validUntil + 'T00:00:00Z') - Date.parse(today + 'T00:00:00Z')) / 86_400_000);
+        deps.out(['Autorización válida para leer el portal ' + authorization.portalId + ' hoy (' + today + ').',
+          'Encargo ' + authorization.engagement + ' · autoriza ' + authorization.authorizedBy.name + ' (' + authorization.authorizedBy.role + ', ' + authorization.authorizedBy.company + ') · firmada el ' + authorization.signedOn + '.',
+          'Vale hasta el ' + authorization.validUntil + ' incluido: ' + (daysLeft === 0 ? 'hoy es el último día.' : daysLeft === 1 ? 'queda 1 día más.' : 'quedan ' + daysLeft + ' días más.') + (daysLeft < 7 ? ' Si la lectura no cabe en ese plazo, pide la renovación ya.' : ''),
+          'El documento firmado coincide con la huella. No se ha leído ninguna credencial, no se ha hecho ninguna petición y no se ha escrito nada.', ''].join('\n'));
+        return 0;
+      }
     }
     token = await readSecret(deps.stdin);
   } catch (e) {

@@ -1,4 +1,4 @@
-/* Kit de Relevo · estilos propios acotados a .rc (sin tocar estilos globales). Identidad de DESIGN.md: tinta oscura, azul de acción, blanco/gris. */
+/* Kit de Relevo · estilos propios acotados a .rc (sin tocar estilos globales). Identidad de docs/historial/DESIGN.md: tinta oscura, azul de acción, blanco/gris. */
 .rc { --ink: #19314f; --ink-2: #52627a; --line: #d9e1eb; --canvas: #f2f4f7; --card: #fffefd; --blue: #2858dc; --blue-soft: #e6edff; --ok: #216448; --ok-bg: #edf6f0; --warn: #835c1c; --warn-bg: #fff7e8; --err: #a2343f; --err-bg: #fff1f1;
   font: 14px/1.5 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; color: var(--ink); background: var(--canvas); min-height: 100vh; padding: 16px; box-sizing: border-box; max-width: 960px; margin: 0 auto; }
 .rc *, .rc *::before, .rc *::after { box-sizing: border-box; overflow-wrap: anywhere; }

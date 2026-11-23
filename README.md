@@ -1,49 +1,46 @@
-# Plan B CRM · v0.6.0
+# Plan B · Verifica
 
-Continuidad local para un operador, un portal HubSpot por carpeta y hasta 10.000 registros. Windows y Node >=24 para desarrollo. Producción autorizada exclusivamente en lectura; recuperación manual verificada. Candidata a piloto: no hay devolución auténtica de ensayo ni aceptación humana autónoma acreditadas.
+Plan B Verifica comprueba la cartera comercial de una empresa antes de que alguien la compre. Lee el CRM del vendedor sin modificarlo y entrega un informe con huella; después vigila hasta el cierre y verifica la migración al CRM del comprador. El análisis se hace en el lado del vendedor: al comprador solo le llegan cifras, seudónimos y huellas.
 
-La fuente 0.6 añade seguimiento comercial revisado con Gmail/Calendar/Docs/Sheets, archivos autorizados vinculados, importación con vista previa y ficha ampliada HubSpot. El ensayo local es ficticio; los adaptadores de cuentas reales y la infraestructura GCP todavía necesitan despliegue y aceptación. Conserva la continuidad, el aislamiento de equipos y la copia local de las fases anteriores. «Trabajar» tiene submenú contextual e Integraciones sirve logos oficiales desde la propia app.
+Estado a 23/11/2026: el motor está probado con empresas ficticias (fases 1 a 4). No se ha validado con datos reales ni hay cliente. El CRM local de siempre sigue en este repositorio, **congelado**: solo recibe arreglos y acabará siendo la «Copia de trabajo» de Verifica.
 
-Documentación vigente: [guía v0.6.0](LEEME-v0.6.0.md), [nube y coste previsto](infrastructure/gcp/README.md), [hoja de ruta 1.0](PLAN-1.0.md), [contexto y pendientes](CONTEXTO-PROYECTO.md), [uso de modelos durante el desarrollo](MODELOS-TRABAJO.md). Las guías anteriores conservan sus evidencias históricas.
+## Documentos que mandan
 
-## Desarrollar en otro ordenador autorizado
+- **Plan vigente:** «Plan B · Mega plan 2» (Claude Docs, 23/11/2026), que sigue al [plan de producto](docs/plan-b-verifica-plan-de-producto.md).
+- **Qué falta para vender:** [Verifica · Salir a vender](docs/verifica-salir-a-vender.md).
+- **Contexto y decisiones:** [CONTEXTO-PROYECTO.md](CONTEXTO-PROYECTO.md).
+- **Lo pendiente:** la lista viva en [docs/mision/registro-colaboracion.md](docs/mision/registro-colaboracion.md).
+- **Cómo colaboran los agentes:** [AGENTS.md](AGENTS.md), [CLAUDE.md](CLAUDE.md) y [COORDINACION.md](COORDINACION.md).
+- **Qué es el producto:** [PRODUCT.md](PRODUCT.md).
+- Las guías, planes y análisis antiguos están en [docs/historial](docs/historial/README.md).
 
-En un clon completo de GitHub, el código está en `co/work/plan-b-crm/`. Esta copia local de trabajo puede tener directamente esa carpeta como raíz; comprueba dónde está `package.json`.
+## Usar Verifica
+
+La página `verifica.html` enseña el informe, el parte de vigilancia y el informe de equivalencia, y comprueba sus huellas sin conexión. Los documentos los generan los scripts, sin red y sin sobrescribir nada:
 
 ```powershell
-git clone https://github.com/iresh6734-code/PlanB.git
-cd PlanB/co/work/plan-b-crm
-npm ci
-npm run build
-npm start
+npx tsx scripts/verifica-ejemplo.ts <carpeta>
 ```
 
-Para recibir cambios en un clon que conserve el historial del remoto:
+`scripts/verifica-ejemplo.ts` escribe la empresa ficticia, y su cabecera da las órdenes exactas de los pasos siguientes: `verifica-sala-limpia.ts`, `verifica-vigilancia.ts` y `verifica-migracion.ts`. Con un argumento que no reconoce, cada script responde con su forma de uso. Las cinco pruebas que deciden si Verifica sale fuera:
 
 ```powershell
-git status
-git pull --ff-only origin main
-npm ci
-npm run build
+npx tsx scripts/verifica-pruebas.ts
 ```
 
-Para compartir tus cambios, revisa primero el diff y los archivos que vas a incluir; después haz commit y push desde la rama en la que trabajes. No copies estos comandos a ciegas sobre un checkout con historial distinto o trabajo pendiente; consérvalo y concilia antes. No uses force push para sincronizar ordenadores.
+## El CRM congelado
 
-GitHub sincroniza código y documentación mediante commits/push/pull. **No sincroniza automáticamente carpetas, bases SQLite, capturas, contraseñas, sesiones o cambios CRM locales.** Para recuperar datos de Plan B en otra instalación usa una exportación cifrada y la contraseña por separado; DPAPI es propio del usuario Windows. Cada instalación debe tener su configuración autorizada.
+`ABRIR PLAN B.cmd` arranca el CRM de este ordenador (4331) con su copia existente y lo abre. No crea copias vacías ni carga muestras.
 
-El ordenador corporativo original queda fuera del alcance. No usar sus perfiles, datos, credenciales, servicios ni agentes.
-
-## Validar
+## Desarrollar y validar
 
 ```powershell
+npm ci
 npm test
+npm run test:safe
 npm run build
-npm run test:e2e
 ```
 
-E2E usa Edge por defecto. Para Chrome instalado, define `PLANB_PLAYWRIGHT_EXECUTABLE` con su ruta. Las pruebas levantan instancias aisladas en 4337 y 4341 con red externa bloqueada. No apuntarlas a una instalación operativa.
+`npm run test:safe` es la batería sin servidores ni navegador. `npm run build` escribe `dist/` y `build/`: no lo ejecutes sobre una instalación en uso. Las pruebas de navegador (`npm run test:e2e`) levantan instancias aisladas con la red externa bloqueada.
 
-Las carpetas `delivery/`, `data/`, instalaciones locales, dependencias y evidencias temporales no forman parte de la fuente publicada. Los archivos históricos en `co/outputs/` no son entregas de v0.3.0. Publicar código no actualiza ni reinicia instalaciones abiertas.
-
-
-Revisión UX del 27/10/2026: [arquitectura de pantallas, alternativas y validación](UX-ARQUITECTURA-0.6.md), [sistema de diseño](DESIGN.md). Demo actual de esta revisión en `http://127.0.0.1:4331/` y equipo `http://127.0.0.1:4332/team?view=commercial`. Las instalaciones anteriores no se actualizan automáticamente. Se añade conciliación asistida de resultados inciertos sin repetir acciones; aceptación remota de 0.5/0.6 pendiente.
+GitHub sincroniza código y documentación. **No sincroniza carpetas de datos, bases SQLite, capturas, contraseñas ni sesiones.** Antes de un `git pull`, comprueba que el árbol está limpio y usa `--ff-only`. El ordenador corporativo original queda fuera del alcance.

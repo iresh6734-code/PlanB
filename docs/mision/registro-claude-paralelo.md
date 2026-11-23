@@ -240,3 +240,53 @@ Mismo método exacto: su contenido va al final de `planb-ui.css` (la hoja que se
 - `verifica.css` reescrita: serifa del sistema para titulares y cifras, rojo solo para lo que se sale de lo normal; claro y oscuro. No se descargan fuentes (decisión 17/11): la página sigue funcionando sin conexión.
 
 **Comprobación.** `verifica-pagina` adaptada en tres puntos (navegación con `aria-current`, veredicto en el `h1`, motivo de la exportación parcial en la frase de resumen) y `verifica-resumen` nueva: 83/83 junto con `color-guard`, `css-unused`, `design-tokens`, `ui-copy` y `bundle-budget`. `tsc` sin errores. `scripts/verifica-pruebas.ts`: fases 1 a 4 pasan; la 0 sigue pendiente de declarar. Capturas con Chromium sin interfaz a 1440 y 390 px y en oscuro, sin errores en consola ni desbordes, con `tests/.tmp/verifica-vista/shots.mts`. Vista previa sin recorrer las instalaciones: configuración `verifica` de `.claude/launch.json` (`tests/.tmp/verifica-vista/vite.config.ts`). Sin commit.
+
+## 23/11/2026 · Verifica · Lo pendiente que se podía cerrar en este ordenador
+
+Aquí sí se pueden abrir procesos y un navegador sin interfaz. Para la lista viva de `registro-colaboracion.md` (la coordina Copilot), se pueden tachar:
+
+- **Subir `shared/billing-check.ts`:** hecho en `65a8e97`.
+- **Recorridos a mano de las fases 2, 3 y 4:** hechos con `scripts/verifica-ejemplo.ts`, `verifica-sala-limpia.ts`, `verifica-vigilancia.ts` y `verifica-migracion.ts` en `tests/.tmp/verifica-recorrido`. Los tres terminan con salida 0.
+- **Revisión visual de `verifica.html` con documentos abiertos (fases 2, 3 y 4):** `tests/.tmp/verifica-vista/recorrido.mts` da 40 de 40, en escritorio, móvil y oscuro:
+  - el informe, el parte y la equivalencia abiertos desde archivo, con sus huellas;
+  - la copia custodiada, que se acepta con su llave y se rechaza con otra, y la llave se borra del campo;
+  - el teclado, con el orden de foco y el foco visible, también en «Abrir un informe»;
+  - la impresión, sin botones, pasos ni conmutador.
+  
+  En móvil, la tabla de la equivalencia desbordaba la página. Arreglado en `verifica.css` con `grid-template-columns: minmax(0, 1fr)` en `.vf-page`.
+- **Pruebas que abren procesos:** ejecutadas con `NODE_ENV=test`, ninguna lanza PowerShell.
+  - `api-inventory`, `independent-return-barriers` y `task-revision-*`: 188 pruebas. Una fallaba porque `task-revision-generation-launcher` aún mandaba `prompt` a `/api/generate`, que desde la tanda 3 es estricto. Corregida la prueba.
+  - `docs/api.md` regenerado: 96 rutas, sin las del Laboratorio. `--check` al día.
+  - `release-candidate-adversarial`, `release-candidate-completeness` y `candidate-integrity`: 46 de 47. Cuatro las rompió la tanda 2: los recuentos 17/14 y «seis procesos esbuild» con `team.mjs`. Ahora usan `runtime.mjs`, los recuentos 14/11 y `BUNDLES.length`. La que queda («0 · la herramienta probada es exactamente la presentada», huella de REL046) ya fallaba antes del aparcado: comprobado ejecutando las mismas pruebas sobre `archivo/aparcado-2026-11-22`.
+
+**Sigue abierto:** las pruebas de navegador que mezclan la app de equipos, las dependencias de la app de equipos, las herramientas que nombran 4334, `ABRIR PLAN B.cmd`, la tabla `usage`, la declaración de la fase 0 y todo lo que necesita cuentas reales o abogados. Todo eso está ordenado en el mega plan 2 (Claude Docs, «Plan B · Mega plan 2», 23/11/2026), fases A a F.
+
+## 23/11/2026 · Mega plan 2 · Fases A y C
+
+Plan en Claude Docs, «Plan B · Mega plan 2». La usuaria pidió seguirlo «usando lo que mejor encaje»: se toman como decididas sus recomendaciones. El CRM congelado será la «Copia de trabajo» de Verifica, la fase 0 se declara al terminar la E y se quitan las dependencias de lo aparcado.
+
+**Fase A · Cerrar el aparcado**
+
+- Raíz con 6 documentos: `README`, `AGENTS`, `CLAUDE`, `COORDINACION`, `CONTEXTO-PROYECTO` y `PRODUCT`. Los otros 22 pasan a `docs/historial/` con `git mv`, con su propio `README`. `scripts/package-demo.ts` lee de allí la guía del kit (`LEEME-v0.6.0.md`) y los documentos que empaqueta. Se actualizan el enlace del archivo en `CONTEXTO-PROYECTO.md` y los comentarios que citaban `DESIGN.md`.
+- `README.md` y `PRODUCT.md` reescritos para Verifica, con el esquema de `PRODUCT` intacto.
+- `ABRIR PLAN B.cmd` llamaba a `start-google-pilot.cjs`, que ya no existe, y abría `4334/team`. Ahora arranca el CRM con `scripts/start-full-workspace.cjs` y abre `127.0.0.1:4331`. El lanzador ya no pasa `PLANB_TEAM_ORIGIN`, que el servidor no lee desde la tanda 2. `full-workspace-launcher` da 7/7.
+- Fuera: `Dockerfile.team`, `.dockerignore`, `infrastructure/gcp` y `scripts/audit-ui.mjs`, todos de la app de equipos y presentes en `archivo/aparcado-2026-11-22`. `workspace-preflight` conserva el servicio `pilot`, que solo se usa si se elige.
+- Pruebas de navegador:
+  - Retiradas porque solo prueban la app de equipos: `ui-redesign`, `full-workspace` y los casos 2 y 3 de `v6`.
+  - `continuity-home-hub` se queda (se retiró por error y se restauró: `tests/continuity-home-hub.test.ts` la lee). Su recorrido en navegador falla desde el 13/11, porque el rediseño Faro quitó de `App.tsx` el ancla del parche. No tiene que ver con el aparcado.
+  - Ajustadas `local-integrations` (sin Google ni espacio de equipo), `v6` caso 1 (el logo de HubSpot) y `preparation-navigation:180`.
+  - Con `node tools/e2e/isolated.mjs`: `local-integrations` y `v6` dan 14/14. Las 9 de `preparation-navigation` exigen la configuración privada `private117` y no corren aquí.
+- Arreglo real que encontró la prueba de diseño: el botón «Actualizar resultado» de la comprobación de lectura medía menos de 32 px de alto en escritorio (`hubspot-read-check.css`).
+- **Pendiente, lo tiene la usuaria:** el sistema de permisos no deja ejecutar `npm uninstall`. Comando: `npm uninstall @azure/msal-node @firebase/app @firebase/auth @google-cloud/tasks @microsoft/agents-copilotstudio-client firebase-admin google-auth-library pg @electric-sql/pglite @types/pg`. `git grep` confirma que nada vivo los importa.
+
+**Fase C · Una pieza para cada cosa**
+
+- **Build roto en GitHub desde `65a8e97`:** `src/billing/BillingCheck.tsx` importaba `billing-check.css`, que nunca existió. El prototipo de facturación (producto para climatización) se aparca: `src/billing`, `shared/billing-check.ts`, su prueba y `scripts/build-billing-check.mjs` salen, el plan del piloto pasa a `docs/historial/` y `vite.config.ts` deja de compilarlo. `vite build` vuelve a funcionar (comprobado en `tests/.tmp/vite-check`). Todo sigue recuperable en `65a8e97`.
+- **Retirados:**
+  - el motor de capturas genérico (`crm-capture-contract` y `crm-capture-runner`), que solo usaban sus pruebas;
+  - Zendesk y las dos pantallas que no estaban conectadas, `SourceReadingHistory` y `SourceStatusRow`, junto con su diario, su estado y sus pruebas.
+- **Se queda el lector de Pipedrive** (`pipedrive-source`, `source-reading`, `source-read-transport`), candidato a lector del CRM del comprador en la fase D.
+- **La «captura retenida» no estaba duplicada:** `shared/verifica/rules.ts` y `watch.ts` ya usan `assessShrink` de `capture-quarantine`. Corregido en el plan.
+- **Comprobación:** `tsc` limpio; guardas, Pipedrive, Verifica y `api-client-routes` dan 109/109; `docs/api.md` al día, con 96 rutas.
+
+**Siguiente:** fase D, ya diseñada en el plan, por cortes. El primero es el encargo y las fuentes desde archivos, con las mismas huellas que los scripts.

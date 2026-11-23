@@ -9,7 +9,7 @@ export const isWideField = (field: Field, displayField?: string) =>
   (field.key === displayField && field.key !== 'firstname') || field.type === 'multiselect' || (field.type === 'text' && LONG_TEXT.test(field.key + ' ' + field.label));
 
 /** K7 · El estado de la ficha, escrito como sello en su cabecera: la etapa de una oportunidad, el estado de una tarea
- *  o la fase de un cliente o una empresa. El tono sigue DESIGN.md: lacre si venció, ocre si vence en ≤ 7 días,
+ *  o la fase de un cliente o una empresa. El tono sigue docs/historial/DESIGN.md: lacre si venció, ocre si vence en ≤ 7 días,
  *  verde botella si está ganada o hecha y neutro en lo demás. Se calcula con los valores del formulario, así que cambia
  *  en cuanto se cambia la etapa (aunque no se haya guardado). */
 export type StampTone = 'danger' | 'warn' | 'ok' | 'neutral';

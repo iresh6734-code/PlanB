@@ -1,11 +1,10 @@
-// Restore the existing CRM on this computer. The commercial pilot keeps its own service and data.
+// Restore the existing CRM on this computer. The team app (commercial pilot, 4334) was parked on 22/11/2026: the CRM runs alone.
 const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
 const { setTimeout: delay } = require('node:timers/promises');
 const CRM_ORIGIN = 'http://127.0.0.1:4331';
-const PILOT_ORIGIN = 'http://localhost:4334';
 const STARTUP_TIMEOUT_MS = 60_000;
 const PROBE_TIMEOUT_MS = 1_000;
 function workspacePaths(root) {
@@ -73,14 +72,14 @@ function launchRuntime(runtime, data, port) {
   const log = fs.openSync(path.join(runtime, 'crm.log'), 'a');
   try {
     return spawn(process.execPath, ['--require', path.join(runtime, 'block-external.cjs'), path.join(runtime, 'server.mjs')], {
-      cwd: runtime, env: { ...cleanEnvironment(process.env), PLANB_PORT: port, PLANB_DATA_DIR: data, PLANB_TEAM_ORIGIN: PILOT_ORIGIN },
+      cwd: runtime, env: { ...cleanEnvironment(process.env), PLANB_PORT: port, PLANB_DATA_DIR: data },
       windowsHide: true, detached: true, stdio: ['ignore', log, log],
     });
   } finally { fs.closeSync(log); }
 }
 async function ensureWorkspace({ runtime, data, origin, timeout = STARTUP_TIMEOUT_MS }) {
   const { port } = new URL(origin);
-  const result = { ok: true, crm: origin, commercial: PILOT_ORIGIN + '/team' };
+  const result = { ok: true, crm: origin };
   let existing = await inspectHealth(origin);
   if (existing.kind === 'unreachable') {
     // Windows can briefly reset a new connection while tearing down the previous process.
@@ -137,5 +136,5 @@ async function start() {
   }
   return ensureWorkspace({ runtime, data, origin: CRM_ORIGIN });
 }
-module.exports = { CRM_ORIGIN, PILOT_ORIGIN, workspacePaths, cleanEnvironment, matchesExisting, ensureWorkspace, start };
+module.exports = { CRM_ORIGIN, workspacePaths, cleanEnvironment, matchesExisting, ensureWorkspace, start };
 if (require.main === module) start().then(result => console.log(JSON.stringify(result))).catch(error => { console.error(error.message); process.exitCode = 1; });

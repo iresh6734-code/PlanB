@@ -20,4 +20,4 @@ html body .hrc p{margin:0;color:var(--text-2)}
 html body .hrc p.hrc-status{color:var(--text-1)}
 html body .hrc p.hrc-issue{color:var(--warning)}
 html body .hrc-actions{margin-top:8px}
-@media(min-width:601px){html body .hrc button.button{min-height:var(--control-h)}html body .hrc button.text-button{min-height:0}}
+@media(min-width:601px){html body .hrc button.button{min-height:var(--control-h)}html body .hrc button.text-button{min-height:32px}}

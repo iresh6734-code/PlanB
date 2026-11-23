@@ -1,28 +1,20 @@
 # Product
 
-Actualización de fuente, 28/10/2026: asistente de borradores Ollama integrado en equipo local, apagado por defecto y pendiente de aceptación con modelo real. Solo contexto visible revisado, sin herramientas, claves o acciones externas. Microsoft bloqueado en el piloto por el límite corporativo del usuario. Esta entrega no se ha desplegado en el runtime abierto para no reiniciar su bóveda Windows; los resultados ficticios no acreditan generación real ni autonomía. Ver `AGENTE-IA-LOCAL.md`.
+Actualización del 23/11/2026: el producto es **Plan B Verifica**. Lo anterior (copia de HubSpot para seguir trabajando sin conexión) es el CRM congelado: sigue en el repositorio, solo recibe arreglos y acabará siendo la «Copia de trabajo» de Verifica (mega plan 2, fase E). La descripción del 28/10/2026 está en el historial de git de este archivo.
 <!-- impeccable:product-schema 1 -->
 ## Platform
-web
+web (página `verifica.html`, local y sin conexión) y scripts de Node sin red; el CRM congelado es una app local con servidor propio.
 ## Users
-Un responsable local de una pyme usuaria de HubSpot. Agencias de HubSpot preparan, prueban y supervisan la continuidad.
+Quien compra una empresa B2B pequeña o mediana (search funds, fondos que integran pymes, asesores de compraventas y abogados) y quien la vende y quiere llegar con la cartera comprobada. Un operador de Plan B prepara las capturas en el equipo del vendedor.
 ## Product Purpose
-Conservar una copia utilizable, demostrar sus procesos mediante un simulacro y devolver cambios revisados cuando el CRM vuelva a estar disponible.
+Comprobar la cartera comercial de una empresa antes de comprarla, sin entregar datos personales al comprador. Vigilarla entre la firma y el cierre, y verificar después la migración al CRM del comprador.
 ## Operating Context
-Windows, una instalación y un portal por carpeta. Copias actualizadas mientras el ordenador está encendido. Trabajo desconectado sin HubSpot ni IA. La preparación, las credenciales y la devolución requieren red explícitamente habilitada.
+Windows, Node 24. El análisis se hace en el lado del vendedor, en su portátil o en uno neutral: lectura de solo lectura del CRM (HubSpot hoy), libro de facturas en CSV (Holded) y declaraciones del vendedor. Al comprador solo le llegan cifras, seudónimos y huellas; la copia completa va cifrada a quien la custodia y la llave por separado.
 ## Capabilities and Constraints
-Mantener React, Vite, Fastify, Node 24 y SQLite. Cuatro objetos: clientes, empresas, oportunidades, tareas. Un operador. 10000 registros totales en piloto. Versiones candidatas nunca inutilizan la activa. Sin campañas, borrados remotos automáticos ni multiusuario.
-
-La candidata 0.3.0 admite producción STANDARD únicamente en lectura y recuperación manual comprobada. La IA queda deshabilitada para datos reales. Clave propia y consentimiento explícito por instalación; datos reales solo se exportan/restauran cifrados y con contraseña local previa. El runtime independiente no contiene conectores. El primer piloto autónomo y la devolución auténtica de ensayo necesitan aceptación con evidencia; no están acreditados por las pruebas sintéticas.
+Seis reglas con umbrales fijos (`shared/verifica/rules.ts`): cartera creada o inflada en la ventana de venta, fechas aplazadas, ganadas sin factura, concentración por comercial, borrado en bloque y renovación declarada. Cada cifra lleva su base: observado, declarado o sin comprobar. Una barrera impide que salgan nombres, correos, NIF o IDs del CRM. Huella SHA-256 de cada documento, comprobable por cualquiera sin los datos; la huella prueba que no se ha tocado, no quién lo emitió. Sin IA, sin nube y sin varias empresas a la vez hasta tener clientes.
 ## Brand Commitments
-La fuente 0.4 añade Hoy, Agentes e Integraciones y propuestas de seguimiento en simulación para datos ficticios. El motor usa reglas, conserva artefactos separados del CRM y exige revisión antes de simular. No llama a IA ni conecta Google Workspace. Exportación y custodia identifican la revisión exacta; los límites de producción siguen vigentes.
-
-La 0.5 prepara un servicio de equipos independiente: roles, empresas aisladas mediante PostgreSQL/RLS, trabajos persistentes, OAuth HubSpot de lectura y vinculación de réplica local con revisiones/conflictos. La demo utiliza dos empresas ficticias y PostgreSQL embebido; identidad gestionada y despliegue GCP requieren aceptación real. El CRM local sigue siendo un operador/portal por carpeta; la réplica no reemplaza sus datos y no devuelve cambios a HubSpot. Infraestructura y estimación se revisan antes de contratar.
-
-Nombre Plan B, español, consola de operaciones de una oficina comercial (identidad «Consola de operaciones», ver DESIGN.md): bastidor grafito para el menú, mesa gris lisa, bahías y tiras claras, cobalto para actuar. Conservar tablas legibles y edición lateral de la demo.
-
-La fuente 0.6 añade un espacio comercial con borradores y aprobaciones ligadas a la revisión, tareas internas, adaptadores Google de permisos acotados y evidencia de resultados. La demo no accede a cuentas. Documentos autorizados vinculados y Sheets con vista previa amplían el contexto comercial; HubSpot mantiene lectura. Una aceptación de Gmail no se presenta como entrega y las operaciones inciertas no se repiten automáticamente. El submenú de Trabajar y los logos oficiales conservan el lenguaje visual aprobado.
+Nombre Plan B Verifica, en español. Dirección visual «Dictamen» (23/11/2026): un informe pericial, fondo claro, titulares con serifa del sistema, rojo solo para lo que se sale de lo normal, verde solo para confirmar la huella, claro y oscuro. Sin fuentes descargadas: la página funciona sin conexión.
 ## Evidence on Hand
-Demo v2, pruebas locales y lectura auténtica de la cuenta DEVELOPER_TEST 149623339, con captura conciliada y ensayo de trabajo sobre copia aislada. No hay testimonios, pilotos vendidos ni prueba de devolución auténtica o del proveedor IA elegido. Cada informe debe identificar su captura y distinguir estas evidencias.
+Motor y documentos probados con empresas ficticias (fases 1 a 4 de `scripts/verifica-pruebas.ts`) y recorridos en navegador del 23/11/2026. Lector de HubSpot probado con un HubSpot simulado; no se ha leído ningún portal real. Sin cabeceras reales de Holded, sin revisión de abogados, sin cliente ni testimonio.
 ## Product Principles
-Continuidad comprobable. Independencia del proveedor. Procedencia explícita. Configuración progresiva. No inventar evidencia comercial.
+Afirmar solo lo observado, nunca «cartera íntegra». Los datos no salen del vendedor. Cada cifra dice de dónde sale. No inventar evidencia comercial.

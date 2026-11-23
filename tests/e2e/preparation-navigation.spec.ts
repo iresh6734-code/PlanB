@@ -181,9 +181,10 @@ test('main App: Integraciones reads actual local contracts, keeps rehearsals fol
   const seen = await open(page);
   await page.locator('.sidebar').getByRole('button', { name: 'Integraciones', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Integraciones', exact: true })).toBeVisible();
-  await expect(page.locator('.lint-row')).toHaveCount(6);
+  // Desde el aparcado de la app de equipos (22/11/2026) solo queda la fila de HubSpot.
+  await expect(page.locator('.lint-row')).toHaveCount(1);
   await expect(page.getByRole('button', { name: 'Conectar HubSpot', exact: true })).toBeVisible();
-  await expect(page.getByText('Espacio de equipo sin configurar', { exact: true })).toHaveCount(5);
+  await expect(page.locator('.lint')).not.toContainText('Espacio de equipo');
   await expect(page.locator('.lint-next a')).toHaveCount(0);
   expect(await page.locator('.lint-rehearsal').evaluate(element => (element as HTMLDetailsElement).open)).toBe(false);
   for (const width of [1440, 390, 320]) {

@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 const require = createRequire(import.meta.url);
-const { workspacePaths, cleanEnvironment, matchesExisting, ensureWorkspace, CRM_ORIGIN, PILOT_ORIGIN } = require('../scripts/start-full-workspace.cjs');
+const { workspacePaths, cleanEnvironment, matchesExisting, ensureWorkspace, CRM_ORIGIN } = require('../scripts/start-full-workspace.cjs');
 
 async function listen(server) {
   server.listen(0, '127.0.0.1');
@@ -80,7 +80,7 @@ test('el arranque reutiliza la base CRM propia y separa su carpeta de ejecución
   assert.equal(paths.runtime, path.join(root, 'planb-local-crm-completo-2026-10-29', 'runtime'));
   assert.notEqual(paths.data, paths.runtime);
   assert.equal(CRM_ORIGIN, 'http://127.0.0.1:4331');
-  assert.equal(PILOT_ORIGIN, 'http://localhost:4334');
+  assert.equal(require('../scripts/start-full-workspace.cjs').PILOT_ORIGIN, undefined, 'la app de equipos está aparcada: el CRM arranca solo');
 });
 test('no hereda secretos, proveedores o configuración de otras instancias', () => {
   const env = { PATH: 'node-path', SystemRoot: 'system', TEMP: 'temp', PLANB_DATA_DIR: 'other', PLANB_TEAM_DEMO: '1', NODE_OPTIONS: '--require other', NODE_ENV: 'test', HUBSPOT_CLIENT_ID: 'private', GOOGLE_CLOUD_PROJECT: 'other', OPENAI_BASE_URL: 'other', ANTHROPIC_API_KEY: 'private', AWS_ACCESS_KEY_ID: 'private', DATABASE_URL: 'private', AUTH_TOKEN: 'private', AZURE_TENANT_ID: 'other' };

@@ -3,27 +3,32 @@ import react from '@vitejs/plugin-react';
 
 const landingSource = 'src/landing/plan-b.html';
 const landingPage = 'plan-b.html';
+const billingSource = 'src/billing/facturacion.html';
+const billingPage = 'facturacion.html';
+const publicPages = new Map([[landingPage, landingSource], [billingPage, billingSource]]);
 
 export default defineConfig({
   plugins: [
     react(),
     {
-      name: 'plan-b-landing',
+      name: 'plan-b-public-pages',
       configureServer(server) {
         server.middlewares.use((request, _response, next) => {
-          if (request.url?.split('?')[0] === '/' + landingPage) {
-            request.url = request.url.replace('/' + landingPage, '/' + landingSource);
-          }
+          const page = request.url?.split('?')[0].slice(1);
+          const source = page && publicPages.get(page);
+          if (source) request.url = request.url!.replace('/' + page, '/' + source);
           next();
         });
       },
       generateBundle: {
         order: 'post',
         handler(_options, bundle) {
-          const page = bundle[landingSource];
-          if (page?.type !== 'asset') this.error('No se generó el HTML de la landing de Plan B.');
-          this.emitFile({ type: 'asset', fileName: landingPage, source: page.source });
-          delete bundle[landingSource];
+          for (const [output, source] of publicPages) {
+            const page = bundle[source];
+            if (page?.type !== 'asset') this.error(`No se generó el HTML de ${output}.`);
+            this.emitFile({ type: 'asset', fileName: output, source: page.source });
+            delete bundle[source];
+          }
         },
       },
     },
@@ -32,6 +37,6 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
-    rollupOptions: { input: { app: 'index.html', landing: landingSource, verifica: 'verifica.html' } },
+    rollupOptions: { input: { app: 'index.html', landing: landingSource, billing: billingSource, verifica: 'verifica.html' } },
   },
 });

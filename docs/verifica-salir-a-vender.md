@@ -24,7 +24,7 @@ Que pasen las cinco no basta. Antes de la primera conversación también hace fa
 
 - [ ] Las cinco pruebas pasan (`scripts/verifica-pruebas.ts` sale con 0).
 - [ ] El lector de HubSpot está validado en el portal de pruebas, con historial (pasos en el registro, «Verifica · Fase 1»).
-- [ ] Hay un lector para el portal del cliente. Hoy `scripts/verifica-hubspot.ts` solo lee portales de pruebas (`mode: 'test'`).
+- [x] Hay un lector para el portal del cliente (23/11/2026): `scripts/verifica-hubspot.ts --client-authorization`, solo cuentas STANDARD y solo con una autorización firmada y vigente (sección 3). Está probado con el HubSpot simulado; con uno real no se ha leído nunca, y antes hay que validar el lector en el portal de pruebas (el punto de arriba).
 - [ ] Las cabeceras reales de Holded están comprobadas con un libro de facturas emitidas.
 - [ ] Los abogados han revisado el anexo de la sección 2.
 - [ ] Hay seguro de responsabilidad profesional antes del primer cobro.
@@ -79,14 +79,42 @@ Es para cuando la lista de la sección 1 esté completa. Hasta entonces es solo 
 | Cuándo | Qué | Herramienta |
 | --- | --- | --- |
 | Antes de empezar | Firmar el encargo, el anexo y el acuerdo de tratamiento. Acordar quién guarda la copia y la llave | Abogado |
-| Hora 0 | El vendedor da acceso de solo lectura en su equipo. Primera captura, con huella | Lector del portal del cliente (pendiente; hoy `verifica-hubspot.ts` solo lee portales de pruebas) |
+| Hora 0 | El vendedor da acceso de solo lectura en su equipo. Primera captura, con huella y acta | `scripts/verifica-hubspot.ts --client-authorization` (ver «Autorización de lectura», abajo) |
 | Hora 0–24 | El vendedor entrega el libro de facturas y sus cifras declaradas | `--invoices` y `--declarations` |
-| Hora 24 | Segunda captura, para tener lo que cambió entre las dos | El mismo lector |
+| Hora 24 | Segunda captura, con su acta, para tener lo que cambió entre las dos. Las dos van a la sala limpia como `--previous` y `--latest` | El mismo lector, con otros nombres de archivo |
 | Hora 24–48 | Sala limpia: informe, copia y llave por separado. Revisar a mano lo que la barrera no cubre | `scripts/verifica-sala-limpia.ts` |
 | Hora 48–72 | El comprador comprueba la huella en `verifica.html`. Reunión de 45 minutos | `verifica.html` |
 | Tras la firma | Vigilancia semanal hasta el cierre | `scripts/verifica-vigilancia.ts` |
 | Tras el cierre | Informe de equivalencia de la migración | `scripts/verifica-migracion.ts` |
-| Al terminar | Borrar las capturas del equipo de trabajo. Solo queda la copia custodiada, en manos de quien se acordó | Acuerdo de tratamiento |
+| Al terminar | Borrar las capturas del equipo de trabajo. Solo quedan la copia custodiada y las actas, en manos de quien se acordó | Acuerdo de tratamiento |
+
+### Autorización de lectura
+
+Sin una autorización válida, el lector no hace ni una petición. La autorización es el registro técnico de un documento que el vendedor firma aparte (el texto es de los abogados). Es un JSON así:
+
+```json
+{
+  "kind": "verifica-read-authorization",
+  "version": 1,
+  "portalId": "12345678",
+  "engagement": "VF-2026-001",
+  "authorizedBy": { "name": "Nombre Apellido", "role": "Administradora única", "company": "Vendedora S.L." },
+  "signedOn": "2026-12-01",
+  "validUntil": "2026-12-31",
+  "scope": ["owners", "companies", "contacts", "deals_with_history"],
+  "signedDocumentSha256": "<huella SHA-256 del documento firmado>"
+}
+```
+
+- La huella del documento sale con `Get-FileHash documento-firmado.pdf -Algorithm SHA256` (o `sha256sum`). Si alguien retoca el PDF, el lector se para.
+- Las fechas son días de Madrid; `validUntil` incluido. Una autorización caducada, de otro portal, con un campo mal escrito o con menos alcance que las cuatro partes no sirve.
+- El lector solo acepta una cuenta `STANDARD`: un portal de pruebas no pasa por el modo cliente, y uno real no pasa por el de pruebas.
+
+```
+<credencial por entrada estándar> | npx tsx scripts/verifica-hubspot.ts --portal 12345678 --client-authorization autorizacion.json --authorization-document documento-firmado.pdf --out captura-h0.json --record acta-h0.json
+```
+
+El acta (`acta-h0.json`) dice quién autorizó la lectura, cuándo empezó y terminó, cuántas peticiones se hicieron por método y a qué rutas (sin parámetros), cuántos registros llegaron y la huella exacta de la captura. Lleva su propia huella. En modo cliente no se escribe el informe: sale por la sala limpia, con copia custodiada y llave aparte.
 
 ## 4. Canal
 

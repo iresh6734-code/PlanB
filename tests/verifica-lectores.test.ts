@@ -11,6 +11,8 @@ import { VerificaReadError } from '../shared/verifica/hubspot.js';
 import { importInvoices, parseAmount, parseInvoiceDate, InvoiceImportError } from '../shared/verifica/invoices.js';
 import { verifyReport, type VerificaReport } from '../shared/verifica/report.js';
 import { runCli } from '../scripts/verifica-hubspot.js';
+import { buildReadRecord, checkReadAuthorization, madridDay, parseReadAuthorization, ReadAuthorizationError, verifyReadRecord, type ReadRecord } from '../shared/verifica/read-authorization.js';
+import { sha256Hex } from '../shared/sha256.js';
 
 const PORTAL = '4400123';
 const TOKEN = 'pat-eu1-prueba-falsa-0000';
@@ -274,4 +276,106 @@ test('Verifica · el script del portal de pruebas: sin autorización no lee nada
   assert.deepEqual(report.findings.filter(f => f.alarm).map(f => f.rule), [...RULE_IDS], 'también los clientes «activos» sin factura, aunque el vendedor no declare nada');
   const again = await run(company.latest, ['--portal', PORTAL, '--authorized-full-read', '--out', 'ahora.json']);
   assert.notEqual(again.code, 0, 'no sobrescribe una captura');
+});
+
+const SIGNED = new TextEncoder().encode('%PDF-1.4 autorización de lectura firmada por la cliente');
+const authorizationFor = (overrides: Record<string, unknown> = {}) => ({
+  kind: 'verifica-read-authorization', version: 1, portalId: PORTAL, engagement: 'VF-2026-001',
+  authorizedBy: { name: 'Ana Ruiz', role: 'Directora general', company: 'Cliente de prueba S.L.' },
+  signedOn: '2000-01-01', validUntil: '2099-12-31', scope: ['owners', 'companies', 'contacts', 'deals_with_history'],
+  signedDocumentSha256: sha256Hex(SIGNED), ...overrides,
+});
+
+test('Verifica · autorización de lectura de un cliente: forma estricta, portal, fechas de Madrid, alcance y documento', () => {
+  const today = '2026-05-10', documentSha256 = sha256Hex(SIGNED);
+  const code = (raw: unknown, context: Partial<{ portalId: string; today: string; documentSha256: string }> = {}) => {
+    try { checkReadAuthorization(parseReadAuthorization(raw), { portalId: PORTAL, today, documentSha256, ...context }); return 'OK'; }
+    catch (e) { assert.ok(e instanceof ReadAuthorizationError, String(e)); return e.code; }
+  };
+  assert.equal(code(authorizationFor()), 'OK');
+  assert.equal(code(authorizationFor({ validUntil: today })), 'OK', 'el último día cuenta');
+  assert.equal(code(authorizationFor({ validUnitl: '2099-12-31' })), 'MALFORMED', 'una errata en una clave no pasa en silencio');
+  assert.equal(code(authorizationFor({ signedDocumentSha256: 'abc' })), 'MALFORMED');
+  assert.equal(code(authorizationFor({ validUntil: '2026-02-30' })), 'MALFORMED');
+  assert.equal(code(authorizationFor({ portalId: 4400123 })), 'MALFORMED');
+  assert.equal(code(authorizationFor(), { portalId: '999' }), 'WRONG_PORTAL');
+  assert.equal(code(authorizationFor({ signedOn: '2026-05-11' })), 'NOT_YET_VALID');
+  assert.equal(code(authorizationFor({ validUntil: '2026-05-09' })), 'EXPIRED');
+  assert.equal(code(authorizationFor({ scope: ['owners', 'companies', 'contacts'] })), 'SCOPE');
+  assert.equal(code(authorizationFor({ scope: ['owners', 'companies', 'contacts', 'deals_with_history', 'emails'] })), 'SCOPE');
+  assert.equal(code(authorizationFor(), { documentSha256: sha256Hex('otro documento') }), 'DOCUMENT_MISMATCH');
+  assert.equal(madridDay(new Date('2026-03-31T22:30:00Z')), '2026-04-01', 'a las 00:30 en Madrid ya es el día siguiente');
+});
+
+test('Verifica · el acta de lectura detecta retoques y una captura que no es la leída', () => {
+  const auth = parseReadAuthorization(authorizationFor());
+  const captureText = '{"id":"captura"}\n';
+  const record = buildReadRecord({
+    portalId: PORTAL, accountType: 'STANDARD', engagement: auth.engagement, authorizedBy: auth.authorizedBy, signedOn: auth.signedOn, validUntil: auth.validUntil,
+    signedDocumentSha256: auth.signedDocumentSha256, startedAt: '2026-05-10T08:00:00.000Z', finishedAt: '2026-05-10T08:01:00.000Z',
+    requestsByMethod: { GET: 9, POST: 3 }, endpoints: ['GET /crm/v3/owners', 'GET /crm/v3/owners', 'GET /account-info/v3/details'],
+    counts: { owners: 1, companies: 2, contacts: 3, deals: 4 }, historyAvailable: true, captureId: 'captura', captureText,
+  });
+  assert.deepEqual(record.endpoints, ['GET /account-info/v3/details', 'GET /crm/v3/owners']);
+  assert.equal(verifyReadRecord(record, captureText), true);
+  assert.equal(verifyReadRecord({ ...record, counts: { ...record.counts, deals: 5 } }), false);
+  assert.equal(verifyReadRecord(record, captureText.replace('captura', 'otra')), false);
+});
+
+test('Verifica · el script en modo cliente: sin autorización válida no hace ninguna petición; con ella lee solo una cuenta real y deja acta', async () => {
+  const company = buildTrapCompany({ traps: true });
+  const stdin = { isTTY: false, async *[Symbol.asyncIterator]() { yield TOKEN + '\n'; } };
+  const files = new Map<string, string>([['autorizacion.json', JSON.stringify(authorizationFor())], ['caducada.json', JSON.stringify(authorizationFor({ validUntil: '2001-01-01' }))]]);
+  const documents = new Map<string, Uint8Array>([['firmada.pdf', SIGNED], ['retocada.pdf', new TextEncoder().encode('%PDF-1.4 otro')]]);
+  const run = async (argv: string[], accountType = 'STANDARD') => {
+    const fake = fakeHubspot(company.latest, { accountType });
+    let out = '', err = '';
+    const code = await runCli(argv, {
+      stdin, out: s => { out += s; }, err: s => { err += s; }, fetch: fake.fetcher, now: () => new Date(company.latest.capturedAt),
+      readText: async path => { const text = files.get(path); if (text === undefined) throw new Error('no existe'); return text; },
+      readBytes: async path => { const bytes = documents.get(path); if (bytes === undefined) throw new Error('no existe'); return bytes; },
+      writeNew: async (path, text) => { if (files.has(path)) throw new Error('ya existe'); files.set(path, text); },
+    });
+    assert.ok(!(out + err).includes(TOKEN), 'la credencial no se imprime');
+    return { code, out, err, log: fake.log };
+  };
+  const client = (more: string[]) => ['--portal', PORTAL, '--client-authorization', 'autorizacion.json', '--out', 'captura.json', ...more];
+  const refusals: [string[], RegExp][] = [
+    [client(['--record', 'acta.json']), /--authorization-document/],
+    [client(['--authorization-document', 'firmada.pdf']), /--record/],
+    [client(['--authorization-document', 'firmada.pdf', '--record', 'captura.json']), /dos archivos/],
+    [client(['--authorization-document', 'firmada.pdf', '--record', 'acta.json', '--authorized-full-read']), /Elige un modo/],
+    [client(['--authorization-document', 'firmada.pdf', '--record', 'acta.json', '--previous', 'antes.json', '--report', 'informe.json']), /sala limpia/],
+    [['--portal', PORTAL, '--authorized-full-read', '--out', 'captura.json', '--record', 'acta.json'], /solo valen con --client-authorization/],
+    [client(['--authorization-document', 'retocada.pdf', '--record', 'acta.json']), /DOCUMENT_MISMATCH/],
+    [client(['--authorization-document', 'firmada.pdf', '--record', 'acta.json']).map(a => a === 'autorizacion.json' ? 'caducada.json' : a), /EXPIRED/],
+    [client(['--authorization-document', 'firmada.pdf', '--record', 'acta.json']).map(a => a === PORTAL ? '999' : a), /WRONG_PORTAL/],
+  ];
+  for (const [argv, message] of refusals) {
+    const refused = await run(argv);
+    assert.deepEqual([refused.code, refused.log.length], [2, 0], argv.join(' '));
+    assert.match(refused.err, message);
+  }
+  const argv = client(['--authorization-document', 'firmada.pdf', '--record', 'acta.json']);
+  const testPortal = await run(argv, 'DEVELOPER_TEST');
+  assert.deepEqual([testPortal.code, testPortal.log.length], [1, 1], 'un portal de pruebas no pasa por cliente');
+  assert.match(testPortal.err, /WRONG_ACCOUNT_TYPE/);
+
+  const ok = await run(argv);
+  assert.equal(ok.code, 0, ok.err);
+  assert.match(ok.out, /portal del cliente 4400123 \(STANDARD\)/);
+  assert.match(ok.out, /Acta guardada en acta\.json/);
+  const captureText = files.get('captura.json')!, record = JSON.parse(files.get('acta.json')!) as ReadRecord;
+  assert.equal(verifyReadRecord(record, captureText), true);
+  assert.deepEqual([record.accountType, record.engagement, record.authorizedBy.name, record.signedDocumentSha256], ['STANDARD', 'VF-2026-001', 'Ana Ruiz', sha256Hex(SIGNED)]);
+  assert.deepEqual(Object.keys(record.requestsByMethod).sort(), ['GET', 'POST']);
+  assert.equal(record.requestsByMethod.POST, 3, 'solo las tres búsquedas de recuento');
+  assert.equal(record.requestsByMethod.GET! + record.requestsByMethod.POST!, ok.log.length, 'el acta cuenta todas las peticiones');
+  assert.ok(record.endpoints.every(e => /^(GET|POST) \/[\w/-]+$/.test(e)), 'sin parámetros en las rutas');
+  assert.ok(record.endpoints.filter(e => e.startsWith('POST ')).every(e => e.endsWith('/search')));
+  assert.equal(record.counts.deals, company.latest.deals.length);
+
+  const twice = await run(client(['--authorization-document', 'firmada.pdf', '--record', 'acta.json']).map(a => a === 'captura.json' ? 'captura-2.json' : a));
+  assert.equal(twice.code, 1, 'no sobrescribe un acta');
+  assert.match(twice.err, /sin acta: no la uses/);
 });

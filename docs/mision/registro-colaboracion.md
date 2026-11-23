@@ -724,7 +724,52 @@ Sin interfaz. El único servidor es el de Vite de `verifica.html` en `127.0.0.1`
 1. Pasar las cinco pruebas no es la salida de la fase 5: esa es la primera conversación con alguien de fuera, que depende de la usuaria y de la lista de la sección 1 del documento.
 2. `--single-product` lo declara una persona: el programa no mira el menú.
 3. El anexo es un borrador técnico, no un texto legal.
-4. Hoy no hay cómo leer el portal de un cliente: `scripts/verifica-hubspot.ts` solo lee portales de pruebas (`mode: 'test'`).
+4. ~~Hoy no hay cómo leer el portal de un cliente~~: desde el 23/11/2026 hay modo cliente en `scripts/verifica-hubspot.ts` (ver «Verifica · Fase 5 · Lector del portal del cliente»).
+
+## Verifica · Fase 5 · Lector del portal del cliente · GitHub Copilot
+
+### Reserva · antes de editar
+
+23/11/2026, 08:25 Europe/Madrid. La usuaria: «ves a ello», tras recomendarle el lector del portal del cliente, que está en la lista de la sección 1 de `docs/verifica-salir-a-vender.md`.
+
+El lector del servidor ya sabe leer una cuenta STANDARD en solo lectura (`mode: 'production_readonly'`). Falta el comando y lo que hace defendible la lectura de un cliente:
+
+- **`shared/verifica/read-authorization.ts` (nuevo, puro):** la autorización de lectura (portal, encargo, quién firma, fechas, alcance y huella del documento firmado), su comprobación y el acta de la lectura con la huella de la captura.
+- **`scripts/verifica-hubspot.ts`:** modo cliente con `--client-authorization`, `--authorization-document` y `--record`. Sin autorización válida no hace ni una petición. En modo cliente no hay `--report`: el informe sale por la sala limpia, con copia custodiada.
+- **Pruebas:** `tests/verifica-lectores.test.ts`, con el HubSpot simulado de siempre.
+- **Documentos:** `docs/verifica-salir-a-vender.md` (lista de la sección 1 y paso «Hora 0»).
+
+Sin interfaz. Aquí no se ejecuta contra ningún HubSpot: solo con el `fetch` simulado de las pruebas. Sin servidor de la app, DPAPI, carpetas de datos, red ni datos reales.
+
+### Hecho · 23/11/2026
+
+- **`shared/verifica/read-authorization.ts` (nuevo):**
+  - `parseReadAuthorization` valida la forma y rechaza claves desconocidas, para que una errata como «validUnitl» no pase.
+  - `checkReadAuthorization` para con el primer motivo: otro portal, todavía no vale, caducada (días de Madrid, el último incluido), alcance que no cubre las cuatro partes que lee siempre el lector, o un documento firmado cuya huella no coincide.
+  - `buildReadRecord` y `verifyReadRecord` hacen el acta: quién autorizó, inicio y fin, peticiones por método y rutas sin parámetros (contadas en el transporte, no según el lector), recuentos, si llegó el historial y la huella de la captura tal como se guardó. El acta lleva su propia huella.
+- **`scripts/verifica-hubspot.ts`:** modo cliente con `--client-authorization`, `--authorization-document` y `--record`.
+  - Comprueba la autorización antes de leer la credencial: si falla, sale con 2 y cero peticiones.
+  - Lee con `mode: 'production_readonly'`, que solo acepta cuentas STANDARD.
+  - Rechaza mezclarlo con `--authorized-full-read` y con `--previous`, `--invoices` o `--report`: el informe de un cliente sale por la sala limpia.
+  - La captura y el acta van en archivos distintos y nunca se sobrescriben. Si el acta no se puede guardar, sale con 1 y avisa de que esa captura no se usa.
+- **Pruebas** (`tests/verifica-lectores.test.ts`, 3 casos nuevos):
+  - la autorización: válida, último día, errata en una clave, huella mal formada, fecha imposible, portal como número, otro portal, todavía no vale, caducada, alcance corto y alcance de más, documento retocado, y el cambio de día en Madrid;
+  - el acta: rutas sin repetir y ordenadas, retoque detectado, captura distinta detectada;
+  - el comando: nueve negativas con 2 y cero peticiones, un portal de pruebas parado tras una sola petición, la lectura buena con acta verificable (solo GET y las 3 búsquedas POST, todas las peticiones contadas), y un acta que ya existe no se sobrescribe.
+- **Documentos:** `docs/verifica-salir-a-vender.md`, sección 1 (punto marcado, con la salvedad) y sección 3 («Hora 0», «Hora 24» y la nueva «Autorización de lectura», con el JSON de ejemplo y el comando).
+
+**Cómo se comprueba:**
+
+- `npx tsc --noEmit -p tsconfig.json`: 0 errores.
+- `NODE_ENV=test node tools/safe-tests.mjs verifica`: 7 de 7.
+- El módulo nuevo es alcanzable (lo importa el comando); siguen 25 módulos inalcanzables, los mismos.
+
+**Límites:**
+
+1. Nunca ha leído un HubSpot real: solo el simulado. Primero hay que validar el lector en el portal de pruebas; el modo cliente solo cambia la puerta de entrada, no la lectura.
+2. La autorización prueba que hay un documento y cuál es, no que lo firmó quien dice. Eso lo cubre el contrato y, si se decide, una firma digital.
+3. El acta la escribe el mismo programa que lee: sirve de constancia y detecta retoques, pero no es un tercero independiente.
+4. La batería segura entera (`node tools/safe-tests.mjs` sin filtro) da 5 archivos que fallan y que este cambio no toca: `api-client-routes`, `independent-history-contracts`, `perf-budgets`, `task-focus-outcomes` y `task-intent-consumer-independent-322`. Se miran como tema aparte (lista viva).
 
 ## Verifica · Pendientes (lista viva)
 
@@ -761,6 +806,7 @@ Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
 - [ ] *(nuevo, fase 3)* Si mirar el CRM del vendedor cada semana necesita un permiso aparte en el acuerdo de tratamiento de datos.
 - [ ] *(nuevo, fase 4)* Texto del informe de equivalencia: «sin diferencias en lo que compara el mapa», nunca «migración íntegra». Y si puede servir para liberar un pago aplazado o una retención del precio.
 - [ ] *(nuevo, fase 4)* La exportación del CRM del comprador y la lista de trabajo llevan datos de las dos partes: quién es responsable del tratamiento en esa fase.
+- [ ] *(nuevo, fase 5)* Texto del documento de autorización de lectura que firma el vendedor: qué portal, para qué encargo, qué se lee (comerciales, empresas, contactos y oportunidades con historial), hasta cuándo y qué pasa con la captura y el acta al terminar. Su huella va en `autorizacion.json` (`docs/verifica-salir-a-vender.md`, sección 3).
 - [ ] *(nuevo, fase 5)* Revisar el borrador del anexo de alcance (`docs/verifica-salir-a-vender.md`, sección 2) y convertirlo en texto contractual. Es la base del texto del alcance de arriba.
 
 **En el ordenador personal (aquí no se puede)**
@@ -778,7 +824,7 @@ Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
 - [ ] *(nuevo, fase 4)* Recorrido a mano de la migración con `scripts/verifica-ejemplo.ts`, `scripts/verifica-vigilancia.ts` y `scripts/verifica-migracion.ts`, y abrir `equivalencia.json` en `verifica.html`. Pasos en «Verifica · Fase 4».
 - [ ] *(nuevo, fase 4)* Revisión visual de «Migración» en `verifica.html`: escritorio y móvil (la tabla), tema claro y oscuro, la espera mientras carga el ejemplo, las tres pestañas con teclado y la impresión. Aquí solo está probado el HTML.
 - [ ] *(nuevo, fase 4)* Una migración real de prueba: del portal de pruebas de HubSpot a una cuenta de prueba de otro CRM, con un mapa escrito a mano, para ver el informe con datos que no son de la empresa ficticia.
-- [ ] *(nuevo, fase 5)* Un lector para el portal del cliente (hoy `verifica-hubspot.ts` solo admite portales de pruebas), con el mismo «solo lectura» y la autorización explícita. Va después de validar el lector en el portal de pruebas.
+- [x] ~~Un lector para el portal del cliente~~: hecho el 23/11/2026 con el HubSpot simulado (`--client-authorization`). La primera lectura real de un cliente va después de validar el lector en el portal de pruebas.
 - [ ] *(nuevo, fase 0 · tanda 2)* Ejecutar las pruebas que abren procesos y aquí no corren: `api-inventory` (y `node tools/api/inventory.mjs --check`, que debe dar `docs/api.md` al día), `release-candidate-adversarial`, `release-candidate-completeness` y `candidate-integrity`.
 - [ ] *(nuevo, fase 0 · tanda 2)* Ajustar las pruebas de navegador que mezclan la App local con la de equipos:
   - `ui-redesign` y `full-workspace`;

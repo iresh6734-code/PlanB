@@ -3,28 +3,36 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readHubspotForVerifica } from '../server/verifica/hubspot-reader.js';
+import { sha256Hex } from '../shared/sha256.js';
 import { VerificaReadError } from '../shared/verifica/hubspot.js';
 import { importInvoices, InvoiceImportError, type InvoiceImport } from '../shared/verifica/invoices.js';
 import type { VerificaCapture } from '../shared/verifica/model.js';
 import { CleanRoomError, releaseReport } from '../shared/verifica/clean-room.js';
 import { reportToJson } from '../shared/verifica/report.js';
-// Verifica · fase 1: lectura COMPLETA de un portal de PRUEBAS de HubSpot con historial, para validar el lector antes de
-// prometer nada a un cliente. Solo lectura (GET y búsquedas de recuento), solo cuentas DEVELOPER_TEST o SANDBOX.
-// Solo en el ordenador personal: nunca en un equipo de la empresa ni contra una cuenta real.
-// La credencial se recibe por la entrada estándar y no se imprime. No sobrescribe archivos.
-// Con --previous (una captura anterior de este mismo script) y opcionalmente --invoices (CSV de facturas emitidas),
-// además escribe el informe de Verifica. Las pruebas (tests/verifica-lectores.test.ts) usan un HubSpot simulado.
+import { buildReadRecord, checkReadAuthorization, madridDay, parseReadAuthorization, ReadAuthorizationError, type ReadAuthorization } from '../shared/verifica/read-authorization.js';
+// Verifica · lectura COMPLETA de un portal de HubSpot con historial. Solo lectura (GET y búsquedas de recuento). Dos modos:
+//   · pruebas (--authorized-full-read, fase 1): solo cuentas DEVELOPER_TEST o SANDBOX, para validar el lector. Con
+//     --previous (una captura anterior de este script) y opcionalmente --invoices, además escribe el informe.
+//   · cliente (--client-authorization, fase 5): solo una cuenta STANDARD, y solo con una autorización vigente para ese
+//     portal cuya huella coincide con el documento firmado. Sin ella no hace ni una petición. Deja un acta de la lectura
+//     con la huella de la captura. El informe de un cliente sale por la sala limpia (scripts/verifica-sala-limpia.ts).
+// Nunca en un equipo de la empresa. La credencial se recibe por la entrada estándar y no se imprime. No sobrescribe archivos.
+// Las pruebas (tests/verifica-lectores.test.ts) usan un HubSpot simulado.
 
-const USAGE = 'Uso: <credencial por entrada estándar> | npx tsx scripts/verifica-hubspot.ts --portal <ID del portal de pruebas> --authorized-full-read --out <captura.json> [--previous <captura-anterior.json>] [--invoices <facturas.csv>] [--report <informe.json>] [--tax-property <propiedad>] [--customer-stages customer,evangelist]';
+const USAGE = 'Uso: <credencial por entrada estándar> | npx tsx scripts/verifica-hubspot.ts --portal <ID> --out <captura.json> [--tax-property <propiedad>] [--customer-stages customer,evangelist] y además, '
+  + 'para un portal de pruebas: --authorized-full-read [--previous <captura-anterior.json>] [--invoices <facturas.csv>] [--report <informe.json>]; '
+  + 'para el portal de un cliente: --client-authorization <autorizacion.json> --authorization-document <documento-firmado> --record <acta.json>';
 
 export interface CliArgs {
+  mode: 'test' | 'client';
   portal: string; out: string; previous: string | null; invoices: string | null; report: string | null;
   taxProperty: string | null; customerStages: string[] | null;
+  authorization: string | null; authorizationDocument: string | null; record: string | null;
 }
 export class CliUsageError extends Error { constructor(message: string) { super(message); this.name = 'CliUsageError'; } }
 
 export function parseArgs(argv: string[]): CliArgs {
-  const args: CliArgs = { portal: '', out: '', previous: null, invoices: null, report: null, taxProperty: null, customerStages: null };
+  const args: CliArgs = { mode: 'test', portal: '', out: '', previous: null, invoices: null, report: null, taxProperty: null, customerStages: null, authorization: null, authorizationDocument: null, record: null };
   let authorized = false;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i], next = () => { const v = argv[++i]; if (v === undefined || v.startsWith('--')) throw new CliUsageError('Falta el valor de ' + a + '.'); return v; };
@@ -36,10 +44,23 @@ export function parseArgs(argv: string[]): CliArgs {
     else if (a === '--report') args.report = next();
     else if (a === '--tax-property') args.taxProperty = next();
     else if (a === '--customer-stages') args.customerStages = next().split(',').map(s => s.trim()).filter(Boolean);
+    else if (a === '--client-authorization') args.authorization = next();
+    else if (a === '--authorization-document') args.authorizationDocument = next();
+    else if (a === '--record') args.record = next();
     else throw new CliUsageError('Argumento no reconocido (posición ' + (i + 1) + '). La credencial no se pasa como argumento: va por la entrada estándar. ' + USAGE);
   }
-  if (!/^\d{1,20}$/.test(args.portal)) throw new CliUsageError('Indica --portal con el ID numérico del portal de pruebas. ' + USAGE);
+  if (!/^\d{1,20}$/.test(args.portal)) throw new CliUsageError('Indica --portal con el ID numérico del portal. ' + USAGE);
   if (!args.out) throw new CliUsageError('Indica --out con el archivo donde guardar la captura. ' + USAGE);
+  if (args.authorization !== null) {
+    if (authorized) throw new CliUsageError('Elige un modo: --authorized-full-read es para portales de pruebas y --client-authorization para el portal de un cliente.');
+    if (!args.authorizationDocument) throw new CliUsageError('El modo cliente necesita --authorization-document: el documento firmado cuya huella está en la autorización.');
+    if (!args.record) throw new CliUsageError('El modo cliente necesita --record: el archivo donde guardar el acta de la lectura.');
+    if (resolve(args.record) === resolve(args.out)) throw new CliUsageError('La captura y el acta van en dos archivos distintos.');
+    if (args.previous || args.invoices || args.report) throw new CliUsageError('En modo cliente el informe no se escribe aquí: sale por la sala limpia (scripts/verifica-sala-limpia.ts), con copia custodiada y llave aparte.');
+    args.mode = 'client';
+    return args;
+  }
+  if (args.authorizationDocument || args.record) throw new CliUsageError('--authorization-document y --record solo valen con --client-authorization.');
   if (args.report && !args.previous) throw new CliUsageError('El informe necesita --previous: una captura anterior del mismo portal.');
   if (!authorized) throw new CliUsageError('No se hace ninguna lectura sin --authorized-full-read: confirma que autorizas leer el portal de pruebas entero (oportunidades con historial, empresas, contactos y comerciales), solo con GET y búsquedas de recuento.');
   return args;
@@ -58,6 +79,7 @@ export async function readSecret(stdin: Readable): Promise<string> {
 export interface CliDeps {
   stdin: Readable; out: (text: string) => void; err: (text: string) => void; fetch: typeof fetch; now?: () => Date;
   readText?: (path: string) => Promise<string>;
+  readBytes?: (path: string) => Promise<Uint8Array>;
   /** Escribe un archivo nuevo; falla si ya existe. */
   writeNew?: (path: string, text: string) => Promise<void>;
 }
@@ -72,21 +94,36 @@ function loadCapture(text: string): VerificaCapture {
 export async function runCli(argv: string[], deps: CliDeps): Promise<number> {
   const readText = deps.readText ?? (path => readFile(path, 'utf8'));
   const writeNew = deps.writeNew ?? ((path, text) => writeFile(path, text, { encoding: 'utf8', flag: 'wx' }));
-  let args: CliArgs, token: string, previous: VerificaCapture | null = null, invoiceText: string | null = null;
+  const readBytes = deps.readBytes ?? (path => readFile(path));
+  const now = () => deps.now?.() ?? new Date();
+  let args: CliArgs, token: string, previous: VerificaCapture | null = null, invoiceText: string | null = null, authorization: ReadAuthorization | null = null;
   try {
     args = parseArgs(argv);
     if (args.previous) previous = loadCapture(await readText(args.previous));
     if (args.invoices) invoiceText = await readText(args.invoices);
+    if (args.mode === 'client') {
+      authorization = parseReadAuthorization(JSON.parse(await readText(args.authorization!)));
+      checkReadAuthorization(authorization, { portalId: args.portal, today: madridDay(now()), documentSha256: sha256Hex(await readBytes(args.authorizationDocument!)) });
+    }
     token = await readSecret(deps.stdin);
   } catch (e) {
-    deps.err((e instanceof CliUsageError ? e.message : e instanceof SyntaxError ? 'Un archivo de entrada no es JSON válido.' : 'No se pudo leer un archivo de entrada.') + '\n');
+    deps.err((e instanceof CliUsageError ? e.message : e instanceof ReadAuthorizationError ? 'Autorización (' + e.code + '): ' + e.message + ' No se ha hecho ninguna petición.' : e instanceof SyntaxError ? 'Un archivo de entrada no es JSON válido.' : 'No se pudo leer un archivo de entrada.') + '\n');
     return 2;
   }
 
+  // El acta cuenta lo que pasó por el transporte, no lo que el lector dice que hizo.
+  const requestsByMethod: Record<string, number> = {}, endpoints = new Set<string>();
+  const fetcher = ((input: string | URL | Request, init?: RequestInit) => {
+    const method = (init?.method ?? 'GET').toUpperCase();
+    requestsByMethod[method] = (requestsByMethod[method] ?? 0) + 1;
+    endpoints.add(method + ' ' + new URL(input instanceof Request ? input.url : String(input)).pathname);
+    return deps.fetch(input, init);
+  }) as typeof fetch;
+  const startedAt = now().toISOString();
   let reading;
   try {
     reading = await readHubspotForVerifica({
-      token, accountId: args.portal, mode: 'test', fetcher: deps.fetch, now: deps.now,
+      token, accountId: args.portal, mode: args.mode === 'client' ? 'production_readonly' : 'test', fetcher, now: deps.now,
       taxIdProperty: args.taxProperty, ...(args.customerStages ? { customerStages: args.customerStages } : {}),
       progress: message => deps.out('  leído · ' + message + '\n'),
     });
@@ -99,16 +136,33 @@ export async function runCli(argv: string[], deps: CliDeps): Promise<number> {
     try { await writeNew(path, text); return true; }
     catch { deps.err('No se guarda ' + path + ': ya existe o no se puede escribir. Elige otro nombre; nunca se sobrescribe.\n'); return false; }
   };
-  if (!await save(args.out, JSON.stringify(capture, null, 2) + '\n')) return 1;
+  const captureText = JSON.stringify(capture, null, 2) + '\n';
+  if (!await save(args.out, captureText)) return 1;
   const changed = capture.deals.filter(d => d.history && (d.history.amount.length > 1 || d.history.closeDate.length > 1)).length;
   const lines = [
-    '', 'Verifica · lectura del portal de pruebas ' + reading.account.portalId + ' (' + reading.account.accountType + ') · solo lectura',
+    '', 'Verifica · lectura del portal ' + (args.mode === 'client' ? 'del cliente ' : 'de pruebas ') + reading.account.portalId + ' (' + reading.account.accountType + ') · solo lectura',
     'Comerciales ' + capture.owners.length + ' · empresas ' + capture.companies.length + ' · contactos ' + capture.contacts.length + ' · oportunidades ' + capture.deals.length,
     capture.historyAvailable
       ? 'Historial: SÍ llegó en todas las oportunidades (' + changed + ' con algún cambio de importe o de fecha de cierre).'
       : 'Historial: NO llegó en todas las oportunidades. Las reglas de ventana y aplazamientos quedarán «sin comprobar».',
     'Peticiones: ' + reading.requests + ' · captura guardada en ' + args.out,
   ];
+
+  if (authorization && args.record) {
+    const record = buildReadRecord({
+      portalId: reading.account.portalId, accountType: reading.account.accountType, engagement: authorization.engagement, authorizedBy: authorization.authorizedBy,
+      signedOn: authorization.signedOn, validUntil: authorization.validUntil, signedDocumentSha256: authorization.signedDocumentSha256,
+      startedAt, finishedAt: now().toISOString(), requestsByMethod, endpoints,
+      counts: { owners: capture.owners.length, companies: capture.companies.length, contacts: capture.contacts.length, deals: capture.deals.length },
+      historyAvailable: capture.historyAvailable, captureId: capture.id, captureText,
+    });
+    if (!await save(args.record, JSON.stringify(record, null, 2) + '\n')) {
+      deps.err('La captura se guardó sin acta: no la uses para el cliente. Vuelve a leer con otros nombres de archivo.\n');
+      return 1;
+    }
+    lines.push('Acta guardada en ' + args.record + ' · huella ' + record.fingerprint.slice(0, 16) + '… · encargo ' + authorization.engagement + ', autoriza ' + authorization.authorizedBy.name + ' hasta el ' + authorization.validUntil,
+      'El informe sale por la sala limpia: scripts/verifica-sala-limpia.ts, con copia custodiada y llave aparte.');
+  }
 
   if (args.report && previous) {
     let imported: InvoiceImport | null = null;

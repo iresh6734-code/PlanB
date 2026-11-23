@@ -258,7 +258,7 @@ test('F3-1 · lista permitida: ningún canario (credencial, inocuo, de sistema o
   t.diagnostic('procesos node observados: ' + seen.length + ' · alcance: solo procesos node que cargaron el guardián; el binario nativo de esbuild/vite hereda el entorno de su padre y no se observa directamente');
 });
 
-test('F3-2 · los seis bundles pasan por CLI en el runner saneado: seis procesos, seis logs, seis salidas coherentes', t => {
+test('F3-2 · cada bundle pasa por CLI en el runner saneado: un proceso, un log y una salida coherente por bundle', t => {
   if (!happy) return t.skip('sin ejecución completa previa');
   const { m } = happy, seen = observations(m.folder);
   for (const [index, output] of BUNDLES.entries()) {
@@ -271,7 +271,7 @@ test('F3-2 · los seis bundles pasan por CLI en el runner saneado: seis procesos
     const procs = seen.filter(s => s.script === 'esbuild' && s.first === entry);
     assert.equal(procs.length, 1, name + ': exactamente un proceso CLI de esbuild con guardián y entorno observado para ' + entry + ' (observados: ' + seen.filter(s => s.script === 'esbuild').length + ')');
   }
-  assert.equal(seen.filter(s => s.script === 'esbuild').length, 6, 'seis y solo seis procesos esbuild');
+  assert.equal(seen.filter(s => s.script === 'esbuild').length, BUNDLES.length, 'un proceso esbuild por bundle y ninguno más (' + BUNDLES.length + ')');
   assert.ok(seen.some(s => s.script === 'tsc.js' || s.script === 'tsc') && seen.some(s => s.script === 'vite.js'), 'typecheck y vite también pasan por el mismo runner');
 });
 

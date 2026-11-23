@@ -48,10 +48,10 @@ test('423 · acepta activos opacos de src/assets y exige avisos idénticos en el
 });
 
 test('095 full inventory includes opaque assets/public data and both guards, without approving or following metadata paths',()=>{
-  const f=fixture(),r=f.check();assert.equal(r.state,'matches-manifest');assert.equal(r.sourcesChecked,17);assert.equal(r.artifactsChecked,14);assert.equal(r.approvalGranted,false);assert.equal(r.deploymentPerformed,false);assert.equal(r.liveCheckout,'not_compared');assert.equal(r.manifestAuthenticity,'not_verified');assert.equal(r.buildEvidence,'declared_not_reexecuted');assert.equal(r.declaredBlockerCount,2);assert.equal(r.declaredExclusionCount,1);assert.ok(!JSON.stringify(r).includes('DO-NOT-FOLLOW'));assert.deepEqual(r.issues,[]);
+  const f=fixture(),r=f.check();assert.equal(r.state,'matches-manifest');assert.equal(r.sourcesChecked,14);assert.equal(r.artifactsChecked,11);assert.equal(r.approvalGranted,false);assert.equal(r.deploymentPerformed,false);assert.equal(r.liveCheckout,'not_compared');assert.equal(r.manifestAuthenticity,'not_verified');assert.equal(r.buildEvidence,'declared_not_reexecuted');assert.equal(r.declaredBlockerCount,2);assert.equal(r.declaredExclusionCount,1);assert.ok(!JSON.stringify(r).includes('DO-NOT-FOLLOW'));assert.deepEqual(r.issues,[]);
 });
 test('095 changing source or backend bytes is detected rather than trusting compiled state',()=>{
-  for(const[kind,name]of[['source','server/main.ts'],['runtime','team.mjs']]){const f=fixture();changed(f,kind,name,'CHANGED_BYTES');const r=f.check();assert.equal(r.state,'different');assert.equal(code(r),'HASH_OR_SIZE_MISMATCH');assert.equal(r.issues[0].path,name);assert.equal(r.approvalGranted,false);}
+  for(const[kind,name]of[['source','server/main.ts'],['runtime','runtime.mjs']]){const f=fixture();changed(f,kind,name,'CHANGED_BYTES');const r=f.check();assert.equal(r.state,'different');assert.equal(code(r),'HASH_OR_SIZE_MISMATCH');assert.equal(r.issues[0].path,name);assert.equal(r.approvalGranted,false);}
 });
 test('095 extra runtime files and private directories fail without reading their contents',()=>{
   for(const directory of [false,true]){const f=fixture(),extra=path.join(f.runtime,directory?'data/NEVER_READ.txt':'dist/unlisted.wasm');fs.mkdirSync(path.dirname(extra),{recursive:true});fs.writeFileSync(extra,'SYNTHETIC_PRIVATE_CANARY');const original=fs.openSync;let touched=false;fs.openSync=function(file,...args){if(String(file)===extra){touched=true;throw Error('unexpected file must not be read');}return original.call(this,file,...args);};try{const r=f.check();assert.equal(r.state,'different');assert.equal(code(r),directory?'UNEXPECTED_RUNTIME_DIRECTORY':'UNEXPECTED_RUNTIME_FILE');assert.equal(touched,false);}finally{fs.openSync=original;}}
@@ -85,8 +85,8 @@ test('095 limits are checked before opening oversized content and exact source b
   const total=fixture();for(let i=0;i<100;i++)total.m.files.push({path:'src/large'+i+'.ts',bytes:1024*1024,sha256:'a'.repeat(64)});total.save();assert.equal(code(total.check()),'TOTAL_LIMIT');
 });
 test('095 artifact size/aggregate limits and the bounded HTML parser also apply to self-consistent declarations',()=>{
-  const f=fixture(),bytes=Buffer.alloc(CANDIDATE_LIMITS.artifactBytes,65);changed(f,'runtime','team.mjs',bytes);Object.assign(f.m.artifacts.find(x=>x.path==='team.mjs'),{bytes:bytes.length,sha256:sha(bytes)});f.save();assert.equal(f.check().state,'matches-manifest');
-  fs.appendFileSync(path.join(f.runtime,'team.mjs'),'B');assert.equal(code(f.check()),'FILE_LIMIT');
+  const f=fixture(),bytes=Buffer.alloc(CANDIDATE_LIMITS.artifactBytes,65);changed(f,'runtime','runtime.mjs',bytes);Object.assign(f.m.artifacts.find(x=>x.path==='runtime.mjs'),{bytes:bytes.length,sha256:sha(bytes)});f.save();assert.equal(f.check().state,'matches-manifest');
+  fs.appendFileSync(path.join(f.runtime,'runtime.mjs'),'B');assert.equal(code(f.check()),'FILE_LIMIT');
   const total=fixture();for(let i=0;i<5;i++)total.m.artifacts.push({path:'dist/large'+i+'.wasm',bytes:CANDIDATE_LIMITS.artifactBytes,sha256:'a'.repeat(64)});total.save();assert.equal(code(total.check()),'TOTAL_LIMIT');
   const index=fixture(),html=changed(index,'runtime','dist/index.html',' '.repeat(256*1024+1));Object.assign(index.m.artifacts.find(x=>x.path==='dist/index.html'),{bytes:html.length,sha256:sha(html)});index.save();assert.equal(code(index.check()),'UNVERIFIABLE_INDEX');
 });
@@ -116,7 +116,7 @@ test('095 CLI help/import have no actions; explicit candidate works after reloca
   let r=run([cli]);assert.equal(r.status,0);assert.match(r.stdout,/Solo lectura/);assert.equal(fs.readdirSync(path.join(f.workspaceRoot,'tests/.tmp/release-candidates')).length,1);
   r=run(['--input-type=module','-e','await import('+JSON.stringify(pathToFileURL(cli).href)+');']);assert.equal(r.status,0);assert.equal(r.stdout,'');
   r=run([cli,'--candidate',f.candidate]);assert.equal(r.status,0,r.stderr);assert.equal(JSON.parse(r.stdout).state,'matches-manifest');assert.equal(JSON.parse(r.stdout).approvalGranted,false);
-  changed(f,'runtime','team.mjs','CHANGED_BYTES');r=run([cli,'--candidate',f.candidate]);assert.equal(r.status,1);assert.equal(JSON.parse(r.stdout).state,'different');
+  changed(f,'runtime','runtime.mjs','CHANGED_BYTES');r=run([cli,'--candidate',f.candidate]);assert.equal(r.status,1);assert.equal(JSON.parse(r.stdout).state,'different');
   r=run([cli,'--candidate','../SYNTHETIC_SECRET']);assert.equal(r.status,2);assert.equal(JSON.parse(r.stdout).state,'unverifiable');assert.ok(!r.stdout.includes('SYNTHETIC_SECRET'));
   r=run([cli,'--run','SYNTHETIC_SECRET']);assert.equal(r.status,2);assert.ok(!r.stderr.includes('SYNTHETIC_SECRET'));
 });

@@ -82,7 +82,7 @@ button.vf-step:hover { background: var(--vf-subtle); }
 .vf-step-note { font-size: 13px; color: var(--vf-text-3); }
 .vf-steps-note { margin: 16px 12px 0; font-size: 12px; line-height: 1.5; color: var(--vf-text-3); }
 
-.vf-page { flex: 999 1 600px; min-width: 0; display: grid; gap: 36px; }
+.vf-page { flex: 999 1 600px; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 36px; }
 
 /* Cabecera del documento */
 .vf-head { display: grid; gap: 14px; max-width: 880px; }

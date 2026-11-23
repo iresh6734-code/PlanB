@@ -13,9 +13,9 @@ Generado por `node tools/api/inventory.mjs` a partir de los servidores reales: c
 | v2 | 50 | 50 | 34 |
 | v3 | 4 | 4 | 2 |
 | v4 | 10 | 10 | 10 |
-| v7 | 38 | 38 | 36 |
+| v7 | 15 | 15 | 13 |
 | sin versión | 17 | 17 | 13 |
-| **Total** | **119** | **119** | **95** |
+| **Total** | **96** | **96** | **72** |
 
 ## v2
 
@@ -100,36 +100,13 @@ Generado por `node tools/api/inventory.mjs` a partir de los servidores reales: c
 
 | Método | Ruta | main | runtime | Declarada en |
 | --- | --- | :---: | :---: | --- |
-| GET | `/api/v7/commitment-radar` | ● | ● | `server/commitment-radar-mount.ts` |
-| POST | `/api/v7/commitment-radar/activate` | ● | ● | `server/commitment-radar-mount.ts` |
-| GET | `/api/v7/commitments` | ● | ● | `server/commitments.ts` |
-| GET | `/api/v7/commitments/:id` | ● | ● | `server/commitments.ts` |
-| POST | `/api/v7/commitments/:id/decisions` | ● | ● | `server/commitments.ts` |
 | GET | `/api/v7/continuity/evidence` | ● | ● | `server/continuity-evidence-api.ts` |
 | GET | `/api/v7/copy-review/context` | ● |  | `server/copy-inspection.ts` |
 | POST | `/api/v7/copy-review/inspect` | ● |  | `server/copy-inspection.ts` |
-| GET | `/api/v7/date-check-review/decisions` | ● | ● | `server/date-check-review-mount.ts` |
-| GET | `/api/v7/date-check-review/decisions/:id` | ● | ● | `server/date-check-review-mount.ts` |
-| POST | `/api/v7/date-check-review/decisions/:id/outcome` | ● | ● | `server/date-check-review-mount.ts` |
-| POST | `/api/v7/date-check/analyze` | ● | ● | `server/date-check-mount.ts` |
-| GET | `/api/v7/date-check/catalog` | ● | ● | `server/date-check-mount.ts` |
-| GET | `/api/v7/date-check/checks` | ● | ● | `server/date-check-mount.ts` |
-| POST | `/api/v7/date-check/checks` | ● | ● | `server/date-check-mount.ts` |
-| GET | `/api/v7/date-check/checks/:id` | ● | ● | `server/date-check-mount.ts` |
-| POST | `/api/v7/date-check/checks/:id/confirm` | ● | ● | `server/date-check-mount.ts` |
-| POST | `/api/v7/date-check/demo/revision` | ● | ● | `server/date-check-mount.ts` |
 | GET | `/api/v7/local-operations` | ● | ● | `server/local-operations.ts` |
 | POST | `/api/v7/local-operations/reviews` | ● | ● | `server/local-operations.ts` |
 | GET | `/api/v7/local-operations/work` | ● | ● | `server/local-operations.ts` |
 | GET | `/api/v7/local-operations/work-summary` | ● | ● | `server/work-summary-api.ts` |
-| GET | `/api/v7/operational-rehearsal` | ● | ● | `server/operational-rehearsal-mount.ts` |
-| POST | `/api/v7/operational-rehearsal/analyze` | ● | ● | `server/operational-rehearsal-mount.ts` |
-| POST | `/api/v7/operational-rehearsal/check-first` | ● | ● | `server/operational-rehearsal-mount.ts` |
-| POST | `/api/v7/operational-rehearsal/rehearsals` | ● | ● | `server/operational-rehearsal-mount.ts` |
-| GET | `/api/v7/operational-rehearsal/rehearsals/:id` | ● | ● | `server/operational-rehearsal-mount.ts` |
-| POST | `/api/v7/operational-rehearsal/rehearsals/:id/choose` | ● | ● | `server/operational-rehearsal-mount.ts` |
-| POST | `/api/v7/operational-rehearsal/rehearsals/:id/decision-draft` | ● | ● | `server/operational-rehearsal-mount.ts` |
-| POST | `/api/v7/operational-rehearsal/rehearsals/:id/link` | ● | ● | `server/operational-rehearsal-mount.ts` |
 | GET | `/api/v7/task-intents` | ● | ● | `server/task-intents-api.ts` |
 | GET | `/api/v7/task-intents/:attemptId` | ● | ● | `server/task-intents-api.ts` |
 | POST | `/api/v7/task-intents/:attemptId/abandon` | ● | ● | `server/task-intents-api.ts` |

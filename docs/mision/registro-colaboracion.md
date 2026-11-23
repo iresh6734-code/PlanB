@@ -769,7 +769,26 @@ Sin interfaz. Aquí no se ejecuta contra ningún HubSpot: solo con el `fetch` si
 1. Nunca ha leído un HubSpot real: solo el simulado. Primero hay que validar el lector en el portal de pruebas; el modo cliente solo cambia la puerta de entrada, no la lectura.
 2. La autorización prueba que hay un documento y cuál es, no que lo firmó quien dice. Eso lo cubre el contrato y, si se decide, una firma digital.
 3. El acta la escribe el mismo programa que lee: sirve de constancia y detecta retoques, pero no es un tercero independiente.
-4. La batería segura entera (`node tools/safe-tests.mjs` sin filtro) da 5 archivos que fallan y que este cambio no toca: `api-client-routes`, `independent-history-contracts`, `perf-budgets`, `task-focus-outcomes` y `task-intent-consumer-independent-322`. Se miran como tema aparte (lista viva).
+4. La batería segura entera (`node tools/safe-tests.mjs` sin filtro) da 5 archivos que fallan y que este cambio no toca: `api-client-routes`, `independent-history-contracts`, `perf-budgets`, `task-focus-outcomes` y `task-intent-consumer-independent-322`. Se miraron justo después: ver «Verifica · Batería segura completa».
+
+## Verifica · Batería segura completa · GitHub Copilot
+
+### Hecho · 23/11/2026
+
+Sin interfaz: solo una prueba y una compilación de medida. En las tandas del aparcado solo pasé una selección de pruebas. Al pasar la batería segura entera (`node tools/safe-tests.mjs`, 244 archivos) fallaban 5. Para saber cuáles había roto el aparcado, pasé esas pruebas en una copia del commit anterior (`8920810`, con `git worktree` en una carpeta temporal ya borrada):
+
+- **`api-client-routes` (lo rompió el aparcado):** su comprobación de cordura pedía más de 150 rutas en `docs/api.md`, y desde la tanda 3 son 119. Ahora pide más de 100 y dice por qué.
+- **`perf-budgets` (compilación vieja, no código):** medía `tests/.tmp/perf-build`, compilado el 22/11 antes de la tanda 3. Recompilado con `node tools/perf/bundle.mjs` (solo Vite, en `tests/.tmp`), el CSS inicial baja a 292,7 KB, con un techo de 340 KB; todo dentro de presupuesto.
+- **Ya fallaban antes del aparcado** (lista viva):
+  - `task-focus-outcomes`: compara huellas de archivos congelados y aquí el checkout tiene finales CRLF; con LF la huella coincide.
+  - `independent-history-contracts`: necesita la copia del corte `baseline075` (`QA079_BASELINE_ROOT`), que este equipo no tiene.
+  - `task-intent-consumer-independent-322`: espera 0 envíos y hay 1. Fallaba igual en `8920810`.
+
+**Cómo se comprueba:**
+
+- `NODE_ENV=test node tools/safe-tests.mjs api-client-routes perf-budgets`: 2 de 2.
+- `NODE_ENV=test node tools/safe-tests.mjs`: 241 de 244; fallan solo los tres que ya fallaban antes del aparcado.
+- `npx tsc --noEmit -p tsconfig.json`: 0 errores.
 
 ## Verifica · Pendientes (lista viva)
 
@@ -825,6 +844,7 @@ Se actualiza al terminar cada tarea. Lo que se cierra se tacha con la fecha.
 - [ ] *(nuevo, fase 4)* Revisión visual de «Migración» en `verifica.html`: escritorio y móvil (la tabla), tema claro y oscuro, la espera mientras carga el ejemplo, las tres pestañas con teclado y la impresión. Aquí solo está probado el HTML.
 - [ ] *(nuevo, fase 4)* Una migración real de prueba: del portal de pruebas de HubSpot a una cuenta de prueba de otro CRM, con un mapa escrito a mano, para ver el informe con datos que no son de la empresa ficticia.
 - [x] ~~Un lector para el portal del cliente~~: hecho el 23/11/2026 con el HubSpot simulado (`--client-authorization`). La primera lectura real de un cliente va después de validar el lector en el portal de pruebas.
+- [ ] *(nuevo, 23/11/2026)* Tres pruebas seguras que ya fallaban antes del aparcado (ver «Verifica · Batería segura completa»): `task-focus-outcomes` (CRLF en Windows: ¿normalizar los finales en la prueba o `.gitattributes` con `eol=lf` para esos archivos?), `independent-history-contracts` (sin la copia de `baseline075` aquí) y `task-intent-consumer-independent-322` (1 envío donde espera 0). Mirar en el ordenador personal si allí pasan.
 - [ ] *(nuevo, fase 0 · tanda 2)* Ejecutar las pruebas que abren procesos y aquí no corren: `api-inventory` (y `node tools/api/inventory.mjs --check`, que debe dar `docs/api.md` al día), `release-candidate-adversarial`, `release-candidate-completeness` y `candidate-integrity`.
 - [ ] *(nuevo, fase 0 · tanda 2)* Ajustar las pruebas de navegador que mezclan la App local con la de equipos:
   - `ui-redesign` y `full-workspace`;

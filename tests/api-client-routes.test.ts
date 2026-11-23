@@ -110,7 +110,8 @@ function sources(dir: string): string[] {
 }
 
 test('docs/api.md tiene el inventario que esta prueba necesita', () => {
-  assert.ok(routes.length > 150, 'se leyeron ' + routes.length + ' rutas');
+  // 22/11/2026 (Verifica, fase 0): al aparcar Laboratorio, la app de equipos y la IA local quedaron 119 rutas.
+  assert.ok(routes.length > 100, 'se leyeron ' + routes.length + ' rutas');
 });
 
 test('cada llamada del cliente a la API va a una ruta documentada', t => {

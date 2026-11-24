@@ -106,7 +106,7 @@ export function VerificaReportView({ report, origin, onOpen, openError }: { repo
   );
 }
 
-type Opened = { name: string; doc: VerificaDocument };
+type Opened = { name: string; doc: VerificaDocument; backLabel?: string };
 
 export default function VerificaReportPage() {
   const [variant, setVariant] = useState<Variant>('traps');
@@ -152,13 +152,16 @@ export default function VerificaReportPage() {
   const toReference = () => { setOpened(null); setOpenError(null); };
   const shown = opened ? opened.doc : reference;
   const origin: ReportOrigin = opened
-    ? { kind: 'opened', name: opened.name, onReference: toReference }
+    ? { kind: 'opened', name: opened.name, onReference: toReference, backLabel: opened.backLabel }
     : { kind: 'reference', variant, onVariant: setVariant, doc, onDoc: go, local };
   if (!opened && local && doc === 'operation') {
     return <OperationPage origin={{ kind: 'local', onDoc: go }} onOpen={open} openError={openError}
       onOpenEngagement={id => { setEngagementId(id); go('sources'); }} />;
   }
-  if (!opened && local && doc === 'sources') return <SourcesPage origin={{ kind: 'local', onDoc: go }} engagementId={engagementId} onOpen={open} openError={openError} />;
+  if (!opened && local && doc === 'sources') {
+    return <SourcesPage origin={{ kind: 'local', onDoc: go }} engagementId={engagementId} onOpen={open} openError={openError}
+      onShowReport={(shownDoc, name) => { setOpenError(null); setOpened({ name, doc: shownDoc, backLabel: 'Volver a las fuentes' }); }} />;
+  }
   return shown === null
     ? <EquivalencePending origin={origin} failed={equivalenceFailed} onOpen={open} openError={openError} />
     : shown.kind === 'watch'

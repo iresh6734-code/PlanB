@@ -32,7 +32,14 @@ export interface EngagementView {
   sources: Record<EngagementRole, SourceState>;
   /** Lo que falta para pasar a la sala limpia (corte 2). Vacío = listo. */
   missing: string[];
+  /** La última emisión de la sala limpia (corte 2), si la hay. La llave nunca va aquí. */
+  issue?: IssueSummary | null;
 }
+
+/** Lo que se guarda y se enseña de una emisión. `stale`: alguna fuente cambió después de emitir. */
+export interface IssueSummary { issuedAt: string; reportFingerprint: string; custodyFingerprint: string; findings: number; alarms: number; stale: boolean }
+/** La respuesta de emitir: lo mismo y, solo esta vez, la llave de la copia, que no se guarda en ningún sitio. */
+export type IssueResult = IssueSummary & { key: string };
 
 /** Por qué una entrada no sirve, en palabras para la persona. */
 export function inputProblem(error: unknown): string {

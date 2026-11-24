@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { CleanRoomError, findLeaks, newSalt, runCleanRoom } from '../shared/verifica/clean-room.js';
 import { custodyFingerprint } from '../shared/verifica/custody.js';
 import { importInvoices, InvoiceImportError, type InvoiceImport } from '../shared/verifica/invoices.js';
-import { parseCaptureText, parseDeclarationsText, VerificaInputError } from '../shared/verifica/inputs.js';
+import { cleanRoomInput, parseCaptureText, parseDeclarationsText, VerificaInputError } from '../shared/verifica/inputs.js';
 import type { VerificaCapture, VerificaDeclarations } from '../shared/verifica/model.js';
 import { buildVerificaReport, reportToJson } from '../shared/verifica/report.js';
 // Verifica · fase 2: sala limpia sin red. Toma dos capturas ya guardadas (de verifica-hubspot.ts u otro lector), las
@@ -60,6 +60,8 @@ export interface CleanRoomDeps {
   readText?: (path: string) => Promise<string>;
   /** Escribe un archivo nuevo; falla si ya existe. */
   writeNew?: (path: string, text: string) => Promise<void>;
+  /** Solo para pruebas: sal y llave fijas, para comparar byte a byte con la sala limpia del servidor local. */
+  cleanRoom?: { salt?: string; key?: string };
 }
 
 /** 0 = informe, copia y llave escritos; 1 = la barrera paró el informe o no se pudo escribir; 2 = uso o entradas incorrectas. */
@@ -79,10 +81,10 @@ export async function runCli(argv: string[], deps: CleanRoomDeps): Promise<numbe
     return 2;
   }
 
-  const input = { asOf: latest.capturedAt, previous, latest, invoices: imported?.invoices ?? null, declarations };
+  const input = cleanRoomInput({ previous, latest, invoices: imported?.invoices ?? null, declarations });
   let result;
   try {
-    result = await runCleanRoom(input);
+    result = await runCleanRoom(input, deps.cleanRoom);
   } catch (e) {
     if (!(e instanceof CleanRoomError)) { deps.err('La sala limpia terminó con un error inesperado; no se escribe nada.\n'); return 1; }
     deps.err(e.message + '\n');

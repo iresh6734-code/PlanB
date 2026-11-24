@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { OperationContent, SourcesContent } from '../src/verifica/Engagements.js';
+import { OperationContent, SourcesContent, type IssueControls } from '../src/verifica/Engagements.js';
 import { Frame } from '../src/verifica/Masthead.js';
 import { engagementView, type Engagement } from '../shared/verifica/engagement.js';
 import { exampleFiles } from '../scripts/verifica-ejemplo.js';
@@ -11,10 +11,11 @@ import { exampleFiles } from '../scripts/verifica-ejemplo.js';
 const AT = '2026-11-24T10:00:00.000Z';
 const engagement: Engagement = { id: '0b8f3f3e-6a1e-4c55-9d5c-0b9a1c9f2e11', name: 'Distribuidora del norte', createdAt: AT, updatedAt: AT };
 const noop = () => {};
+const controls = (over: Partial<IssueControls> = {}): IssueControls => ({ busy: false, error: null, freshKey: null, onIssue: noop, onDownload: noop, onDownloadKey: noop, onShowReport: noop, ...over });
 
 test('Verifica · paso 1: crear un encargo es el único botón relleno, y cada encargo dice si está listo', () => {
   const html = renderToStaticMarkup(createElement(OperationContent, {
-    engagements: [{ ...engagement, ready: true, stored: 4 }, { ...engagement, id: '1c9f3f3e-6a1e-4c55-9d5c-0b9a1c9f2e12', name: 'Taller del sur', ready: false, stored: 1 }],
+    engagements: [{ ...engagement, ready: true, stored: 4, issued: false }, { ...engagement, id: '1c9f3f3e-6a1e-4c55-9d5c-0b9a1c9f2e12', name: 'Taller del sur', ready: false, stored: 1, issued: false }, { ...engagement, id: '2d9f3f3e-6a1e-4c55-9d5c-0b9a1c9f2e13', name: 'Imprenta del este', ready: true, stored: 4, issued: true }],
     loadError: null, busy: false, createError: null, onCreate: noop, onOpenEngagement: noop,
   }));
   assert.equal(html.match(/class="vf-primary"/g)?.length, 1);
@@ -23,6 +24,7 @@ test('Verifica · paso 1: crear un encargo es el único botón relleno, y cada e
   assert.match(html, /Faltan fuentes/);
   assert.match(html, /4 de 4 fuentes/);
   assert.match(html, /1 de 4 fuentes/);
+  assert.match(html, /Informe emitido/);
   const empty = renderToStaticMarkup(createElement(OperationContent, { engagements: [], loadError: null, busy: false, createError: null, onCreate: noop, onOpenEngagement: noop }));
   assert.match(empty, /Todavía no hay ningún encargo en este equipo/);
 });
@@ -30,7 +32,7 @@ test('Verifica · paso 1: crear un encargo es el único botón relleno, y cada e
 test('Verifica · paso 2: cada fuente con su estado y su huella, y ningún nombre del CRM en la página', () => {
   const files = exampleFiles(true), stamp = (fileName: string) => ({ text: files.get(fileName)!, fileName, storedAt: AT });
   const view = engagementView(engagement, { latest: stamp('ahora.json'), invoices: stamp('facturas.csv'), declarations: { text: '{"renewalRate":2}', fileName: 'mal.json', storedAt: AT } });
-  const html = renderToStaticMarkup(createElement(SourcesContent, { view, busyRole: null, errors: { previous: 'El archivo no es una captura de Verifica.' }, onUpload: noop, onRemove: noop }));
+  const html = renderToStaticMarkup(createElement(SourcesContent, { view, busyRole: null, errors: { previous: 'El archivo no es una captura de Verifica.' }, onUpload: noop, onRemove: noop, issue: controls() }));
   assert.equal(html.match(/class="vf-source"/g)?.length, 4);
   assert.equal(html.match(/data-status="ok"/g)?.length, 4, 'dos fuentes que sirven: fila y etiqueta');
   assert.match(html, /data-status="missing"/);
@@ -38,7 +40,7 @@ test('Verifica · paso 2: cada fuente con su estado y su huella, y ningún nombr
   assert.match(html, /Huella <code title="[0-9a-f]{64}">[0-9a-f]{12}<\/code>/);
   assert.match(html, /El archivo no es una captura de Verifica\./, 'el error de la última subida se ve en su fila');
   assert.match(html, /faltan: falta la captura anterior; las cifras declaradas no sirven/);
-  assert.equal(html.match(/class="vf-primary"/g), null, 'la sala limpia llega en el corte 2: aquí no hay botón relleno');
+  assert.equal(html.match(/class="vf-primary"/g), null, 'con fuentes que faltan no se puede emitir: no hay botón relleno');
   const names = JSON.parse(files.get('ahora.json')!).companies.slice(0, 20).map((c: { name: string }) => c.name);
   assert.deepEqual(names.filter((name: string) => html.includes(name)), []);
 });
@@ -52,4 +54,25 @@ test('Verifica · con el servidor local los pasos 1 y 2 navegan; sin él siguen 
   const offline = renderToStaticMarkup(createElement(Frame, { origin: { kind: 'reference', variant: 'traps', onDoc: noop }, current: 'report', eyebrow: 'Informe', title: 'Informe', lede: '' }));
   assert.match(offline, /<span class="vf-step" data-doc="false"><span class="vf-step-n">01<\/span>/);
   assert.match(offline, /<span class="vf-step" data-doc="false"><span class="vf-step-n">02<\/span>/);
+});
+
+test('Verifica · paso 2: emitir, descargar por separado y la llave solo justo después de emitir', () => {
+  const files = exampleFiles(true), stamp = (fileName: string) => ({ text: files.get(fileName)!, fileName, storedAt: AT });
+  const base = engagementView(engagement, { previous: stamp('antes.json'), latest: stamp('ahora.json'), invoices: stamp('facturas.csv'), declarations: stamp('declaraciones.json') });
+  const render = (view: typeof base, over: Partial<IssueControls> = {}) => renderToStaticMarkup(createElement(SourcesContent, { view, busyRole: null, errors: {}, onUpload: noop, onRemove: noop, issue: controls(over) }));
+  const ready = render({ ...base, issue: null });
+  assert.equal(ready.match(/class="vf-primary"/g)?.length, 1);
+  assert.match(ready, /class="vf-primary"[^>]*>Emitir el informe</);
+  assert.ok(!ready.includes('Descargar el informe') && !ready.includes('Descargar la llave'));
+  const issue = { issuedAt: AT, reportFingerprint: 'a'.repeat(64), custodyFingerprint: 'b'.repeat(64), findings: 6, alarms: 6, stale: false };
+  const issued = render({ ...base, issue }, { freshKey: 'vfk1-' + 'x'.repeat(43) });
+  assert.equal(issued.match(/class="vf-primary"/g), null, 'emitido y al día: nada que volver a emitir');
+  assert.match(issued, /6 de 6 comprobaciones se salen de lo normal/);
+  for (const label of ['Descargar el informe', 'Descargar la copia custodiada', 'Ver el informe', 'Descargar la llave']) assert.ok(issued.includes(label), label);
+  assert.ok(!issued.includes('vfk1-'), 'la llave se descarga, no se pinta');
+  const later = render({ ...base, issue });
+  assert.ok(!later.includes('Descargar la llave'), 'al volver más tarde la llave ya no está');
+  const stale = render({ ...base, issue: { ...issue, stale: true } });
+  assert.match(stale, /class="vf-primary"[^>]*>Volver a emitir</);
+  assert.match(stale, /Alguna fuente cambió después de emitir/);
 });

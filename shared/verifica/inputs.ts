@@ -2,7 +2,7 @@
 // Una sola pieza para los scripts (que las leen de archivos) y para el servidor local (que las recibe de la pantalla).
 // Puro: valida la forma y devuelve el objeto o lanza VerificaInputError con un mensaje para la persona. Un texto que no
 // es JSON deja pasar el SyntaxError de JSON.parse, para que cada llamador lo explique a su manera.
-import type { VerificaCapture, VerificaDeclarations } from './model.js';
+import type { VerificaCapture, VerificaDeclarations, VerificaInvoice } from './model.js';
 
 export class VerificaInputError extends Error { constructor(message: string) { super(message); this.name = 'VerificaInputError'; } }
 
@@ -31,4 +31,10 @@ export function parseDeclarationsText(text: string, label: string): VerificaDecl
     out[key] = raw;
   }
   return out;
+}
+
+/** La entrada de la sala limpia, igual para el script y para el servidor local: el corte es la fecha de la captura más
+ *  reciente. Así un mismo juego de fuentes (con la misma sal y llave) da el mismo informe por los dos caminos. */
+export function cleanRoomInput(sources: { previous: VerificaCapture | null; latest: VerificaCapture; invoices: VerificaInvoice[] | null; declarations: VerificaDeclarations }) {
+  return { asOf: sources.latest.capturedAt, previous: sources.previous, latest: sources.latest, invoices: sources.invoices, declarations: sources.declarations };
 }

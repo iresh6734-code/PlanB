@@ -1,9 +1,9 @@
 // Plan B Verifica · cliente de los encargos del servidor local (fase D, corte 1). Solo se usa cuando verifica.html la
 // sirve el servidor local; abierta suelta, la página no llama a nada.
-import type { Engagement, EngagementRole, EngagementView } from '../../shared/verifica/engagement.js';
+import type { Engagement, EngagementRole, EngagementView, IssueResult } from '../../shared/verifica/engagement.js';
 import { ENGAGEMENT_LIMITS } from '../../shared/verifica/engagement.js';
 
-export type EngagementSummary = Engagement & { ready: boolean; stored: number };
+export type EngagementSummary = Engagement & { ready: boolean; stored: number; issued: boolean };
 
 export class EngagementApiError extends Error { constructor(message: string, public status: number) { super(message); this.name = 'EngagementApiError'; } }
 
@@ -43,4 +43,16 @@ export async function uploadSource(id: string, role: EngagementRole, file: File)
   let text: string;
   try { text = await file.text(); } catch { throw new EngagementApiError('No se pudo leer «' + file.name + '».', 0); }
   return call<EngagementView>(`/api/verifica/engagements/${id}/sources/${role}`, { method: 'PUT', body: JSON.stringify({ text, fileName: file.name.slice(0, ENGAGEMENT_LIMITS.fileNameChars) }) });
+}
+
+/** Sala limpia: devuelve la emisión y, solo esta vez, la llave de la copia. */
+export const issueCleanRoom = (id: string) => call<IssueResult>(`/api/verifica/engagements/${id}/clean-room`, { method: 'POST' });
+
+/** El informe o la copia custodiada tal como se emitieron, en texto. */
+export async function issueFile(id: string, file: 'report' | 'custody'): Promise<string> {
+  let response: Response;
+  try { response = await fetch(`/api/verifica/engagements/${id}/issue/${file}`); }
+  catch { throw new EngagementApiError('No hubo respuesta del servidor local. Comprueba que Plan B sigue abierto y reintenta.', 0); }
+  if (!response.ok) throw new EngagementApiError(response.status === 401 ? 'Plan B está bloqueado: desbloquéalo en la app principal y vuelve a intentarlo.' : 'No se pudo descargar el archivo emitido.', response.status);
+  return response.text();
 }

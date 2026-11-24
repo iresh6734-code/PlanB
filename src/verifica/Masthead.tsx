@@ -47,7 +47,7 @@ const EXAMPLE_DOCS: readonly DocKind[] = ['report', 'watch', 'migration'];
 
 export type ReportOrigin =
   | { kind: 'reference'; variant: Variant; onVariant?: (variant: Variant) => void; doc?: DocKind; onDoc?: (doc: DocKind) => void; local?: boolean }
-  | { kind: 'opened'; name: string; onReference?: () => void }
+  | { kind: 'opened'; name: string; onReference?: () => void; backLabel?: string }
   /** Pasos del encargo (Operación, Fuentes) servidos por el servidor local: sin ejemplo ni variantes. */
   | { kind: 'local'; onDoc?: (doc: DocKind) => void };
 
@@ -149,7 +149,7 @@ export function Frame({ origin, current, eyebrow, title, lede, onOpen, openError
                   </div>
                 </div>
               )
-              : origin.kind === 'opened' ? <div className="vf-head-row"><button type="button" className="vf-link" onClick={() => origin.onReference?.()}>Volver al ejemplo</button></div> : null}
+              : origin.kind === 'opened' ? <div className="vf-head-row"><button type="button" className="vf-link" onClick={() => origin.onReference?.()}>{origin.backLabel ?? 'Volver al ejemplo'}</button></div> : null}
             {openError && <p className="vf-error" role="alert">{openError}</p>}
           </header>
           {children}

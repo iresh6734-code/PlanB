@@ -5,7 +5,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createBaseApp } from '../server/app.js';
-import { registerVerificaEngagements, engagementInputs } from '../server/verifica/engagements.js';
+import { registerVerificaEngagements, engagementInputs, type VerificaEngagementOptions } from '../server/verifica/engagements.js';
+import { newSalt } from '../shared/verifica/clean-room.js';
+import { newCustodyKey, openCustody } from '../shared/verifica/custody.js';
 import { exampleFiles } from '../scripts/verifica-ejemplo.js';
 import { runCli } from '../scripts/verifica-sala-limpia.js';
 import type { EngagementView } from '../shared/verifica/engagement.js';
@@ -14,10 +16,10 @@ import type { VerificaReport } from '../shared/verifica/report.js';
 process.env.NODE_ENV = 'test';
 const AT = '2026-11-24T10:00:00.000Z';
 
-async function rig() {
+async function rig(options: VerificaEngagementOptions = {}) {
   const root = fs.mkdtempSync(path.resolve('tests/.tmp/verifica-encargos-'));
   const r = await createBaseApp({ root, dbPath: ':memory:', staticDir: root });
-  registerVerificaEngagements(r.app, r.store, { now: () => AT });
+  registerVerificaEngagements(r.app, r.store, { now: () => AT, ...options });
   return r;
 }
 type Rig = Awaited<ReturnType<typeof rig>>;
@@ -29,15 +31,19 @@ const create = async (r: Rig, name = 'Distribuidora del norte') => (await call(r
 const upload = (r: Rig, id: string, role: string, text: string, fileName = role + '.txt') => call(r, 'PUT', '/engagements/' + id + '/sources/' + role, { text, fileName });
 
 /** El informe que escribe el script de la sala limpia con los mismos archivos. */
-async function scriptReport(files: Map<string, string>): Promise<VerificaReport> {
+async function scriptReport(files: Map<string, string>, cleanRoom?: { salt: string; key: string }): Promise<VerificaReport> {
+  return JSON.parse((await scriptFiles(files, cleanRoom)).get('informe.json')!) as VerificaReport;
+}
+async function scriptFiles(files: Map<string, string>, cleanRoom?: { salt: string; key: string }): Promise<Map<string, string>> {
   const written = new Map<string, string>();
   const code = await runCli(['--previous', 'antes.json', '--latest', 'ahora.json', '--invoices', 'facturas.csv', '--declarations', 'declaraciones.json', '--report', 'informe.json', '--custody', 'copia.json', '--key-out', 'llave.txt'], {
     out: () => {}, err: () => {},
     readText: async name => { const text = files.get(path.basename(name)); if (text === undefined) throw new Error('falta ' + name); return text; },
     writeNew: async (name, text) => { written.set(path.basename(name), text); },
+    cleanRoom,
   });
   assert.equal(code, 0, 'el script escribe el informe');
-  return JSON.parse(written.get('informe.json')!) as VerificaReport;
+  return written;
 }
 
 test('Verifica · encargos: el servidor local se anuncia y crea un encargo vacío', async () => {
@@ -106,4 +112,64 @@ test('Verifica · encargos: las respuestas no devuelven el contenido del CRM y s
   assert.equal(removed.sources.latest.status, 'missing');
   assert.equal((await call(r, 'GET', '/engagements/00000000-0000-4000-8000-000000000000')).status, 404);
   assert.equal((await call(r, 'PUT', '/engagements/' + engagement.id + '/sources/otra', { text: 'x', fileName: 'x' })).status, 422, 'fuente desconocida');
+});
+
+const uploadAll = async (r: Rig, id: string, files: Map<string, string>) => {
+  for (const [role, file] of [['previous', 'antes.json'], ['latest', 'ahora.json'], ['invoices', 'facturas.csv'], ['declarations', 'declaraciones.json']] as const) {
+    assert.equal((await upload(r, id, role, files.get(file)!, file)).status, 200, role);
+  }
+};
+const fetchText = async (r: Rig, url: string) => { const res = await r.app.inject({ method: 'GET', url: '/api/verifica' + url }); return { status: res.statusCode, body: res.body, type: String(res.headers['content-type']) }; };
+
+test('Verifica · sala limpia: sin las dos capturas no se emite nada', async () => {
+  const r = await rig(), files = exampleFiles(true), { engagement } = await create(r);
+  await upload(r, engagement.id, 'latest', files.get('ahora.json')!, 'ahora.json');
+  const res = await call(r, 'POST', '/engagements/' + engagement.id + '/clean-room');
+  assert.equal(res.status, 409);
+  assert.match(res.body.error, /falta la captura anterior/);
+  assert.equal((await fetchText(r, '/engagements/' + engagement.id + '/issue/report')).status, 404);
+});
+
+test('Verifica · sala limpia: con la misma sal y llave, el informe es idéntico byte a byte al del script', async () => {
+  const fixed = { salt: newSalt(), key: newCustodyKey() };
+  const r = await rig({ cleanRoom: fixed }), files = exampleFiles(true), { engagement } = await create(r);
+  await uploadAll(r, engagement.id, files);
+  const issued = await call(r, 'POST', '/engagements/' + engagement.id + '/clean-room');
+  assert.equal(issued.status, 200, JSON.stringify(issued.body));
+  assert.equal(issued.body.key, fixed.key, 'la llave viaja una vez, en la respuesta de emitir');
+  assert.equal(issued.body.findings, 6);
+  assert.equal(issued.body.alarms, 6);
+  const fromScript = await scriptFiles(files, fixed);
+  const report = await fetchText(r, '/engagements/' + engagement.id + '/issue/report');
+  assert.equal(report.status, 200);
+  assert.match(report.type, /application\/json/);
+  assert.equal(report.body, fromScript.get('informe.json'), 'mismo informe, byte a byte');
+  assert.equal(issued.body.reportFingerprint, JSON.parse(report.body).fingerprint);
+  // La copia (cifrada con IV propio) se abre con su llave y rehace exactamente el mismo informe.
+  const custody = await fetchText(r, '/engagements/' + engagement.id + '/issue/custody');
+  const opened = await openCustody(JSON.parse(custody.body), fixed.key);
+  assert.equal(opened.reproduces, true);
+  assert.equal(opened.rebuilt.fingerprint, issued.body.reportFingerprint);
+  assert.equal(JSON.parse(custody.body).format, JSON.parse(fromScript.get('copia.json')!).format);
+});
+
+test('Verifica · sala limpia: la llave no se guarda ni vuelve a salir, y cambiar una fuente deja la emisión desfasada', async () => {
+  const r = await rig(), files = exampleFiles(true), { engagement } = await create(r);
+  await uploadAll(r, engagement.id, files);
+  const issued = await call(r, 'POST', '/engagements/' + engagement.id + '/clean-room');
+  assert.equal(issued.status, 200);
+  const key: string = issued.body.key;
+  assert.match(key, /^vfk1-/);
+  const view = (await call(r, 'GET', '/engagements/' + engagement.id)).body;
+  assert.equal(view.issue.stale, false);
+  assert.equal(view.issue.reportFingerprint, issued.body.reportFingerprint);
+  const everything = JSON.stringify(view) + JSON.stringify((await call(r, 'GET', '/engagements')).body)
+    + (await fetchText(r, '/engagements/' + engagement.id + '/issue/report')).body + (await fetchText(r, '/engagements/' + engagement.id + '/issue/custody')).body;
+  assert.ok(!everything.includes(key), 'la llave no aparece en ninguna otra respuesta');
+  const rows = r.store.db.prepare('SELECT key FROM meta WHERE key LIKE ?').all('verifica:%') as { key: string }[];
+  for (const row of rows) assert.ok(!JSON.stringify(r.store.get(row.key, null)).includes(key), 'ni en el almacén: ' + row.key);
+  assert.equal((await call(r, 'GET', '/engagements')).body.engagements[0].issued, true);
+  const changed = (await upload(r, engagement.id, 'declarations', '{"activeCustomers":300}', 'otras.json')).body;
+  assert.equal(changed.issue.stale, true, 'el informe ya no corresponde a las fuentes');
+  assert.equal((await call(r, 'GET', '/engagements')).body.engagements[0].issued, false);
 });

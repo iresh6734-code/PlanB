@@ -311,3 +311,26 @@ Plan en Claude Docs, «Plan B · Mega plan 2». La usuaria pidió seguirlo «usa
 - En navegador, con `tests/.tmp/verifica-vista/encargo.mts` contra un servidor aislado (`start-api.mjs`, 4581, `NODE_ENV=test`, datos nuevos, página compilada en su `dist`): 40/40 en escritorio, móvil y oscuro. Incluye el archivo equivocado rechazado, las cuatro fuentes válidas, las huellas iguales a las del informe del script, la vuelta al paso 1 con el encargo listo, sin servidor el visor de siempre y ningún desborde.
 
 **Siguiente:** corte 2, la sala limpia con un botón (`engagementInputs` ya devuelve lo que entra en ella), con el informe igual byte a byte que el del script.
+
+## 24/11/2026 · Mega plan 2 · Fase D, corte 2: la sala limpia con un botón
+
+**Qué se puede hacer ahora.** En el paso 2, cuando las fuentes están listas, el botón «Emitir el informe» pasa la sala limpia y saca tres cosas por separado: el informe para el comprador, la copia custodiada para quien la guarda y la llave de esa copia. La llave solo se ofrece justo después de emitir («Guarda ahora la llave…») y no se pinta en la pantalla. Después se pueden descargar el informe y la copia cuantas veces haga falta, y «Ver el informe» lo abre en el visor, donde se comprueba la copia con su llave («Volver a las fuentes» regresa). Si cambia alguna fuente, la emisión queda desfasada y aparece «Volver a emitir». Si la barrera encuentra un texto del CRM, no sale nada (422), sin decir qué texto es.
+
+**Piezas:**
+
+- `shared/verifica/inputs.ts`: `cleanRoomInput`, la entrada de la sala limpia, la misma para el script y el servidor (el corte es la fecha de la captura más reciente).
+- `scripts/verifica-sala-limpia.ts`: la usa y acepta `deps.cleanRoom` con sal y llave fijas, solo para pruebas.
+- `server/verifica/engagements.ts`:
+  - `POST .../clean-room` llama a `runCleanRoom`. Guarda en `verifica:issue:<id>` el informe, la copia, sus huellas y las huellas de las fuentes de las que salió. La llave solo va en la respuesta; no se guarda en ningún sitio.
+  - `GET .../issue/report` y `.../issue/custody` devuelven lo emitido, con `no-store`.
+  - La vista de cada encargo lleva `issue`, y su resumen, `issued`.
+- `shared/verifica/engagement.ts`: tipos `IssueSummary` e `IssueResult`.
+- `src/verifica`: panel de emisión en `Engagements.tsx`, `issueCleanRoom` e `issueFile` en el cliente, `downloadText` en `documents.ts` y `backLabel` en el origen `opened`. `docs/api.md`: 104 rutas.
+
+**Comprobación:**
+
+- `verifica-encargos` 7/7: con la misma sal y llave, el informe del servidor es idéntico byte a byte al del script; la copia se abre con su llave y rehace el mismo informe; la llave no aparece en ninguna otra respuesta ni en el almacén; cambiar una fuente deja la emisión desfasada.
+- `verifica-pasos` 4/4, Verifica completa, rutas documentadas y guardas en verde; `tsc` limpio.
+- En navegador, con `tests/.tmp/verifica-vista/emitir.mts` contra el servidor aislado: 36/36 en escritorio, móvil y oscuro. Incluye emitir, descargar los tres archivos por separado, la huella del informe descargado igual a la de la pantalla, la llave ausente del informe y de la copia, ver el informe, comprobar la copia con su llave en el visor y la emisión desfasada al cambiar una fuente.
+
+**Siguiente:** corte 3, leer HubSpot desde la pantalla con la autorización vigente. Con el HubSpot simulado tiene que dar lo mismo que el script; con uno real, en la fase B.

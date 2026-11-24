@@ -204,6 +204,11 @@ button.vf-step:hover { background: var(--vf-subtle); }
 .vf-source-state[data-status="waiting"] { background: var(--vf-declared-bg); color: var(--vf-declared); }
 .vf-source-state[data-status="invalid"] { background: var(--vf-alarm-bg); color: var(--vf-alarm); }
 .vf-source .vf-error, .vf-card .vf-error { margin-top: 4px; }
+.vf-issue { display: grid; gap: 12px; }
+.vf-issue h2 { margin-bottom: 0; }
+.vf-issue-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; }
+.vf-key-box { display: grid; gap: 10px; justify-items: start; padding: 14px 16px; border: 1px solid var(--vf-declared); border-radius: 8px; background: var(--vf-declared-bg); color: var(--vf-ink); }
+.vf-key-box p { margin: 0; max-width: 70ch; }
 
 /* Copia custodiada */
 .vf-custody-intro { margin: -4px 0 16px; max-width: 70ch; color: var(--vf-text-2); }

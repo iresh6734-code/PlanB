@@ -29,8 +29,10 @@ export function readDocumentText(text: string): VerificaDocument | string {
 export const day = (iso: string) => new Date(iso).toLocaleDateString('es-ES', { timeZone: 'Europe/Madrid', day: 'numeric', month: 'long', year: 'numeric' });
 export const short = (fingerprint: string) => fingerprint.slice(0, 12);
 
-export function downloadJson(json: string, name: string) {
-  const url = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+export function downloadJson(json: string, name: string) { downloadText(json, name, 'application/json'); }
+
+export function downloadText(text: string, name: string, type = 'text/plain') {
+  const url = URL.createObjectURL(new Blob([text], { type: type + ';charset=utf-8' }));
   const link = document.createElement('a');
   link.href = url;
   link.download = name;

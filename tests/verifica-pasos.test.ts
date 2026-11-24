@@ -131,3 +131,53 @@ test('Verifica · paso 3: el progreso, el resultado con su acta, la parada y la 
   const step = renderToStaticMarkup(createElement(Frame, { origin: { kind: 'local', onDoc: noop }, current: 'captures', eyebrow: 'Paso 3', title: 'Leer HubSpot', lede: '' }));
   assert.match(step, /<button type="button" class="vf-step" data-doc="true" aria-current="page"><span class="vf-step-n">03<\/span>/);
 });
+
+test('Verifica · Mega Plan 3: expediente con su sello, paquete solo con informe emitido y cierre que pide el nombre', async () => {
+  const { ExpedienteContent } = await import('../src/verifica/Expediente.js');
+  const { nextLedgerEntry, verifyLedger } = await import('../shared/verifica/expediente.js');
+  const id = engagement.id, hex = 'b'.repeat(64);
+  const first = nextLedgerEntry(null, id, AT, { event: 'source-stored', data: { role: 'latest', origin: 'hubspot-read' }, refs: [{ kind: 'capture', method: 'sha256-bytes-v1', fingerprint: hex }, { kind: 'read-record', method: 'verifica-read-record-v1', fingerprint: hex }] });
+  const second = nextLedgerEntry(first, id, AT, { event: 'report-issued', refs: [{ kind: 'report', method: 'planb-verifica-report-v1', fingerprint: hex }] });
+  const entries = [first, second];
+  const view = { entries, verification: verifyLedger(entries, { engagement: id }), anchors: [{ sequence: 2, ok: true }] };
+  const controls = { busy: false, error: null };
+  const html = renderToStaticMarkup(createElement(ExpedienteContent, { name: engagement.name, view, loadError: null, issued: true, pkg: { ...controls, onBuild: noop }, close: { ...controls, onClose: noop } }));
+  assert.match(html, /Última entrada del expediente · 2 entradas/);
+  assert.match(html, /Coincide con el contenido/);
+  assert.match(html, /Informe emitido/);
+  assert.match(html, /Fuente guardada<span class="vf-trace"> · Captura más reciente · leída de HubSpot · con acta de lectura/);
+  assert.match(html, /Descargar el paquete/);
+  assert.match(html, /disabled="">Cerrar y borrar<\/button>/, 'sin escribir el nombre no se cierra');
+  assert.equal(html.match(/class="vf-primary"/g), null, 'ninguna acción de esta sección es la principal');
+  const broken = renderToStaticMarkup(createElement(ExpedienteContent, { name: engagement.name, view: { ...view, anchors: [{ sequence: 2, ok: false }] }, loadError: null, issued: false, pkg: { ...controls, onBuild: noop }, close: { ...controls, onClose: noop } }));
+  assert.match(broken, /alguien ha recortado o rehecho la cadena/);
+  assert.match(broken, /Primero hay que emitir el informe/);
+});
+
+test('Verifica · Mega Plan 3: preguntas con sus seudónimos y comparación que dice qué fuente lo explica', async () => {
+  const { QuestionsContent } = await import('../src/verifica/Preguntas.js');
+  const { PackageView } = await import('../src/verifica/Expediente.js');
+  const { buildTrapCompany } = await import('../shared/verifica/empresa-con-trampas.js');
+  const { buildVerificaReport } = await import('../shared/verifica/report.js');
+  const { questionsFor, buildAnswers } = await import('../shared/verifica/preguntas.js');
+  const { compareReports } = await import('../shared/verifica/comparacion.js');
+  const { buildPackage } = await import('../shared/verifica/paquete.js');
+  const c = buildTrapCompany({ traps: true });
+  const base = { asOf: c.asOf, previous: c.previous, latest: c.latest, declarations: c.declarations, salt: c.salt };
+  const withInvoices = buildVerificaReport({ ...base, invoices: c.invoices }), without = buildVerificaReport({ ...base, invoices: null });
+  const questions = questionsFor(withInvoices);
+  const answers = buildAnswers(withInvoices, [{ question: questions[0].id, text: 'Pedidos firmados.', answeredAt: AT }]);
+  const html = renderToStaticMarkup(createElement(QuestionsContent, { questions, answers, comparison: compareReports(without, withInvoices), loadError: null, controls: { busy: null, errors: {}, onSave: noop } }));
+  assert.match(html, /Qué cambió desde la emisión anterior/);
+  assert.match(html, /lo explica: libro de facturas/i);
+  assert.equal(html.match(/class="vf-question"/g)?.length, questions.length);
+  assert.match(html, /Declarada el 24 de noviembre de 2026/);
+  const names = c.latest.companies.slice(0, 30).map(x => x.name);
+  assert.deepEqual(names.filter(n => html.includes(n)), [], 'ningún nombre del CRM');
+  const pkg = buildPackage({ engagement: engagement.id, createdAt: AT, ledgerHead: { sequence: 3, fingerprint: 'c'.repeat(64) }, documents: [{ kind: 'report', fingerprint: withInvoices.fingerprint, content: withInvoices }, { kind: 'answers', fingerprint: answers.fingerprint, content: answers }] });
+  const viewer = renderToStaticMarkup(createElement(PackageView, { pkg, origin: { kind: 'opened', name: 'paquete.json' }, onOpenDocument: noop }));
+  assert.match(viewer, /El paquete está íntegro/);
+  assert.equal(viewer.match(/Coincide con su huella/g)?.length, 3);
+  assert.match(viewer, /Respuestas del vendedor \(declarado\)/);
+  assert.match(viewer, /la 3, huella <code title="c{64}">c{12}<\/code>/);
+});

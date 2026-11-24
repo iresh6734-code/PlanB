@@ -423,3 +423,26 @@ Plan en Claude Docs, «Plan B · Mega plan 2». La usuaria pidió seguirlo «usa
 - `tsc` y batería segura en verde. Sin navegador, servidor, PowerShell ni DPAPI.
 
 **Pendiente:** motivo visible del fallo semanal, ficha sin reinterpretar la captura y estado interrumpido. Informe: `coordination/reports/CODEX-VERIFICA-ROBUSTEZ-1.md`.
+## 24/11/2026 · Mega plan 3 · Fases 1 y 3 en la pantalla (Claude)
+
+Con autorización de la usuaria para acabar el plan entero, y avisado Codex por el chat del tablón (sin respuesta desde las 10:47), monto lo que faltaba de las fases 1 y 3 sobre el núcleo del expediente de Codex (`3d5f91a`). La fase 2 (ficha sin reinterpretar, estado interrumpido, motivo en la vigilancia, tamaño de la migración) y la fase B siguen con Codex; la fase 4 espera a la primera venta, como dice el plan.
+
+**Qué se puede hacer ahora, todo dentro de «Fuentes» (sin paso nuevo):**
+
+- **Expediente:** la línea de tiempo de la cadena privada, de la más reciente a la primera, con su sello. Cada emisión guarda la cabeza del expediente de ese momento; si alguien retoca una entrada, la recorta o la rehace, el sello lo dice.
+- **Preguntas al vendedor:** una fija por regla, solo para los hallazgos que se salen de lo normal, con sus seudónimos. La respuesta queda como «declarado», en el expediente, y no cambia lo observado. Una respuesta con un nombre, un correo, un NIF o un ID del CRM no se guarda (misma barrera que la sala limpia).
+- **Comparación entre emisiones:** al volver a emitir, «Qué cambió desde la emisión anterior» dice qué cifra cambió, qué fuente lo explica y qué pasó a comprobarse.
+- **Paquete del comprador:** un solo archivo con el informe y, si se eligen, el parte de vigilancia y las respuestas. Lleva la cabeza del expediente. El visor lo abre sin conexión, comprueba cada documento y abre cada uno con su vista («Volver al paquete»).
+- **Cerrar el encargo:** escribiendo su nombre, se borran del equipo sus fuentes, capturas, actas, emisiones, vigilancia y expediente, y se descarga un acta mínima (filas borradas por tipo, cabeza del expediente, lo que queda fuera del equipo). Operación lista los encargos cerrados con su acta.
+- Observación 5 de la revisión: con una lectura de HubSpot en marcha, las capturas no se cambian a mano ni se cierra el encargo (409).
+
+**Piezas:**
+- `shared/verifica/comparacion.ts`, `preguntas.ts` y `paquete.ts` (nuevos, puros).
+- `shared/verifica/expediente.ts`: eventos `answer-declared`, `package-issued` y `engagement-closed`, y los tipos de la pantalla.
+- `server/verifica/expediente-api.ts` (nuevo): `GET .../expediente`, `GET .../issues`, `GET .../questions`, `PUT .../answers/:rule`, `POST .../package`, `POST .../close` y `GET /api/verifica/closures`. Cada escritura va en la misma transacción que su entrada del expediente. Montado desde `server/verifica/engagements.ts`, que además guarda cada emisión con la cabeza del expediente.
+- `src/verifica/Expediente.tsx` y `Preguntas.tsx` (nuevos); `Engagements.tsx`, `VerificaReport.tsx`, `documents.ts`, `engagement-client.ts` y `verifica.css`.
+
+**Comprobación:**
+- `verifica-expediente-api` 6/6, `verifica-preguntas` 3/3, `verifica-paquete` 2/2, `verifica-pasos` 9/9. Verifica completa: 121 de 122.
+- La que falla es `api-client-routes`: `docs/api.md` no documenta las once rutas nuevas (siete de este corte y las cuatro de la vigilancia de Codex). Regenerarlo lo deniega el sistema de permisos porque el archivo está reservado por `CLAUDE-API-INVENTORY`; hace falta liberar esa reserva o el permiso de la usuaria.
+- En navegador, `tests/.tmp/verifica-vista/mp3.mts` contra el servidor con HubSpot simulado (4582): 48/48 en escritorio, móvil y oscuro. Incluye dos emisiones con su comparación, una respuesta con nombre rechazada, el expediente íntegro, el paquete descargado y verificado, abierto en el visor, y el cierre con su acta.

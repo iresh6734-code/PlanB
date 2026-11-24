@@ -16,6 +16,7 @@ import { Fingerprint, Frame, Refs, type DocKind, type ReportOrigin, type Variant
 import { conclusion, highlights, keyFigure, sourcesText, traceText } from './summary.js';
 import { localAvailable } from './engagement-client.js';
 import { OperationPage, SourcesPage } from './Engagements.js';
+import { PackageView } from './Expediente.js';
 import { CapturesPage } from './Captures.js';
 import { referenceWatch, WatchReportView } from './WatchReport.js';
 
@@ -109,7 +110,7 @@ export function VerificaReportView({ report, origin, onOpen, openError }: { repo
   );
 }
 
-type Opened = { name: string; doc: VerificaDocument; backLabel?: string };
+type Opened = { name: string; doc: VerificaDocument; backLabel?: string; parent?: Opened };
 
 export default function VerificaReportPage() {
   const [variant, setVariant] = useState<Variant>('traps');
@@ -152,7 +153,8 @@ export default function VerificaReportPage() {
       else { setOpened({ name: file.name, doc: result }); setOpenError(null); }
     }, () => setOpenError('No se pudo leer «' + file.name + '».'));
   };
-  const toReference = () => { setOpened(null); setOpenError(null); };
+  // Un documento abierto desde un paquete vuelve al paquete; lo demás, al ejemplo o al paso de donde vino.
+  const toReference = () => { setOpened(opened?.parent ?? null); setOpenError(null); };
   const shown = opened ? opened.doc : reference;
   const origin: ReportOrigin = opened
     ? { kind: 'opened', name: opened.name, onReference: toReference, backLabel: opened.backLabel }
@@ -163,7 +165,8 @@ export default function VerificaReportPage() {
   }
   if (!opened && local && doc === 'sources') {
     return <SourcesPage origin={{ kind: 'local', onDoc: go }} engagementId={engagementId} onOpen={open} openError={openError}
-      onShowReport={(shownDoc, name) => { setOpenError(null); setOpened({ name, doc: shownDoc, backLabel: 'Volver a las fuentes' }); }} />;
+      onShowReport={(shownDoc, name) => { setOpenError(null); setOpened({ name, doc: shownDoc, backLabel: 'Volver a las fuentes' }); }}
+      onClosed={() => { setEngagementId(null); go('operation'); }} />;
   }
   if (!opened && local && doc === 'captures') {
     return <CapturesPage origin={{ kind: 'local', onDoc: go }} engagementId={engagementId} onOpen={open} openError={openError} onShowSources={() => go('sources')} />;
@@ -182,6 +185,9 @@ export default function VerificaReportPage() {
   }
   return shown === null
     ? <EquivalencePending origin={origin} failed={equivalenceFailed} onOpen={open} openError={openError} />
+    : shown.kind === 'package'
+      ? <PackageView pkg={shown.pkg} origin={origin} onOpen={open} openError={openError}
+          onOpenDocument={(inner, label) => { if (opened) setOpened({ name: label, doc: inner, backLabel: 'Volver al paquete', parent: opened }); }} />
     : shown.kind === 'watch'
       ? <WatchReportView report={shown.report} origin={origin} onOpen={open} openError={openError} />
       : shown.kind === 'migration'

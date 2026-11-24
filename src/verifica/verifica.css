@@ -231,6 +231,21 @@ button.vf-step:hover { background: var(--vf-subtle); }
 .vf-read-progress { list-style: none; margin: 0; padding: 10px 14px; display: grid; gap: 2px; background: var(--vf-subtle); border-radius: 8px; font-family: var(--vf-mono); font-size: 13px; color: var(--vf-text-2); }
 .vf-record { grid-template-columns: minmax(0, 1fr) auto; }
 
+/* Mega Plan 3 · expediente, preguntas y cierre. */
+.vf-ledger { list-style: none; margin: 18px 0 0; padding: 0; }
+.vf-ledger-entry { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 4px 16px; padding: 12px 0; border-bottom: 1px solid var(--vf-rule); }
+.vf-ledger-entry:last-child { border-bottom: 0; }
+.vf-ledger-text { display: grid; gap: 2px; min-width: 0; }
+.vf-ledger-event { margin: 0; font-size: 15px; font-weight: 500; color: var(--vf-ink); }
+.vf-questions { list-style: none; margin: 0; padding: 0; }
+.vf-question { display: grid; gap: 8px; padding: 22px 0; border-bottom: 1px solid var(--vf-rule); }
+.vf-question h3 { margin: 0; font-size: 17px; font-weight: 600; }
+.vf-answer { display: grid; gap: 8px; margin-top: 4px; }
+.vf-textarea { min-height: 84px; padding: 10px 12px; font-family: var(--vf-sans); font-size: 15px; line-height: 1.45; resize: vertical; width: 100%; }
+.vf-danger { border-color: var(--vf-alarm); }
+.vf-danger-button { color: var(--vf-alarm); border-color: var(--vf-alarm); }
+.vf-danger-button:disabled { opacity: 0.45; cursor: not-allowed; }
+
 /* Copia custodiada */
 .vf-custody-intro { margin: -4px 0 16px; max-width: 70ch; color: var(--vf-text-2); }
 .vf-custody-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; align-items: end; gap: 12px 16px; }

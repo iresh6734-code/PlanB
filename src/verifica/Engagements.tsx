@@ -5,9 +5,12 @@
 // sirve el servidor local; cada vista tiene una parte que solo pinta (probada sin red) y un contenedor que llama a la API.
 import React, { useCallback, useEffect, useState } from 'react';
 import { ENGAGEMENT_LIMITS, ENGAGEMENT_ROLES, ROLE_LABEL, type EngagementRole, type EngagementView, type IssueSummary, type SourceState } from '../../shared/verifica/engagement.js';
-import { createEngagement, EngagementApiError, issueCleanRoom, issueFile, listEngagements, readEngagement, removeSource, uploadSource, type EngagementSummary } from './engagement-client.js';
+import { createEngagement, EngagementApiError, issueCleanRoom, issueFile, listClosures, listEngagements, readEngagement, removeSource, uploadSource, type EngagementSummary } from './engagement-client.js';
+import type { ClosureRecord } from '../../shared/verifica/expediente.js';
 import { day, downloadJson, downloadText, readDocumentText, short, type VerificaDocument } from './documents.js';
 import { Frame, type ReportOrigin } from './Masthead.js';
+import { ExpedienteSection } from './Expediente.js';
+import { QuestionsSection } from './Preguntas.js';
 
 const STATE: Record<SourceState['status'], string> = { missing: 'Falta', ok: 'Sirve', waiting: 'En espera', invalid: 'No sirve' };
 const ACCEPT: Record<EngagementRole, string> = { previous: '.json,application/json', latest: '.json,application/json', invoices: '.csv,text/csv', declarations: '.json,application/json' };
@@ -156,9 +159,11 @@ export function OperationPage({ origin, onOpenEngagement, onOpen, openError }: {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [closures, setClosures] = useState<ClosureRecord[]>([]);
   useEffect(() => {
     let live = true;
     listEngagements().then(list => { if (live) setEngagements(list); }, error => { if (live) setLoadError(message(error)); });
+    listClosures().then(list => { if (live) setClosures(list); }, () => { /* sin lista de cierres */ });
     return () => { live = false; };
   }, []);
   const create = (name: string) => {
@@ -169,16 +174,35 @@ export function OperationPage({ origin, onOpenEngagement, onOpen, openError }: {
     <Frame origin={origin} current="operation" eyebrow="Paso 1 · Operación" title="Encargos de este equipo" onOpen={onOpen} openError={openError}
       lede="Cada encargo reúne lo que entra en la sala limpia: dos capturas del CRM, las facturas y lo que declara el vendedor. Se guarda cifrado en este equipo y nada sale de aquí.">
       <OperationContent engagements={engagements} loadError={loadError} busy={busy} createError={createError} onCreate={create} onOpenEngagement={onOpenEngagement} />
+      {closures.length > 0 && (
+        <section className="vf-section" aria-labelledby="vf-closures">
+          <div className="vf-section-head"><h2 id="vf-closures">Encargos cerrados</h2><p>Sus datos se borraron; queda el acta</p></div>
+          <ul className="vf-engagements">
+            {[...closures].reverse().map(c => (
+              <li key={c.fingerprint} className="vf-engagement vf-record">
+                <div className="vf-engagement-text">
+                  <h3>Cerrado el {day(c.closedAt)}</h3>
+                  <p className="vf-trace">{c.deleted.rows} {c.deleted.rows === 1 ? 'dato borrado' : 'datos borrados'} · expediente {c.ledgerIntact ? 'íntegro' : 'con problemas'} al cerrar · acta <code title={c.fingerprint}>{short(c.fingerprint)}</code></p>
+                </div>
+                <button type="button" className="vf-secondary" onClick={() => downloadJson(JSON.stringify(c, null, 2) + '\n', 'verifica-acta-cierre-' + short(c.fingerprint) + '.json')}>Descargar el acta</button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {origin.kind === 'local' && <p className="vf-head-row"><a className="vf-secondary" href="/inicio">Copia de trabajo</a></p>}
     </Frame>
   );
 }
 
-export function SourcesPage({ origin, engagementId, onOpen, openError, onShowReport }: {
+export function SourcesPage({ origin, engagementId, onOpen, openError, onShowReport, onClosed }: {
   origin: ReportOrigin; engagementId: string | null; onOpen?: (file: File) => void; openError?: string | null;
   /** Abre el informe emitido en el visor (paso 4), con la comprobación de la copia custodiada. */
   onShowReport?: (doc: VerificaDocument, name: string) => void;
+  /** Mega Plan 3: el encargo se ha cerrado y borrado; la página vuelve a Operación. */
+  onClosed?: () => void;
 }) {
+  const [ledgerTick, setLedgerTick] = useState(0);
   const [view, setView] = useState<EngagementView | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busyRole, setBusyRole] = useState<EngagementRole | null>(null);
@@ -234,6 +258,9 @@ export function SourcesPage({ origin, engagementId, onOpen, openError, onShowRep
       {view && engagementId && <SourcesContent view={view} busyRole={busyRole} errors={errors} issue={issueControls}
         onUpload={(role, file) => act(role, () => uploadSource(engagementId, role, file))}
         onRemove={role => act(role, () => removeSource(engagementId, role))} />}
+      {view && engagementId && view.issue && <QuestionsSection engagementId={engagementId} refreshKey={view.issue.issuedAt} onAnswered={() => setLedgerTick(t => t + 1)} />}
+      {view && engagementId && <ExpedienteSection engagementId={engagementId} name={view.engagement.name} issued={!!view.issue}
+        refreshKey={view.engagement.updatedAt + '|' + (view.issue?.issuedAt ?? '') + '|' + ledgerTick} onClosed={() => onClosed?.()} />}
     </Frame>
   );
 }

@@ -8,10 +8,10 @@ import { fingerprintOf } from './report.js';
 export const LEDGER_FORMAT = 'verifica-expediente-v1';
 export const LEDGER_ENTRY_METHOD = 'sha256-canonical-v1';
 
-export const LEDGER_EVENTS = ['source-stored', 'source-removed', 'report-issued', 'watch-signing', 'watch-capture', 'watch-accepted'] as const;
+export const LEDGER_EVENTS = ['source-stored', 'source-removed', 'report-issued', 'watch-signing', 'watch-capture', 'watch-accepted', 'answer-declared', 'package-issued', 'engagement-closed'] as const;
 export type LedgerEvent = typeof LEDGER_EVENTS[number];
 
-export const LEDGER_REF_KINDS = ['capture', 'invoices', 'declarations', 'read-record', 'authorization-document', 'report', 'custody'] as const;
+export const LEDGER_REF_KINDS = ['capture', 'invoices', 'declarations', 'read-record', 'authorization-document', 'report', 'custody', 'answer', 'watch-report', 'package', 'closure'] as const;
 export type LedgerRefKind = typeof LEDGER_REF_KINDS[number];
 
 /**
@@ -20,7 +20,7 @@ export type LedgerRefKind = typeof LEDGER_REF_KINDS[number];
  * - `verifica-input-v1`: `fingerprintOf` del objeto que entra en la sala limpia, como en las fuentes del informe.
  * - los demás: la huella propia de ese formato, con sus funciones vigentes.
  */
-export const LEDGER_REF_METHODS = ['sha256-bytes-v1', 'verifica-input-v1', 'verifica-read-record-v1', 'planb-verifica-report-v1', 'planb-verifica-custody-v1'] as const;
+export const LEDGER_REF_METHODS = ['sha256-bytes-v1', 'verifica-input-v1', 'verifica-read-record-v1', 'planb-verifica-report-v1', 'planb-verifica-custody-v1', 'planb-verifica-watch-v1', 'verifica-paquete-comprador-v1', 'verifica-acta-cierre-v1'] as const;
 export type LedgerRefMethod = typeof LEDGER_REF_METHODS[number];
 
 export interface LedgerRef {
@@ -136,3 +136,26 @@ export function verifyLedger(entries: readonly unknown[], options: { engagement:
   problems.sort((a, b) => a.index - b.index);
   return { intact: problems.length === 0, entries: entries.length, head, first: problems[0] ?? null, problems };
 }
+
+// Mega Plan 3 · lo que la pantalla ve del expediente, las versiones de emisión y el acta de cierre.
+export const CLOSURE_FORMAT = 'verifica-acta-cierre-v1';
+export interface IssueVersion { issuedAt: string; reportFingerprint: string; reportJson: string; findings: number; alarms: number; ledgerHead: { sequence: number; fingerprint: string } | null }
+export interface ClosureRecord {
+  format: typeof CLOSURE_FORMAT;
+  engagement: string;
+  closedAt: string;
+  /** La última entrada del expediente antes de borrarlo. */
+  ledgerHead: { sequence: number; fingerprint: string } | null;
+  ledgerIntact: boolean;
+  deleted: { rows: number; byKind: Record<string, number> };
+  /** Lo que el borrado no alcanza porque ya no está en este equipo. */
+  outside: string[];
+  fingerprint: string;
+}
+export interface ExpedienteView { entries: LedgerEntry[]; verification: LedgerVerification; anchors: { sequence: number; ok: boolean }[] }
+
+export const CLOSURE_OUTSIDE = [
+  'La copia custodiada y su llave, en manos de quien las guarda.',
+  'Los informes, partes y paquetes ya entregados al comprador.',
+  'Los archivos descargados en este equipo (por ejemplo, en la carpeta de descargas).',
+];

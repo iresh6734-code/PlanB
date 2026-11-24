@@ -2,6 +2,9 @@
 // sirve el servidor local; abierta suelta, la página no llama a nada.
 import type { Engagement, EngagementRole, EngagementView, IssueResult, ReadJob, ReadRequest, RecordSummary } from '../../shared/verifica/engagement.js';
 import { ENGAGEMENT_LIMITS, sourceSizeProblem } from '../../shared/verifica/engagement.js';
+import type { ClosureRecord, ExpedienteView, IssueVersion } from '../../shared/verifica/expediente.js';
+import type { ReportComparison } from '../../shared/verifica/comparacion.js';
+import type { AnswersDocument, SellerQuestion } from '../../shared/verifica/preguntas.js';
 
 export type EngagementSummary = Engagement & { ready: boolean; stored: number; issued: boolean };
 
@@ -70,5 +73,26 @@ export async function recordFile(id: string, captureId: string): Promise<string>
   try { response = await fetch(`/api/verifica/engagements/${id}/records/${encodeURIComponent(captureId)}`); }
   catch { throw new EngagementApiError('No hubo respuesta del servidor local. Comprueba que Plan B sigue abierto y reintenta.', 0); }
   if (!response.ok) throw new EngagementApiError(response.status === 401 ? 'Plan B está bloqueado: desbloquéalo en la app principal y vuelve a intentarlo.' : 'No se pudo descargar el acta.', response.status);
+  return response.text();
+}
+
+// Mega Plan 3 · expediente, versiones y comparación, preguntas, paquete del comprador y cierre.
+export const readExpediente = (id: string) => call<ExpedienteView>(`/api/verifica/engagements/${id}/expediente`);
+export const readIssues = (id: string) => call<{ versions: Omit<IssueVersion, 'reportJson'>[]; comparison: ReportComparison | null }>(`/api/verifica/engagements/${id}/issues`);
+export const readQuestions = (id: string) => call<{ report: string | null; questions: SellerQuestion[]; answers: AnswersDocument | null }>(`/api/verifica/engagements/${id}/questions`);
+export const saveAnswer = (id: string, rule: string, text: string) => call<{ answers: AnswersDocument }>(`/api/verifica/engagements/${id}/answers/${rule}`, { method: 'PUT', body: JSON.stringify({ text }) });
+export const closeEngagement = (id: string, confirmName: string) => call<{ closure: ClosureRecord }>(`/api/verifica/engagements/${id}/close`, { method: 'POST', body: JSON.stringify({ confirmName }) });
+export const listClosures = () => call<{ closures: ClosureRecord[] }>('/api/verifica/closures').then(r => r.closures);
+
+/** El paquete del comprador en texto, tal como se descarga. */
+export async function buyerPackage(id: string, include: { watch?: boolean; answers?: boolean }): Promise<string> {
+  let response: Response;
+  try { response = await fetch(`/api/verifica/engagements/${id}/package`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(include) }); }
+  catch { throw new EngagementApiError('No hubo respuesta del servidor local. Comprueba que Plan B sigue abierto y reintenta.', 0); }
+  if (!response.ok) {
+    let message = 'No se pudo preparar el paquete.';
+    try { const body = await response.json() as { error?: unknown }; if (typeof body.error === 'string') message = body.error; } catch { /* sin cuerpo */ }
+    throw new EngagementApiError(response.status === 401 ? 'Plan B está bloqueado: desbloquéalo en la app principal y vuelve a intentarlo.' : message, response.status);
+  }
   return response.text();
 }

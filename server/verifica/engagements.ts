@@ -22,6 +22,7 @@ import { credentialProblem, readWithRecord, recordToText } from './hubspot-read.
 import { appendLedger, captureInputFingerprint, recordRefs, replacedRef, ROLE_KIND, sourceRefs } from './expediente-store.js';
 import type { LedgerEventInput } from '../../shared/verifica/expediente.js';
 import { registerWatchApi } from './watch-api.js';
+import { registerExpedienteApi, rememberIssue } from './expediente-api.js';
 import { READ_LIMITS, type ReadJob, type RecordSummary } from '../../shared/verifica/engagement.js';
 export type { ReadJob, RecordSummary } from '../../shared/verifica/engagement.js';
 import { AppError, type Store } from '../store.js';
@@ -98,6 +99,10 @@ export function registerVerificaEngagements(app: FastifyInstance, store: Store, 
     issuedAt: stored.issuedAt, reportFingerprint: stored.reportFingerprint, custodyFingerprint: stored.custodyFingerprint,
     findings: stored.findings, alarms: stored.alarms, stale: !sameSources(stored.sources, fingerprints(view)),
   });
+  /** Una lectura en marcha guardará su captura al terminar: mientras, las capturas no se tocan a mano. */
+  const capturesFree = (id: string, role: EngagementRole) => {
+    if ((role === 'previous' || role === 'latest') && jobs.get(id)?.state === 'running') throw new AppError(409, 'Hay una lectura de HubSpot en marcha para este encargo. Espera a que termine antes de cambiar las capturas.');
+  };
   /** La vista pública de un encargo, con su última emisión si la hay. */
   const viewOf = (engagement: Engagement): EngagementView => {
     const view = engagementView(engagement, sources(engagement.id));
@@ -134,6 +139,7 @@ export function registerVerificaEngagements(app: FastifyInstance, store: Store, 
     const { id, role } = roleParam.parse(request.params);
     const { text, fileName } = sourceBody.parse(request.body);
     const engagement = find(id);
+    capturesFree(id, role);
     const tooLarge = sourceSizeProblem('«' + fileName + '»', Buffer.byteLength(text, 'utf8'), sourceBytes);
     if (tooLarge) throw new AppError(413, tooLarge);
     // Antes de guardar se comprueba que el texto tiene la forma de su fuente. Las facturas se terminan de leer con la
@@ -163,6 +169,7 @@ export function registerVerificaEngagements(app: FastifyInstance, store: Store, 
   app.delete(VERIFICA_API + '/engagements/:id/sources/:role', async request => {
     const { id, role } = roleParam.parse(request.params);
     const engagement = find(id);
+    capturesFree(id, role);
     return store.transaction(() => {
       const removed = store.get<StoredSource | null>(sourceKey(id, role), null);
       store.db.prepare('DELETE FROM meta WHERE key=?').run(sourceKey(id, role));
@@ -201,11 +208,15 @@ export function registerVerificaEngagements(app: FastifyInstance, store: Store, 
       }
       store.set(issueKey(id), stored);
       touch(id);
-      appendLedger(store, id, stored.issuedAt, [{ event: 'report-issued', refs: [
+      const added = appendLedger(store, id, stored.issuedAt, [{ event: 'report-issued', refs: [
         ...ENGAGEMENT_ROLES.flatMap(role => issuedSources[role] ? [{ kind: ROLE_KIND[role], role, method: 'verifica-input-v1' as const, fingerprint: issuedSources[role]! }] : []),
         { kind: 'report', method: 'planb-verifica-report-v1', fingerprint: stored.reportFingerprint },
         { kind: 'custody', method: 'planb-verifica-custody-v1', fingerprint: stored.custodyFingerprint },
       ] }]);
+      // Mega Plan 3: cada emisión se conserva para compararla y guarda la cabeza del expediente de ese momento.
+      const head = added.at(-1);
+      rememberIssue(store, id, { issuedAt: stored.issuedAt, reportFingerprint: stored.reportFingerprint, reportJson: stored.reportJson,
+        findings: stored.findings, alarms: stored.alarms, ledgerHead: head ? { sequence: head.sequence, fingerprint: head.fingerprint } : null });
       return { ...summary(stored, current), key };
     });
   });
@@ -320,7 +331,7 @@ export function registerVerificaEngagements(app: FastifyInstance, store: Store, 
     return text;
   });
 
-  return registerWatchApi(app, store, {
+  const timer = registerWatchApi(app, store, {
     name: id => find(id).name,
     signing: (id, role) => {
       const source = store.get<StoredSource | null>(sourceKey(id, role), null);
@@ -330,6 +341,14 @@ export function registerVerificaEngagements(app: FastifyInstance, store: Store, 
       return rawRecord ? { captureText: source.text, record: JSON.parse(rawRecord) as ReadRecord } : null;
     },
   }, { now: options.hubspotNow, fetcher: options.hubspotFetch, intervalMs: options.watchIntervalMs, maxCaptureBytes: sourceBytes });
+  // Mega Plan 3: expediente, versiones y comparación, preguntas, paquete del comprador y cierre (server/verifica/expediente-api.ts).
+  registerExpedienteApi(app, store, {
+    now, find, timer,
+    remove: id => store.set(LIST_KEY, list().filter(item => item.id !== id)),
+    inputs: id => engagementInputs(store, id).inputs,
+    readRunning: id => jobs.get(id)?.state === 'running',
+  });
+  return timer;
 }
 
 /** Lo que entra en la sala limpia para un encargo. No se publica por HTTP. */

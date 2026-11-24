@@ -13,6 +13,7 @@ import { mountRelayRehearsal } from './relay-rehearsal-mount.js';
 import { registerTaskIntents } from './task-intents-api.js';
 import { mountSharedModules } from './modules.js';
 import { registerCsvImport } from './csv-import.js';
+import { registerVerificaEngagements } from './verifica/engagements.js';
 
 const root = process.cwd();
 const releaseLock=lockInstance(resolve(process.env.PLANB_DATA_DIR || join(root,'data')));
@@ -33,6 +34,8 @@ registerTaskIntents(app, store);
 mountSharedModules(app, store);
 // Importar registros desde CSV (vista previa y aplicación con marca): ver server/csv-import.ts.
 registerCsvImport(app, store);
+// Plan B Verifica · encargos y fuentes desde la pantalla (mega plan 2, fase D): ver server/verifica/engagements.ts.
+registerVerificaEngagements(app, store);
 const seed = join(root, 'demo.seed.json');
 if (!store.snapshot && store.recoveryIntegrity().state!=='invalid' && existsSync(seed)) store.restoreBundle(JSON.parse(readFileSync(seed, 'utf8')));
 let port = Number(process.env.PLANB_PORT || 4317);

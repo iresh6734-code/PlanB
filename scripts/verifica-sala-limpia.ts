@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { CleanRoomError, findLeaks, newSalt, runCleanRoom } from '../shared/verifica/clean-room.js';
 import { custodyFingerprint } from '../shared/verifica/custody.js';
 import { importInvoices, InvoiceImportError, type InvoiceImport } from '../shared/verifica/invoices.js';
+import { parseCaptureText, parseDeclarationsText, VerificaInputError } from '../shared/verifica/inputs.js';
 import type { VerificaCapture, VerificaDeclarations } from '../shared/verifica/model.js';
 import { buildVerificaReport, reportToJson } from '../shared/verifica/report.js';
 // Verifica · fase 2: sala limpia sin red. Toma dos capturas ya guardadas (de verifica-hubspot.ts u otro lector), las
@@ -43,28 +44,17 @@ export function parseArgs(argv: string[]): CleanRoomArgs {
   return args;
 }
 
-const SOURCES = new Set(['fixture', 'hubspot', 'pipedrive', 'export']);
+// La validación vive en shared/verifica/inputs.ts, compartida con el servidor local (fase D); aquí solo se traduce su
+// error al de uso del script, con el mismo texto.
+const asUsage = <T>(read: () => T): T => {
+  try { return read(); } catch (e) { if (e instanceof VerificaInputError) throw new CliUsageError(e.message); throw e; }
+};
 export function loadCapture(text: string, flag: string): VerificaCapture {
-  const value = JSON.parse(text) as Partial<VerificaCapture> | null;
-  if (!value || !SOURCES.has(value.source as string) || typeof value.id !== 'string' || typeof value.capturedAt !== 'string' || Number.isNaN(Date.parse(value.capturedAt))
-    || typeof value.historyAvailable !== 'boolean' || ![value.owners, value.companies, value.contacts, value.deals].every(Array.isArray)) {
-    throw new CliUsageError(flag + ' no es una captura de Verifica.');
-  }
-  return value as VerificaCapture;
+  return asUsage(() => parseCaptureText(text, flag));
 }
-
 export function loadDeclarations(text: string): VerificaDeclarations {
-  const value = JSON.parse(text) as Record<string, unknown> | null;
-  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new CliUsageError('--declarations tiene que ser un objeto JSON.');
-  const out: VerificaDeclarations = {};
-  for (const [key, raw] of Object.entries(value)) {
-    if (key !== 'openPipelineAmount' && key !== 'activeCustomers' && key !== 'renewalRate') throw new CliUsageError('--declarations solo admite openPipelineAmount, activeCustomers y renewalRate.');
-    if (typeof raw !== 'number' || !Number.isFinite(raw) || raw < 0 || (key === 'renewalRate' && raw > 1)) throw new CliUsageError('--declarations: ' + key + ' tiene que ser un número ' + (key === 'renewalRate' ? 'entre 0 y 1.' : 'no negativo.'));
-    out[key] = raw;
-  }
-  return out;
+  return asUsage(() => parseDeclarationsText(text, '--declarations'));
 }
-
 export interface CleanRoomDeps {
   out: (text: string) => void; err: (text: string) => void;
   readText?: (path: string) => Promise<string>;

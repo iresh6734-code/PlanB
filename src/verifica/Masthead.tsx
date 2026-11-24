@@ -41,18 +41,22 @@ export function Fingerprint({ label, value, intact, broken }: { label: string; v
 }
 
 export type Variant = 'traps' | 'clean';
-export type DocKind = 'report' | 'watch' | 'migration';
+export type DocKind = 'report' | 'watch' | 'migration' | 'operation' | 'sources';
+/** Documentos de ejemplo (empresa ficticia). Los otros dos son pasos del encargo y solo existen con el servidor local. */
+const EXAMPLE_DOCS: readonly DocKind[] = ['report', 'watch', 'migration'];
 
 export type ReportOrigin =
-  | { kind: 'reference'; variant: Variant; onVariant?: (variant: Variant) => void; doc?: DocKind; onDoc?: (doc: DocKind) => void }
-  | { kind: 'opened'; name: string; onReference?: () => void };
+  | { kind: 'reference'; variant: Variant; onVariant?: (variant: Variant) => void; doc?: DocKind; onDoc?: (doc: DocKind) => void; local?: boolean }
+  | { kind: 'opened'; name: string; onReference?: () => void }
+  /** Pasos del encargo (Operación, Fuentes) servidos por el servidor local: sin ejemplo ni variantes. */
+  | { kind: 'local'; onDoc?: (doc: DocKind) => void };
 
 const VARIANT: Record<Variant, string> = { traps: 'Con trampas', clean: 'Sin trampas' };
 
 type Step = { n: string; label: string; note: string; doc?: DocKind };
 const STEPS: Step[] = [
-  { n: '01', label: 'Operación', note: 'Alcance y autorización' },
-  { n: '02', label: 'Fuentes', note: 'CRM y facturas, solo lectura' },
+  { n: '01', label: 'Operación', note: 'Encargos de este equipo', doc: 'operation' },
+  { n: '02', label: 'Fuentes', note: 'CRM y facturas, solo lectura', doc: 'sources' },
   { n: '03', label: 'Capturas', note: 'Cada lectura queda sellada' },
   { n: '04', label: 'Hallazgos e informe', note: 'Lo que la cartera sostiene', doc: 'report' },
   { n: '05', label: 'Vigilancia', note: 'De la firma al cierre', doc: 'watch' },
@@ -69,23 +73,29 @@ function StepText({ step }: { step: Step }) {
 }
 
 function Steps({ origin, current }: { origin: ReportOrigin; current: DocKind }) {
+  const local = origin.kind === 'local' || (origin.kind === 'reference' && origin.local === true);
+  const go = origin.kind === 'opened' ? undefined : origin.onDoc;
   return (
     <nav className="vf-steps" aria-label="Pasos del encargo">
       <p className="vf-steps-title">El encargo</p>
       <ol>
         {STEPS.map(step => {
           const here = step.doc === current;
-          if (step.doc && origin.kind === 'reference') {
+          const navigable = !!step.doc && !!go && (EXAMPLE_DOCS.includes(step.doc) || local);
+          if (navigable) {
             return (
               <li key={step.n}>
-                <button type="button" className="vf-step" data-doc="true" aria-current={here ? 'page' : undefined} onClick={() => origin.onDoc?.(step.doc!)}><StepText step={step} /></button>
+                <button type="button" className="vf-step" data-doc="true" aria-current={here ? 'page' : undefined} onClick={() => go?.(step.doc!)}><StepText step={step} /></button>
               </li>
             );
           }
-          return <li key={step.n}><span className="vf-step" data-doc={step.doc ? 'true' : 'false'} aria-current={here ? 'page' : undefined}><StepText step={step} /></span></li>;
+          const shown = !!step.doc && (EXAMPLE_DOCS.includes(step.doc) || local);
+          return <li key={step.n}><span className="vf-step" data-doc={shown ? 'true' : 'false'} aria-current={here ? 'page' : undefined}><StepText step={step} /></span></li>;
         })}
       </ol>
-      <p className="vf-steps-note">Los pasos 1 a 3 se hacen con el lector, en el equipo del vendedor. Aquí se ven sus resultados.</p>
+      <p className="vf-steps-note">{local
+        ? 'Las capturas (paso 3) se hacen con el lector en el equipo del vendedor. Los pasos 4 a 6 enseñan, por ahora, la empresa de ejemplo.'
+        : 'Los pasos 1 a 3 se hacen con el lector, en el equipo del vendedor. Aquí se ven sus resultados.'}</p>
     </nav>
   );
 }
@@ -112,9 +122,11 @@ export function Frame({ origin, current, eyebrow, title, lede, onOpen, openError
           <p className="vf-brand"><span className="vf-brand-name">Verifica</span><span className="vf-brand-by">de Plan B</span></p>
           {origin.kind === 'reference'
             ? <p className="vf-fiction" role="note">Empresa ficticia · todos los datos son inventados</p>
-            : <p className="vf-origin">{origin.name} · abierto en este navegador, no se envía a ningún sitio</p>}
+            : origin.kind === 'local'
+              ? <p className="vf-origin">Encargos de este equipo · se guardan cifrados y no salen de aquí</p>
+              : <p className="vf-origin">{origin.name} · abierto en este navegador, no se envía a ningún sitio</p>}
           <div className="vf-bar-actions">
-            <OpenReport label={origin.kind === 'reference' ? 'Abrir un informe' : 'Abrir otro informe'} onOpen={onOpen} />
+            <OpenReport label={origin.kind === 'opened' ? 'Abrir otro informe' : 'Abrir un informe'} onOpen={onOpen} />
             {origin.kind === 'reference' && download && <button type="button" className="vf-primary" onClick={download.run}>{download.label}</button>}
           </div>
         </div>
@@ -137,7 +149,7 @@ export function Frame({ origin, current, eyebrow, title, lede, onOpen, openError
                   </div>
                 </div>
               )
-              : <div className="vf-head-row"><button type="button" className="vf-link" onClick={() => origin.onReference?.()}>Volver al ejemplo</button></div>}
+              : origin.kind === 'opened' ? <div className="vf-head-row"><button type="button" className="vf-link" onClick={() => origin.onReference?.()}>Volver al ejemplo</button></div> : null}
             {openError && <p className="vf-error" role="alert">{openError}</p>}
           </header>
           {children}

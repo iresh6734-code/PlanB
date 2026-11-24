@@ -290,3 +290,24 @@ Plan en Claude Docs, «Plan B · Mega plan 2». La usuaria pidió seguirlo «usa
 - **Comprobación:** `tsc` limpio; guardas, Pipedrive, Verifica y `api-client-routes` dan 109/109; `docs/api.md` al día, con 96 rutas.
 
 **Siguiente:** fase D, ya diseñada en el plan, por cortes. El primero es el encargo y las fuentes desde archivos, con las mismas huellas que los scripts.
+
+## 24/11/2026 · Mega plan 2 · Fase D, corte 1: encargo y fuentes desde la pantalla
+
+**Qué se puede hacer ahora.** Con `verifica.html` servida por el servidor local aparecen los pasos 1 (Operación) y 2 (Fuentes), y la página abre en el 1. Se crea un encargo y se le suben las dos capturas, el libro de facturas y las cifras declaradas, cada una con su estado (Falta, Sirve, En espera, No sirve), su resumen y su huella. Una fuente que no sirve no se guarda, y su fila explica por qué. Abierta suelta, como la recibe el comprador, la página sigue siendo el visor sin conexión, con los pasos 1 y 2 solo nombrados.
+
+**Piezas:**
+
+- `shared/verifica/inputs.ts` (nuevo): la validación de capturas y declaraciones, compartida con los scripts. `scripts/verifica-sala-limpia.ts` la usa con los mismos mensajes; `loadCapture` y `loadDeclarations` siguen exportados para vigilancia y migración.
+- `shared/verifica/engagement.ts` (nuevo, puro): describe cada fuente guardada. Su huella se calcula igual que en el informe (`fingerprintOf` del objeto que entra en la sala limpia). Las facturas esperan a la captura más reciente porque se asignan a sus empresas; la anterior tiene que ser anterior a la reciente.
+- `server/verifica/engagements.ts` (nuevo), montado solo en `server/main.ts` (el portátil no lleva conectores). Las rutas son `/api/verifica/health`, `engagements` (GET y POST), `engagements/:id` y `engagements/:id/sources/:role` (PUT y DELETE). Guarda cifrado en la tabla `meta` del almacén (`verifica:engagements`, `verifica:source:<id>:<rol>`), sin tocar el esquema. Las respuestas nunca devuelven el texto guardado. Hereda las guardas del servidor: la de origen rechaza una página servida desde otro puerto.
+- `src/verifica/engagement-client.ts` y `src/verifica/Engagements.tsx` (nuevos). `Masthead.tsx` tiene un origen `local` y los pasos 1 y 2 navegables. `VerificaReport.tsx` detecta el servidor con `/api/verifica/health`.
+- `docs/api.md`: 102 rutas.
+
+**Comprobación:**
+
+- `verifica-encargos` (4/4): las huellas que enseña la pantalla son las mismas que firma el informe de `verifica-sala-limpia.ts` con los mismos archivos.
+- `verifica-pasos` (3/3) y el resto de pruebas de Verifica: 68.
+- `api-client-routes`, guardas y huérfanos en verde; `tsc` limpio.
+- En navegador, con `tests/.tmp/verifica-vista/encargo.mts` contra un servidor aislado (`start-api.mjs`, 4581, `NODE_ENV=test`, datos nuevos, página compilada en su `dist`): 40/40 en escritorio, móvil y oscuro. Incluye el archivo equivocado rechazado, las cuatro fuentes válidas, las huellas iguales a las del informe del script, la vuelta al paso 1 con el encargo listo, sin servidor el visor de siempre y ningún desborde.
+
+**Siguiente:** corte 2, la sala limpia con un botón (`engagementInputs` ya devuelve lo que entra en ella), con el informe igual byte a byte que el del script.

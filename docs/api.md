@@ -14,8 +14,8 @@ Generado por `node tools/api/inventory.mjs` a partir de los servidores reales: c
 | v3 | 4 | 4 | 2 |
 | v4 | 10 | 10 | 10 |
 | v7 | 15 | 15 | 13 |
-| sin versión | 17 | 17 | 13 |
-| **Total** | **96** | **96** | **72** |
+| sin versión | 23 | 23 | 13 |
+| **Total** | **102** | **102** | **72** |
 
 ## v2
 
@@ -137,3 +137,9 @@ Generado por `node tools/api/inventory.mjs` a partir de los servidores reales: c
 | POST | `/api/records/:entity` | ● | ● | `server/app.ts` |
 | PATCH | `/api/records/:entity/:id` | ● | ● | `server/app.ts` |
 | GET | `/api/state` | ● | ● | `server/app.ts` |
+| GET | `/api/verifica/engagements` | ● |  | `server/verifica/engagements.ts` |
+| POST | `/api/verifica/engagements` | ● |  | `server/verifica/engagements.ts` |
+| GET | `/api/verifica/engagements/:id` | ● |  | `server/verifica/engagements.ts` |
+| DELETE | `/api/verifica/engagements/:id/sources/:role` | ● |  | `server/verifica/engagements.ts` |
+| PUT | `/api/verifica/engagements/:id/sources/:role` | ● |  | `server/verifica/engagements.ts` |
+| GET | `/api/verifica/health` | ● |  | `server/verifica/engagements.ts` |

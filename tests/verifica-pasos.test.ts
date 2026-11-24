@@ -1,0 +1,55 @@
+// Plan B Verifica · pasos 1 y 2 del encargo en la pantalla (fase D, corte 1): lo que pintan con datos dados, sin red.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { OperationContent, SourcesContent } from '../src/verifica/Engagements.js';
+import { Frame } from '../src/verifica/Masthead.js';
+import { engagementView, type Engagement } from '../shared/verifica/engagement.js';
+import { exampleFiles } from '../scripts/verifica-ejemplo.js';
+
+const AT = '2026-11-24T10:00:00.000Z';
+const engagement: Engagement = { id: '0b8f3f3e-6a1e-4c55-9d5c-0b9a1c9f2e11', name: 'Distribuidora del norte', createdAt: AT, updatedAt: AT };
+const noop = () => {};
+
+test('Verifica · paso 1: crear un encargo es el único botón relleno, y cada encargo dice si está listo', () => {
+  const html = renderToStaticMarkup(createElement(OperationContent, {
+    engagements: [{ ...engagement, ready: true, stored: 4 }, { ...engagement, id: '1c9f3f3e-6a1e-4c55-9d5c-0b9a1c9f2e12', name: 'Taller del sur', ready: false, stored: 1 }],
+    loadError: null, busy: false, createError: null, onCreate: noop, onOpenEngagement: noop,
+  }));
+  assert.equal(html.match(/class="vf-primary"/g)?.length, 1);
+  assert.match(html, /Crear encargo/);
+  assert.match(html, /Listo para la sala limpia/);
+  assert.match(html, /Faltan fuentes/);
+  assert.match(html, /4 de 4 fuentes/);
+  assert.match(html, /1 de 4 fuentes/);
+  const empty = renderToStaticMarkup(createElement(OperationContent, { engagements: [], loadError: null, busy: false, createError: null, onCreate: noop, onOpenEngagement: noop }));
+  assert.match(empty, /Todavía no hay ningún encargo en este equipo/);
+});
+
+test('Verifica · paso 2: cada fuente con su estado y su huella, y ningún nombre del CRM en la página', () => {
+  const files = exampleFiles(true), stamp = (fileName: string) => ({ text: files.get(fileName)!, fileName, storedAt: AT });
+  const view = engagementView(engagement, { latest: stamp('ahora.json'), invoices: stamp('facturas.csv'), declarations: { text: '{"renewalRate":2}', fileName: 'mal.json', storedAt: AT } });
+  const html = renderToStaticMarkup(createElement(SourcesContent, { view, busyRole: null, errors: { previous: 'El archivo no es una captura de Verifica.' }, onUpload: noop, onRemove: noop }));
+  assert.equal(html.match(/class="vf-source"/g)?.length, 4);
+  assert.equal(html.match(/data-status="ok"/g)?.length, 4, 'dos fuentes que sirven: fila y etiqueta');
+  assert.match(html, /data-status="missing"/);
+  assert.match(html, /data-status="invalid"/);
+  assert.match(html, /Huella <code title="[0-9a-f]{64}">[0-9a-f]{12}<\/code>/);
+  assert.match(html, /El archivo no es una captura de Verifica\./, 'el error de la última subida se ve en su fila');
+  assert.match(html, /faltan: falta la captura anterior; las cifras declaradas no sirven/);
+  assert.equal(html.match(/class="vf-primary"/g), null, 'la sala limpia llega en el corte 2: aquí no hay botón relleno');
+  const names = JSON.parse(files.get('ahora.json')!).companies.slice(0, 20).map((c: { name: string }) => c.name);
+  assert.deepEqual(names.filter((name: string) => html.includes(name)), []);
+});
+
+test('Verifica · con el servidor local los pasos 1 y 2 navegan; sin él siguen siendo solo nombres', () => {
+  const local = renderToStaticMarkup(createElement(Frame, { origin: { kind: 'local', onDoc: noop }, current: 'operation', eyebrow: 'Paso 1', title: 'Encargos', lede: '' }));
+  assert.match(local, /<button type="button" class="vf-step" data-doc="true" aria-current="page"><span class="vf-step-n">01<\/span>/);
+  assert.match(local, /<button type="button" class="vf-step" data-doc="true"><span class="vf-step-n">02<\/span>/);
+  assert.match(local, /Encargos de este equipo · se guardan cifrados/);
+  assert.ok(!local.includes('Empresa ficticia') && !local.includes('vf-switch'), 'sin aviso de ejemplo ni variantes');
+  const offline = renderToStaticMarkup(createElement(Frame, { origin: { kind: 'reference', variant: 'traps', onDoc: noop }, current: 'report', eyebrow: 'Informe', title: 'Informe', lede: '' }));
+  assert.match(offline, /<span class="vf-step" data-doc="false"><span class="vf-step-n">01<\/span>/);
+  assert.match(offline, /<span class="vf-step" data-doc="false"><span class="vf-step-n">02<\/span>/);
+});

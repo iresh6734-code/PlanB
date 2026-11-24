@@ -4,7 +4,7 @@
 // página 2 con lo que no se pudo comprobar, y la huella al pie. Con un informe abierto, además, se comprueba contra su
 // copia custodiada. Nada sale del navegador. Arriba va la conclusión y hasta tres cifras clave (summary.ts); cada hallazgo
 // lleva su frase y su cifra clave a la derecha, y la huella completa sale una sola vez, en el sello.
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { buildTrapCompany } from '../../shared/verifica/empresa-con-trampas.js';
 import type { EquivalenceReport } from '../../shared/verifica/equivalence.js';
 import { buildVerificaReport, reportToJson, verifyReport, type ReportSource, type VerificaReport } from '../../shared/verifica/report.js';
@@ -14,6 +14,8 @@ import { day, downloadJson, MAX_DOCUMENT_FILE, readDocumentText, short, type Ver
 import { EquivalencePending, EquivalenceReportView } from './EquivalenceReport.js';
 import { Fingerprint, Frame, Refs, type DocKind, type ReportOrigin, type Variant } from './Masthead.js';
 import { conclusion, highlights, keyFigure, sourcesText, traceText } from './summary.js';
+import { localAvailable } from './engagement-client.js';
+import { OperationPage, SourcesPage } from './Engagements.js';
 import { referenceWatch, WatchReportView } from './WatchReport.js';
 
 const BASIS: Record<VerificaBasis, string> = { observed: 'Observado', declared: 'Declarado por el vendedor', unverified: 'Sin comprobar' };
@@ -113,6 +115,17 @@ export default function VerificaReportPage() {
   const [openError, setOpenError] = useState<string | null>(null);
   const [equivalence, setEquivalence] = useState<Partial<Record<Variant, EquivalenceReport>>>({});
   const [equivalenceFailed, setEquivalenceFailed] = useState(false);
+  // Servida por el servidor local: aparecen los pasos 1 y 2 del encargo y la página abre en el 1, salvo que la persona
+  // ya se haya movido. Abierta suelta (el comprador), no hay servidor y la página sigue siendo el visor sin conexión.
+  const [local, setLocal] = useState(false);
+  const [engagementId, setEngagementId] = useState<string | null>(null);
+  const moved = useRef(false);
+  const go = (next: DocKind) => { moved.current = true; setOpened(null); setOpenError(null); setDoc(next); };
+  useEffect(() => {
+    const abort = new AbortController();
+    void localAvailable(abort.signal).then(ok => { if (!ok || abort.signal.aborted) return; setLocal(true); if (!moved.current) setDoc('operation'); });
+    return () => abort.abort();
+  }, []);
   useEffect(() => {
     if (doc !== 'migration' || equivalence[variant]) return;
     let live = true;
@@ -124,6 +137,7 @@ export default function VerificaReportPage() {
   const reference = useMemo<VerificaDocument | null>(() => {
     if (doc === 'watch') return { kind: 'watch', report: referenceWatch(variant) };
     if (doc === 'migration') { const report = equivalence[variant]; return report ? { kind: 'migration', report } : null; }
+    if (doc === 'operation' || doc === 'sources') return null;
     return { kind: 'report', report: referenceReport(variant) };
   }, [doc, variant, equivalence]);
   const open = (file: File) => {
@@ -139,7 +153,12 @@ export default function VerificaReportPage() {
   const shown = opened ? opened.doc : reference;
   const origin: ReportOrigin = opened
     ? { kind: 'opened', name: opened.name, onReference: toReference }
-    : { kind: 'reference', variant, onVariant: setVariant, doc, onDoc: setDoc };
+    : { kind: 'reference', variant, onVariant: setVariant, doc, onDoc: go, local };
+  if (!opened && local && doc === 'operation') {
+    return <OperationPage origin={{ kind: 'local', onDoc: go }} onOpen={open} openError={openError}
+      onOpenEngagement={id => { setEngagementId(id); go('sources'); }} />;
+  }
+  if (!opened && local && doc === 'sources') return <SourcesPage origin={{ kind: 'local', onDoc: go }} engagementId={engagementId} onOpen={open} openError={openError} />;
   return shown === null
     ? <EquivalencePending origin={origin} failed={equivalenceFailed} onOpen={open} openError={openError} />
     : shown.kind === 'watch'

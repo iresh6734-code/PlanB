@@ -14,8 +14,8 @@ Generado por `node tools/api/inventory.mjs` a partir de los servidores reales: c
 | v3 | 4 | 4 | 2 |
 | v4 | 10 | 10 | 10 |
 | v7 | 15 | 15 | 13 |
-| sin versión | 29 | 29 | 13 |
-| **Total** | **108** | **108** | **72** |
+| sin versión | 40 | 40 | 13 |
+| **Total** | **119** | **119** | **72** |
 
 ## v2
 
@@ -137,15 +137,26 @@ Generado por `node tools/api/inventory.mjs` a partir de los servidores reales: c
 | POST | `/api/records/:entity` | ● | ● | `server/app.ts` |
 | PATCH | `/api/records/:entity/:id` | ● | ● | `server/app.ts` |
 | GET | `/api/state` | ● | ● | `server/app.ts` |
+| GET | `/api/verifica/closures` | ● |  | `server/verifica/expediente-api.ts` |
 | GET | `/api/verifica/engagements` | ● |  | `server/verifica/engagements.ts` |
 | POST | `/api/verifica/engagements` | ● |  | `server/verifica/engagements.ts` |
 | GET | `/api/verifica/engagements/:id` | ● |  | `server/verifica/engagements.ts` |
+| PUT | `/api/verifica/engagements/:id/answers/:rule` | ● |  | `server/verifica/expediente-api.ts` |
 | POST | `/api/verifica/engagements/:id/clean-room` | ● |  | `server/verifica/engagements.ts` |
+| POST | `/api/verifica/engagements/:id/close` | ● |  | `server/verifica/expediente-api.ts` |
+| GET | `/api/verifica/engagements/:id/expediente` | ● |  | `server/verifica/expediente-api.ts` |
 | GET | `/api/verifica/engagements/:id/issue/:file` | ● |  | `server/verifica/engagements.ts` |
+| GET | `/api/verifica/engagements/:id/issues` | ● |  | `server/verifica/expediente-api.ts` |
+| POST | `/api/verifica/engagements/:id/package` | ● |  | `server/verifica/expediente-api.ts` |
+| GET | `/api/verifica/engagements/:id/questions` | ● |  | `server/verifica/expediente-api.ts` |
 | GET | `/api/verifica/engagements/:id/read` | ● |  | `server/verifica/engagements.ts` |
 | POST | `/api/verifica/engagements/:id/read` | ● |  | `server/verifica/engagements.ts` |
 | GET | `/api/verifica/engagements/:id/records` | ● |  | `server/verifica/engagements.ts` |
 | GET | `/api/verifica/engagements/:id/records/:captureId` | ● |  | `server/verifica/engagements.ts` |
 | DELETE | `/api/verifica/engagements/:id/sources/:role` | ● |  | `server/verifica/engagements.ts` |
 | PUT | `/api/verifica/engagements/:id/sources/:role` | ● |  | `server/verifica/engagements.ts` |
+| GET | `/api/verifica/engagements/:id/watch` | ● |  | `server/verifica/watch-api.ts` |
+| POST | `/api/verifica/engagements/:id/watch` | ● |  | `server/verifica/watch-api.ts` |
+| GET | `/api/verifica/engagements/:id/watch/artifacts/:file` | ● |  | `server/verifica/watch-api.ts` |
+| POST | `/api/verifica/engagements/:id/watch/migration` | ● |  | `server/verifica/watch-api.ts` |
 | GET | `/api/verifica/health` | ● |  | `server/verifica/engagements.ts` |

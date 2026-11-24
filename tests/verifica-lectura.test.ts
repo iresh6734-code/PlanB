@@ -162,7 +162,8 @@ test('Verifica · un fallo de guardado revierte la rotación y el acta y permite
     assert.equal((await finished(r, id)).state, 'done');
   }
 
-  const rows = () => r.store.db.prepare("SELECT key, value FROM meta WHERE key LIKE 'verifica:%' ORDER BY key").all();
+  // El estado de la lectura se guarda a propósito (Mega Plan 3, fase 2) y no es parte del expediente ni de sus documentos.
+  const rows = () => r.store.db.prepare("SELECT key, value FROM meta WHERE key LIKE 'verifica:%' AND key NOT LIKE 'verifica:readjob:%' ORDER BY key").all();
   const before = rows();
   const entries = (await call(r, 'GET', url + '/records')).body.records;
   assert.equal(entries.length, 2);

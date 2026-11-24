@@ -467,3 +467,32 @@ Con autorización de la usuaria para acabar el plan entero, y avisado Codex por 
   - los números de línea se desfasaban con las filas vacías.
 - `shared/verifica/rules.ts`: una ganada en los últimos 30 días que ya tenía factura salía como «aún sin facturar». Ahora se busca antes su factura posible.
 - Prueba nueva: `tests/verifica-libro-holded-real.test.ts` (4/4). Verifica completa: 125/125.
+
+## 24/11/2026 · Mega plan 3 · Fase 2: robustez (Claude)
+
+Con la autorización de la usuaria («ves a ello») y con Codex avisado, porque no tenía cambios pendientes en estos archivos.
+
+1. **La ficha del encargo ya no reinterpreta las fuentes en cada vista.** Se calcula en la misma transacción que cada escritura de fuente (subir, quitar, lectura de HubSpot y rotación) y se guarda en `verifica:view:<id>`. Si falta, porque el encargo es de antes, se calcula la primera vez. La revalidación al emitir compara la ficha guardada en vez de releer las fuentes con la base bloqueada. Medida con `tools/perf/verifica-scale.ts limite` (99.000 registros, 45 MB):
+
+   | Medida | Antes | Después |
+   | --- | --- | --- |
+   | Primera vista | 4.851 ms | 5 ms |
+   | Vista tras reabrir la base | 5.341 ms | 128 ms |
+   | Recorrido completo de la medición | 10,8 s | 24,2 s |
+
+   El último sube porque el coste pasa al guardado de la lectura, que corre en segundo plano.
+2. **Una lectura cortada por un reinicio deja constancia.** Su estado se guarda en `verifica:readjob:<id>` al empezar y al terminar, sin la credencial. Al arrancar, la que seguía «en marcha» queda como fallida con el motivo, sin guardar nada, y se puede repetir.
+3. **La vigilancia dice por qué se para.** El estado lleva `reason` y `rejections`:
+   - la autorización caducada pausa con su motivo;
+   - tres rechazos seguidos de la credencial o de los permisos (401 o 403) pausan, en vez de reintentar cada hora sin fin;
+   - otros fallos dicen a qué hora se reintenta;
+   - tras un reinicio, la pantalla dice que hay que reactivarla.
+
+   Se muestra en el calendario de vigilancia. También cubre la observación 6 de la revisión: un fallo al leer el estado ya no corta la vuelta.
+4. **La migración ya no se queda en el límite global de 20 MB.** `POST /watch/migration` admite el doble de dos exportaciones dentro de su presupuesto, más un margen, igual que la subida de fuentes.
+
+**Pruebas:**
+- `tests/verifica-robustez.test.ts` (3/3).
+- Una prueba nueva en `verifica-watch-timer` (5/5).
+- Las comparaciones de filas de `verifica-lectura` y `verifica-reapertura` excluyen el estado de lectura, que ahora se guarda a propósito.
+- Verifica completa: 130/130. Recorridos en navegador: 48/48 y 72/72. `docs/api.md` está al día.

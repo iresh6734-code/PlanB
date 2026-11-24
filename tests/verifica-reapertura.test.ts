@@ -51,8 +51,9 @@ test('Verifica · una transacción fallida conserva las capturas y actas al reab
     }),
     documentBase64: signature.toString('base64'),
   };
+  // El estado de la lectura se guarda a propósito (Mega Plan 3, fase 2) y no es parte del expediente ni de sus documentos.
   const rows = (opened: Awaited<ReturnType<typeof open>>) => opened.store.db
-    .prepare("SELECT key, value FROM meta WHERE key LIKE 'verifica:%' ORDER BY key").all();
+    .prepare("SELECT key, value FROM meta WHERE key LIKE 'verifica:%' AND key NOT LIKE 'verifica:readjob:%' ORDER BY key").all();
   const records = async (app: App, url: string) => {
     const response = await app.inject({ method: 'GET', url: `${url}/records` });
     assert.equal(response.statusCode, 200);

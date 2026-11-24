@@ -17,7 +17,13 @@ export interface WatchScheduleStatus {
   nextDue: string;
   late: boolean;
   retriesAfter: string | null;
+  /** Por qué está en pausa o por qué falló la última lectura, en palabras para el operador y sin texto del proveedor. */
+  reason: string | null;
+  /** Rechazos seguidos de la credencial o los permisos; al llegar a WATCH_REJECTIONS_TO_PAUSE la vigilancia se pausa. */
+  rejections: number;
 }
+
+export const WATCH_REJECTIONS_TO_PAUSE = 3;
 
 export interface WatchSigningChoice extends WatchCaptureRef { role: 'previous' | 'latest' }
 

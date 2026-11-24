@@ -124,6 +124,7 @@ export default function WatchEngagement({ origin, engagementId, onOpen, openErro
           <section className="vf-card vf-issue" aria-label="Calendario de vigilancia">
             <h2>Calendario de vigilancia</h2>
             <p role="status">{active ? 'Vigilancia activa' : 'Vigilancia en pausa'} · {view.schedule.weeklyCount} {view.schedule.weeklyCount === 1 ? 'captura semanal' : 'capturas semanales'}</p>
+            {view.schedule.reason && <p className="vf-held">{view.schedule.reason}</p>}
             <dl className="vf-sources">
               <div><dt>Firma</dt><dd>{time(view.schedule.signing.at)}</dd></div>
               <div><dt>Última captura</dt><dd>{time(view.schedule.latest.at)}</dd></div>

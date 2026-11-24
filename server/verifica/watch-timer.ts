@@ -4,7 +4,8 @@ import { parseCaptureText } from '../../shared/verifica/inputs.js';
 import { checkReadAuthorization, madridDay, parseReadAuthorization, verifyReadRecord, type ReadAuthorization, type ReadRecord } from '../../shared/verifica/read-authorization.js';
 import { fingerprintOf } from '../../shared/verifica/report.js';
 import { releaseWatchReport, WatchInputError, watchSchedule } from '../../shared/verifica/watch.js';
-import type { WatchCaptureRef, WatchScheduleStatus } from '../../shared/verifica/watch-contract.js';
+import { WATCH_REJECTIONS_TO_PAUSE, type WatchCaptureRef, type WatchScheduleStatus } from '../../shared/verifica/watch-contract.js';
+import { VerificaReadError } from '../../shared/verifica/hubspot.js';
 import { credentialProblem, readWithRecord } from './hubspot-read.js';
 import { appendLedger, recordRefs } from './expediente-store.js';
 import type { LedgerRef } from '../../shared/verifica/expediente.js';
@@ -44,6 +45,10 @@ export function inspectWatchObservation(observation: Observation) {
 export function createWatchTimer(store: Store, options: { now?: () => Date; fetcher?: typeof fetch; intervalMs?: number; maxCaptureBytes?: number } = {}) {
   const now = options.now ?? (() => new Date());
   const leases = new Map<string, Lease>();
+  // Mega Plan 3, fase 2: el operador tiene que saber por qué la vigilancia está en pausa o por qué falló la última lectura.
+  // Se guarda en memoria, como la credencial: tras un reinicio no hay motivo y la pantalla dice que hay que reactivarla.
+  const reasons = new Map<string, string>();
+  const rejections = new Map<string, number>();
   let pending: Promise<void> | null = null;
 
   function stateOf(id: string): WatchState {
@@ -52,11 +57,13 @@ export function createWatchTimer(store: Store, options: { now?: () => Date; fetc
     return state;
   }
 
-  function pause(id: string) {
+  function pause(id: string, reason = 'Pausada a mano.') {
     const lease = leases.get(id);
     leases.delete(id);
     lease?.abort.abort();
+    if (lease) reasons.set(id, reason);
   }
+  const hhmm = (iso: string) => new Date(iso).toLocaleTimeString('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' });
 
   function checkLease(lease: Lease, state: WatchState) {
     if (lease.authorization.engagement !== state.engagement) throw new WatchInputError('La autorización corresponde a otro encargo.');
@@ -66,9 +73,10 @@ export function createWatchTimer(store: Store, options: { now?: () => Date; fetc
   async function runDue() {
     for (const [id, lease] of [...leases]) {
       if (leases.get(id) !== lease) continue;
-      const state = stateOf(id);
+      let state: WatchState;
+      try { state = stateOf(id); } catch { pause(id, 'El encargo ya no tiene vigilancia configurada.'); continue; }
       try { checkLease(lease, state); }
-      catch { pause(id); continue; }
+      catch { pause(id, 'La autorización caducó o ya no cubre la lectura de hoy. Actívala de nuevo con una autorización vigente.'); continue; }
       const previous = last(state);
       const at = now().toISOString();
       if (at < watchSchedule(previous.at, at).nextDue || (state.retryAt && at < state.retryAt)) continue;
@@ -88,10 +96,27 @@ export function createWatchTimer(store: Store, options: { now?: () => Date; fetc
           store.set(watchKey(id), { ...current, weekly: [...current.weekly, observed], retryAt: null } satisfies WatchState);
           appendLedger(store, id, now().toISOString(), [{ event: 'watch-capture', data: { origin: 'watch' }, refs: observationRefs({ captureText, record }, observed) }]);
         });
-      } catch {
+        reasons.delete(id); rejections.delete(id);
+      } catch (error) {
         if (leases.get(id) !== lease) continue;
+        // Una credencial o unos permisos rechazados no se arreglan reintentando: al tercer rechazo seguido se pausa.
+        if (error instanceof VerificaReadError && (error.code === 'UNAUTHORIZED' || error.code === 'FORBIDDEN')) {
+          const count = (rejections.get(id) ?? 0) + 1;
+          rejections.set(id, count);
+          if (count >= WATCH_REJECTIONS_TO_PAUSE) {
+            pause(id, error.code === 'UNAUTHORIZED'
+              ? 'HubSpot rechazó la credencial ' + count + ' veces seguidas. Comprueba la clave y vuelve a activar la vigilancia.'
+              : 'A la credencial le faltan permisos de lectura en HubSpot (' + count + ' rechazos seguidos). Revísalos y vuelve a activarla.');
+            continue;
+          }
+        }
         // Espacia los reintentos automáticos sin incorporar el error del proveedor al expediente.
-        store.set(watchKey(id), { ...stateOf(id), retryAt: new Date(now().getTime() + 3_600_000).toISOString() } satisfies WatchState);
+        try {
+          const retryAt = new Date(now().getTime() + 3_600_000).toISOString();
+          store.set(watchKey(id), { ...stateOf(id), retryAt } satisfies WatchState);
+          reasons.set(id, (error instanceof VerificaReadError && (error.code === 'UNAUTHORIZED' || error.code === 'FORBIDDEN')
+            ? 'HubSpot rechazó la última lectura' : 'La última lectura falló') + '; se reintenta a las ' + hhmm(retryAt) + '.');
+        } catch { pause(id, 'No se pudo programar el reintento. Vuelve a activar la vigilancia.'); }
       }
     }
   }
@@ -136,13 +161,17 @@ export function createWatchTimer(store: Store, options: { now?: () => Date; fetc
       checkLease(lease, stateOf(id));
       pause(id);
       leases.set(id, lease);
+      reasons.delete(id); rejections.delete(id);
     },
     pause,
     configured(id: string) { return store.get<WatchState | null>(watchKey(id), null) !== null; },
     status(id: string): WatchScheduleStatus {
       const state = stateOf(id), latest = last(state);
-      return { active: leases.has(id), signing: state.signing, latest, weeklyCount: state.weekly.length,
-        retriesAfter: state.retryAt, ...watchSchedule(latest.at, now().toISOString()) };
+      const active = leases.has(id);
+      return { active, signing: state.signing, latest, weeklyCount: state.weekly.length,
+        retriesAfter: state.retryAt, ...watchSchedule(latest.at, now().toISOString()),
+        reason: reasons.get(id) ?? (active ? null : 'Sin credencial activa: tras abrir Plan B, la vigilancia se activa con la autorización y la clave.'),
+        rejections: rejections.get(id) ?? 0 };
     },
     privateSalt(id: string) { return stateOf(id).salt; },
     accept(id: string, fingerprint: string) {

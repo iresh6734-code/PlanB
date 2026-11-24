@@ -31,6 +31,12 @@ export const VERIFICA_API = '/api/verifica';
 const LIST_KEY = 'verifica:engagements';
 const sourceKey = (id: string, role: EngagementRole) => 'verifica:source:' + id + ':' + role;
 const issueKey = (id: string) => 'verifica:issue:' + id;
+/** La ficha de las fuentes (estado, huella y resumen de cada una), calculada al escribir y guardada (Mega Plan 3, fase 2). */
+const viewKey = (id: string) => 'verifica:view:' + id;
+/** El estado de la última lectura de HubSpot, guardado al empezar y al terminar para sobrevivir a un reinicio. */
+const jobKey = (id: string) => 'verifica:readjob:' + id;
+const INTERRUPTED = 'La lectura se cortó porque Plan B se cerró antes de terminarla. No se guardó nada de ella; vuelve a leer.';
+type SourcesView = Pick<EngagementView, 'sources' | 'missing'>;
 const recordsKey = (id: string) => 'verifica:records:' + id;
 const recordKey = (id: string, captureId: string) => 'verifica:record:' + id + ':' + captureId;
 
@@ -84,6 +90,8 @@ export function registerVerificaEngagements(app: FastifyInstance, store: Store, 
   const now = options.now ?? (() => new Date().toISOString());
   const sourceBytes = options.sourceBytes ?? ENGAGEMENT_LIMITS.sourceBytes;
   const jobs = new Map<string, ReadJob>();
+  /** Guarda el estado de la lectura tal como lo ve la pantalla (sin la credencial, que nunca está en `job`). */
+  const persistJob = (id: string, job: ReadJob) => { try { store.set(jobKey(id), job); } catch { /* la memoria sigue mandando */ } };
   const list = () => store.get<Engagement[]>(LIST_KEY, []);
   const find = (id: string) => {
     const engagement = list().find(item => item.id === id);
@@ -103,12 +111,29 @@ export function registerVerificaEngagements(app: FastifyInstance, store: Store, 
   const capturesFree = (id: string, role: EngagementRole) => {
     if ((role === 'previous' || role === 'latest') && jobs.get(id)?.state === 'running') throw new AppError(409, 'Hay una lectura de HubSpot en marcha para este encargo. Espera a que termine antes de cambiar las capturas.');
   };
+  // Mega Plan 3, fase 2: reinterpretar una captura de 45 MB costaba casi 5 s en cada vista, y al emitir se hacía con la base
+  // bloqueada. La ficha de las fuentes se calcula una vez, en la misma transacción que cada escritura, y se guarda; las
+  // vistas solo la leen. Si falta (datos de antes de este cambio), se calcula y se guarda la primera vez.
+  const refreshView = (engagement: Engagement): SourcesView => {
+    const { sources: states, missing } = engagementView(engagement, sources(engagement.id));
+    const view: SourcesView = { sources: states, missing };
+    store.set(viewKey(engagement.id), view);
+    return view;
+  };
+  const sourcesView = (engagement: Engagement): SourcesView => store.get<SourcesView | null>(viewKey(engagement.id), null)
+    ?? (store.db.isTransaction ? refreshView(engagement) : store.transaction(() => refreshView(engagement)));
   /** La vista pública de un encargo, con su última emisión si la hay. */
   const viewOf = (engagement: Engagement): EngagementView => {
-    const view = engagementView(engagement, sources(engagement.id));
+    const view: EngagementView = { engagement, ...sourcesView(engagement) };
     const stored = store.get<StoredIssue | null>(issueKey(engagement.id), null);
     return { ...view, issue: stored ? summary(stored, view) : null };
   };
+
+  // Una lectura que seguía «en marcha» al arrancar es que Plan B se cerró a mitad: queda constancia y se puede repetir.
+  for (const engagement of list()) {
+    const left = store.get<ReadJob | null>(jobKey(engagement.id), null);
+    if (left?.state === 'running') persistJob(engagement.id, { ...left, state: 'failed', finishedAt: now(), error: INTERRUPTED });
+  }
 
   // La página de Verifica pregunta esto para saber si la sirve el servidor local y puede ofrecer los pasos del encargo.
   app.get(VERIFICA_API + '/health', async () => ({ ok: true, engagements: true }));
@@ -157,6 +182,7 @@ export function registerVerificaEngagements(app: FastifyInstance, store: Store, 
       const at = now();
       store.set(sourceKey(id, role), { text, fileName, storedAt: at } satisfies StoredSource);
       touch(id);
+      refreshView(engagement);
       const view = viewOf(engagement), state = view.sources[role];
       appendLedger(store, id, at, [{ event: 'source-stored', data: { role, origin: 'file' }, refs: [
         ...sourceRefs(role, text, state.status === 'ok' ? state.fingerprint : null),
@@ -174,6 +200,7 @@ export function registerVerificaEngagements(app: FastifyInstance, store: Store, 
       const removed = store.get<StoredSource | null>(sourceKey(id, role), null);
       store.db.prepare('DELETE FROM meta WHERE key=?').run(sourceKey(id, role));
       touch(id);
+      refreshView(engagement);
       if (removed) appendLedger(store, id, now(), [{ event: 'source-removed', data: { role }, refs: [replacedRef(role, removed.text)] }]);
       return viewOf(engagement);
     });
@@ -202,7 +229,8 @@ export function registerVerificaEngagements(app: FastifyInstance, store: Store, 
       findings: report.findings.length, alarms: report.findings.filter(f => f.alarm).length, sources: issuedSources,
     };
     return store.transaction(() => {
-      const current = engagementView(find(id), sources(id));
+      // La ficha guardada se rehace en cada escritura de fuente, también en esta misma transacción: no hace falta releerlas.
+      const current: EngagementView = { engagement: find(id), ...sourcesView(find(id)) };
       if (current.missing.length || !sameSources(issuedSources, fingerprints(current))) {
         throw new AppError(409, 'Las fuentes cambiaron mientras se emitía el informe. Revisa las fuentes y vuelve a emitirlo.');
       }
@@ -258,6 +286,7 @@ export function registerVerificaEngagements(app: FastifyInstance, store: Store, 
     }
     const job: ReadJob = { state: 'running', mode: body.mode, startedAt: now(), progress: [] };
     jobs.set(id, job);
+    persistJob(id, job);
     const token = body.token;
     void readWithRecord({
       token, portalId: body.portalId, mode: body.mode, authorization, fetch: options.hubspotFetch ?? fetch, now: options.hubspotNow,
@@ -293,9 +322,11 @@ export function registerVerificaEngagements(app: FastifyInstance, store: Store, 
           ] });
           appendLedger(store, id, at, events);
           touch(id);
+          refreshView(find(id));
         });
       } catch {
         Object.assign(job, { state: 'failed', finishedAt: now(), error: 'No se pudo guardar la lectura completa. Vuelve a intentarlo.' } satisfies Partial<ReadJob>);
+        persistJob(id, job);
         return;
       }
       const { capture } = reading;
@@ -303,8 +334,10 @@ export function registerVerificaEngagements(app: FastifyInstance, store: Store, 
         state: 'done', finishedAt: now(),
         result: { captureId: capture.id, role, counts: { owners: capture.owners.length, companies: capture.companies.length, contacts: capture.contacts.length, deals: capture.deals.length }, historyAvailable: capture.historyAvailable, requests: reading.requests, recordFingerprint: record?.fingerprint ?? null },
       } satisfies Partial<ReadJob>);
+      persistJob(id, job);
     }, error => {
       Object.assign(job, { state: 'failed', finishedAt: now(), error: error instanceof VerificaReadError ? 'Lectura detenida: ' + error.message : 'La lectura terminó con un error inesperado; no se muestra el detalle por si contuviera datos de la petición.' } satisfies Partial<ReadJob>);
+      persistJob(id, job);
     });
     reply.code(202);
     return job;
@@ -313,7 +346,7 @@ export function registerVerificaEngagements(app: FastifyInstance, store: Store, 
   app.get(VERIFICA_API + '/engagements/:id/read', async request => {
     const { id } = idParam.parse(request.params);
     find(id);
-    return { job: jobs.get(id) ?? null };
+    return { job: jobs.get(id) ?? store.get<ReadJob | null>(jobKey(id), null) };
   });
 
   app.get(VERIFICA_API + '/engagements/:id/records', async request => {

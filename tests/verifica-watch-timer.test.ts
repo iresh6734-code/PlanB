@@ -177,3 +177,42 @@ test('un fallo al actualizar la agenda revierte la captura semanal y permite rei
     store.close();
   }
 });
+
+test('Mega Plan 3, fase 2: la vigilancia dice por qué se para y no reintenta sin fin una credencial rechazada', async () => {
+  const filename = join(mkdtempSync(join(tmpdir(), 'planb-watch-motivo-')), 'planb.sqlite');
+  const original = await signing();
+  const rejected = (async () => new Response('{}', { status: 401, headers: { 'content-type': 'application/json' } })) as typeof fetch;
+  let now = new Date(company.signing.capturedAt);
+  const store = new Store(filename);
+  const timer = createWatchTimer(store, { now: () => now, fetcher: rejected, intervalMs: 3_600_000 });
+  try {
+    timer.setSigning('motivo', original, company.salt);
+    assert.match(timer.status('motivo').reason ?? '', /Sin credencial activa/, 'sin activar, la pantalla dice cómo activarla');
+    timer.resume('motivo', grant);
+    assert.equal(timer.status('motivo').reason, null);
+    now = new Date(company.captures[0]!.capturedAt);
+    await timer.poll();
+    assert.equal(timer.status('motivo').rejections, 1);
+    assert.match(timer.status('motivo').reason ?? '', /rechazó la última lectura; se reintenta a las \d\d:\d\d/);
+    assert.equal(timer.status('motivo').active, true);
+    for (let i = 0; i < 2; i++) { now = new Date(now.getTime() + 3_600_001); await timer.poll(); }
+    const status = timer.status('motivo');
+    assert.equal(status.active, false, 'al tercer rechazo seguido se pausa');
+    assert.match(status.reason ?? '', /rechazó la credencial 3 veces seguidas/);
+    assert.ok(!JSON.stringify(status).includes(token), 'el estado no lleva la credencial');
+    // Reactivar limpia el motivo y la cuenta.
+    timer.resume('motivo', grant);
+    assert.equal(timer.status('motivo').reason, null);
+    assert.equal(timer.status('motivo').rejections, 0);
+    // Una autorización que deja de valer pausa con su motivo.
+    timer.resume('motivo', { ...grant, authorization: { ...signed, validUntil: '2026-11-30' } });
+    now = new Date('2026-12-15T10:00:00Z');
+    await timer.poll();
+    assert.equal(timer.status('motivo').active, false);
+    assert.match(timer.status('motivo').reason ?? '', /autorización caducó/);
+    timer.pause('motivo');
+  } finally {
+    await timer.close();
+    store.db.close();
+  }
+});

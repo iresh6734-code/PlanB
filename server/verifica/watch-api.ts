@@ -121,7 +121,10 @@ export function registerWatchApi(app: FastifyInstance, store: Store, engagements
 
   // Migración (D5) sobre la captura de cierre de la vigilancia. Si la última está retenida, se para hasta que las partes
   // acepten su huella: el parte sigue tomando la última captura como cierre y no se sustituye por otra.
-  app.post(WATCH_MIGRATION, async (request, reply) => {
+  // El destino y el mapa pueden pesar hasta MIGRATION_BUDGET.maxExportBytes cada uno y viajan juntos en JSON, que escapa
+  // comillas y saltos de línea: el cuerpo admite el doble de los dos más un margen, en vez del límite global de 20 MB, para
+  // que un archivo dentro del presupuesto reciba el aviso del presupuesto y no un 413 genérico (Mega Plan 3, fase 2).
+  app.post(WATCH_MIGRATION, { bodyLimit: 4 * MIGRATION_BUDGET.maxExportBytes + 64 * 1024 }, async (request, reply) => {
     const { id } = params.parse(request.params);
     engagements.name(id);
     if (!timer.configured(id)) throw new AppError(404, 'Falta fijar la captura de firma.');

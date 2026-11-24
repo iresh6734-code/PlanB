@@ -446,3 +446,24 @@ Con autorización de la usuaria para acabar el plan entero, y avisado Codex por 
 - `verifica-expediente-api` 6/6, `verifica-preguntas` 3/3, `verifica-paquete` 2/2, `verifica-pasos` 9/9. Verifica completa: 121 de 122.
 - La que falla es `api-client-routes`: `docs/api.md` no documenta las once rutas nuevas (siete de este corte y las cuatro de la vigilancia de Codex). Regenerarlo lo deniega el sistema de permisos porque el archivo está reservado por `CLAUDE-API-INVENTORY`; hace falta liberar esa reserva o el permiso de la usuaria.
 - En navegador, `tests/.tmp/verifica-vista/mp3.mts` contra el servidor con HubSpot simulado (4582): 48/48 en escritorio, móvil y oscuro. Incluye dos emisiones con su comparación, una respuesta con nombre rechazada, el expediente íntegro, el paquete descargado y verificado, abierto en el visor, y el cierre con su acta.
+
+## 24/11/2026 · Fase B con datos reales: HubSpot y Holded
+
+**Resultado:** `scripts/verifica-fuentes.ts` (de Codex) supera las 9 comprobaciones con archivos reales, con código de salida 0. Los archivos están en `tests/.tmp/fase-b/`, fuera de git: `captura-3.json`, `holded.csv`, `esperado.json` y `resultado.json`, con sus huellas SHA-256.
+
+**HubSpot.** El portal 149623339, «Plan B - Ensayo», es `DEVELOPER_TEST`, aunque la facturación lo muestre como «Gratis». La credencial es una clave de servicio nueva de solo lectura, «Verifica - solo lectura 2026-11-24», con cuatro permisos `read`. No es una app privada: HubSpot ya solo deja crear claves de servicio en cuentas de producción, así que la guía de venta tiene que decirlo. La usuaria copia la clave y se la pasa al lector por tubería; Claude no la ve. Se hicieron tres lecturas de 9 peticiones cada una:
+- 1 comercial, 2 empresas, 5 contactos y 3 oportunidades, con historial.
+- Cambio de importe de 1.000 a 1.500 y de fecha de cierre del 15/12/2026 al 31/01/2027, leídos con su hora.
+- Una oportunidad ganada de 1.250 con cierre el 24/11/2026.
+
+**Holded.** Cuenta de prueba «Verifica», en la que VeriFactu figura como «No aplica». Factura F26-0001 a «[FICTICIO] Nube de Ensayo»: base 1.250,00, IVA 262,50 y total 1.512,50; el NIF de prueba lo puso la usuaria. El libro se exportó desde Analítica > Informes > Libro de facturas emitidas > Excel y se pasó a CSV UTF-8 con punto y coma.
+
+**Fallos que solo salieron con datos reales, arreglados con autorización de la usuaria:**
+- `shared/verifica/invoices.ts` (archivo de Codex en B-HOLDED, editado encima de sus cambios):
+  - el libro trae cuatro filas de título y un pie;
+  - la columna se llama «Fecha de expedición»;
+  - la serie va aparte (ahora el número es `F26-0001`);
+  - el separador se elegía por el título;
+  - los números de línea se desfasaban con las filas vacías.
+- `shared/verifica/rules.ts`: una ganada en los últimos 30 días que ya tenía factura salía como «aún sin facturar». Ahora se busca antes su factura posible.
+- Prueba nueva: `tests/verifica-libro-holded-real.test.ts` (4/4). Verifica completa: 125/125.

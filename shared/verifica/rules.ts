@@ -160,12 +160,15 @@ export function wonWithoutInvoice(ctx: RuleContext): RuleResult {
   for (const deal of won) {
     if (byRef.has(deal.id)) continue;
     const closed = time(deal.closeDate);
-    if (Number.isFinite(closed) && closed > graceStart) { recent.push(deal); continue; }
     const amount = amountOf(deal);
     const candidate = loose.find(invoice => !used.has(invoice.id) && invoice.companyId !== null && invoice.companyId === deal.companyId
       && amount > 0 && Math.abs(invoice.amount - amount) <= amount * THRESHOLDS.invoiceAmountTolerance
       && time(invoice.issuedAt) >= closed - THRESHOLDS.invoiceBeforeDays * DAY && time(invoice.issuedAt) <= closed + THRESHOLDS.invoiceAfterDays * DAY);
-    if (candidate) { used.add(candidate.id); ambiguous.push(deal); } else missing.push(deal);
+    // Una ganada reciente que ya tiene factura posible cuenta como tal; solo las que no la tienen están «aún sin facturar»
+    // (fase B, 24/11/2026: con datos reales, una ganada del mismo día y ya facturada salía como sin facturar).
+    if (candidate) { used.add(candidate.id); ambiguous.push(deal); }
+    else if (Number.isFinite(closed) && closed > graceStart) recent.push(deal);
+    else missing.push(deal);
   }
   const missingAmount = sum(missing.map(amountOf)), ambiguousAmount = sum(ambiguous.map(amountOf));
   return {

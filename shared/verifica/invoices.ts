@@ -15,11 +15,13 @@ export const MAX_INVOICE_LINES = 200_000;
 
 export const INVOICE_COLUMNS = {
   number: ['numero', 'num', 'n factura', 'no factura', 'numero de factura', 'num factura', 'factura', 'n', 'invoice', 'invoice number', 'doc number'],
-  date: ['fecha', 'fecha factura', 'fecha de factura', 'fecha emision', 'fecha de emision', 'fecha expedicion', 'date', 'issue date'],
+  date: ['fecha', 'fecha factura', 'fecha de factura', 'fecha emision', 'fecha de emision', 'fecha expedicion', 'fecha de expedicion', 'date', 'issue date'],
   customer: ['cliente', 'contacto', 'nombre', 'nombre cliente', 'razon social', 'nombre del contacto', 'customer', 'contact'],
   taxId: ['nif', 'cif', 'nif cif', 'cif nif', 'nif del cliente', 'cif del cliente', 'vat', 'vat number', 'tax id'],
   base: ['base imponible', 'base', 'subtotal', 'importe sin iva', 'base imp', 'neto', 'importe neto', 'net'],
+  vat: ['iva', 'cuota iva', 'cuota de iva', 'importe iva', 'importe de iva'],
   total: ['total', 'importe total', 'total factura', 'importe', 'amount'],
+  status: ['estado de la factura', 'estado del documento', 'estado factura', 'estado'],
   dealRef: ['referencia oportunidad', 'ref oportunidad', 'oportunidad', 'id oportunidad', 'deal', 'deal id', 'referencia', 'ref', 'su referencia'],
 } as const;
 export type InvoiceColumn = keyof typeof INVOICE_COLUMNS;
@@ -28,11 +30,13 @@ export interface InvoiceIssue { line: number; reason: string }
 
 export interface InvoiceImport {
   invoices: VerificaInvoice[];
+  format: 'holded-book' | 'generic';
   /** Columna del archivo usada para cada dato. */
   columns: Partial<Record<InvoiceColumn, string>>;
   amountBasis: 'base' | 'total';
   /** Líneas descartadas y por qué (sin copiar su contenido). */
   issues: InvoiceIssue[];
+  excludedVoided: number;
   /** Facturas que no se pudieron asignar a ninguna empresa del CRM. */
   unmatched: number;
   /** Avisos generales del archivo. */
@@ -64,8 +68,10 @@ export function taxKey(value: string | null | undefined): string | null {
 /** Filas de un CSV con separador `;`, `,` o tabulador, comillas dobles y saltos de línea dentro de comillas. */
 export function parseCsv(text: string): string[][] {
   const source = text.replace(/^\uFEFF/, '');
-  const firstLine = source.slice(0, source.search(/\r?\n|$/));
-  const delimiter = [';', '\t', ','].map(d => ({ d, n: firstLine.split(d).length })).sort((a, b) => b.n - a.n)[0]!.d;
+  // El separador se decide por la l\u00EDnea que m\u00E1s tiene de las veinte primeras: el Libro de Holded empieza con t\u00EDtulos de
+  // una sola celda (\u00ABVerifica\u00BB, \u00ABListado de ventas\u2026\u00BB), que no dicen nada del separador.
+  const head = source.split(/\r?\n/, 20);
+  const delimiter = [';', '\t', ','].map(d => ({ d, n: Math.max(...head.map(line => line.split(d).length)) })).sort((a, b) => b.n - a.n)[0]!.d;
   const rows: string[][] = [];
   let row: string[] = [], field = '', quoted = false;
   for (let i = 0; i < source.length; i++) {
@@ -84,7 +90,8 @@ export function parseCsv(text: string): string[][] {
   }
   if (quoted) throw new InvoiceImportError('El archivo tiene unas comillas sin cerrar.');
   if (field !== '' || row.length) { row.push(field); rows.push(row); }
-  return rows.filter(cells => cells.some(cell => cell.trim() !== ''));
+  // Las filas vacías se conservan para que el número de línea de cada aviso sea el del archivo; quien lee las salta.
+  return rows;
 }
 
 /** Importe en formato español o inglés: «1.234,56», «1234,56», «1,234.56», «-1.234 €», «(1.234,56)». */
@@ -118,16 +125,30 @@ export function parseInvoiceDate(raw: string): string | null {
   return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d ? date.toISOString() : null;
 }
 
-function findColumns(header: string[]): Partial<Record<InvoiceColumn, number>> {
-  const folded = header.map(fold);
+const HOLDED_BOOK_COLUMNS = { number: 'numero', date: 'fecha expedicion', customer: 'contacto', base: 'base imponible' } as const;
+// El Libro que exporta Holded hoy (comprobado el 24/11/2026 con una exportación real) titula la fecha «Fecha de expedición».
+const HOLDED_DATE_LABELS = ['fecha expedicion', 'fecha de expedicion'];
+const isHoldedBook = (folded: string[]) => ['serie', 'numero', 'contacto', 'base imponible'].every(column => folded.includes(column))
+  && HOLDED_DATE_LABELS.some(label => folded.includes(label));
+
+function findColumns(folded: string[], holdedBook: boolean): Partial<Record<InvoiceColumn, number>> {
   const found: Partial<Record<InvoiceColumn, number>> = {};
   const taken = new Set<number>();
+  if (holdedBook) {
+    for (const [field, label] of Object.entries({ ...HOLDED_BOOK_COLUMNS, taxId: 'identificacion' }) as [InvoiceColumn, string][]) {
+      const index = field === 'date' ? folded.findIndex(cell => HOLDED_DATE_LABELS.includes(cell)) : folded.indexOf(label);
+      if (index >= 0) { found[field] = index; taken.add(index); }
+    }
+  }
   // Primero los nombres más largos, para que «base imponible» no lo coja «total» ni «referencia oportunidad» lo coja «ref».
   const wanted = (Object.entries(INVOICE_COLUMNS) as [InvoiceColumn, readonly string[]][])
     .flatMap(([column, names]) => names.map(name => ({ column, name })))
     .sort((a, b) => b.name.length - a.name.length);
   for (const { column, name } of wanted) {
     if (found[column] !== undefined) continue;
+    if (column === 'status' && !holdedBook) continue;
+    // En el Libro el NIF simple se refiere al expedidor. Si falta «Identificación», solo sirve un alias explícito del cliente.
+    if (holdedBook && column === 'taxId' && name !== 'nif del cliente' && name !== 'cif del cliente') continue;
     const index = folded.findIndex((cell, i) => !taken.has(i) && cell === name);
     if (index >= 0) { found[column] = index; taken.add(index); }
   }
@@ -136,9 +157,18 @@ function findColumns(header: string[]): Partial<Record<InvoiceColumn, number>> {
 
 export function importInvoices(text: string, companies: readonly VerificaCompany[]): InvoiceImport {
   const rows = parseCsv(text);
-  if (rows.length < 2) throw new InvoiceImportError('El archivo no tiene facturas.');
-  const header = rows[0]!;
-  const index = findColumns(header);
+  if (rows.filter(cells => cells.some(cell => cell.trim() !== '')).length < 2) throw new InvoiceImportError('El archivo no tiene facturas.');
+  // El Libro de Holded empieza con unas filas de título (empresa, «Listado de ventas», periodo y una vacía) y acaba con un
+  // pie («Informe creado automáticamente…»). La cabecera es la primera fila, de las veinte primeras, que tiene columna de
+  // fecha y de importe; si ninguna la tiene, se usa la primera y el error dice qué falta.
+  const headerAt = Math.max(0, rows.slice(0, 20).findIndex(row => {
+    const cells = row.map(fold), found = findColumns(cells, isHoldedBook(cells));
+    return found.date !== undefined && (found.base !== undefined || found.total !== undefined);
+  }));
+  const header = rows[headerAt]!;
+  const folded = header.map(fold);
+  const holdedBook = isHoldedBook(folded);
+  const index = findColumns(folded, holdedBook);
   if (index.date === undefined) throw new InvoiceImportError('No se encuentra la columna de fecha de la factura.');
   if (index.base === undefined && index.total === undefined) throw new InvoiceImportError('No se encuentra la columna de importe (base imponible o total).');
   if (index.customer === undefined && index.taxId === undefined && index.dealRef === undefined) throw new InvoiceImportError('No se encuentra ninguna columna para saber a quién se facturó (cliente, NIF o referencia).');
@@ -151,15 +181,22 @@ export function importInvoices(text: string, companies: readonly VerificaCompany
 
   const invoices: VerificaInvoice[] = [], issues: InvoiceIssue[] = [], warnings: string[] = [];
   const seen = new Set<string>();
-  let unmatched = 0, ambiguousNames = 0;
-  rows.slice(1).forEach((cells, offset) => {
-    const line = offset + 2;
+  let unmatched = 0, ambiguousNames = 0, excludedVoided = 0;
+  const serieAt = holdedBook ? folded.indexOf('serie') : -1;
+  rows.slice(headerAt + 1).forEach((cells, offset) => {
+    const line = offset + headerAt + 2;
+    // Filas vacías o de una sola celda (el pie del Libro): no son facturas ni errores.
+    if (cells.filter(value => value.trim() !== '').length <= 1) return;
     const cell = (column: InvoiceColumn) => index[column] === undefined ? '' : (cells[index[column]!] ?? '').trim();
+    const status = fold(cell('status'));
+    if (status === 'anulado' || status === 'anulada') { excludedVoided++; issues.push({ line, reason: 'factura anulada' }); return; }
     const issuedAt = parseInvoiceDate(cell('date'));
     if (!issuedAt) { issues.push({ line, reason: 'fecha no válida' }); return; }
     const amount = parseAmount(cell(amountBasis));
     if (amount === null) { issues.push({ line, reason: 'importe no válido' }); return; }
-    const id = cell('number') || 'linea-' + line;
+    // En el Libro la serie va aparte («F26» y «0001»): el número solo no basta para distinguir facturas de series distintas.
+    const serie = serieAt >= 0 ? (cells[serieAt] ?? '').trim() : '', number = cell('number');
+    const id = (serie && number && !number.startsWith(serie) ? serie + '-' + number : number) || 'linea-' + line;
     if (seen.has(id)) { issues.push({ line, reason: 'número de factura repetido' }); return; }
     seen.add(id);
     const tax = taxKey(cell('taxId')), name = cell('customer') ? companyKey(cell('customer')) : '';
@@ -173,5 +210,5 @@ export function importInvoices(text: string, companies: readonly VerificaCompany
   if (index.dealRef === undefined) warnings.push('El archivo no trae la referencia de la oportunidad: las ganadas solo se podrán cruzar por cliente e importe, sin comprobar.');
   if (ambiguousNames) warnings.push(ambiguousNames + ' facturas no se asignan porque hay varias empresas del CRM con el mismo nombre.');
   if (!invoices.length) throw new InvoiceImportError('Ninguna línea del archivo es una factura válida.');
-  return { invoices, columns, amountBasis, issues, unmatched, warnings };
+  return { invoices, format: holdedBook ? 'holded-book' : 'generic', columns, amountBasis, issues, excludedVoided, unmatched, warnings };
 }

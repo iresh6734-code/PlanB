@@ -398,3 +398,15 @@ Plan en Claude Docs, «Plan B · Mega plan 2». La usuaria pidió seguirlo «usa
 - Sin navegador, servidor, PowerShell ni DPAPI.
 
 **Pendiente:** regenerar `docs/api.md` con las cuatro rutas, bajo la reserva `CLAUDE-API-INVENTORY`. La fase B necesita la cuenta de pruebas de HubSpot y un CSV anonimizado de Holded.
+
+## 24/11/2026 · Mega plan 3 · Fase 1: núcleo de la cadena privada del expediente
+
+**Qué hay.** Cada encargo lleva una cadena `verifica-expediente-v1` cifrada en metadatos. Registra fuentes subidas, retiradas, leídas de HubSpot y rotadas, emisiones de sala limpia y la vigilancia (firma, captura semanal y aceptación). Se escribe en la misma transacción que el documento. Solo guarda huellas y papeles. `verifyLedger` señala la primera entrada retocada, insertada, eliminada o reordenada, y el recorte si hay cabeza externa.
+
+**Comprobado:**
+
+- Pruebas nuevas en `verifica-expediente`, más aserciones en la reapertura de SQLite y en la ruta de vigilancia.
+- Si falla la escritura de la cadena, la fuente no se guarda. Dos mutantes fallan.
+- `tsc` y batería segura en verde. Sin navegador, servidor, PowerShell ni DPAPI.
+
+**Pendiente:** equivalencia (su informe no se guarda), respuestas, cierre, paquete del comprador, ruta y línea de tiempo. Informe: `coordination/reports/CODEX-VERIFICA-EXPEDIENTE-1.md`.

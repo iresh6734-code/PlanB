@@ -6,9 +6,11 @@ import test from 'node:test';
 import { setTimeout as delay } from 'node:timers/promises';
 import { createBaseApp } from '../server/app.js';
 import { registerVerificaEngagements } from '../server/verifica/engagements.js';
+import { engagementLedger } from '../server/verifica/expediente-store.js';
 import { sha256Hex } from '../shared/sha256.js';
 import { buildTrapCompany } from '../shared/verifica/empresa-con-trampas.js';
 import type { ReadJob, ReadRequest, RecordSummary, StoredSource } from '../shared/verifica/engagement.js';
+import { verifyLedger } from '../shared/verifica/expediente.js';
 import { FAKE_PORTAL, fakeHubspot } from './helpers/fake-hubspot.js';
 
 type App = Awaited<ReturnType<typeof createBaseApp>>['app'];
@@ -106,6 +108,17 @@ test('Verifica · una transacción fallida conserva las capturas y actas al reab
     const latest = committed.store.get<StoredSource | null>(`verifica:source:${id}:latest`, null);
     assert.ok(latest);
     assert.equal(act.json<{ captureSha256: string }>().captureSha256, sha256Hex(latest.text));
+    const ledger = engagementLedger(committed.store, id);
+    assert.deepEqual(ledger.map(entry => [entry.sequence, entry.data.role, entry.data.origin]), [
+      [1, 'previous', 'hubspot-read'], [2, 'latest', 'hubspot-read'], [3, 'previous', 'rotate'], [4, 'latest', 'hubspot-read'],
+    ], 'la lectura fallida no dejó entrada');
+    assert.equal(verifyLedger(ledger, { engagement: id }).intact, true);
+    assert.ok(ledger[2].refs.some(ref => ref.method === 'sha256-bytes-v1' && ref.fingerprint === sha256Hex(previousLatest.text) && !ref.replaced));
+    const actFingerprint = act.json<{ fingerprint: string }>().fingerprint;
+    assert.deepEqual(ledger[3].refs.filter(ref => ref.kind !== 'capture'), [
+      { kind: 'read-record', method: 'verifica-read-record-v1', fingerprint: actFingerprint },
+      { kind: 'authorization-document', method: 'sha256-bytes-v1', fingerprint: sha256Hex(signature) },
+    ]);
   } finally {
     await committed.app.close();
   }

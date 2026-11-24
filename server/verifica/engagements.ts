@@ -19,6 +19,8 @@ import { sha256Hex } from '../../shared/sha256.js';
 import { VerificaReadError } from '../../shared/verifica/hubspot.js';
 import { checkReadAuthorization, madridDay, parseReadAuthorization, ReadAuthorizationError, type ReadAuthorization, type ReadRecord } from '../../shared/verifica/read-authorization.js';
 import { credentialProblem, readWithRecord, recordToText } from './hubspot-read.js';
+import { appendLedger, captureInputFingerprint, recordRefs, replacedRef, ROLE_KIND, sourceRefs } from './expediente-store.js';
+import type { LedgerEventInput } from '../../shared/verifica/expediente.js';
 import { registerWatchApi } from './watch-api.js';
 import { READ_LIMITS, type ReadJob, type RecordSummary } from '../../shared/verifica/engagement.js';
 export type { ReadJob, RecordSummary } from '../../shared/verifica/engagement.js';
@@ -136,17 +138,30 @@ export function registerVerificaEngagements(app: FastifyInstance, store: Store, 
       const reason = role === 'invoices' && error instanceof SyntaxError ? 'El archivo no parece un CSV con cabecera.' : inputProblem(error);
       throw new AppError(422, reason);
     }
-    store.set(sourceKey(id, role), { text, fileName, storedAt: now() } satisfies StoredSource);
-    touch(id);
-    return viewOf(engagement);
+    return store.transaction(() => {
+      const replaced = store.get<StoredSource | null>(sourceKey(id, role), null);
+      const at = now();
+      store.set(sourceKey(id, role), { text, fileName, storedAt: at } satisfies StoredSource);
+      touch(id);
+      const view = viewOf(engagement), state = view.sources[role];
+      appendLedger(store, id, at, [{ event: 'source-stored', data: { role, origin: 'file' }, refs: [
+        ...sourceRefs(role, text, state.status === 'ok' ? state.fingerprint : null),
+        ...(replaced && replaced.text !== text ? [replacedRef(role, replaced.text)] : []),
+      ] }]);
+      return view;
+    });
   });
 
   app.delete(VERIFICA_API + '/engagements/:id/sources/:role', async request => {
     const { id, role } = roleParam.parse(request.params);
     const engagement = find(id);
-    store.db.prepare('DELETE FROM meta WHERE key=?').run(sourceKey(id, role));
-    touch(id);
-    return viewOf(engagement);
+    return store.transaction(() => {
+      const removed = store.get<StoredSource | null>(sourceKey(id, role), null);
+      store.db.prepare('DELETE FROM meta WHERE key=?').run(sourceKey(id, role));
+      touch(id);
+      if (removed) appendLedger(store, id, now(), [{ event: 'source-removed', data: { role }, refs: [replacedRef(role, removed.text)] }]);
+      return viewOf(engagement);
+    });
   });
 
   // Corte 2 · la sala limpia: misma entrada y mismo motor que el script. Si la barrera encuentra un texto del CRM en el
@@ -178,6 +193,11 @@ export function registerVerificaEngagements(app: FastifyInstance, store: Store, 
       }
       store.set(issueKey(id), stored);
       touch(id);
+      appendLedger(store, id, stored.issuedAt, [{ event: 'report-issued', refs: [
+        ...ENGAGEMENT_ROLES.flatMap(role => issuedSources[role] ? [{ kind: ROLE_KIND[role], role, method: 'verifica-input-v1' as const, fingerprint: issuedSources[role]! }] : []),
+        { kind: 'report', method: 'planb-verifica-report-v1', fingerprint: stored.reportFingerprint },
+        { kind: 'custody', method: 'planb-verifica-custody-v1', fingerprint: stored.custodyFingerprint },
+      ] }]);
       return { ...summary(stored, current), key };
     });
   });
@@ -228,16 +248,31 @@ export function registerVerificaEngagements(app: FastifyInstance, store: Store, 
       const label = (body.mode === 'client' ? 'HubSpot ' : 'HubSpot de pruebas ') + reading.account.portalId + ' · ' + reading.capture.capturedAt.slice(0, 10) + '.json';
       try {
         store.transaction(() => {
+          const at = now(), events: LedgerEventInput[] = [];
+          const replaced = store.get<StoredSource | null>(sourceKey(id, role), null);
           if (body.target === 'rotate') {
             const current = store.get<StoredSource | null>(sourceKey(id, 'latest'), null);
-            if (current) store.set(sourceKey(id, 'previous'), current);
+            if (current) {
+              const old = store.get<StoredSource | null>(sourceKey(id, 'previous'), null);
+              store.set(sourceKey(id, 'previous'), current);
+              events.push({ event: 'source-stored', data: { role: 'previous', origin: 'rotate' }, refs: [
+                ...sourceRefs('previous', current.text, captureInputFingerprint(current.text)),
+                ...(old && old.text !== current.text ? [replacedRef('previous', old.text)] : []),
+              ] });
+            }
           }
-          store.set(sourceKey(id, role), { text: captureText, fileName: label, storedAt: now() } satisfies StoredSource);
+          store.set(sourceKey(id, role), { text: captureText, fileName: label, storedAt: at } satisfies StoredSource);
           if (record) {
             store.set(recordKey(id, record.captureId), recordToText(record));
             const summaryRow: RecordSummary = { captureId: record.captureId, fingerprint: record.fingerprint, finishedAt: record.finishedAt, portalId: record.portalId, engagement: record.engagement };
             store.set(recordsKey(id), [...store.get<RecordSummary[]>(recordsKey(id), []).filter(r => r.captureId !== record.captureId), summaryRow]);
           }
+          events.push({ event: 'source-stored', data: { role, origin: 'hubspot-read' }, refs: [
+            ...sourceRefs(role, captureText, captureInputFingerprint(captureText)),
+            ...(record ? recordRefs(record) : []),
+            ...(replaced && replaced.text !== captureText ? [replacedRef(role, replaced.text)] : []),
+          ] });
+          appendLedger(store, id, at, events);
           touch(id);
         });
       } catch {

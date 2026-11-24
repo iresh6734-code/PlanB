@@ -6,6 +6,14 @@ import { fingerprintOf } from '../../shared/verifica/report.js';
 import { releaseWatchReport, WatchInputError, watchSchedule } from '../../shared/verifica/watch.js';
 import type { WatchCaptureRef, WatchScheduleStatus } from '../../shared/verifica/watch-contract.js';
 import { credentialProblem, readWithRecord } from './hubspot-read.js';
+import { appendLedger, recordRefs } from './expediente-store.js';
+import type { LedgerRef } from '../../shared/verifica/expediente.js';
+
+const observationRefs = (observation: Observation, ref: WatchCaptureRef): LedgerRef[] => [
+  { kind: 'capture', method: 'sha256-bytes-v1', fingerprint: sha256Hex(observation.captureText) },
+  { kind: 'capture', method: 'verifica-input-v1', fingerprint: ref.fingerprint },
+  ...recordRefs(observation.record),
+];
 
 type Observation = { captureText: string; record: ReadRecord };
 type WatchState = {
@@ -78,6 +86,7 @@ export function createWatchTimer(store: Store, options: { now?: () => Date; fetc
           if (last(current).fingerprint !== previous.fingerprint) throw new Error('Cambió la última captura.');
           store.set(observationKey(id, observed.fingerprint), { captureText, record });
           store.set(watchKey(id), { ...current, weekly: [...current.weekly, observed], retryAt: null } satisfies WatchState);
+          appendLedger(store, id, now().toISOString(), [{ event: 'watch-capture', data: { origin: 'watch' }, refs: observationRefs({ captureText, record }, observed) }]);
         });
       } catch {
         if (leases.get(id) !== lease) continue;
@@ -115,6 +124,7 @@ export function createWatchTimer(store: Store, options: { now?: () => Date; fetc
         store.set(observationKey(id, signing.fingerprint), observation);
         store.set(watchKey(id), { portalId: observation.record.portalId, engagement: observation.record.engagement,
           signing, salt, weekly: [], accepted: [], retryAt: null } satisfies WatchState);
+        appendLedger(store, id, now().toISOString(), [{ event: 'watch-signing', data: { origin: 'watch' }, refs: observationRefs(observation, signing) }]);
       });
     },
     resume(id: string, input: { token: string; authorization: unknown; signedDocument: Uint8Array; confirmRecurring: boolean }) {
@@ -136,9 +146,13 @@ export function createWatchTimer(store: Store, options: { now?: () => Date; fetc
     },
     privateSalt(id: string) { return stateOf(id).salt; },
     accept(id: string, fingerprint: string) {
-      const state = stateOf(id);
-      if (!state.weekly.some(item => item.fingerprint === fingerprint)) throw new WatchInputError('No hay una captura semanal con esa huella.');
-      if (!state.accepted.includes(fingerprint)) store.set(watchKey(id), { ...state, accepted: [...state.accepted, fingerprint] });
+      store.transaction(() => {
+        const state = stateOf(id);
+        if (!state.weekly.some(item => item.fingerprint === fingerprint)) throw new WatchInputError('No hay una captura semanal con esa huella.');
+        if (state.accepted.includes(fingerprint)) return;
+        store.set(watchKey(id), { ...state, accepted: [...state.accepted, fingerprint] });
+        appendLedger(store, id, now().toISOString(), [{ event: 'watch-accepted', refs: [{ kind: 'capture', method: 'verifica-input-v1', fingerprint }] }]);
+      });
     },
     report(id: string, asOf = now().toISOString()) {
       return reportOf(id, asOf);

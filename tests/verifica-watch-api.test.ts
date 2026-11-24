@@ -6,8 +6,10 @@ import test from 'node:test';
 import { setTimeout as delay } from 'node:timers/promises';
 import { createBaseApp } from '../server/app.js';
 import { registerVerificaEngagements } from '../server/verifica/engagements.js';
+import { engagementLedger } from '../server/verifica/expediente-store.js';
 import { sha256Hex } from '../shared/sha256.js';
 import type { ReadJob, StoredSource } from '../shared/verifica/engagement.js';
+import { verifyLedger } from '../shared/verifica/expediente.js';
 import { buildWatchedCompany } from '../shared/verifica/empresa-vigilada.js';
 import { buildMigratedCompany } from '../shared/verifica/empresa-migrada.js';
 import { equivalenceToJson, verifyEquivalenceReport } from '../shared/verifica/equivalence.js';
@@ -119,6 +121,18 @@ test('la ruta del encargo vigila desde la captura firmada, detecta un retraso y 
     assert.equal((await app.inject({ method: 'POST', url: watchMigrationUrl(other), payload: migration })).statusCode, 404);
     assert.equal((await post({ action: 'accept', fingerprint: week.fingerprint, confirmed: true })).statusCode, 200);
     assert.equal((await report()).entries[1]!.status, 'accepted');
+    await post({ action: 'accept', fingerprint: week.fingerprint, confirmed: true });
+    const ledger = engagementLedger(store, id);
+    const watchEntries = ledger.filter(entry => entry.event.startsWith('watch-'));
+    assert.deepEqual(watchEntries.map(entry => entry.event), ['watch-signing', 'watch-capture', 'watch-accepted']);
+    assert.equal(verifyLedger(ledger, { engagement: id }).intact, true);
+    assert.deepEqual(watchEntries[1].refs, [
+      { kind: 'capture', method: 'sha256-bytes-v1', fingerprint: sha256Hex(observed.captureText) },
+      { kind: 'capture', method: 'verifica-input-v1', fingerprint: week.fingerprint },
+      { kind: 'read-record', method: 'verifica-read-record-v1', fingerprint: observed.record.fingerprint },
+      { kind: 'authorization-document', method: 'sha256-bytes-v1', fingerprint: observed.record.signedDocumentSha256 },
+    ]);
+    assert.deepEqual(watchEntries[2].refs, [{ kind: 'capture', method: 'verifica-input-v1', fingerprint: week.fingerprint }]);
 
     assert.equal((await app.inject({ method: 'POST', url: migrationUrl, payload: { ...migration, map: '{' } })).statusCode, 422);
     assert.equal((await app.inject({ method: 'POST', url: migrationUrl, payload: { ...migration, asOf: '2099-02-31' } })).statusCode, 422);

@@ -113,7 +113,8 @@ async function run(scenario: Scenario) {
       const databaseBytes = statSync(dbPath).size;
       const upload = await app.inject({ method: 'PUT', url: `${route}/sources/latest`, payload: { text: source.text, fileName: 'captura.json' } });
       assert.ok([200, 413, 422].includes(upload.statusCode));
-      if (source.text.length > ENGAGEMENT_LIMITS.sourceBytes) assert.notEqual(upload.statusCode, 200);
+      if (sourceBytes > ENGAGEMENT_LIMITS.sourceBytes) assert.notEqual(upload.statusCode, 200);
+      else assert.equal(upload.statusCode, 200, 'lo que guarda la lectura también se puede subir');
       verification = {
         state: 'done', sourceBytes, encryptedRowBytes: Buffer.byteLength(row.value), databaseBytes,
         firstViewMs: Math.round(firstViewMs), storageMs: Math.round(storageMs),

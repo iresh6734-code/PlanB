@@ -1,7 +1,7 @@
 // Plan B Verifica · cliente de los encargos del servidor local (fase D, corte 1). Solo se usa cuando verifica.html la
 // sirve el servidor local; abierta suelta, la página no llama a nada.
 import type { Engagement, EngagementRole, EngagementView, IssueResult, ReadJob, ReadRequest, RecordSummary } from '../../shared/verifica/engagement.js';
-import { ENGAGEMENT_LIMITS } from '../../shared/verifica/engagement.js';
+import { ENGAGEMENT_LIMITS, sourceSizeProblem } from '../../shared/verifica/engagement.js';
 
 export type EngagementSummary = Engagement & { ready: boolean; stored: number; issued: boolean };
 
@@ -39,7 +39,8 @@ export const readEngagement = (id: string) => call<EngagementView>(`/api/verific
 export const removeSource = (id: string, role: EngagementRole) => call<EngagementView>(`/api/verifica/engagements/${id}/sources/${role}`, { method: 'DELETE' });
 
 export async function uploadSource(id: string, role: EngagementRole, file: File): Promise<EngagementView> {
-  if (file.size > ENGAGEMENT_LIMITS.sourceBytes) throw new EngagementApiError('«' + file.name + '» es demasiado grande para una fuente del encargo.', 413);
+  const tooLarge = sourceSizeProblem('«' + file.name + '»', file.size);
+  if (tooLarge) throw new EngagementApiError(tooLarge, 413);
   let text: string;
   try { text = await file.text(); } catch { throw new EngagementApiError('No se pudo leer «' + file.name + '».', 0); }
   return call<EngagementView>(`/api/verifica/engagements/${id}/sources/${role}`, { method: 'PUT', body: JSON.stringify({ text, fileName: file.name.slice(0, ENGAGEMENT_LIMITS.fileNameChars) }) });

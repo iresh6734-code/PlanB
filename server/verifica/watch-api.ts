@@ -3,7 +3,8 @@ import { z } from 'zod';
 import { AppError, type Store } from '../store.js';
 import { MigrationInputError } from '../../shared/migration-verifier.js';
 import { CleanRoomError, newSalt } from '../../shared/verifica/clean-room.js';
-import { ENGAGEMENT_LIMITS, READ_LIMITS } from '../../shared/verifica/engagement.js';
+import { MIGRATION_BUDGET } from '../../shared/migration-budget.js';
+import { READ_LIMITS } from '../../shared/verifica/engagement.js';
 import { VerificaInputError } from '../../shared/verifica/inputs.js';
 import { EquivalenceInputError, equivalenceWorkList, prepareEquivalenceFiles, releaseEquivalence } from '../../shared/verifica/migration.js';
 import { ReadAuthorizationError, type ReadRecord } from '../../shared/verifica/read-authorization.js';
@@ -24,8 +25,8 @@ const action = z.discriminatedUnion('action', [
   z.object({ action: z.literal('accept'), fingerprint, confirmed: z.literal(true) }).strict(),
 ]);
 const migrationBody = z.object({
-  target: z.string().min(1).max(ENGAGEMENT_LIMITS.sourceBytes),
-  map: z.string().min(1).max(ENGAGEMENT_LIMITS.sourceBytes),
+  target: z.string().min(1).max(MIGRATION_BUDGET.maxExportBytes),
+  map: z.string().min(1).max(MIGRATION_BUDGET.maxExportBytes),
   asOf: z.iso.date(),
 }).strict();
 

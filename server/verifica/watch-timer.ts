@@ -41,7 +41,7 @@ export function inspectWatchObservation(observation: Observation) {
 }
 
 /** Guarda cada captura y su acta juntas. La instalación mantiene las credenciales de vigilancia solo en memoria. */
-export function createWatchTimer(store: Store, options: { now?: () => Date; fetcher?: typeof fetch; intervalMs?: number } = {}) {
+export function createWatchTimer(store: Store, options: { now?: () => Date; fetcher?: typeof fetch; intervalMs?: number; maxCaptureBytes?: number } = {}) {
   const now = options.now ?? (() => new Date());
   const leases = new Map<string, Lease>();
   let pending: Promise<void> | null = null;
@@ -75,7 +75,7 @@ export function createWatchTimer(store: Store, options: { now?: () => Date; fetc
 
       try {
         const { captureText, record } = await readWithRecord({ token: lease.token, authorization: lease.authorization,
-          portalId: state.portalId, mode: 'client', fetch: options.fetcher ?? fetch, now, signal: lease.abort.signal });
+          portalId: state.portalId, mode: 'client', fetch: options.fetcher ?? fetch, now, signal: lease.abort.signal, maxCaptureBytes: options.maxCaptureBytes });
         if (leases.get(id) !== lease) continue;
         if (!record) throw new Error('Falta el acta de la lectura.');
         const { ref: observed } = inspectWatchObservation({ captureText, record });

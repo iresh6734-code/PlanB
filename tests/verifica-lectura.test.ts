@@ -136,6 +136,20 @@ test('Verifica · lectura desde la pantalla: modo pruebas, rotación de capturas
   assert.equal(r2.store.get('verifica:source:' + id2 + ':previous', null), null);
 });
 
+test('Verifica · lectura desde la pantalla: una captura por encima del máximo común se para sin guardar nada', async () => {
+  const fake = fakeHubspot(company.latest);
+  const r = await rig({ hubspotFetch: fake.fetcher, sourceBytes: 4096 });
+  const id = await engagement(r);
+  const body = { mode: 'test', portalId: FAKE_PORTAL, token: TOKEN, target: 'latest', confirmFullRead: true };
+  assert.equal((await call(r, 'POST', '/engagements/' + id + '/read', body)).status, 202);
+  const failed = await finished(r, id);
+  assert.equal(failed.state, 'failed');
+  assert.match(failed.error ?? '', /^Lectura detenida: La captura de HubSpot ocupa [\d.]+ bytes y el máximo de una fuente del encargo es 4\.096 bytes\. No se ha guardado nada\./);
+  assert.ok(fake.log.length > 0, 'la medida es sobre la captura leída');
+  assert.equal(r.store.get('verifica:source:' + id + ':latest', null), null);
+  assert.deepEqual(r.store.get('verifica:ledger:' + id, []), []);
+});
+
 test('Verifica · un fallo de guardado revierte la rotación y el acta y permite reintentar', async t => {
   const fake = fakeHubspot(company.latest, { accountType: 'STANDARD' });
   let timestamp = clock().getTime();

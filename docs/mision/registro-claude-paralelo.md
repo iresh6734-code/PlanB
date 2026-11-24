@@ -410,3 +410,16 @@ Plan en Claude Docs, «Plan B · Mega plan 2». La usuaria pidió seguirlo «usa
 - `tsc` y batería segura en verde. Sin navegador, servidor, PowerShell ni DPAPI.
 
 **Pendiente:** equivalencia (su informe no se guarda), respuestas, cierre, paquete del comprador, ruta y línea de tiempo. Informe: `coordination/reports/CODEX-VERIFICA-EXPEDIENTE-1.md`.
+
+## 24/11/2026 · Mega plan 3 · Fase 2: límite común de una fuente
+
+**Qué hay.** Una fuente del encargo admite hasta 48 MB en bytes UTF-8, lo eligió la usuaria. Se comprueba antes de guardar en la subida, en la lectura de HubSpot (pantalla y script) y en la captura semanal de la vigilancia, con el mismo aviso. La subida ya no cuenta caracteres. Su ruta admite el doble en el cuerpo HTTP por el escape del JSON. La migración usa su propio presupuesto de 24 MB.
+
+**Comprobado:**
+
+- Pruebas focales en `verifica-encargos`, `verifica-lectura` y `verifica-watch-timer`.
+- Tres mutantes fallan.
+- Puntualmente con `inject`, sin puerto: 50.331.648 B se guardan y 1 B más da `413` con el aviso común.
+- `tsc` y batería segura en verde. Sin navegador, servidor, PowerShell ni DPAPI.
+
+**Pendiente:** motivo visible del fallo semanal, ficha sin reinterpretar la captura y estado interrumpido. Informe: `coordination/reports/CODEX-VERIFICA-ROBUSTEZ-1.md`.

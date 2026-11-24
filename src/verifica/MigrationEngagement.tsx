@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { MIGRATION_BUDGET } from '../../shared/migration-budget.js';
 import { MigrationInputError } from '../../shared/migration-verifier.js';
 import { CleanRoomError } from '../../shared/verifica/clean-room.js';
-import { ENGAGEMENT_LIMITS } from '../../shared/verifica/engagement.js';
 import { equivalenceToJson, type EquivalenceReport } from '../../shared/verifica/equivalence.js';
 import { VerificaInputError } from '../../shared/verifica/inputs.js';
 import { EquivalenceInputError, equivalenceWorkList, prepareEquivalenceFiles, releaseEquivalence } from '../../shared/verifica/migration.js';
@@ -31,7 +31,7 @@ async function readFile(data: FormData, { name, label, required }: typeof FILES[
     if (required) throw new VerificaInputError(`Falta ${label.toLowerCase()}.`);
     return null;
   }
-  const max = name === 'salt' ? 4096 : ENGAGEMENT_LIMITS.sourceBytes;
+  const max = name === 'salt' ? 4096 : MIGRATION_BUDGET.maxExportBytes;
   if (file.size > max) throw new VerificaInputError(`${label}: el archivo es demasiado grande.`);
   try { return await file.text(); }
   catch { throw new VerificaInputError(`${label}: no se pudo leer el archivo.`); }

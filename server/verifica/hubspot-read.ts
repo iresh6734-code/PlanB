@@ -3,6 +3,8 @@
 // momento, el mismo lector y la misma acta. El acta cuenta lo que pasó por el transporte (métodos y rutas), no lo que el
 // lector dice que hizo. La credencial no se guarda ni se devuelve: solo viaja en la cabecera de cada petición.
 import { buildReadRecord, type ReadAuthorization, type ReadRecord } from '../../shared/verifica/read-authorization.js';
+import { sourceSizeProblem } from '../../shared/verifica/engagement.js';
+import { VerificaReadError } from '../../shared/verifica/hubspot.js';
 import { readHubspotForVerifica, type HubspotReading } from './hubspot-reader.js';
 
 export interface ReadWithRecordInput {
@@ -18,6 +20,8 @@ export interface ReadWithRecordInput {
   customerStages?: string[];
   progress?: (message: string) => void;
   signal?: AbortSignal;
+  /** Máximo de la captura en bytes UTF-8 (por defecto, el común de una fuente del encargo). */
+  maxCaptureBytes?: number;
 }
 
 export interface ReadWithRecordResult {
@@ -45,6 +49,8 @@ export async function readWithRecord(input: ReadWithRecordInput): Promise<ReadWi
   });
   const { capture } = reading;
   const captureText = JSON.stringify(capture, null, 2) + '\n';
+  const tooLarge = sourceSizeProblem('La captura de HubSpot', Buffer.byteLength(captureText, 'utf8'), input.maxCaptureBytes);
+  if (tooLarge) throw new VerificaReadError('CAPTURE_BUDGET', tooLarge);
   const auth = input.authorization;
   const record = auth ? buildReadRecord({
     portalId: reading.account.portalId, accountType: reading.account.accountType, engagement: auth.engagement, authorizedBy: auth.authorizedBy,

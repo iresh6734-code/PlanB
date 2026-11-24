@@ -120,6 +120,29 @@ test('caducar o pausar evita otra lectura y descarta una captura aún en vuelo',
   }
 });
 
+test('una captura semanal por encima del máximo común no se guarda y se reintenta más tarde', async () => {
+  const original = await signing();
+  const store = new Store(':memory:');
+  const weekly = company.captures[0]!;
+  const fake = fakeHubspot(weekly, { accountType: 'STANDARD' });
+  let now = new Date(company.signing.capturedAt);
+  const timer = createWatchTimer(store, { now: () => now, fetcher: fake.fetcher, maxCaptureBytes: 4096 });
+  try {
+    timer.setSigning('uno', original, company.salt);
+    timer.resume('uno', grant);
+    now = new Date(weekly.capturedAt);
+    await timer.poll();
+    assert.ok(fake.log.length > 0);
+    assert.equal(store.db.prepare("SELECT COUNT(*) AS count FROM meta WHERE key LIKE 'verifica:watch-capture:uno:%'").get()?.count, 1);
+    assert.equal(timer.report('uno').entries.length, 1);
+    assert.equal(Date.parse(timer.status('uno').retriesAfter!), now.getTime() + 3_600_000);
+    assert.deepEqual(store.get<{ event: string }[]>('verifica:ledger:uno', []).map(entry => entry.event), ['watch-signing']);
+  } finally {
+    await timer.close();
+    store.close();
+  }
+});
+
 test('un fallo al actualizar la agenda revierte la captura semanal y permite reintentar', async () => {
   const original = await signing();
   const store = new Store(':memory:');

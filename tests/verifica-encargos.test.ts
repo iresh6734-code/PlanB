@@ -10,7 +10,7 @@ import { newSalt } from '../shared/verifica/clean-room.js';
 import { newCustodyKey, openCustody } from '../shared/verifica/custody.js';
 import { exampleFiles } from '../scripts/verifica-ejemplo.js';
 import { runCli } from '../scripts/verifica-sala-limpia.js';
-import type { EngagementView } from '../shared/verifica/engagement.js';
+import { ENGAGEMENT_LIMITS, sourceSizeProblem, type EngagementView } from '../shared/verifica/engagement.js';
 import type { VerificaReport } from '../shared/verifica/report.js';
 
 process.env.NODE_ENV = 'test';
@@ -100,6 +100,24 @@ test('Verifica · encargos: una fuente que no sirve no se guarda y se explica po
   const swapped = (await upload(r, engagement.id, 'previous', files.get('ahora.json')!, 'ahora.json')).body as EngagementView;
   assert.equal(swapped.sources.previous.status, 'invalid');
   assert.ok(swapped.missing.includes('La captura anterior no sirve.'));
+});
+
+test('Verifica · encargos: el máximo común de una fuente se mide en bytes UTF-8 y, si se supera, no se guarda nada', async () => {
+  const text = 'cliente;importe\nÑandú Españoles;10\n';
+  const bytes = Buffer.byteLength(text, 'utf8');
+  assert.ok(text.length < bytes, 'el texto tiene menos caracteres que bytes');
+  const r = await rig({ sourceBytes: bytes - 1 }), { engagement } = await create(r);
+  const refused = await upload(r, engagement.id, 'invoices', text, 'ventas.csv');
+  assert.equal(refused.status, 413);
+  assert.equal(refused.body.error, '«ventas.csv» ocupa ' + bytes + ' bytes y el máximo de una fuente del encargo es ' + (bytes - 1) + ' bytes. No se ha guardado nada. '
+    + 'Si es un archivo, expórtalo con menos periodo u objetos; si es una lectura de HubSpot, la cuenta supera lo que admite esta versión.');
+  assert.equal(r.store.get('verifica:source:' + engagement.id + ':invoices', null), null);
+  assert.deepEqual(r.store.get('verifica:ledger:' + engagement.id, []), [], 'el expediente no cambia');
+  const exact = await rig({ sourceBytes: bytes }), other = await create(exact);
+  assert.equal((await upload(exact, other.engagement.id, 'invoices', text, 'ventas.csv')).status, 200, 'justo en el máximo, se guarda');
+  const limit = ENGAGEMENT_LIMITS.sourceBytes;
+  assert.match(sourceSizeProblem('X', limit + 1)!, /^X ocupa 50\.331\.649 bytes y el máximo de una fuente del encargo es 50\.331\.648 bytes\./, 'en el borde, bytes exactos');
+  assert.match(sourceSizeProblem('X', limit + 4 * 1024 * 1024)!, /^X ocupa 52,0 MB y el máximo de una fuente del encargo es 48,0 MB\./);
 });
 
 test('Verifica · encargos: las respuestas no devuelven el contenido del CRM y se puede quitar una fuente', async () => {

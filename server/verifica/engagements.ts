@@ -12,7 +12,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { CleanRoomError, runCleanRoom } from '../../shared/verifica/clean-room.js';
 import { custodyFingerprint } from '../../shared/verifica/custody.js';
-import { ENGAGEMENT_LIMITS, ENGAGEMENT_ROLES, engagementView, inputProblem, readEngagement, type Engagement, type EngagementRole, type EngagementView, type IssueResult, type IssueSummary, type StoredSource, type StoredSources } from '../../shared/verifica/engagement.js';
+import { ENGAGEMENT_LIMITS, ENGAGEMENT_ROLES, engagementView, inputProblem, readEngagement, sourceSizeProblem, type Engagement, type EngagementRole, type EngagementView, type IssueResult, type IssueSummary, type StoredSource, type StoredSources } from '../../shared/verifica/engagement.js';
 import { cleanRoomInput, parseCaptureText, parseDeclarationsText } from '../../shared/verifica/inputs.js';
 import { reportToJson } from '../../shared/verifica/report.js';
 import { sha256Hex } from '../../shared/sha256.js';
@@ -53,8 +53,11 @@ const readBody = z.object({
 }).strict();
 
 const createBody = z.object({ name: z.string().trim().min(1).max(ENGAGEMENT_LIMITS.nameChars) }).strict();
+// El tamaño del texto se mide en bytes UTF-8 después de leer el cuerpo, para dar el aviso común. El cuerpo admite el doble
+// porque el JSON escapa comillas y saltos de línea; más allá, Fastify lo corta antes de leerlo.
+const SOURCE_BODY_LIMIT = 2 * ENGAGEMENT_LIMITS.sourceBytes + 64 * 1024;
 const sourceBody = z.object({
-  text: z.string().min(1).max(ENGAGEMENT_LIMITS.sourceBytes),
+  text: z.string().min(1),
   fileName: z.string().trim().min(1).max(ENGAGEMENT_LIMITS.fileNameChars),
 }).strict();
 
@@ -72,10 +75,13 @@ export interface VerificaEngagementOptions {
   hubspotNow?: () => Date;
   /** Solo para pruebas del temporizador de vigilancia. */
   watchIntervalMs?: number;
+  /** Solo para pruebas: un máximo común de fuente más pequeño, sin fabricar 48 MB. */
+  sourceBytes?: number;
 }
 
 export function registerVerificaEngagements(app: FastifyInstance, store: Store, options: VerificaEngagementOptions = {}) {
   const now = options.now ?? (() => new Date().toISOString());
+  const sourceBytes = options.sourceBytes ?? ENGAGEMENT_LIMITS.sourceBytes;
   const jobs = new Map<string, ReadJob>();
   const list = () => store.get<Engagement[]>(LIST_KEY, []);
   const find = (id: string) => {
@@ -124,10 +130,12 @@ export function registerVerificaEngagements(app: FastifyInstance, store: Store, 
     return viewOf(find(id));
   });
 
-  app.put(VERIFICA_API + '/engagements/:id/sources/:role', async request => {
+  app.put(VERIFICA_API + '/engagements/:id/sources/:role', { bodyLimit: SOURCE_BODY_LIMIT }, async request => {
     const { id, role } = roleParam.parse(request.params);
     const { text, fileName } = sourceBody.parse(request.body);
     const engagement = find(id);
+    const tooLarge = sourceSizeProblem('«' + fileName + '»', Buffer.byteLength(text, 'utf8'), sourceBytes);
+    if (tooLarge) throw new AppError(413, tooLarge);
     // Antes de guardar se comprueba que el texto tiene la forma de su fuente. Las facturas se terminan de leer con la
     // captura más reciente (se asignan a sus empresas): eso lo dice la vista, no impide guardarlas.
     try {
@@ -242,7 +250,7 @@ export function registerVerificaEngagements(app: FastifyInstance, store: Store, 
     const token = body.token;
     void readWithRecord({
       token, portalId: body.portalId, mode: body.mode, authorization, fetch: options.hubspotFetch ?? fetch, now: options.hubspotNow,
-      progress: message => { job.progress.push(message); },
+      maxCaptureBytes: sourceBytes, progress: message => { job.progress.push(message); },
     }).then(({ reading, captureText, record }) => {
       const role: 'previous' | 'latest' = body.target === 'previous' ? 'previous' : 'latest';
       const label = (body.mode === 'client' ? 'HubSpot ' : 'HubSpot de pruebas ') + reading.account.portalId + ' · ' + reading.capture.capturedAt.slice(0, 10) + '.json';
@@ -321,7 +329,7 @@ export function registerVerificaEngagements(app: FastifyInstance, store: Store, 
       const rawRecord = store.get<string | null>(recordKey(id, capture.id), null);
       return rawRecord ? { captureText: source.text, record: JSON.parse(rawRecord) as ReadRecord } : null;
     },
-  }, { now: options.hubspotNow, fetcher: options.hubspotFetch, intervalMs: options.watchIntervalMs });
+  }, { now: options.hubspotNow, fetcher: options.hubspotFetch, intervalMs: options.watchIntervalMs, maxCaptureBytes: sourceBytes });
 }
 
 /** Lo que entra en la sala limpia para un encargo. No se publica por HTTP. */

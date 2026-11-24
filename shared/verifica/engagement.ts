@@ -14,8 +14,21 @@ export const ROLE_LABEL: Record<EngagementRole, string> = {
   previous: 'Captura anterior', latest: 'Captura más reciente', invoices: 'Libro de facturas', declarations: 'Cifras declaradas por el vendedor',
 };
 
-/** Límites del corte 1: un CRM de pyme con historial cabe de sobra; más grande, se para antes de guardarlo. */
-export const ENGAGEMENT_LIMITS = Object.freeze({ nameChars: 120, engagements: 50, sourceBytes: 15 * 1024 * 1024, fileNameChars: 160 });
+/** Límites del encargo. `sourceBytes` es el máximo común de una fuente, en bytes UTF-8 del texto tal como se guarda, y se
+ * comprueba antes de guardar en la subida, la lectura de HubSpot y la vigilancia. */
+export const ENGAGEMENT_LIMITS = Object.freeze({ nameChars: 120, engagements: 50, sourceBytes: 48 * 1024 * 1024, fileNameChars: 160 });
+
+const sizeLabel = (bytes: number, exact: boolean) => exact || bytes < 1024 * 1024
+  ? String(bytes).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' bytes'
+  : (bytes / (1024 * 1024)).toFixed(1).replace('.', ',') + ' MB';
+
+/** El mismo aviso en todas las entradas. `what` nombra la fuente («La captura de HubSpot», «"ventas.csv"»…). */
+export function sourceSizeProblem(what: string, bytes: number, limit: number = ENGAGEMENT_LIMITS.sourceBytes): string | null {
+  if (bytes <= limit) return null;
+  const exact = sizeLabel(bytes, false) === sizeLabel(limit, false);
+  return what + ' ocupa ' + sizeLabel(bytes, exact) + ' y el máximo de una fuente del encargo es ' + sizeLabel(limit, exact) + '. No se ha guardado nada. '
+    + 'Si es un archivo, expórtalo con menos periodo u objetos; si es una lectura de HubSpot, la cuenta supera lo que admite esta versión.';
+}
 
 export interface Engagement { id: string; name: string; createdAt: string; updatedAt: string }
 export interface StoredSource { text: string; fileName: string; storedAt: string }

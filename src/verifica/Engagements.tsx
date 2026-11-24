@@ -169,6 +169,7 @@ export function OperationPage({ origin, onOpenEngagement, onOpen, openError }: {
     <Frame origin={origin} current="operation" eyebrow="Paso 1 · Operación" title="Encargos de este equipo" onOpen={onOpen} openError={openError}
       lede="Cada encargo reúne lo que entra en la sala limpia: dos capturas del CRM, las facturas y lo que declara el vendedor. Se guarda cifrado en este equipo y nada sale de aquí.">
       <OperationContent engagements={engagements} loadError={loadError} busy={busy} createError={createError} onCreate={create} onOpenEngagement={onOpenEngagement} />
+      {origin.kind === 'local' && <p className="vf-head-row"><a className="vf-secondary" href="/inicio">Copia de trabajo</a></p>}
     </Frame>
   );
 }

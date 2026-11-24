@@ -4,7 +4,7 @@
 // página 2 con lo que no se pudo comprobar, y la huella al pie. Con un informe abierto, además, se comprueba contra su
 // copia custodiada. Nada sale del navegador. Arriba va la conclusión y hasta tres cifras clave (summary.ts); cada hallazgo
 // lleva su frase y su cifra clave a la derecha, y la huella completa sale una sola vez, en el sello.
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { buildTrapCompany } from '../../shared/verifica/empresa-con-trampas.js';
 import type { EquivalenceReport } from '../../shared/verifica/equivalence.js';
 import { buildVerificaReport, reportToJson, verifyReport, type ReportSource, type VerificaReport } from '../../shared/verifica/report.js';
@@ -19,6 +19,8 @@ import { OperationPage, SourcesPage } from './Engagements.js';
 import { CapturesPage } from './Captures.js';
 import { referenceWatch, WatchReportView } from './WatchReport.js';
 
+const MigrationEngagement = lazy(() => import('./MigrationEngagement.js'));
+const WatchEngagement = lazy(() => import('./WatchEngagement.js'));
 const BASIS: Record<VerificaBasis, string> = { observed: 'Observado', declared: 'Declarado por el vendedor', unverified: 'Sin comprobar' };
 const ROLE: Record<ReportSource['role'], string> = { previous: 'Captura anterior', latest: 'Captura más reciente', invoices: 'Facturas' };
 
@@ -128,19 +130,19 @@ export default function VerificaReportPage() {
     return () => abort.abort();
   }, []);
   useEffect(() => {
-    if (doc !== 'migration' || equivalence[variant]) return;
+    if (doc !== 'migration' || local || equivalence[variant]) return;
     let live = true;
     import('./reference-equivalence.js').then(
       module => { if (live) setEquivalence(prev => ({ ...prev, [variant]: module.referenceEquivalence(variant) })); },
       () => { if (live) setEquivalenceFailed(true); });
     return () => { live = false; };
-  }, [doc, variant, equivalence]);
+  }, [doc, local, variant, equivalence]);
   const reference = useMemo<VerificaDocument | null>(() => {
-    if (doc === 'watch') return { kind: 'watch', report: referenceWatch(variant) };
+    if (doc === 'watch') return local ? null : { kind: 'watch', report: referenceWatch(variant) };
     if (doc === 'migration') { const report = equivalence[variant]; return report ? { kind: 'migration', report } : null; }
     if (doc === 'operation' || doc === 'sources' || doc === 'captures') return null;
     return { kind: 'report', report: referenceReport(variant) };
-  }, [doc, variant, equivalence]);
+  }, [doc, variant, equivalence, local]);
   const open = (file: File) => {
     const keep = '. Lo que ves no ha cambiado.';
     if (file.size > MAX_DOCUMENT_FILE) { setOpenError('«' + file.name + '» es demasiado grande para ser un documento de Verifica' + keep); return; }
@@ -165,6 +167,18 @@ export default function VerificaReportPage() {
   }
   if (!opened && local && doc === 'captures') {
     return <CapturesPage origin={{ kind: 'local', onDoc: go }} engagementId={engagementId} onOpen={open} openError={openError} onShowSources={() => go('sources')} />;
+  }
+  if (!opened && local && doc === 'watch') {
+    const localOrigin = { kind: 'local', onDoc: go } as const;
+    return <Suspense fallback={<Frame origin={localOrigin} current="watch" eyebrow="Paso 5 · Vigilancia" title="Preparando vigilancia…" lede="" busy />}>
+      <WatchEngagement key={engagementId} origin={localOrigin} engagementId={engagementId} onOpen={open} openError={openError} />
+    </Suspense>;
+  }
+  if (!opened && local && doc === 'migration') {
+    const localOrigin = { kind: 'local', onDoc: go } as const;
+    return <Suspense fallback={<EquivalencePending origin={localOrigin} failed={false} onOpen={open} openError={openError} />}>
+      <MigrationEngagement key={engagementId} origin={localOrigin} onOpen={open} openError={openError} />
+    </Suspense>;
   }
   return shown === null
     ? <EquivalencePending origin={origin} failed={equivalenceFailed} onOpen={open} openError={openError} />

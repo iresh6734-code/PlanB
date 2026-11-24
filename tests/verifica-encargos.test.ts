@@ -173,3 +173,44 @@ test('Verifica · sala limpia: la llave no se guarda ni vuelve a salir, y cambia
   assert.equal(changed.issue.stale, true, 'el informe ya no corresponde a las fuentes');
   assert.equal((await call(r, 'GET', '/engagements')).body.engagements[0].issued, false);
 });
+
+test('Verifica · una fuente cambia durante el cifrado: se rechaza la emisión y se conserva la anterior', async t => {
+  const r = await rig(), files = exampleFiles(true), { engagement: { id } } = await create(r);
+  await uploadAll(r, id, files);
+  const url = '/engagements/' + id;
+  const original = await call(r, 'POST', url + '/clean-room');
+  assert.equal(original.status, 200);
+  const report = await fetchText(r, url + '/issue/report');
+  const custody = await fetchText(r, url + '/issue/custody');
+
+  let entered!: () => void, release!: () => void;
+  const encrypting = new Promise<void>(resolve => { entered = resolve; });
+  const paused = new Promise<void>(resolve => { release = resolve; });
+  const subtle = globalThis.crypto.subtle;
+  const encrypt = subtle.encrypt.bind(subtle);
+  t.mock.method(subtle, 'encrypt', async (...args: Parameters<typeof encrypt>) => {
+    entered();
+    await paused;
+    return encrypt(...args);
+  });
+  const pending = call(r, 'POST', url + '/clean-room');
+  try {
+    await Promise.race([encrypting, pending.then(() => { assert.fail('La emisión terminó sin llegar al cifrado.'); })]);
+    assert.equal((await upload(r, id, 'declarations', '{"activeCustomers":300}')).status, 200);
+  } finally {
+    release();
+  }
+  const rejected = await pending;
+  assert.equal(rejected.status, 409);
+  assert.match(rejected.body.error, /las fuentes cambiaron/i);
+  assert.equal(rejected.body.key, undefined);
+  assert.deepEqual(await fetchText(r, url + '/issue/report'), report);
+  assert.deepEqual(await fetchText(r, url + '/issue/custody'), custody);
+  const view = (await call(r, 'GET', url)).body as EngagementView;
+  assert.equal(view.issue?.reportFingerprint, original.body.reportFingerprint);
+  assert.equal(view.issue?.stale, true);
+  const retried = await call(r, 'POST', url + '/clean-room');
+  assert.equal(retried.status, 200);
+  assert.equal(retried.body.stale, false);
+  assert.notEqual(retried.body.reportFingerprint, original.body.reportFingerprint);
+});

@@ -7,6 +7,7 @@ import { PreparationNavigation } from '../PreparationNavigation.js';
 import { groupOfPage, headerPress, itemActive, navigationGroups, type GroupId, type NavGroup, type NavItem, type NavTarget } from './navigation.js';
 import type { PageId } from './session.js';
 import type { ReadinessSignal } from './continuity-insights.js';
+import { VerificaLink } from './VerificaLink.js';
 
 type Toggle = (update: (open: boolean) => boolean) => void;
 type Signals = { overdue: number | null; copy?: { count: number; tone: 'danger' | 'warn'; titles: string[] } | null; readiness?: ReadinessSignal | null };
@@ -86,7 +87,10 @@ export function Sidebar({ state, page, entityName, selected, signals, step, prep
       <Brand />
       <button type="button" className="oc-search" disabled={!state.ready || !!selected} onClick={() => setGlobalSearch(true)}><Search size={16} /><span>Buscar en toda la copia</span></button>
       <nav aria-label="Navegación principal">
-        <div className="oc-nav-group" role="group" aria-label="Lugares">{groups.map(group => <div key={group.id} className="gx-nav-place">{header(group)}</div>)}</div>
+        <div className="oc-nav-group" role="group" aria-label="Lugares">
+          {!context.runtime && <VerificaLink className="nav-item" size={19} />}
+          {groups.map(group => <div key={group.id} className="gx-nav-place">{header(group)}</div>)}
+        </div>
       </nav>
       {pins?.length ? <section className="sidebar-pins" aria-label="Fichas ancladas"><h2>Anclados</h2>{pins.map(pin => <button key={pin.key} type="button" title={pin.title} disabled={!!selected} onClick={pin.open}><Pin size={14} aria-hidden="true" /><span>{pin.label}</span></button>)}</section> : null}
       <div className="sidebar-bottom"><span>{state.snapshot?.name ?? 'Tu copia, en tu ordenador'}</span><small>Plan B · v{APP_VERSION}</small></div>

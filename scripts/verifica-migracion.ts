@@ -1,13 +1,13 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { MIGRATION_EXPORT_FORMAT, MigrationInputError } from '../shared/migration-verifier.js';
-import { CleanRoomError, newSalt } from '../shared/verifica/clean-room.js';
+import { MigrationInputError } from '../shared/migration-verifier.js';
+import { CleanRoomError } from '../shared/verifica/clean-room.js';
 import { equivalenceToJson, OBJECT_LABEL, VERDICT_TEXT } from '../shared/verifica/equivalence.js';
-import { buildEquivalence, captureToMigrationExport, EquivalenceInputError, equivalenceWorkList, findEquivalenceLeaks, releaseEquivalence, type EquivalenceInput, type EquivalenceOutput } from '../shared/verifica/migration.js';
-import type { VerificaCapture } from '../shared/verifica/model.js';
-import { parseWatchReport, WatchInputError, type WatchReport } from '../shared/verifica/watch.js';
-import { CliUsageError, loadCapture } from './verifica-sala-limpia.js';
+import { buildEquivalence, EquivalenceInputError, equivalenceWorkList, findEquivalenceLeaks, prepareEquivalenceFiles, releaseEquivalence, type EquivalenceOutput } from '../shared/verifica/migration.js';
+import { VerificaInputError } from '../shared/verifica/inputs.js';
+import { WatchInputError } from '../shared/verifica/watch.js';
+import { CliUsageError } from './verifica-sala-limpia.js';
 // Verifica · fase 4: migración verificada, sin red. Toma la captura del cierre (la última de la vigilancia), la exportación
 // del CRM del comprador y el mapa de campos que confirma una persona, y escribe el informe de equivalencia: qué llegó
 // igual, qué falta, qué llegó distinto, qué sobra y qué no se puede concluir. Pasa por la barrera de la sala limpia.
@@ -47,36 +47,23 @@ export interface MigrationDeps {
   now?: () => Date;
 }
 
-/** El destino puede ser una exportación del verificador o una captura de Verifica (de verifica-hubspot.ts u otro lector). */
-function loadTarget(text: string): unknown {
-  const value: unknown = JSON.parse(text);
-  if (typeof value === 'object' && value !== null && (value as { format?: unknown }).format === MIGRATION_EXPORT_FORMAT) return value;
-  return captureToMigrationExport(loadCapture(text, '--target'));
-}
-
 /** 0 = informe escrito; 1 = la barrera lo paró o no se pudo escribir; 2 = uso o entradas incorrectas. */
 export async function runCli(argv: string[], deps: MigrationDeps): Promise<number> {
   const readText = deps.readText ?? (path => readFile(path, 'utf8'));
   const writeNew = deps.writeNew ?? ((path, text) => writeFile(path, text, { encoding: 'utf8', flag: 'wx' }));
-  let args: MigrationArgs, closing: VerificaCapture, target: unknown, map: unknown, watch: WatchReport | null = null, salt: string, saltCreated = false;
+  let args: MigrationArgs, prepared: ReturnType<typeof prepareEquivalenceFiles>;
   try {
     args = parseArgs(argv);
-    closing = loadCapture(await readText(args.closing), '--closing');
-    target = loadTarget(await readText(args.target));
-    map = JSON.parse(await readText(args.map));
-    if (args.watch) watch = parseWatchReport(JSON.parse(await readText(args.watch)));
-    let saved: string | null = null;
-    try { saved = (await readText(args.salt)).trim(); } catch { saved = null; }
-    if (saved !== null && saved.length < 16) throw new CliUsageError('--salt: la sal guardada tiene menos de 16 caracteres.');
-    if (saved === null && watch) throw new CliUsageError('--salt: con --watch hace falta la sal de la vigilancia, para que las referencias coincidan con las del parte.');
-    salt = saved ?? newSalt();
-    saltCreated = saved === null;
+    const [closing, target, map, watch, salt] = await Promise.all([
+      readText(args.closing), readText(args.target), readText(args.map), args.watch ? readText(args.watch) : null, readText(args.salt).catch(() => null),
+    ]);
+    prepared = prepareEquivalenceFiles({ closing, target, map, watch, salt, asOf: args.asOf ?? (deps.now?.() ?? new Date()).toISOString() });
   } catch (e) {
-    deps.err((e instanceof CliUsageError || e instanceof WatchInputError ? e.message : e instanceof SyntaxError ? 'Un archivo de entrada no es JSON válido.' : 'No se pudo leer un archivo de entrada.') + '\n');
+    deps.err((e instanceof CliUsageError || e instanceof WatchInputError || e instanceof VerificaInputError ? e.message : e instanceof SyntaxError ? 'Un archivo de entrada no es JSON válido.' : 'No se pudo leer un archivo de entrada.') + '\n');
     return 2;
   }
 
-  const input: EquivalenceInput = { asOf: args.asOf ?? (deps.now?.() ?? new Date()).toISOString(), closing, target, map, salt, watch };
+  const { input, saltCreated } = prepared;
   let output: EquivalenceOutput;
   try {
     output = releaseEquivalence(input);
@@ -84,14 +71,14 @@ export async function runCli(argv: string[], deps: MigrationDeps): Promise<numbe
     if (e instanceof MigrationInputError || e instanceof EquivalenceInputError) { deps.err(e.message + '\n'); return 2; }
     if (!(e instanceof CleanRoomError)) { deps.err('La comparación terminó con un error inesperado; no se escribe nada.\n'); return 1; }
     deps.err(e.message + '\n');
-    if (args.showLeaks) for (const text of findEquivalenceLeaks(buildEquivalence(input).report, closing)) deps.err('  encontrado: ' + text + '\n');
+    if (args.showLeaks) for (const text of findEquivalenceLeaks(buildEquivalence(input).report, input.closing)) deps.err('  encontrado: ' + text + '\n');
     else deps.err('Vuelve a ejecutar con --show-leaks para ver aquí qué textos lo han parado. No se escribe nada.\n');
     return 1;
   }
   const { report, comparison } = output;
 
   if (saltCreated) {
-    try { await writeNew(args.salt, salt + '\n'); }
+    try { await writeNew(args.salt, input.salt + '\n'); }
     catch { deps.err('No se pudo guardar la sal en ' + args.salt + '; no se escribe el informe.\n'); return 1; }
   }
   try { await writeNew(args.report, equivalenceToJson(report)); }

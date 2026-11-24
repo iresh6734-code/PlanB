@@ -4,15 +4,16 @@
 // Antes de soltar el informe pasa la barrera de la sala limpia: si lleva un nombre, correo o ID del CRM, no sale nada.
 // Los IDs reales solo van a la lista de trabajo, que se queda en el equipo de quien corrige la migración.
 import { compareMigration, MIGRATION_EXPORT_FORMAT, MIGRATION_LIMITS, type FieldChange, type MigrationComparison, type MigrationExport, type MigrationMap, type ObjectComparison, type RelationFinding } from '../migration-verifier.js';
-import { CleanRoomError, leaksIn } from './clean-room.js';
+import { CleanRoomError, leaksIn, newSalt } from './clean-room.js';
 import {
   EQUIVALENCE_FINDING_KINDS, EQUIVALENCE_FORMAT, EQUIVALENCE_OBJECTS, equivalenceFingerprint, equivalenceToJson, OBJECT_LABEL,
   type EquivalenceFinding, type EquivalenceObject, type EquivalenceObjectSummary, type EquivalenceReport,
 } from './equivalence.js';
 import type { FindingItem, VerificaCapture } from './model.js';
+import { parseCaptureText, VerificaInputError } from './inputs.js';
 import { describeCapture, fingerprintOf, pseudonymizer } from './report.js';
 import { euros } from './rules.js';
-import { verifyWatchReport, type WatchReport } from './watch.js';
+import { parseWatchReport, verifyWatchReport, type WatchReport } from './watch.js';
 
 export interface EquivalenceInput {
   asOf: string;
@@ -31,6 +32,25 @@ export interface EquivalenceOutput {
   report: EquivalenceReport;
   /** Comparación completa, con IDs reales. Nunca sale del equipo: solo sirve para la lista de trabajo. */
   comparison: MigrationComparison;
+}
+
+/** Los mismos archivos de trabajo sirven en el navegador y en el script. */
+export function prepareEquivalenceFiles(files: {
+  closing: string; target: string; map: string; watch?: string | null; salt?: string | null; asOf: string;
+}): { input: EquivalenceInput; saltCreated: boolean } {
+  const closing = parseCaptureText(files.closing, 'La captura de cierre');
+  const targetValue: unknown = JSON.parse(files.target);
+  const target = typeof targetValue === 'object' && targetValue !== null && 'format' in targetValue && targetValue.format === MIGRATION_EXPORT_FORMAT
+    ? targetValue
+    : captureToMigrationExport(parseCaptureText(files.target, 'El archivo de destino'));
+  const map: unknown = JSON.parse(files.map);
+  const watch = files.watch == null ? null : parseWatchReport(JSON.parse(files.watch));
+  const savedSalt = files.salt == null ? null : files.salt.trim();
+  if (savedSalt !== null && savedSalt.length < 16) throw new VerificaInputError('La sal guardada tiene menos de 16 caracteres.');
+  if (savedSalt === null && watch) throw new VerificaInputError('Con un parte de vigilancia hace falta su sal para conservar las mismas referencias.');
+  const cut = Date.parse(files.asOf);
+  if (!Number.isFinite(cut)) throw new VerificaInputError('La fecha del informe no es válida.');
+  return { input: { asOf: new Date(cut).toISOString(), closing, target, map, watch, salt: savedSalt ?? newSalt() }, saltCreated: savedSalt === null };
 }
 
 export class EquivalenceInputError extends Error {

@@ -1,9 +1,9 @@
 @echo off
 cd /d "%~dp0"
-rem Arranca el CRM de este ordenador (4331) con su copia existente y lo abre. La app de equipos (4334) se aparco el 22/11/2026.
+rem Arranca la instalacion local y abre su portada disponible.
 node scripts\start-full-workspace.cjs
 if errorlevel 1 (
   pause
   exit /b 1
 )
-start "Plan B" "http://127.0.0.1:4331/"
+for /f "delims=" %%U in ('node scripts\select-full-workspace-home.cjs') do start "Plan B" "%%U"

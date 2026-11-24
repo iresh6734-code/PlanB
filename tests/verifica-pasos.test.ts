@@ -11,6 +11,16 @@ import { exampleFiles } from '../scripts/verifica-ejemplo.js';
 const AT = '2026-11-24T10:00:00.000Z';
 const engagement: Engagement = { id: '0b8f3f3e-6a1e-4c55-9d5c-0b9a1c9f2e11', name: 'Distribuidora del norte', createdAt: AT, updatedAt: AT };
 const noop = () => {};
+
+test('Verifica · pantalla de migración local: archivos separados, fecha y una acción primaria', async () => {
+  const { default: MigrationEngagement } = await import('../src/verifica/MigrationEngagement.js');
+  const html = renderToStaticMarkup(createElement(MigrationEngagement, { origin: { kind: 'local', onDoc: noop }, onOpen: noop, openError: null }));
+  for (const name of ['closing', 'target', 'map', 'watch', 'salt']) assert.match(html, new RegExp(`name="${name}"`));
+  assert.match(html, /<input(?=[^>]*\bname="asOf")(?=[^>]*\btype="date")[^>]*>/);
+  assert.match(html, /Comparar migración/);
+  assert.equal(html.match(/class="vf-primary"/g)?.length, 1);
+  assert.doesNotMatch(html, /Empresa ficticia|Descargar lista privada/);
+});
 const controls = (over: Partial<IssueControls> = {}): IssueControls => ({ busy: false, error: null, freshKey: null, onIssue: noop, onDownload: noop, onDownloadKey: noop, onShowReport: noop, ...over });
 
 test('Verifica · paso 1: crear un encargo es el único botón relleno, y cada encargo dice si está listo', () => {

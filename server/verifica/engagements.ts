@@ -17,8 +17,9 @@ import { cleanRoomInput, parseCaptureText, parseDeclarationsText } from '../../s
 import { reportToJson } from '../../shared/verifica/report.js';
 import { sha256Hex } from '../../shared/sha256.js';
 import { VerificaReadError } from '../../shared/verifica/hubspot.js';
-import { checkReadAuthorization, madridDay, parseReadAuthorization, ReadAuthorizationError, type ReadAuthorization } from '../../shared/verifica/read-authorization.js';
+import { checkReadAuthorization, madridDay, parseReadAuthorization, ReadAuthorizationError, type ReadAuthorization, type ReadRecord } from '../../shared/verifica/read-authorization.js';
 import { credentialProblem, readWithRecord, recordToText } from './hubspot-read.js';
+import { registerWatchApi } from './watch-api.js';
 import { READ_LIMITS, type ReadJob, type RecordSummary } from '../../shared/verifica/engagement.js';
 export type { ReadJob, RecordSummary } from '../../shared/verifica/engagement.js';
 import { AppError, type Store } from '../store.js';
@@ -67,6 +68,8 @@ export interface VerificaEngagementOptions {
   hubspotFetch?: typeof fetch;
   /** Reloj de la lectura (fecha de la captura y del acta). Por defecto, ahora. */
   hubspotNow?: () => Date;
+  /** Solo para pruebas del temporizador de vigilancia. */
+  watchIntervalMs?: number;
 }
 
 export function registerVerificaEngagements(app: FastifyInstance, store: Store, options: VerificaEngagementOptions = {}) {
@@ -154,6 +157,7 @@ export function registerVerificaEngagements(app: FastifyInstance, store: Store, 
     const read = readEngagement(engagement, sources(id));
     if (read.missing.length || !read.inputs.latest) throw new AppError(409, 'Faltan fuentes para la sala limpia: ' + read.missing.map(item => item.replace(/\.$/, '').toLowerCase()).join('; ') + '.');
     const input = cleanRoomInput({ previous: read.inputs.previous, latest: read.inputs.latest, invoices: read.inputs.invoices, declarations: read.inputs.declarations });
+    const issuedSources = fingerprints(read);
     let result;
     try {
       result = await runCleanRoom(input, options.cleanRoom);
@@ -165,11 +169,17 @@ export function registerVerificaEngagements(app: FastifyInstance, store: Store, 
     const stored: StoredIssue = {
       issuedAt: now(), reportJson: reportToJson(report), custodyJson: JSON.stringify(custody) + '\n',
       reportFingerprint: report.fingerprint, custodyFingerprint: custodyFingerprint(custody),
-      findings: report.findings.length, alarms: report.findings.filter(f => f.alarm).length, sources: fingerprints(read),
+      findings: report.findings.length, alarms: report.findings.filter(f => f.alarm).length, sources: issuedSources,
     };
-    store.set(issueKey(id), stored);
-    touch(id);
-    return { ...summary(stored, read), key };
+    return store.transaction(() => {
+      const current = engagementView(find(id), sources(id));
+      if (current.missing.length || !sameSources(issuedSources, fingerprints(current))) {
+        throw new AppError(409, 'Las fuentes cambiaron mientras se emitía el informe. Revisa las fuentes y vuelve a emitirlo.');
+      }
+      store.set(issueKey(id), stored);
+      touch(id);
+      return { ...summary(stored, current), key };
+    });
   });
 
   // El informe (para el comprador) y la copia custodiada (para quien la guarda), tal como se emitieron. La llave no.
@@ -214,17 +224,26 @@ export function registerVerificaEngagements(app: FastifyInstance, store: Store, 
       token, portalId: body.portalId, mode: body.mode, authorization, fetch: options.hubspotFetch ?? fetch, now: options.hubspotNow,
       progress: message => { job.progress.push(message); },
     }).then(({ reading, captureText, record }) => {
-      const current = store.get<StoredSource | null>(sourceKey(id, 'latest'), null);
       const role: 'previous' | 'latest' = body.target === 'previous' ? 'previous' : 'latest';
-      if (body.target === 'rotate' && current) store.set(sourceKey(id, 'previous'), current);
       const label = (body.mode === 'client' ? 'HubSpot ' : 'HubSpot de pruebas ') + reading.account.portalId + ' · ' + reading.capture.capturedAt.slice(0, 10) + '.json';
-      store.set(sourceKey(id, role), { text: captureText, fileName: label, storedAt: now() } satisfies StoredSource);
-      if (record) {
-        store.set(recordKey(id, record.captureId), recordToText(record));
-        const summaryRow: RecordSummary = { captureId: record.captureId, fingerprint: record.fingerprint, finishedAt: record.finishedAt, portalId: record.portalId, engagement: record.engagement };
-        store.set(recordsKey(id), [...store.get<RecordSummary[]>(recordsKey(id), []).filter(r => r.captureId !== record.captureId), summaryRow]);
+      try {
+        store.transaction(() => {
+          if (body.target === 'rotate') {
+            const current = store.get<StoredSource | null>(sourceKey(id, 'latest'), null);
+            if (current) store.set(sourceKey(id, 'previous'), current);
+          }
+          store.set(sourceKey(id, role), { text: captureText, fileName: label, storedAt: now() } satisfies StoredSource);
+          if (record) {
+            store.set(recordKey(id, record.captureId), recordToText(record));
+            const summaryRow: RecordSummary = { captureId: record.captureId, fingerprint: record.fingerprint, finishedAt: record.finishedAt, portalId: record.portalId, engagement: record.engagement };
+            store.set(recordsKey(id), [...store.get<RecordSummary[]>(recordsKey(id), []).filter(r => r.captureId !== record.captureId), summaryRow]);
+          }
+          touch(id);
+        });
+      } catch {
+        Object.assign(job, { state: 'failed', finishedAt: now(), error: 'No se pudo guardar la lectura completa. Vuelve a intentarlo.' } satisfies Partial<ReadJob>);
+        return;
       }
-      touch(id);
       const { capture } = reading;
       Object.assign(job, {
         state: 'done', finishedAt: now(),
@@ -257,6 +276,17 @@ export function registerVerificaEngagements(app: FastifyInstance, store: Store, 
     reply.type('application/json; charset=utf-8').header('cache-control', 'no-store');
     return text;
   });
+
+  return registerWatchApi(app, store, {
+    name: id => find(id).name,
+    signing: (id, role) => {
+      const source = store.get<StoredSource | null>(sourceKey(id, role), null);
+      if (!source) return null;
+      const capture = parseCaptureText(source.text, 'La captura');
+      const rawRecord = store.get<string | null>(recordKey(id, capture.id), null);
+      return rawRecord ? { captureText: source.text, record: JSON.parse(rawRecord) as ReadRecord } : null;
+    },
+  }, { now: options.hubspotNow, fetcher: options.hubspotFetch, intervalMs: options.watchIntervalMs });
 }
 
 /** Lo que entra en la sala limpia para un encargo. No se publica por HTTP. */

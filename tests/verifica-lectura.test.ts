@@ -135,3 +135,43 @@ test('Verifica · lectura desde la pantalla: modo pruebas, rotación de capturas
   assert.match(failed.error ?? '', /^Lectura detenida: En modo de pruebas solo se leen cuentas de pruebas/);
   assert.equal(r2.store.get('verifica:source:' + id2 + ':previous', null), null);
 });
+
+test('Verifica · un fallo de guardado revierte la rotación y el acta y permite reintentar', async t => {
+  const fake = fakeHubspot(company.latest, { accountType: 'STANDARD' });
+  let timestamp = clock().getTime();
+  const r = await rig({ hubspotFetch: fake.fetcher, hubspotNow: () => new Date(timestamp), now: () => new Date(timestamp).toISOString() });
+  const id = await engagement(r);
+  const url = '/engagements/' + id;
+  for (const target of ['previous', 'latest']) {
+    timestamp += 1000;
+    assert.equal((await call(r, 'POST', url + '/read', clientBody({ target }))).status, 202);
+    assert.equal((await finished(r, id)).state, 'done');
+  }
+
+  const rows = () => r.store.db.prepare("SELECT key, value FROM meta WHERE key LIKE 'verifica:%' ORDER BY key").all();
+  const before = rows();
+  const entries = (await call(r, 'GET', url + '/records')).body.records;
+  assert.equal(entries.length, 2);
+  const latest = r.store.get('verifica:source:' + id + ':latest', null);
+  const set = r.store.set.bind(r.store);
+  const failure = t.mock.method(r.store, 'set', (key: string, value: unknown) => {
+    if (key === 'verifica:engagements') throw new Error('fallo de escritura del encargo');
+    set(key, value);
+  });
+  timestamp += 1000;
+  assert.equal((await call(r, 'POST', url + '/read', clientBody({ target: 'rotate' }))).status, 202);
+  const failed = await finished(r, id);
+  assert.equal(failed.state, 'failed', failed.error);
+  assert.match(failed.error ?? '', /no se pudo guardar/i);
+  assert.equal(failed.result, undefined);
+  assert.deepEqual(rows(), before, 'ninguna escritura parcial en el expediente');
+  assert.deepEqual((await call(r, 'GET', url + '/records')).body.records, entries);
+
+  failure.mock.restore();
+  assert.equal((await call(r, 'POST', url + '/read', clientBody({ target: 'rotate' }))).status, 202);
+  const retried = await finished(r, id);
+  assert.equal(retried.state, 'done', retried.error);
+  assert.deepEqual(r.store.get('verifica:source:' + id + ':previous', null), latest);
+  assert.equal((await call(r, 'GET', url + '/records')).body.records.length, 3);
+  assert.equal((await call(r, 'GET', url + '/records/' + retried.result?.captureId)).status, 200);
+});

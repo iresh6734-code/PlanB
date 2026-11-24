@@ -48,7 +48,7 @@ const EXAMPLE_DOCS: readonly DocKind[] = ['report', 'watch', 'migration'];
 export type ReportOrigin =
   | { kind: 'reference'; variant: Variant; onVariant?: (variant: Variant) => void; doc?: DocKind; onDoc?: (doc: DocKind) => void; local?: boolean }
   | { kind: 'opened'; name: string; onReference?: () => void; backLabel?: string }
-  /** Pasos del encargo (Operación, Fuentes, Capturas) servidos por el servidor local: sin ejemplo ni variantes. */
+  /** Pasos del encargo servidos por el servidor local, sin ejemplo ni variantes. */
   | { kind: 'local'; onDoc?: (doc: DocKind) => void };
 
 const VARIANT: Record<Variant, string> = { traps: 'Con trampas', clean: 'Sin trampas' };
@@ -94,7 +94,7 @@ function Steps({ origin, current }: { origin: ReportOrigin; current: DocKind }) 
         })}
       </ol>
       <p className="vf-steps-note">{local
-        ? 'Los pasos 4 a 6 enseñan, por ahora, la empresa de ejemplo. El informe emitido se abre desde las fuentes.'
+        ? 'Abre el informe emitido desde las fuentes.'
         : 'Los pasos 1 a 3 se hacen con el lector, en el equipo del vendedor. Aquí se ven sus resultados.'}</p>
     </nav>
   );

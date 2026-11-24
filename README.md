@@ -2,7 +2,7 @@
 
 Plan B Verifica comprueba la cartera comercial de una empresa antes de que alguien la compre. Lee el CRM del vendedor sin modificarlo y entrega un informe con huella; después vigila hasta el cierre y verifica la migración al CRM del comprador. El análisis se hace en el lado del vendedor: al comprador solo le llegan cifras, seudónimos y huellas.
 
-Estado a 23/11/2026: el motor está probado con empresas ficticias (fases 1 a 4). No se ha validado con datos reales ni hay cliente. El CRM local de siempre sigue en este repositorio, **congelado**: solo recibe arreglos y acabará siendo la «Copia de trabajo» de Verifica.
+El motor está probado con empresas ficticias (fases 1 a 4). La validación con fuentes reales y la primera venta están pendientes. El CRM local sigue congelado y se puede abrir como «Copia de trabajo» desde Verifica.
 
 ## Documentos que mandan
 
@@ -30,7 +30,7 @@ npx tsx scripts/verifica-pruebas.ts
 
 ## El CRM congelado
 
-`ABRIR PLAN B.cmd` arranca el CRM de este ordenador (4331) con su copia existente y lo abre. No crea copias vacías ni carga muestras.
+`ABRIR PLAN B.cmd` arranca la instalación de este ordenador (4331) con su copia existente. Si esa instalación incluye Verifica, abre su pantalla de encargos. «Copia de trabajo» abre el CRM y «Verifica» en su navegación permite volver. Las instalaciones anteriores siguen abriendo su portada habitual.
 
 ## Desarrollar y validar
 

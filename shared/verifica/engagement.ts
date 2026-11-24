@@ -41,6 +41,33 @@ export interface IssueSummary { issuedAt: string; reportFingerprint: string; cus
 /** La respuesta de emitir: lo mismo y, solo esta vez, la llave de la copia, que no se guarda en ningún sitio. */
 export type IssueResult = IssueSummary & { key: string };
 
+/** Lectura de HubSpot desde la pantalla (corte 3). `target`: dónde entra la captura; `rotate` la pone como más reciente y
+ * pasa la actual a anterior. En modo cliente van la autorización (texto de autorizacion.json) y el documento firmado; en
+ * modo pruebas, la confirmación de leer el portal entero. La credencial solo viaja en esta petición. */
+export type ReadTarget = 'previous' | 'latest' | 'rotate';
+/** El documento firmado viaja entero para comprobar su huella; la autorización es un JSON pequeño. */
+export const READ_LIMITS = Object.freeze({ authorizationChars: 64 * 1024, documentBytes: 10 * 1024 * 1024 });
+export interface ReadRequest {
+  mode: 'client' | 'test';
+  portalId: string;
+  token: string;
+  target: ReadTarget;
+  authorization?: string;
+  documentBase64?: string;
+  confirmFullRead?: boolean;
+}
+/** Lo que la pantalla sabe de una lectura en marcha o terminada. Nunca la credencial. */
+export interface ReadJob {
+  state: 'running' | 'done' | 'failed';
+  mode: 'client' | 'test';
+  startedAt: string;
+  finishedAt?: string;
+  progress: string[];
+  error?: string;
+  result?: { captureId: string; role: 'previous' | 'latest'; counts: { owners: number; companies: number; contacts: number; deals: number }; historyAvailable: boolean; requests: number; recordFingerprint: string | null };
+}
+export interface RecordSummary { captureId: string; fingerprint: string; finishedAt: string; portalId: string; engagement: string }
+
 /** Por qué una entrada no sirve, en palabras para la persona. */
 export function inputProblem(error: unknown): string {
   if (error instanceof VerificaInputError || error instanceof InvoiceImportError) return error.message;

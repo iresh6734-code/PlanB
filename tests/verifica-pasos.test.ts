@@ -76,3 +76,48 @@ test('Verifica · paso 2: emitir, descargar por separado y la llave solo justo d
   assert.match(stale, /class="vf-primary"[^>]*>Volver a emitir</);
   assert.match(stale, /Alguna fuente cambió después de emitir/);
 });
+
+test('Verifica · paso 3: leer HubSpot, con la credencial en un campo de contraseña y el sitio de la captura propuesto', async () => {
+  const { CapturesContent, defaultTarget } = await import('../src/verifica/Captures.js');
+  const files = exampleFiles(true), stamp = (fileName: string) => ({ text: files.get(fileName)!, fileName, storedAt: AT });
+  const empty = engagementView(engagement, {});
+  const half = engagementView(engagement, { previous: stamp('antes.json') });
+  const both = engagementView(engagement, { previous: stamp('antes.json'), latest: stamp('ahora.json') });
+  assert.deepEqual([defaultTarget(empty), defaultTarget(half), defaultTarget(both)], ['previous', 'latest', 'rotate']);
+  const base = { busy: false, error: null, records: [], recordsError: null, onStart: noop, onShowSources: noop, onDownloadRecord: noop };
+  const html = renderToStaticMarkup(createElement(CapturesContent, { ...base, view: half, job: null }));
+  assert.equal(html.match(/class="vf-primary"/g)?.length, 1);
+  assert.match(html, /<button type="submit" class="vf-primary" disabled="">Leer HubSpot<\/button>/, 'sin rellenar no se puede leer');
+  assert.match(html, /<input class="vf-input vf-input-text" type="password" autoComplete="off"/);
+  assert.ok(!/type="password"[^>]*value=/.test(html), 'la credencial no va en el HTML');
+  assert.match(html, /checked="" value="client"/, 'por defecto, la cuenta de la empresa');
+  assert.match(html, /Autorización \(autorizacion\.json\)/);
+  assert.match(html, /Documento firmado/);
+  assert.match(html, /checked="" value="latest"/, 'con la anterior ya guardada, la siguiente entra como reciente');
+  assert.match(html, /Captura anterior: antes\.json · Captura más reciente: falta/);
+  assert.match(html, /Todavía no hay actas/);
+});
+
+test('Verifica · paso 3: el progreso, el resultado con su acta, la parada y la lista de actas', async () => {
+  const { CapturesContent } = await import('../src/verifica/Captures.js');
+  const view = engagementView(engagement, {});
+  const base = { view, busy: false, error: null, recordsError: null, onStart: noop, onShowSources: noop, onDownloadRecord: noop };
+  const running = renderToStaticMarkup(createElement(CapturesContent, { ...base, records: null, job: { state: 'running', mode: 'client', startedAt: AT, progress: ['comerciales: 6', 'empresas: 120'] } }));
+  assert.match(running, /Leyendo HubSpot…/);
+  assert.match(running, /<li>comerciales: 6<\/li><li>empresas: 120<\/li>/);
+  assert.match(running, /disabled="">Leyendo…<\/button>/);
+  assert.match(running, /<fieldset class="vf-choice" disabled="">/, 'el formulario se bloquea mientras lee');
+  const fingerprint = 'a'.repeat(64);
+  const done = renderToStaticMarkup(createElement(CapturesContent, {
+    ...base, job: { state: 'done', mode: 'client', startedAt: AT, finishedAt: AT, progress: [], result: { captureId: 'hubspot-1', role: 'previous', counts: { owners: 1, companies: 120, contacts: 340, deals: 80 }, historyAvailable: true, requests: 14, recordFingerprint: fingerprint } },
+    records: [{ captureId: 'hubspot-1', fingerprint, finishedAt: AT, portalId: '4400123', engagement: 'VF-2026-001' }],
+  }));
+  assert.match(done, /Guardada como captura anterior: 120 empresas, 340 contactos, 80 oportunidades y 1 comercial, con historial de etapas\. 14 peticiones de solo lectura\./);
+  assert.match(done, /Acta de la lectura, huella <code title="a{64}">a{12}<\/code>/);
+  assert.match(done, /Lectura del 24 de noviembre de 2026 · portal 4400123/);
+  assert.equal(done.match(/Descargar el acta/g)?.length, 2, 'en el resultado y en la lista');
+  const failed = renderToStaticMarkup(createElement(CapturesContent, { ...base, records: [], job: { state: 'failed', mode: 'test', startedAt: AT, finishedAt: AT, progress: [], error: 'Lectura detenida: En modo de pruebas solo se leen cuentas de pruebas.' } }));
+  assert.match(failed, /Lectura detenida: En modo de pruebas solo se leen cuentas de pruebas\. No se ha guardado ninguna captura\./);
+  const step = renderToStaticMarkup(createElement(Frame, { origin: { kind: 'local', onDoc: noop }, current: 'captures', eyebrow: 'Paso 3', title: 'Leer HubSpot', lede: '' }));
+  assert.match(step, /<button type="button" class="vf-step" data-doc="true" aria-current="page"><span class="vf-step-n">03<\/span>/);
+});

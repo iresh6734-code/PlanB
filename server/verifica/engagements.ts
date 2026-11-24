@@ -1,8 +1,10 @@
-// Plan B Verifica · encargos en el servidor local (fase D del mega plan 2; corte 1 el 24/11/2026, corte 2 el mismo día).
+// Plan B Verifica · encargos en el servidor local (fase D del mega plan 2; cortes 1, 2 y 3 el 24/11/2026).
 // Corte 1: crear un encargo y guardarle sus fuentes (dos capturas, el libro de facturas y las cifras declaradas) desde la
 // pantalla. Corte 2: la sala limpia con un botón, que emite el informe, la copia custodiada y su llave con el mismo motor
 // y la misma entrada que scripts/verifica-sala-limpia.ts. Todo se guarda cifrado en el almacén que ya existe, en su tabla
-// meta, sin tocar el esquema. Una fuente que no sirve no se guarda. Las respuestas describen cada fuente (estado, huella,
+// meta, sin tocar el esquema. Corte 3: leer HubSpot desde la pantalla con la misma pieza que scripts/verifica-hubspot.ts
+// (server/verifica/hubspot-read.ts), en segundo plano; la captura entra como fuente y, en modo cliente, su acta se
+// guarda aparte. La credencial solo vive en memoria mientras dura la lectura. Una fuente que no sirve no se guarda. Las respuestas describen cada fuente (estado, huella,
 // resumen) y nunca devuelven su texto. La llave de la copia solo viaja una vez, en la respuesta de emitir, y no se guarda:
 // así siempre va aparte del informe y de la copia. Hereda las guardas del servidor local (sesión, host y origen).
 import { randomUUID } from 'node:crypto';
@@ -13,12 +15,20 @@ import { custodyFingerprint } from '../../shared/verifica/custody.js';
 import { ENGAGEMENT_LIMITS, ENGAGEMENT_ROLES, engagementView, inputProblem, readEngagement, type Engagement, type EngagementRole, type EngagementView, type IssueResult, type IssueSummary, type StoredSource, type StoredSources } from '../../shared/verifica/engagement.js';
 import { cleanRoomInput, parseCaptureText, parseDeclarationsText } from '../../shared/verifica/inputs.js';
 import { reportToJson } from '../../shared/verifica/report.js';
+import { sha256Hex } from '../../shared/sha256.js';
+import { VerificaReadError } from '../../shared/verifica/hubspot.js';
+import { checkReadAuthorization, madridDay, parseReadAuthorization, ReadAuthorizationError, type ReadAuthorization } from '../../shared/verifica/read-authorization.js';
+import { credentialProblem, readWithRecord, recordToText } from './hubspot-read.js';
+import { READ_LIMITS, type ReadJob, type RecordSummary } from '../../shared/verifica/engagement.js';
+export type { ReadJob, RecordSummary } from '../../shared/verifica/engagement.js';
 import { AppError, type Store } from '../store.js';
 
 export const VERIFICA_API = '/api/verifica';
 const LIST_KEY = 'verifica:engagements';
 const sourceKey = (id: string, role: EngagementRole) => 'verifica:source:' + id + ':' + role;
 const issueKey = (id: string) => 'verifica:issue:' + id;
+const recordsKey = (id: string) => 'verifica:records:' + id;
+const recordKey = (id: string, captureId: string) => 'verifica:record:' + id + ':' + captureId;
 
 /** Lo que se guarda de una emisión: el informe y la copia tal como se descargan, y las huellas de las fuentes de las
  *  que salieron (para saber si quedó desfasada). Nunca la llave. */
@@ -27,6 +37,18 @@ interface StoredIssue { issuedAt: string; reportJson: string; custodyJson: strin
 const idParam = z.object({ id: z.uuid() }).strict();
 const roleParam = z.object({ id: z.uuid(), role: z.enum(ENGAGEMENT_ROLES) }).strict();
 const fileParam = z.object({ id: z.uuid(), file: z.enum(['report', 'custody']) }).strict();
+const recordParam = z.object({ id: z.uuid(), captureId: z.string().min(1).max(200) }).strict();
+const readBody = z.object({
+  mode: z.enum(['client', 'test']),
+  portalId: z.string().regex(/^\d{1,20}$/),
+  token: z.string().min(1).max(4096),
+  /** Dónde entra la captura: anterior, más reciente o más reciente pasando la actual a anterior. */
+  target: z.enum(['previous', 'latest', 'rotate']),
+  authorization: z.string().max(READ_LIMITS.authorizationChars).optional(),
+  documentBase64: z.string().max(Math.ceil(READ_LIMITS.documentBytes / 3) * 4).optional(),
+  confirmFullRead: z.boolean().optional(),
+}).strict();
+
 const createBody = z.object({ name: z.string().trim().min(1).max(ENGAGEMENT_LIMITS.nameChars) }).strict();
 const sourceBody = z.object({
   text: z.string().min(1).max(ENGAGEMENT_LIMITS.sourceBytes),
@@ -41,10 +63,15 @@ export interface VerificaEngagementOptions {
   now?: () => string;
   /** Solo para pruebas: sal y llave fijas, para comparar byte a byte con el script. */
   cleanRoom?: { salt?: string; key?: string };
+  /** Transporte hacia HubSpot (por defecto, fetch). Las pruebas pasan un HubSpot simulado. */
+  hubspotFetch?: typeof fetch;
+  /** Reloj de la lectura (fecha de la captura y del acta). Por defecto, ahora. */
+  hubspotNow?: () => Date;
 }
 
 export function registerVerificaEngagements(app: FastifyInstance, store: Store, options: VerificaEngagementOptions = {}) {
   const now = options.now ?? (() => new Date().toISOString());
+  const jobs = new Map<string, ReadJob>();
   const list = () => store.get<Engagement[]>(LIST_KEY, []);
   const find = (id: string) => {
     const engagement = list().find(item => item.id === id);
@@ -153,6 +180,82 @@ export function registerVerificaEngagements(app: FastifyInstance, store: Store, 
     if (!stored) throw new AppError(404, 'Este encargo todavía no tiene informe emitido.');
     reply.type('application/json; charset=utf-8').header('cache-control', 'no-store');
     return file === 'report' ? stored.reportJson : stored.custodyJson;
+  });
+
+  // Corte 3 · leer HubSpot. Todo lo que puede parar la lectura se comprueba antes de la primera petición: la forma de la
+  // credencial, la confirmación del modo de pruebas y, en modo cliente, la autorización firmada (portal, fechas de Madrid,
+  // alcance y huella del documento). La lectura sigue en segundo plano y la pantalla pregunta por su estado.
+  app.post(VERIFICA_API + '/engagements/:id/read', async (request, reply) => {
+    const { id } = idParam.parse(request.params);
+    const body = readBody.parse(request.body);
+    find(id);
+    if (jobs.get(id)?.state === 'running') throw new AppError(409, 'Ya hay una lectura en marcha para este encargo.');
+    const problem = credentialProblem(body.token);
+    if (problem) throw new AppError(422, problem);
+    let authorization: ReadAuthorization | null = null;
+    if (body.mode === 'test') {
+      if (body.confirmFullRead !== true) throw new AppError(422, 'Confirma que autorizas leer el portal de pruebas entero: oportunidades con historial, empresas, contactos y comerciales.');
+    } else {
+      if (!body.authorization || !body.documentBase64) throw new AppError(422, 'El modo cliente necesita la autorización (autorizacion.json) y el documento firmado.');
+      try {
+        authorization = parseReadAuthorization(JSON.parse(body.authorization));
+        const today = madridDay(options.hubspotNow?.() ?? new Date());
+        checkReadAuthorization(authorization, { portalId: body.portalId, today, documentSha256: sha256Hex(Buffer.from(body.documentBase64, 'base64')) });
+      } catch (error) {
+        if (error instanceof ReadAuthorizationError) throw new AppError(422, 'Autorización: ' + error.message + ' No se ha hecho ninguna petición.');
+        if (error instanceof SyntaxError) throw new AppError(422, 'La autorización no es JSON válido. No se ha hecho ninguna petición.');
+        throw error;
+      }
+    }
+    const job: ReadJob = { state: 'running', mode: body.mode, startedAt: now(), progress: [] };
+    jobs.set(id, job);
+    const token = body.token;
+    void readWithRecord({
+      token, portalId: body.portalId, mode: body.mode, authorization, fetch: options.hubspotFetch ?? fetch, now: options.hubspotNow,
+      progress: message => { job.progress.push(message); },
+    }).then(({ reading, captureText, record }) => {
+      const current = store.get<StoredSource | null>(sourceKey(id, 'latest'), null);
+      const role: 'previous' | 'latest' = body.target === 'previous' ? 'previous' : 'latest';
+      if (body.target === 'rotate' && current) store.set(sourceKey(id, 'previous'), current);
+      const label = (body.mode === 'client' ? 'HubSpot ' : 'HubSpot de pruebas ') + reading.account.portalId + ' · ' + reading.capture.capturedAt.slice(0, 10) + '.json';
+      store.set(sourceKey(id, role), { text: captureText, fileName: label, storedAt: now() } satisfies StoredSource);
+      if (record) {
+        store.set(recordKey(id, record.captureId), recordToText(record));
+        const summaryRow: RecordSummary = { captureId: record.captureId, fingerprint: record.fingerprint, finishedAt: record.finishedAt, portalId: record.portalId, engagement: record.engagement };
+        store.set(recordsKey(id), [...store.get<RecordSummary[]>(recordsKey(id), []).filter(r => r.captureId !== record.captureId), summaryRow]);
+      }
+      touch(id);
+      const { capture } = reading;
+      Object.assign(job, {
+        state: 'done', finishedAt: now(),
+        result: { captureId: capture.id, role, counts: { owners: capture.owners.length, companies: capture.companies.length, contacts: capture.contacts.length, deals: capture.deals.length }, historyAvailable: capture.historyAvailable, requests: reading.requests, recordFingerprint: record?.fingerprint ?? null },
+      } satisfies Partial<ReadJob>);
+    }, error => {
+      Object.assign(job, { state: 'failed', finishedAt: now(), error: error instanceof VerificaReadError ? 'Lectura detenida: ' + error.message : 'La lectura terminó con un error inesperado; no se muestra el detalle por si contuviera datos de la petición.' } satisfies Partial<ReadJob>);
+    });
+    reply.code(202);
+    return job;
+  });
+
+  app.get(VERIFICA_API + '/engagements/:id/read', async request => {
+    const { id } = idParam.parse(request.params);
+    find(id);
+    return { job: jobs.get(id) ?? null };
+  });
+
+  app.get(VERIFICA_API + '/engagements/:id/records', async request => {
+    const { id } = idParam.parse(request.params);
+    find(id);
+    return { records: store.get<RecordSummary[]>(recordsKey(id), []) };
+  });
+
+  app.get(VERIFICA_API + '/engagements/:id/records/:captureId', async (request, reply) => {
+    const { id, captureId } = recordParam.parse(request.params);
+    find(id);
+    const text = store.get<string | null>(recordKey(id, captureId), null);
+    if (!text) throw new AppError(404, 'No hay acta de esa captura.');
+    reply.type('application/json; charset=utf-8').header('cache-control', 'no-store');
+    return text;
   });
 }
 

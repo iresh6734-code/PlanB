@@ -334,3 +334,52 @@ Plan en Claude Docs, «Plan B · Mega plan 2». La usuaria pidió seguirlo «usa
 - En navegador, con `tests/.tmp/verifica-vista/emitir.mts` contra el servidor aislado: 36/36 en escritorio, móvil y oscuro. Incluye emitir, descargar los tres archivos por separado, la huella del informe descargado igual a la de la pantalla, la llave ausente del informe y de la copia, ver el informe, comprobar la copia con su llave en el visor y la emisión desfasada al cambiar una fuente.
 
 **Siguiente:** corte 3, leer HubSpot desde la pantalla con la autorización vigente. Con el HubSpot simulado tiene que dar lo mismo que el script; con uno real, en la fase B.
+
+## 24/11/2026 · Mega plan 2 · Fase D, corte 3: leer HubSpot desde la pantalla
+
+**Qué se puede hacer ahora.** El paso 3, «Capturas», ya navega. Se elige qué cuenta se lee: la de la empresa que se vende, con su `autorizacion.json` y el documento firmado, o un portal de pruebas, con la casilla «Autorizo leer el portal de pruebas entero». Después se escriben el número de portal y la credencial, y se elige dónde entra la captura: como anterior, como más reciente, o como más reciente pasando la actual a anterior. La pantalla propone el sitio según lo que ya hay. «Leer HubSpot» arranca la lectura en segundo plano y se ve lo leído (comerciales, empresas, contactos, oportunidades). Al terminar, la captura queda guardada como fuente del encargo. En la cuenta de la empresa queda además un acta, descargable y listada en «Actas de lectura». Si la autorización no sirve (otro portal, caducada, alcance corto o un documento que no es el firmado), se para antes de la primera petición y lo dice.
+
+**La credencial:**
+
+- Va en un campo de contraseña no controlado: React copiaría el valor de un campo controlado al atributo del HTML.
+- Viaja solo en la petición que arranca la lectura y sale del campo en cuanto el servidor la acepta. Si la lectura se rechaza, se queda en el campo para reintentar.
+- En el servidor solo vive en memoria mientras dura la lectura. No se guarda ni vuelve en ninguna respuesta, ni siquiera en un error.
+
+**Piezas:**
+
+- `server/verifica/hubspot-read.ts` (nuevo): `readWithRecord`, la lectura y su acta. El acta cuenta lo que pasó por el transporte. La comparten el script y el servidor. También están aquí `recordToText` y `credentialProblem`.
+- `scripts/verifica-hubspot.ts`: usa esa pieza. Su salida no cambia.
+- `server/verifica/engagements.ts`:
+  - `POST .../read` responde 202. Da 409 si ya hay una lectura en marcha y 422 si algo no sirve, sin hacer ninguna petición.
+  - `GET .../read` devuelve el estado.
+  - `GET .../records` devuelve las actas y `GET .../records/:captureId` el texto de una, con `no-store`.
+  - Las opciones `hubspotFetch` y `hubspotNow` existen para las pruebas.
+  - Las actas se guardan en `verifica:records:<id>` y `verifica:record:<id>:<captura>`, sin tocar el esquema.
+- `shared/verifica/engagement.ts`: tipos `ReadRequest`, `ReadTarget`, `ReadJob` y `RecordSummary`, y límites `READ_LIMITS` (documento firmado hasta 10 MB).
+- `src/verifica/Captures.tsx` (nuevo), `startRead`, `readStatus`, `listRecords` y `recordFile` en el cliente, y el paso 03 navegable en `Masthead.tsx`. `docs/api.md`: 108 rutas.
+- `tests/helpers/fake-hubspot.ts` (nuevo): el HubSpot simulado, sacado de `verifica-lectores` para compartirlo.
+- `docs/verifica-salir-a-vender.md`: la lectura de la hora 0 y la de la hora 24 también se pueden hacer desde la pantalla.
+
+**Comprobación:**
+
+- `verifica-lectura` 3/3:
+  - en modo cliente, la captura guardada y el acta son idénticas byte a byte a las del script, con las mismas peticiones;
+  - siete entradas que no sirven se paran sin ninguna petición a HubSpot;
+  - una lectura a la vez y la rotación funcionan;
+  - una cuenta real en modo pruebas se para sin guardar nada;
+  - la credencial no está en el almacén ni en las respuestas.
+- `verifica-pasos` 6/6 y `verifica-lectores` 13/13. Rutas documentadas, guardas y `tsc` en verde.
+- En navegador, `tests/.tmp/verifica-vista/capturas.mts` contra `start-api-fake.mjs`, un servidor aislado en el 4582 con el HubSpot simulado y ninguna cuenta real: 72/72 en escritorio, móvil y oscuro. El recorrido:
+  - lee el portal de pruebas como anterior;
+  - rechaza un documento equivocado sin leer;
+  - lee la cuenta de cliente como reciente;
+  - comprueba que el acta descargada tiene la huella de la pantalla y que solo contiene lecturas y búsquedas;
+  - comprueba que las dos capturas aparecen en las fuentes;
+  - comprueba que la credencial no aparece en la página ni en ninguna respuesta.
+- Los recorridos de los cortes 1 y 2 siguen en 40/40 y 36/36.
+
+**Sin probar:** una cuenta real de HubSpot. Eso es la fase B, con la cuenta de pruebas del usuario.
+
+**Dependencias de lo aparcado.** El 24/11 el usuario ejecutó el `npm uninstall` de las diez (`@azure/msal-node`, `@firebase/app`, `@firebase/auth`, `@google-cloud/tasks`, `@microsoft/agents-copilotstudio-client`, `firebase-admin`, `google-auth-library`, `pg`, `@electric-sql/pglite`, `@types/pg`). Ya no están en `package.json` ni en `node_modules`. Ningún archivo de código las importa; solo las nombran los paquetes viejos de `build/`, que no están en git y que el arranque no usa (`start-full-workspace.cjs` tira de su propia instalación). `tsc` y `vite build` pasan sin ellas.
+
+**Siguiente:** corte 4, la vigilancia automática con el temporizador.

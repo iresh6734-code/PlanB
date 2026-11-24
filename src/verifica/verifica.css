@@ -210,6 +210,27 @@ button.vf-step:hover { background: var(--vf-subtle); }
 .vf-key-box { display: grid; gap: 10px; justify-items: start; padding: 14px 16px; border: 1px solid var(--vf-declared); border-radius: 8px; background: var(--vf-declared-bg); color: var(--vf-ink); }
 .vf-key-box p { margin: 0; max-width: 70ch; }
 
+/* Paso 3 · leer HubSpot (fase D, corte 3). */
+.vf-read-form { display: grid; gap: 22px; }
+.vf-choice { margin: 0; padding: 0; border: 0; display: grid; gap: 8px; min-width: 0; }
+.vf-choice legend { padding: 0; margin-bottom: 4px; }
+.vf-choice:disabled { opacity: 0.6; }
+.vf-option { display: flex; align-items: flex-start; gap: 10px; width: fit-content; max-width: 100%; cursor: pointer; }
+.vf-option input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--vf-ink); cursor: pointer; }
+.vf-option-text { display: grid; gap: 2px; min-width: 0; }
+.vf-option-label { font-size: 15px; font-weight: 500; color: var(--vf-ink); }
+.vf-option-note, .vf-field-note { font-size: 13px; color: var(--vf-text-3); }
+.vf-field-note { margin: 0; max-width: 70ch; }
+.vf-confirm { padding: 14px 16px; border: 1px solid var(--vf-rule-strong); border-radius: 8px; width: auto; }
+.vf-read-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px 20px; align-items: start; }
+.vf-read-wide { grid-column: 1 / -1; }
+.vf-read-job { display: grid; gap: 12px; }
+.vf-read-job h2 { margin-bottom: 0; }
+.vf-read-job[data-state="done"] { border-color: var(--vf-ok); }
+.vf-read-job[data-state="failed"] { border-color: var(--vf-alarm); }
+.vf-read-progress { list-style: none; margin: 0; padding: 10px 14px; display: grid; gap: 2px; background: var(--vf-subtle); border-radius: 8px; font-family: var(--vf-mono); font-size: 13px; color: var(--vf-text-2); }
+.vf-record { grid-template-columns: minmax(0, 1fr) auto; }
+
 /* Copia custodiada */
 .vf-custody-intro { margin: -4px 0 16px; max-width: 70ch; color: var(--vf-text-2); }
 .vf-custody-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; align-items: end; gap: 12px 16px; }
@@ -256,6 +277,8 @@ button.vf-step:hover { background: var(--vf-subtle); }
   .vf-engagement { grid-template-columns: minmax(0, 1fr); }
   .vf-engagement .vf-basis { justify-self: start; }
   .vf-source { grid-template-columns: minmax(0, 1fr); }
+  .vf-record { grid-template-columns: minmax(0, 1fr); }
+  .vf-record .vf-secondary { justify-self: start; }
   .vf-custody-form .vf-primary { justify-self: start; }
 }
 

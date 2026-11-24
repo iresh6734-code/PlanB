@@ -41,14 +41,14 @@ export function Fingerprint({ label, value, intact, broken }: { label: string; v
 }
 
 export type Variant = 'traps' | 'clean';
-export type DocKind = 'report' | 'watch' | 'migration' | 'operation' | 'sources';
-/** Documentos de ejemplo (empresa ficticia). Los otros dos son pasos del encargo y solo existen con el servidor local. */
+export type DocKind = 'report' | 'watch' | 'migration' | 'operation' | 'sources' | 'captures';
+/** Documentos de ejemplo (empresa ficticia). Los otros tres son pasos del encargo y solo existen con el servidor local. */
 const EXAMPLE_DOCS: readonly DocKind[] = ['report', 'watch', 'migration'];
 
 export type ReportOrigin =
   | { kind: 'reference'; variant: Variant; onVariant?: (variant: Variant) => void; doc?: DocKind; onDoc?: (doc: DocKind) => void; local?: boolean }
   | { kind: 'opened'; name: string; onReference?: () => void; backLabel?: string }
-  /** Pasos del encargo (Operación, Fuentes) servidos por el servidor local: sin ejemplo ni variantes. */
+  /** Pasos del encargo (Operación, Fuentes, Capturas) servidos por el servidor local: sin ejemplo ni variantes. */
   | { kind: 'local'; onDoc?: (doc: DocKind) => void };
 
 const VARIANT: Record<Variant, string> = { traps: 'Con trampas', clean: 'Sin trampas' };
@@ -57,7 +57,7 @@ type Step = { n: string; label: string; note: string; doc?: DocKind };
 const STEPS: Step[] = [
   { n: '01', label: 'Operación', note: 'Encargos de este equipo', doc: 'operation' },
   { n: '02', label: 'Fuentes', note: 'CRM y facturas, solo lectura', doc: 'sources' },
-  { n: '03', label: 'Capturas', note: 'Cada lectura queda sellada' },
+  { n: '03', label: 'Capturas', note: 'Cada lectura queda sellada', doc: 'captures' },
   { n: '04', label: 'Hallazgos e informe', note: 'Lo que la cartera sostiene', doc: 'report' },
   { n: '05', label: 'Vigilancia', note: 'De la firma al cierre', doc: 'watch' },
   { n: '06', label: 'Después del cierre', note: 'Migración verificada', doc: 'migration' },
@@ -94,7 +94,7 @@ function Steps({ origin, current }: { origin: ReportOrigin; current: DocKind }) 
         })}
       </ol>
       <p className="vf-steps-note">{local
-        ? 'Las capturas (paso 3) se hacen con el lector en el equipo del vendedor. Los pasos 4 a 6 enseñan, por ahora, la empresa de ejemplo.'
+        ? 'Los pasos 4 a 6 enseñan, por ahora, la empresa de ejemplo. El informe emitido se abre desde las fuentes.'
         : 'Los pasos 1 a 3 se hacen con el lector, en el equipo del vendedor. Aquí se ven sus resultados.'}</p>
     </nav>
   );

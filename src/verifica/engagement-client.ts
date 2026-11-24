@@ -1,6 +1,6 @@
 // Plan B Verifica · cliente de los encargos del servidor local (fase D, corte 1). Solo se usa cuando verifica.html la
 // sirve el servidor local; abierta suelta, la página no llama a nada.
-import type { Engagement, EngagementRole, EngagementView, IssueResult } from '../../shared/verifica/engagement.js';
+import type { Engagement, EngagementRole, EngagementView, IssueResult, ReadJob, ReadRequest, RecordSummary } from '../../shared/verifica/engagement.js';
 import { ENGAGEMENT_LIMITS } from '../../shared/verifica/engagement.js';
 
 export type EngagementSummary = Engagement & { ready: boolean; stored: number; issued: boolean };
@@ -54,5 +54,20 @@ export async function issueFile(id: string, file: 'report' | 'custody'): Promise
   try { response = await fetch(`/api/verifica/engagements/${id}/issue/${file}`); }
   catch { throw new EngagementApiError('No hubo respuesta del servidor local. Comprueba que Plan B sigue abierto y reintenta.', 0); }
   if (!response.ok) throw new EngagementApiError(response.status === 401 ? 'Plan B está bloqueado: desbloquéalo en la app principal y vuelve a intentarlo.' : 'No se pudo descargar el archivo emitido.', response.status);
+  return response.text();
+}
+
+/** Lectura de HubSpot (corte 3): el servidor la arranca y sigue en segundo plano. La credencial solo viaja en esta petición. */
+export const startRead = (id: string, request: ReadRequest) => call<ReadJob>(`/api/verifica/engagements/${id}/read`, { method: 'POST', body: JSON.stringify(request) });
+/** La lectura en marcha o la última de este encargo desde que se abrió Plan B. */
+export const readStatus = (id: string) => call<{ job: ReadJob | null }>(`/api/verifica/engagements/${id}/read`).then(r => r.job);
+export const listRecords = (id: string) => call<{ records: RecordSummary[] }>(`/api/verifica/engagements/${id}/records`).then(r => r.records);
+
+/** El acta de una lectura tal como se guardó, en texto. */
+export async function recordFile(id: string, captureId: string): Promise<string> {
+  let response: Response;
+  try { response = await fetch(`/api/verifica/engagements/${id}/records/${encodeURIComponent(captureId)}`); }
+  catch { throw new EngagementApiError('No hubo respuesta del servidor local. Comprueba que Plan B sigue abierto y reintenta.', 0); }
+  if (!response.ok) throw new EngagementApiError(response.status === 401 ? 'Plan B está bloqueado: desbloquéalo en la app principal y vuelve a intentarlo.' : 'No se pudo descargar el acta.', response.status);
   return response.text();
 }

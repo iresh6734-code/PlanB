@@ -24,7 +24,7 @@ Que pasen las cinco no basta. Antes de la primera conversación también hace fa
 
 - [ ] Las cinco pruebas pasan (`scripts/verifica-pruebas.ts` sale con 0).
 - [ ] El lector de HubSpot está validado en el portal de pruebas, con historial (pasos en el registro, «Verifica · Fase 1»).
-- [x] Hay un lector para el portal del cliente (23/11/2026): `scripts/verifica-hubspot.ts --client-authorization`, solo cuentas STANDARD y solo con una autorización firmada y vigente (sección 3). Está probado con el HubSpot simulado; con uno real no se ha leído nunca, y antes hay que validar el lector en el portal de pruebas (el punto de arriba).
+- [x] Hay un lector para el portal del cliente (23/11/2026): `scripts/verifica-hubspot.ts --client-authorization`, solo cuentas STANDARD y solo con una autorización firmada y vigente (sección 3). Desde el 24/11/2026 también se lanza desde la pantalla (paso 3 del encargo, «Capturas»), con la misma pieza y la misma acta. Está probado con el HubSpot simulado; con uno real no se ha leído nunca, y antes hay que validar el lector en el portal de pruebas (el punto de arriba).
 - [ ] Las cabeceras reales de Holded están comprobadas con un libro de facturas emitidas.
 - [ ] Los abogados han revisado el anexo de la sección 2.
 - [ ] Hay seguro de responsabilidad profesional antes del primer cobro.
@@ -79,7 +79,7 @@ Es para cuando la lista de la sección 1 esté completa. Hasta entonces es solo 
 | Cuándo | Qué | Herramienta |
 | --- | --- | --- |
 | Antes de empezar | Firmar el encargo, el anexo y el acuerdo de tratamiento. Acordar quién guarda la copia y la llave | Abogado |
-| Hora 0 | El vendedor da acceso de solo lectura en su equipo. Primera captura, con huella y acta | `scripts/verifica-hubspot.ts --client-authorization` (ver «Autorización de lectura», abajo) |
+| Hora 0 | El vendedor da acceso de solo lectura en su equipo. Primera captura, con huella y acta | Paso 3 del encargo, «Capturas», o `scripts/verifica-hubspot.ts --client-authorization` (ver «Autorización de lectura», abajo) |
 | Hora 0–24 | El vendedor entrega el libro de facturas y sus cifras declaradas | `--invoices` y `--declarations` |
 | Hora 24 | Segunda captura, con su acta, para tener lo que cambió entre las dos. Las dos van a la sala limpia como `--previous` y `--latest` | El mismo lector, con otros nombres de archivo |
 | Hora 24–48 | Sala limpia: informe, copia y llave por separado. Revisar a mano lo que la barrera no cubre | `scripts/verifica-sala-limpia.ts` |
@@ -115,7 +115,7 @@ Sin una autorización válida, el lector no hace ni una petición. La autorizaci
 npx tsx scripts/verifica-hubspot.ts --check-only --portal 12345678 --client-authorization autorizacion.json --authorization-document documento-firmado.pdf
 ```
 
-El día de la lectura:
+El día de la lectura, desde la pantalla: paso 3 del encargo, «Cuenta de la empresa que se vende», con el número de portal, la credencial, `autorizacion.json` y el documento firmado. La captura entra como fuente del encargo y el acta queda en «Actas de lectura». O con la orden:
 
 ```
 <credencial por entrada estándar> | npx tsx scripts/verifica-hubspot.ts --portal 12345678 --client-authorization autorizacion.json --authorization-document documento-firmado.pdf --out captura-h0.json --record acta-h0.json

@@ -16,6 +16,7 @@ import { Fingerprint, Frame, Refs, type DocKind, type ReportOrigin, type Variant
 import { conclusion, highlights, keyFigure, sourcesText, traceText } from './summary.js';
 import { localAvailable } from './engagement-client.js';
 import { OperationPage, SourcesPage } from './Engagements.js';
+import { CapturesPage } from './Captures.js';
 import { referenceWatch, WatchReportView } from './WatchReport.js';
 
 const BASIS: Record<VerificaBasis, string> = { observed: 'Observado', declared: 'Declarado por el vendedor', unverified: 'Sin comprobar' };
@@ -115,7 +116,7 @@ export default function VerificaReportPage() {
   const [openError, setOpenError] = useState<string | null>(null);
   const [equivalence, setEquivalence] = useState<Partial<Record<Variant, EquivalenceReport>>>({});
   const [equivalenceFailed, setEquivalenceFailed] = useState(false);
-  // Servida por el servidor local: aparecen los pasos 1 y 2 del encargo y la página abre en el 1, salvo que la persona
+  // Servida por el servidor local: aparecen los pasos 1 a 3 del encargo y la página abre en el 1, salvo que la persona
   // ya se haya movido. Abierta suelta (el comprador), no hay servidor y la página sigue siendo el visor sin conexión.
   const [local, setLocal] = useState(false);
   const [engagementId, setEngagementId] = useState<string | null>(null);
@@ -137,7 +138,7 @@ export default function VerificaReportPage() {
   const reference = useMemo<VerificaDocument | null>(() => {
     if (doc === 'watch') return { kind: 'watch', report: referenceWatch(variant) };
     if (doc === 'migration') { const report = equivalence[variant]; return report ? { kind: 'migration', report } : null; }
-    if (doc === 'operation' || doc === 'sources') return null;
+    if (doc === 'operation' || doc === 'sources' || doc === 'captures') return null;
     return { kind: 'report', report: referenceReport(variant) };
   }, [doc, variant, equivalence]);
   const open = (file: File) => {
@@ -161,6 +162,9 @@ export default function VerificaReportPage() {
   if (!opened && local && doc === 'sources') {
     return <SourcesPage origin={{ kind: 'local', onDoc: go }} engagementId={engagementId} onOpen={open} openError={openError}
       onShowReport={(shownDoc, name) => { setOpenError(null); setOpened({ name, doc: shownDoc, backLabel: 'Volver a las fuentes' }); }} />;
+  }
+  if (!opened && local && doc === 'captures') {
+    return <CapturesPage origin={{ kind: 'local', onDoc: go }} engagementId={engagementId} onOpen={open} openError={openError} onShowSources={() => go('sources')} />;
   }
   return shown === null
     ? <EquivalencePending origin={origin} failed={equivalenceFailed} onOpen={open} openError={openError} />

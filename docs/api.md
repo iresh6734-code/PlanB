@@ -14,8 +14,8 @@ Generado por `node tools/api/inventory.mjs` a partir de los servidores reales: c
 | v3 | 4 | 4 | 2 |
 | v4 | 10 | 10 | 10 |
 | v7 | 15 | 15 | 13 |
-| sin versión | 25 | 25 | 13 |
-| **Total** | **104** | **104** | **72** |
+| sin versión | 29 | 29 | 13 |
+| **Total** | **108** | **108** | **72** |
 
 ## v2
 
@@ -142,6 +142,10 @@ Generado por `node tools/api/inventory.mjs` a partir de los servidores reales: c
 | GET | `/api/verifica/engagements/:id` | ● |  | `server/verifica/engagements.ts` |
 | POST | `/api/verifica/engagements/:id/clean-room` | ● |  | `server/verifica/engagements.ts` |
 | GET | `/api/verifica/engagements/:id/issue/:file` | ● |  | `server/verifica/engagements.ts` |
+| GET | `/api/verifica/engagements/:id/read` | ● |  | `server/verifica/engagements.ts` |
+| POST | `/api/verifica/engagements/:id/read` | ● |  | `server/verifica/engagements.ts` |
+| GET | `/api/verifica/engagements/:id/records` | ● |  | `server/verifica/engagements.ts` |
+| GET | `/api/verifica/engagements/:id/records/:captureId` | ● |  | `server/verifica/engagements.ts` |
 | DELETE | `/api/verifica/engagements/:id/sources/:role` | ● |  | `server/verifica/engagements.ts` |
 | PUT | `/api/verifica/engagements/:id/sources/:role` | ● |  | `server/verifica/engagements.ts` |
 | GET | `/api/verifica/health` | ● |  | `server/verifica/engagements.ts` |

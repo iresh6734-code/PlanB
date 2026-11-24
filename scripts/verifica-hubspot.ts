@@ -2,14 +2,14 @@ import { randomBytes } from 'node:crypto';
 import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readHubspotForVerifica } from '../server/verifica/hubspot-reader.js';
+import { readWithRecord, recordToText } from '../server/verifica/hubspot-read.js';
 import { sha256Hex } from '../shared/sha256.js';
 import { VerificaReadError } from '../shared/verifica/hubspot.js';
 import { importInvoices, InvoiceImportError, type InvoiceImport } from '../shared/verifica/invoices.js';
 import type { VerificaCapture } from '../shared/verifica/model.js';
 import { CleanRoomError, releaseReport } from '../shared/verifica/clean-room.js';
 import { reportToJson } from '../shared/verifica/report.js';
-import { buildReadRecord, checkReadAuthorization, madridDay, parseReadAuthorization, ReadAuthorizationError, type ReadAuthorization } from '../shared/verifica/read-authorization.js';
+import { checkReadAuthorization, madridDay, parseReadAuthorization, ReadAuthorizationError, type ReadAuthorization } from '../shared/verifica/read-authorization.js';
 // Verifica · lectura COMPLETA de un portal de HubSpot con historial. Solo lectura (GET y búsquedas de recuento). Dos modos:
 //   · pruebas (--authorized-full-read, fase 1): solo cuentas DEVELOPER_TEST o SANDBOX, para validar el lector. Con
 //     --previous (una captura anterior de este script) y opcionalmente --invoices, además escribe el informe.
@@ -125,19 +125,11 @@ export async function runCli(argv: string[], deps: CliDeps): Promise<number> {
     return 2;
   }
 
-  // El acta cuenta lo que pasó por el transporte, no lo que el lector dice que hizo.
-  const requestsByMethod: Record<string, number> = {}, endpoints = new Set<string>();
-  const fetcher = ((input: string | URL | Request, init?: RequestInit) => {
-    const method = (init?.method ?? 'GET').toUpperCase();
-    requestsByMethod[method] = (requestsByMethod[method] ?? 0) + 1;
-    endpoints.add(method + ' ' + new URL(input instanceof Request ? input.url : String(input)).pathname);
-    return deps.fetch(input, init);
-  }) as typeof fetch;
-  const startedAt = now().toISOString();
-  let reading;
+  // Lectura y acta: la misma pieza que usa la pantalla de capturas del servidor local (server/verifica/hubspot-read.ts).
+  let read;
   try {
-    reading = await readHubspotForVerifica({
-      token, accountId: args.portal, mode: args.mode === 'client' ? 'production_readonly' : 'test', fetcher, now: deps.now,
+    read = await readWithRecord({
+      token, portalId: args.portal, mode: args.mode === 'client' ? 'client' : 'test', authorization, fetch: deps.fetch, now: deps.now,
       taxIdProperty: args.taxProperty, ...(args.customerStages ? { customerStages: args.customerStages } : {}),
       progress: message => deps.out('  leído · ' + message + '\n'),
     });
@@ -145,12 +137,12 @@ export async function runCli(argv: string[], deps: CliDeps): Promise<number> {
     deps.err((e instanceof VerificaReadError ? 'Lectura detenida (' + e.code + '): ' + e.message : 'La lectura terminó con un error inesperado; no se imprime el detalle por si contuviera datos de la petición.') + '\n');
     return 1;
   }
+  const { reading, captureText, record } = read;
   const { capture } = reading;
   const save = async (path: string, text: string) => {
     try { await writeNew(path, text); return true; }
     catch { deps.err('No se guarda ' + path + ': ya existe o no se puede escribir. Elige otro nombre; nunca se sobrescribe.\n'); return false; }
   };
-  const captureText = JSON.stringify(capture, null, 2) + '\n';
   if (!await save(args.out, captureText)) return 1;
   const changed = capture.deals.filter(d => d.history && (d.history.amount.length > 1 || d.history.closeDate.length > 1)).length;
   const lines = [
@@ -162,15 +154,8 @@ export async function runCli(argv: string[], deps: CliDeps): Promise<number> {
     'Peticiones: ' + reading.requests + ' · captura guardada en ' + args.out,
   ];
 
-  if (authorization && args.record) {
-    const record = buildReadRecord({
-      portalId: reading.account.portalId, accountType: reading.account.accountType, engagement: authorization.engagement, authorizedBy: authorization.authorizedBy,
-      signedOn: authorization.signedOn, validUntil: authorization.validUntil, signedDocumentSha256: authorization.signedDocumentSha256,
-      startedAt, finishedAt: now().toISOString(), requestsByMethod, endpoints,
-      counts: { owners: capture.owners.length, companies: capture.companies.length, contacts: capture.contacts.length, deals: capture.deals.length },
-      historyAvailable: capture.historyAvailable, captureId: capture.id, captureText,
-    });
-    if (!await save(args.record, JSON.stringify(record, null, 2) + '\n')) {
+  if (authorization && args.record && record) {
+    if (!await save(args.record, recordToText(record))) {
       deps.err('La captura se guardó sin acta: no la uses para el cliente. Vuelve a leer con otros nombres de archivo.\n');
       return 1;
     }

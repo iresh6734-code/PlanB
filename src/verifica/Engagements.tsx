@@ -12,8 +12,8 @@ import { Frame, type ReportOrigin } from './Masthead.js';
 const STATE: Record<SourceState['status'], string> = { missing: 'Falta', ok: 'Sirve', waiting: 'En espera', invalid: 'No sirve' };
 const ACCEPT: Record<EngagementRole, string> = { previous: '.json,application/json', latest: '.json,application/json', invoices: '.csv,text/csv', declarations: '.json,application/json' };
 const HINT: Record<EngagementRole, string> = {
-  previous: 'Captura del CRM hecha antes, para ver qué cambió. La da el lector (scripts/verifica-hubspot.ts).',
-  latest: 'Captura más reciente del CRM, con su historial si el lector lo trae.',
+  previous: 'Captura del CRM hecha antes, para ver qué cambió. La saca el paso 3 (Capturas) o el lector (scripts/verifica-hubspot.ts).',
+  latest: 'Captura más reciente del CRM, con su historial si HubSpot lo da. También sale del paso 3.',
   invoices: 'Libro de facturas emitidas en CSV, por ejemplo el de Holded guardado desde Excel. Opcional.',
   declarations: 'Lo que declara el vendedor: cartera abierta, clientes activos y renovación, en JSON. Opcional.',
 };

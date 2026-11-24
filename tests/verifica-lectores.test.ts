@@ -5,7 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildTrapCompany, checkReference, type TrapCompany } from '../shared/verifica/empresa-con-trampas.js';
 import { buildVerificaReport } from '../shared/verifica/report.js';
-import { RULE_IDS, type HistoryEntry, type VerificaCapture, type VerificaCompany, type VerificaInvoice } from '../shared/verifica/model.js';
+import { RULE_IDS, type VerificaCapture, type VerificaCompany, type VerificaInvoice } from '../shared/verifica/model.js';
 import { readHubspotForVerifica, type HubspotReaderOptions } from '../server/verifica/hubspot-reader.js';
 import { VerificaReadError } from '../shared/verifica/hubspot.js';
 import { importInvoices, parseAmount, parseInvoiceDate, InvoiceImportError } from '../shared/verifica/invoices.js';
@@ -13,75 +13,11 @@ import { verifyReport, type VerificaReport } from '../shared/verifica/report.js'
 import { runCli } from '../scripts/verifica-hubspot.js';
 import { buildReadRecord, checkReadAuthorization, madridDay, parseReadAuthorization, ReadAuthorizationError, verifyReadRecord, type ReadRecord } from '../shared/verifica/read-authorization.js';
 import { sha256Hex } from '../shared/sha256.js';
+import { fakeHubspot, type FakeOptions } from './helpers/fake-hubspot.js';
 
 const PORTAL = '4400123';
 const TOKEN = 'pat-eu1-prueba-falsa-0000';
-const STAGE = { open: 'appointmentscheduled', won: 'closedwon', lost: 'closedlost' } as const;
-
-interface FakeOptions {
-  accountType?: string;
-  portalId?: string;
-  /** Oportunidades a las que HubSpot no devuelve el historial. */
-  withoutHistory?: string[];
-  /** Diferencia que se suma al total de la búsqueda de recuento. */
-  countSkew?: number;
-  /** Respuestas forzadas por orden de petición (status), antes de la respuesta normal. */
-  failures?: number[];
-  loopCursor?: boolean;
-}
-
-interface Logged { method: string; url: URL; auth: string | null; body: string | null }
-
-const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
-
-/** Un HubSpot en memoria con una captura de la empresa con trampas. */
-function fakeHubspot(capture: VerificaCapture, options: FakeOptions = {}) {
-  const log: Logged[] = [];
-  const failures = [...(options.failures ?? [])];
-  const stamp = (at: string, i: number) => i % 2 ? String(Date.parse(at)) : at;
-  const history = (entries: HistoryEntry[], i: number) => [...entries].reverse().map(e => ({ value: e.value === null ? '' : String(e.value), timestamp: stamp(e.at, i), sourceType: 'CRM_UI' }));
-  const deals = capture.deals.map((d, i) => ({
-    id: d.id,
-    properties: {
-      dealname: d.name, amount: d.amount === null ? null : String(d.amount), dealstage: STAGE[d.status], pipeline: 'default',
-      closedate: d.closeDate === null ? null : d.closeDate + 'T00:00:00Z', createdate: d.createdAt, hubspot_owner_id: d.ownerId,
-    },
-    ...(d.history && !options.withoutHistory?.includes(d.id) ? { propertiesWithHistory: { amount: history(d.history.amount, i), closedate: history(d.history.closeDate, i + 1) } } : {}),
-    ...(d.companyId ? { associations: { companies: { results: [{ id: d.companyId, type: 'deal_to_company_unlabeled' }, { id: d.companyId, type: 'deal_to_company' }] } } } : {}),
-  }));
-  const objects: Record<string, unknown[]> = {
-    deals,
-    companies: capture.companies.map(c => ({ id: c.id, properties: { name: c.name, lifecyclestage: c.customer ? 'customer' : 'lead' } })),
-    contacts: capture.contacts.map(p => ({ id: p.id, properties: { firstname: p.name, lastname: null, email: p.email, associatedcompanyid: p.companyId } })),
-  };
-  const owners = capture.owners.map(o => ({ id: o.id, firstName: o.name, lastName: '', email: o.id + '@vendedor.example' }));
-  const page = (items: unknown[], url: URL) => {
-    const limit = Number(url.searchParams.get('limit')), offset = Number(url.searchParams.get('after') ?? 0);
-    const next = offset + limit < items.length ? String(options.loopCursor ? limit : offset + limit) : null;
-    return json({ results: items.slice(offset, offset + limit), ...(next ? { paging: { next: { after: next, link: 'https://api.hubapi.com/no-seguir' } } } : {}) });
-  };
-  const fetcher = (async (input: string | URL | Request, init?: RequestInit) => {
-    const url = new URL(String(input));
-    const headers = new Headers(init?.headers);
-    log.push({ method: init?.method ?? 'GET', url, auth: headers.get('authorization'), body: typeof init?.body === 'string' ? init.body : null });
-    const forced = failures.shift();
-    if (forced) return json({ status: 'error' }, forced);
-    if (url.origin !== 'https://api.hubapi.com') return json({}, 404);
-    if (url.pathname === '/account-info/v3/details') return json({ portalId: Number(options.portalId ?? PORTAL), accountType: options.accountType ?? 'DEVELOPER_TEST', timeZone: 'Europe/Madrid' });
-    if (url.pathname === '/crm/v3/pipelines/deals') return json({ results: [{ id: 'default', stages: [
-      { id: STAGE.open, metadata: { isClosed: 'false', probability: '0.2' } },
-      { id: STAGE.won, metadata: { isClosed: 'true', probability: '1.0' } },
-      { id: STAGE.lost, metadata: { isClosed: 'true', probability: '0.0' } },
-    ] }] });
-    if (url.pathname === '/crm/v3/owners') return page(owners, url);
-    const search = /^\/crm\/v3\/objects\/(\w+)\/search$/.exec(url.pathname);
-    if (search && init?.method === 'POST') return json({ total: objects[search[1]!]!.length + (search[1] === 'deals' ? options.countSkew ?? 0 : 0), results: [] });
-    const list = /^\/crm\/v3\/objects\/(\w+)$/.exec(url.pathname);
-    if (list && objects[list[1]!]) return page(objects[list[1]!]!, url);
-    return json({}, 404);
-  }) as typeof fetch;
-  return { fetcher, log };
-}
+// El HubSpot falso vive en tests/helpers/fake-hubspot.ts (lo comparten la pantalla de capturas y su servidor de ensayo).
 
 const read = (capture: VerificaCapture, fake = fakeHubspot(capture), extra: Partial<HubspotReaderOptions> = {}) =>
   readHubspotForVerifica({ token: TOKEN, accountId: PORTAL, mode: 'test', fetcher: fake.fetcher, now: () => new Date(capture.capturedAt), sleep: async () => undefined, ...extra });

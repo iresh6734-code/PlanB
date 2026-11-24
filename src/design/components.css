@@ -1,0 +1,70 @@
+/* Plan B · componentes comunes (corte 1 del plan de diseño): botones, campos, opciones, tarjeta, avisos, etiquetas de
+ * estado y sello de huella. Clases pb-*, con los tokens de tokens.css. Se cargan antes de la hoja de cada sección, así que
+ * una sección puede ajustarlas con un selector más concreto, nunca redefinirlas. El orden de estas reglas es el que tenían en
+ * verifica.css: no cambia la cascada. */
+
+.pb-primary { min-height: 40px; padding: 0 18px; border: 1px solid var(--pb-primary); border-radius: 8px; background: var(--pb-primary); color: var(--pb-on-primary); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.pb-primary:hover { background: var(--pb-primary-hover); border-color: var(--pb-primary-hover); }
+.pb-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+.pb-primary:disabled:hover { background: var(--pb-primary); border-color: var(--pb-primary); }
+.pb-secondary { position: relative; display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; border: 1px solid var(--pb-rule-strong); border-radius: 8px; background: var(--pb-sheet); color: var(--pb-ink); font-size: 14px; font-weight: 500; cursor: pointer; }
+.pb-secondary:hover { background: var(--pb-subtle); }
+.pb-secondary:has(.pb-file-input:focus-visible) { outline: 2px solid var(--pb-focus); outline-offset: 2px; }
+.pb-file-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.pb-link { min-height: 32px; padding: 0; border: 0; background: none; color: var(--pb-link); font: inherit; font-size: 14px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.pb-link:hover { color: var(--pb-link-hover); }
+.pb-error { margin: 0; max-width: 70ch; font-size: 14px; color: var(--pb-alarm); }
+.pb-section-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; padding-bottom: 12px; border-bottom: 2px solid var(--pb-ink); }
+.pb-section-head h2 { margin: 0; font-family: var(--pb-serif); font-size: 28px; font-weight: 500; }
+.pb-section-head p { margin: 0; font-size: 13px; color: var(--pb-text-3); }
+.pb-summary { margin: 0; max-width: 70ch; color: var(--pb-text-2); font-variant-numeric: tabular-nums; }
+.pb-state, .pb-basis { padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; line-height: 1.5; }
+.pb-state { background: var(--pb-subtle); color: var(--pb-text-2); }
+.pb-basis { background: var(--pb-observed-bg); color: var(--pb-observed); }
+.pb-basis[data-basis="declared"] { background: var(--pb-declared-bg); color: var(--pb-declared); }
+.pb-basis[data-basis="unverified"] { background: var(--pb-unverified-bg); color: var(--pb-unverified); }
+.pb-trace { margin: 0; font-size: 13px; color: var(--pb-text-3); }
+.pb-card { background: var(--pb-sheet); border: 1px solid var(--pb-rule); border-radius: 12px; padding: 24px; }
+.pb-card h2 { margin: 0 0 14px; font-size: 16px; font-weight: 600; }
+.pb-empty { margin: 0; color: var(--pb-text-2); }
+.pb-fingerprint { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 16px; align-items: start; }
+.pb-stamp { stroke: var(--pb-ok); }
+.pb-fingerprint[data-ok="false"] .pb-stamp { stroke: var(--pb-alarm); }
+.pb-fingerprint-text { display: grid; gap: 6px; min-width: 0; }
+.pb-fingerprint-label { font-size: 13px; font-weight: 600; color: var(--pb-text-2); }
+.pb-fingerprint code { overflow-wrap: anywhere; color: var(--pb-text-2); }
+.pb-check { width: fit-content; padding: 2px 8px; border-radius: 4px; background: var(--pb-ok-bg); color: var(--pb-ok); font-size: 12px; font-weight: 600; }
+.pb-check[data-ok="false"] { background: var(--pb-alarm-bg); color: var(--pb-alarm); }
+.pb-note { margin: 14px 0 0; max-width: 70ch; font-size: 13px; color: var(--pb-text-3); }
+.pb-held { margin: 0; max-width: 70ch; font-size: 14px; color: var(--pb-declared); }
+.pb-input-text { font-family: var(--pb-sans); font-size: 15px; width: 100%; }
+.pb-card .pb-error { margin-top: 4px; }
+.pb-choice { margin: 0; padding: 0; border: 0; display: grid; gap: 8px; min-width: 0; }
+.pb-choice legend { padding: 0; margin-bottom: 4px; }
+.pb-choice:disabled { opacity: 0.6; }
+.pb-option { display: flex; align-items: flex-start; gap: 10px; width: fit-content; max-width: 100%; cursor: pointer; }
+.pb-option input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--pb-ink); cursor: pointer; }
+.pb-option-text { display: grid; gap: 2px; min-width: 0; }
+.pb-option-label { font-size: 15px; font-weight: 500; color: var(--pb-ink); }
+.pb-option-note, .pb-field-note { font-size: 13px; color: var(--pb-text-3); }
+.pb-field-note { margin: 0; max-width: 70ch; }
+.pb-textarea { min-height: 84px; padding: 10px 12px; font-family: var(--pb-sans); font-size: 15px; line-height: 1.45; resize: vertical; width: 100%; }
+.pb-danger-button { color: var(--pb-alarm); border-color: var(--pb-alarm); }
+.pb-danger-button:disabled { opacity: 0.45; cursor: not-allowed; }
+.pb-field { display: grid; gap: 6px; min-width: 0; }
+.pb-field-label { font-size: 13px; font-weight: 600; color: var(--pb-text-2); }
+.pb-file-row { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 40px; }
+.pb-file-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: var(--pb-text-3); }
+.pb-input { min-height: 40px; padding: 0 12px; border: 1px solid var(--pb-rule-strong); border-radius: 8px; background: var(--pb-sheet); color: var(--pb-ink); font-family: var(--pb-mono); font-size: 13px; }
+.pb-input::placeholder { color: var(--pb-text-3); }
+.pb-input:focus-visible { outline-offset: 0; border-color: var(--pb-focus); }
+
+@media (max-width: 899px) {
+  .pb-primary, .pb-secondary { min-height: 44px; }
+  .pb-card { padding: 18px; }
+}
+
+@media print {
+  .pb-error { display: none; }
+  .pb-card { border: 0; padding: 0; }
+}

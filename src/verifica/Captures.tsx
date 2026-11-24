@@ -41,15 +41,15 @@ function slotText(view: EngagementView, role: 'previous' | 'latest') {
 
 function FilePick({ id, label, accept, file, disabled, onPick }: { id: string; label: string; accept: string; file: File | null; disabled: boolean; onPick: (file: File | null) => void }) {
   return (
-    <div className="vf-field">
-      <span className="vf-field-label" id={id}>{label}</span>
-      <div className="vf-file-row">
-        <label className="vf-secondary">
-          <input className="vf-file-input" type="file" accept={accept} aria-labelledby={id} disabled={disabled}
+    <div className="pb-field">
+      <span className="pb-field-label" id={id}>{label}</span>
+      <div className="pb-file-row">
+        <label className="pb-secondary">
+          <input className="pb-file-input" type="file" accept={accept} aria-labelledby={id} disabled={disabled}
             onChange={event => { onPick(event.target.files?.[0] ?? null); event.target.value = ''; }} />
           {file ? 'Cambiar' : 'Elegir archivo'}
         </label>
-        <span className="vf-file-name">{file ? file.name : 'Ningún archivo elegido'}</span>
+        <span className="pb-file-name">{file ? file.name : 'Ningún archivo elegido'}</span>
       </div>
     </div>
   );
@@ -58,24 +58,24 @@ function FilePick({ id, label, accept, file, disabled, onPick }: { id: string; l
 function JobPanel({ job, onShowSources, onDownloadRecord }: { job: ReadJob; onShowSources: () => void; onDownloadRecord: (captureId: string) => void }) {
   const result = job.result;
   return (
-    <section className="vf-card vf-read-job" data-state={job.state} aria-labelledby="vf-read-job" aria-live="polite">
+    <section className="pb-card vf-read-job" data-state={job.state} aria-labelledby="vf-read-job" aria-live="polite">
       <h2 id="vf-read-job">{JOB_TITLE[job.state]}</h2>
       {job.progress.length > 0 && (
         <ol className="vf-read-progress" aria-label="Lo leído hasta ahora">
           {job.progress.map((line, index) => <li key={index}>{line}</li>)}
         </ol>
       )}
-      {job.state === 'running' && job.progress.length === 0 && <p className="vf-summary" role="status">Comprobando la cuenta antes de leer nada…</p>}
-      {job.state === 'failed' && <p className="vf-error" role="alert">{job.error ?? 'La lectura se detuvo.'} No se ha guardado ninguna captura.</p>}
+      {job.state === 'running' && job.progress.length === 0 && <p className="pb-summary" role="status">Comprobando la cuenta antes de leer nada…</p>}
+      {job.state === 'failed' && <p className="pb-error" role="alert">{job.error ?? 'La lectura se detuvo.'} No se ha guardado ninguna captura.</p>}
       {result && (
         <>
-          <p className="vf-summary">Guardada como {ROLE_LABEL[result.role].toLowerCase()}: {count(result.counts.companies, 'empresa', 'empresas')}, {count(result.counts.contacts, 'contacto', 'contactos')}, {count(result.counts.deals, 'oportunidad', 'oportunidades')} y {count(result.counts.owners, 'comercial', 'comerciales')}, {result.historyAvailable ? 'con' : 'sin'} historial de etapas. {count(result.requests, 'petición', 'peticiones')} de solo lectura.</p>
+          <p className="pb-summary">Guardada como {ROLE_LABEL[result.role].toLowerCase()}: {count(result.counts.companies, 'empresa', 'empresas')}, {count(result.counts.contacts, 'contacto', 'contactos')}, {count(result.counts.deals, 'oportunidad', 'oportunidades')} y {count(result.counts.owners, 'comercial', 'comerciales')}, {result.historyAvailable ? 'con' : 'sin'} historial de etapas. {count(result.requests, 'petición', 'peticiones')} de solo lectura.</p>
           {result.recordFingerprint
-            ? <p className="vf-trace">Acta de la lectura, huella <code title={result.recordFingerprint}>{short(result.recordFingerprint)}</code></p>
-            : <p className="vf-trace">Portal de pruebas: esta lectura no deja acta.</p>}
+            ? <p className="pb-trace">Acta de la lectura, huella <code title={result.recordFingerprint}>{short(result.recordFingerprint)}</code></p>
+            : <p className="pb-trace">Portal de pruebas: esta lectura no deja acta.</p>}
           <div className="vf-issue-actions">
-            <button type="button" className="vf-secondary" onClick={onShowSources}>Ver las fuentes</button>
-            {result.recordFingerprint && <button type="button" className="vf-link" onClick={() => onDownloadRecord(result.captureId)}>Descargar el acta</button>}
+            <button type="button" className="pb-secondary" onClick={onShowSources}>Ver las fuentes</button>
+            {result.recordFingerprint && <button type="button" className="pb-link" onClick={() => onDownloadRecord(result.captureId)}>Descargar el acta</button>}
           </div>
         </>
       )}
@@ -116,28 +116,28 @@ export function CapturesContent({ view, job, busy, error, records, recordsError,
       {/* La lectura en marcha o la última va primero: es lo que importa justo después de pulsar. */}
       {job && <JobPanel job={job} onShowSources={onShowSources} onDownloadRecord={onDownloadRecord} />}
 
-      <section className="vf-card" aria-labelledby="vf-read-new">
+      <section className="pb-card" aria-labelledby="vf-read-new">
         <h2 id="vf-read-new">{job ? 'Otra lectura' : 'Nueva lectura'}</h2>
         <form className="vf-read-form" onSubmit={submit}>
-          <fieldset className="vf-choice" disabled={locked}>
-            <legend className="vf-field-label">Qué cuenta se lee</legend>
+          <fieldset className="pb-choice" disabled={locked}>
+            <legend className="pb-field-label">Qué cuenta se lee</legend>
             {(Object.keys(MODE) as Mode[]).map(key => (
-              <label key={key} className="vf-option">
+              <label key={key} className="pb-option">
                 <input type="radio" name="vf-read-mode" value={key} checked={mode === key} onChange={() => setMode(key)} />
-                <span className="vf-option-text"><span className="vf-option-label">{MODE[key].label}</span><span className="vf-option-note">{MODE[key].note}</span></span>
+                <span className="pb-option-text"><span className="pb-option-label">{MODE[key].label}</span><span className="pb-option-note">{MODE[key].note}</span></span>
               </label>
             ))}
           </fieldset>
 
           <div className="vf-read-grid">
-            <label className="vf-field">
-              <span className="vf-field-label">Número de portal (Hub ID)</span>
-              <input className="vf-input vf-input-text" inputMode="numeric" autoComplete="off" spellCheck={false} maxLength={20} placeholder="Por ejemplo, 4400123" value={portalId} disabled={locked} onChange={event => setPortalId(event.target.value)} />
+            <label className="pb-field">
+              <span className="pb-field-label">Número de portal (Hub ID)</span>
+              <input className="pb-input pb-input-text" inputMode="numeric" autoComplete="off" spellCheck={false} maxLength={20} placeholder="Por ejemplo, 4400123" value={portalId} disabled={locked} onChange={event => setPortalId(event.target.value)} />
             </label>
-            <label className="vf-field">
-              <span className="vf-field-label">Credencial de la app privada</span>
-              <input className="vf-input vf-input-text" type="password" autoComplete="off" spellCheck={false} placeholder="pat-…" ref={tokenField} disabled={locked} onChange={event => setHasToken(event.target.value.trim().length > 0)} />
-              <span className="vf-field-note">Solo lectura. Se usa durante esta lectura y no se guarda en ningún sitio.</span>
+            <label className="pb-field">
+              <span className="pb-field-label">Credencial de la app privada</span>
+              <input className="pb-input pb-input-text" type="password" autoComplete="off" spellCheck={false} placeholder="pat-…" ref={tokenField} disabled={locked} onChange={event => setHasToken(event.target.value.trim().length > 0)} />
+              <span className="pb-field-note">Solo lectura. Se usa durante esta lectura y no se guarda en ningún sitio.</span>
             </label>
           </div>
 
@@ -146,48 +146,48 @@ export function CapturesContent({ view, job, busy, error, records, recordsError,
               <div className="vf-read-grid">
                 <FilePick id="vf-read-authorization" label="Autorización (autorizacion.json)" accept=".json,application/json" file={authorizationFile} disabled={locked} onPick={setAuthorization} />
                 <FilePick id="vf-read-document" label="Documento firmado" accept=".pdf,application/pdf" file={documentFile} disabled={locked} onPick={setDocument} />
-                <p className="vf-field-note vf-read-wide">Antes de la primera petición se comprueba que la autorización es de este portal, que está vigente hoy, que cubre lo que se lee y que la huella del documento firmado coincide con la que figura en ella.</p>
+                <p className="pb-field-note vf-read-wide">Antes de la primera petición se comprueba que la autorización es de este portal, que está vigente hoy, que cubre lo que se lee y que la huella del documento firmado coincide con la que figura en ella.</p>
               </div>
             )
             : (
-              <label className="vf-option vf-confirm">
+              <label className="pb-option vf-confirm">
                 <input type="checkbox" checked={confirmFullRead} disabled={locked} onChange={event => setConfirm(event.target.checked)} />
-                <span className="vf-option-text"><span className="vf-option-label">Autorizo leer el portal de pruebas entero</span><span className="vf-option-note">Oportunidades con su historial, empresas, contactos y comerciales. Si el portal no es de pruebas, la lectura se para.</span></span>
+                <span className="pb-option-text"><span className="pb-option-label">Autorizo leer el portal de pruebas entero</span><span className="pb-option-note">Oportunidades con su historial, empresas, contactos y comerciales. Si el portal no es de pruebas, la lectura se para.</span></span>
               </label>
             )}
 
-          <fieldset className="vf-choice" disabled={locked}>
-            <legend className="vf-field-label">Dónde entra la captura</legend>
-            <p className="vf-field-note">{slotText(view, 'previous')} · {slotText(view, 'latest')}</p>
+          <fieldset className="pb-choice" disabled={locked}>
+            <legend className="pb-field-label">Dónde entra la captura</legend>
+            <p className="pb-field-note">{slotText(view, 'previous')} · {slotText(view, 'latest')}</p>
             {(Object.keys(TARGET) as ReadTarget[]).map(key => (
-              <label key={key} className="vf-option">
+              <label key={key} className="pb-option">
                 <input type="radio" name="vf-read-target" value={key} checked={target === key} onChange={() => setTarget(key)} />
-                <span className="vf-option-text"><span className="vf-option-label">{TARGET[key]}</span></span>
+                <span className="pb-option-text"><span className="pb-option-label">{TARGET[key]}</span></span>
               </label>
             ))}
           </fieldset>
 
           <div className="vf-issue-actions">
-            <button type="submit" className="vf-primary" disabled={!ready || locked}>{busy ? 'Comprobando…' : running ? 'Leyendo…' : 'Leer HubSpot'}</button>
+            <button type="submit" className="pb-primary" disabled={!ready || locked}>{busy ? 'Comprobando…' : running ? 'Leyendo…' : 'Leer HubSpot'}</button>
           </div>
-          {error && <p className="vf-error" role="alert">{error}</p>}
+          {error && <p className="pb-error" role="alert">{error}</p>}
         </form>
       </section>
 
       <section className="vf-section" aria-labelledby="vf-records">
-        <div className="vf-section-head"><h2 id="vf-records">Actas de lectura</h2><p>Lo que se leyó, cuándo y con qué autorización</p></div>
-        {recordsError && <p className="vf-error" role="alert">{recordsError}</p>}
-        {records === null && !recordsError && <p className="vf-empty" role="status">Leyendo las actas…</p>}
-        {records?.length === 0 && <p className="vf-empty">Todavía no hay actas. Cada lectura de la cuenta de la empresa deja una.</p>}
+        <div className="pb-section-head"><h2 id="vf-records">Actas de lectura</h2><p>Lo que se leyó, cuándo y con qué autorización</p></div>
+        {recordsError && <p className="pb-error" role="alert">{recordsError}</p>}
+        {records === null && !recordsError && <p className="pb-empty" role="status">Leyendo las actas…</p>}
+        {records?.length === 0 && <p className="pb-empty">Todavía no hay actas. Cada lectura de la cuenta de la empresa deja una.</p>}
         {records && records.length > 0 && (
           <ul className="vf-engagements">
             {[...records].reverse().map(record => (
               <li key={record.captureId} className="vf-engagement vf-record">
                 <div className="vf-engagement-text">
                   <h3>Lectura del {day(record.finishedAt)} · portal {record.portalId}</h3>
-                  <p className="vf-trace">Encargo {record.engagement} · huella <code title={record.fingerprint}>{short(record.fingerprint)}</code></p>
+                  <p className="pb-trace">Encargo {record.engagement} · huella <code title={record.fingerprint}>{short(record.fingerprint)}</code></p>
                 </div>
-                <button type="button" className="vf-secondary" onClick={() => onDownloadRecord(record.captureId)}>Descargar el acta</button>
+                <button type="button" className="pb-secondary" onClick={() => onDownloadRecord(record.captureId)}>Descargar el acta</button>
               </li>
             ))}
           </ul>
@@ -273,8 +273,8 @@ export function CapturesPage({ origin, engagementId, onOpen, openError, onShowSo
   return (
     <Frame origin={origin} current="captures" eyebrow={'Paso 3 · Capturas' + (view ? ' · ' + view.engagement.name : '')} title={title} onOpen={onOpen} openError={openError} busy={!!engagementId && !view && !loadError}
       lede={!engagementId ? 'Crea o abre un encargo en el paso 1 para leer su CRM.' : 'Cada lectura saca una foto sellada del CRM, solo de lectura, y la guarda como fuente del encargo. La credencial no se guarda; en la cuenta de la empresa queda un acta de lo que se leyó.'}>
-      {loadError && <p className="vf-error" role="alert">{loadError}</p>}
-      {engagementId && !view && !loadError && <p className="vf-empty" role="status">Leyendo el encargo…</p>}
+      {loadError && <p className="pb-error" role="alert">{loadError}</p>}
+      {engagementId && !view && !loadError && <p className="pb-empty" role="status">Leyendo el encargo…</p>}
       {view && <CapturesContent view={view} job={job} busy={busy} error={error} records={records} recordsError={recordsError}
         onStart={start} onShowSources={onShowSources} onDownloadRecord={downloadRecord} />}
     </Frame>

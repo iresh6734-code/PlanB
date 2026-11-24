@@ -29,33 +29,33 @@ export function OperationContent({ engagements, loadError, busy, createError, on
   const [name, setName] = useState('');
   return (
     <>
-      <section className="vf-card" aria-labelledby="vf-new">
+      <section className="pb-card" aria-labelledby="vf-new">
         <h2 id="vf-new">Nuevo encargo</h2>
         <form className="vf-create" onSubmit={event => { event.preventDefault(); if (name.trim()) onCreate(name.trim()); }}>
-          <label className="vf-field">
-            <span className="vf-field-label">Nombre del encargo</span>
-            <input className="vf-input vf-input-text" value={name} maxLength={ENGAGEMENT_LIMITS.nameChars} placeholder="Empresa que se vende y operación" onChange={event => setName(event.target.value)} />
+          <label className="pb-field">
+            <span className="pb-field-label">Nombre del encargo</span>
+            <input className="pb-input pb-input-text" value={name} maxLength={ENGAGEMENT_LIMITS.nameChars} placeholder="Empresa que se vende y operación" onChange={event => setName(event.target.value)} />
           </label>
-          <button type="submit" className="vf-primary" disabled={busy || !name.trim()}>{busy ? 'Creando…' : 'Crear encargo'}</button>
+          <button type="submit" className="pb-primary" disabled={busy || !name.trim()}>{busy ? 'Creando…' : 'Crear encargo'}</button>
         </form>
-        {createError && <p className="vf-error" role="alert">{createError}</p>}
+        {createError && <p className="pb-error" role="alert">{createError}</p>}
       </section>
 
       <section className="vf-section" aria-labelledby="vf-engagements">
-        <div className="vf-section-head"><h2 id="vf-engagements">Encargos</h2><p>Se guardan cifrados en este equipo</p></div>
-        {loadError && <p className="vf-error" role="alert">{loadError}</p>}
-        {engagements === null && !loadError && <p className="vf-empty" role="status">Leyendo los encargos…</p>}
-        {engagements?.length === 0 && <p className="vf-empty">Todavía no hay ningún encargo en este equipo.</p>}
+        <div className="pb-section-head"><h2 id="vf-engagements">Encargos</h2><p>Se guardan cifrados en este equipo</p></div>
+        {loadError && <p className="pb-error" role="alert">{loadError}</p>}
+        {engagements === null && !loadError && <p className="pb-empty" role="status">Leyendo los encargos…</p>}
+        {engagements?.length === 0 && <p className="pb-empty">Todavía no hay ningún encargo en este equipo.</p>}
         {engagements && engagements.length > 0 && (
           <ul className="vf-engagements">
             {engagements.map(item => (
               <li key={item.id} className="vf-engagement">
                 <div className="vf-engagement-text">
                   <h3>{item.name}</h3>
-                  <p className="vf-trace">Creado el {day(item.createdAt)} · {item.stored} de {ENGAGEMENT_ROLES.length} fuentes</p>
+                  <p className="pb-trace">Creado el {day(item.createdAt)} · {item.stored} de {ENGAGEMENT_ROLES.length} fuentes</p>
                 </div>
-                <span className="vf-basis" data-basis={item.ready ? 'observed' : 'unverified'}>{item.issued ? 'Informe emitido' : item.ready ? 'Listo para la sala limpia' : 'Faltan fuentes'}</span>
-                <button type="button" className="vf-secondary" onClick={() => onOpenEngagement(item.id)}>Abrir fuentes</button>
+                <span className="pb-basis" data-basis={item.ready ? 'observed' : 'unverified'}>{item.issued ? 'Informe emitido' : item.ready ? 'Listo para la sala limpia' : 'Faltan fuentes'}</span>
+                <button type="button" className="pb-secondary" onClick={() => onOpenEngagement(item.id)}>Abrir fuentes</button>
               </li>
             ))}
           </ul>
@@ -72,21 +72,21 @@ function SourceRow({ state, busy, error, onUpload, onRemove }: { state: SourceSt
       <div className="vf-source-body">
         <h3>{ROLE_LABEL[state.role]}</h3>
         <p className="vf-status"><span className="vf-source-state" data-status={state.status}>{busy ? 'Leyendo…' : STATE[state.status]}</span>
-          {state.status !== 'missing' && <span className="vf-trace">{state.fileName} · guardado el {day(state.storedAt)}</span>}</p>
-        {state.status === 'missing' && <p className="vf-summary">{HINT[state.role]}</p>}
-        {state.status === 'ok' && <p className="vf-summary">{state.detail}{state.at ? ' · ' + day(state.at) : ''}</p>}
-        {(state.status === 'invalid' || state.status === 'waiting') && <p className="vf-summary">{state.reason}</p>}
-        {state.status === 'ok' && state.notes.map(note => <p key={note} className="vf-held">{note}</p>)}
-        {state.status === 'ok' && <p className="vf-trace">Huella <code title={state.fingerprint}>{short(state.fingerprint)}</code></p>}
-        {error && <p className="vf-error" role="alert">{error}</p>}
+          {state.status !== 'missing' && <span className="pb-trace">{state.fileName} · guardado el {day(state.storedAt)}</span>}</p>
+        {state.status === 'missing' && <p className="pb-summary">{HINT[state.role]}</p>}
+        {state.status === 'ok' && <p className="pb-summary">{state.detail}{state.at ? ' · ' + day(state.at) : ''}</p>}
+        {(state.status === 'invalid' || state.status === 'waiting') && <p className="pb-summary">{state.reason}</p>}
+        {state.status === 'ok' && state.notes.map(note => <p key={note} className="pb-held">{note}</p>)}
+        {state.status === 'ok' && <p className="pb-trace">Huella <code title={state.fingerprint}>{short(state.fingerprint)}</code></p>}
+        {error && <p className="pb-error" role="alert">{error}</p>}
       </div>
       <div className="vf-source-actions">
-        <label className="vf-secondary" htmlFor={inputId}>
-          <input id={inputId} className="vf-file-input" type="file" accept={ACCEPT[state.role]} disabled={busy}
+        <label className="pb-secondary" htmlFor={inputId}>
+          <input id={inputId} className="pb-file-input" type="file" accept={ACCEPT[state.role]} disabled={busy}
             onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) onUpload(file); }} />
           {state.status === 'missing' ? 'Subir archivo' : 'Cambiar archivo'}
         </label>
-        {state.status !== 'missing' && <button type="button" className="vf-link" disabled={busy} onClick={onRemove}>Quitar</button>}
+        {state.status !== 'missing' && <button type="button" className="pb-link" disabled={busy} onClick={onRemove}>Quitar</button>}
       </div>
     </li>
   );
@@ -103,31 +103,31 @@ function IssuePanel({ view, controls }: { view: EngagementView; controls: IssueC
   const issue: IssueSummary | null | undefined = view.issue;
   const ready = view.missing.length === 0;
   if (!ready && !issue) {
-    return <section className="vf-card" aria-labelledby="vf-next"><h2 id="vf-next">Siguiente paso</h2>
-      <p className="vf-summary">Para pasar a la sala limpia faltan: {view.missing.map(item => item.replace(/\.$/, '').toLowerCase()).join('; ')}.</p></section>;
+    return <section className="pb-card" aria-labelledby="vf-next"><h2 id="vf-next">Siguiente paso</h2>
+      <p className="pb-summary">Para pasar a la sala limpia faltan: {view.missing.map(item => item.replace(/\.$/, '').toLowerCase()).join('; ')}.</p></section>;
   }
   const reissue = !issue || issue.stale;
   return (
-    <section className="vf-card vf-issue" aria-labelledby="vf-next">
+    <section className="pb-card vf-issue" aria-labelledby="vf-next">
       <h2 id="vf-next">{issue ? 'Informe emitido' : 'Sala limpia'}</h2>
       {issue
-        ? <p className="vf-summary">Emitido el {day(issue.issuedAt)} · {issue.alarms === 0 ? 'ninguna de las ' + issue.findings + ' comprobaciones se sale de lo normal' : issue.alarms + ' de ' + issue.findings + ' comprobaciones se salen de lo normal'}. Huella del informe <code title={issue.reportFingerprint}>{short(issue.reportFingerprint)}</code>.</p>
-        : <p className="vf-summary">La sala limpia saca tres cosas por separado: el informe para el comprador, la copia custodiada para quien la guarda y la llave de esa copia. Si se cuela un nombre, un correo, un NIF o un ID del CRM, no sale nada.</p>}
-      {issue?.stale && <p className="vf-held">Alguna fuente cambió después de emitir: este informe ya no corresponde a las fuentes de arriba. Vuelve a emitirlo.</p>}
-      {!ready && issue && <p className="vf-held">Para volver a emitir faltan: {view.missing.map(item => item.replace(/\.$/, '').toLowerCase()).join('; ')}.</p>}
+        ? <p className="pb-summary">Emitido el {day(issue.issuedAt)} · {issue.alarms === 0 ? 'ninguna de las ' + issue.findings + ' comprobaciones se sale de lo normal' : issue.alarms + ' de ' + issue.findings + ' comprobaciones se salen de lo normal'}. Huella del informe <code title={issue.reportFingerprint}>{short(issue.reportFingerprint)}</code>.</p>
+        : <p className="pb-summary">La sala limpia saca tres cosas por separado: el informe para el comprador, la copia custodiada para quien la guarda y la llave de esa copia. Si se cuela un nombre, un correo, un NIF o un ID del CRM, no sale nada.</p>}
+      {issue?.stale && <p className="pb-held">Alguna fuente cambió después de emitir: este informe ya no corresponde a las fuentes de arriba. Vuelve a emitirlo.</p>}
+      {!ready && issue && <p className="pb-held">Para volver a emitir faltan: {view.missing.map(item => item.replace(/\.$/, '').toLowerCase()).join('; ')}.</p>}
       {controls.freshKey && (
         <div className="vf-key-box" role="status">
           <p><strong>Guarda ahora la llave de la copia.</strong> No se guarda en ningún sitio: si la pierdes, habrá que volver a emitir. Entrégala a quien custodie la copia, por un camino distinto del informe.</p>
-          <button type="button" className="vf-secondary" onClick={controls.onDownloadKey}>Descargar la llave</button>
+          <button type="button" className="pb-secondary" onClick={controls.onDownloadKey}>Descargar la llave</button>
         </div>
       )}
       <div className="vf-issue-actions">
-        {reissue && ready && <button type="button" className="vf-primary" disabled={controls.busy} onClick={controls.onIssue}>{controls.busy ? 'Emitiendo…' : issue ? 'Volver a emitir' : 'Emitir el informe'}</button>}
-        {issue && <button type="button" className="vf-secondary" onClick={() => controls.onDownload('report')}>Descargar el informe</button>}
-        {issue && <button type="button" className="vf-secondary" onClick={() => controls.onDownload('custody')}>Descargar la copia custodiada</button>}
-        {issue && <button type="button" className="vf-link" onClick={controls.onShowReport}>Ver el informe</button>}
+        {reissue && ready && <button type="button" className="pb-primary" disabled={controls.busy} onClick={controls.onIssue}>{controls.busy ? 'Emitiendo…' : issue ? 'Volver a emitir' : 'Emitir el informe'}</button>}
+        {issue && <button type="button" className="pb-secondary" onClick={() => controls.onDownload('report')}>Descargar el informe</button>}
+        {issue && <button type="button" className="pb-secondary" onClick={() => controls.onDownload('custody')}>Descargar la copia custodiada</button>}
+        {issue && <button type="button" className="pb-link" onClick={controls.onShowReport}>Ver el informe</button>}
       </div>
-      {controls.error && <p className="vf-error" role="alert">{controls.error}</p>}
+      {controls.error && <p className="pb-error" role="alert">{controls.error}</p>}
     </section>
   );
 }
@@ -139,7 +139,7 @@ export function SourcesContent({ view, busyRole, errors, onUpload, onRemove, iss
   return (
     <>
       <section className="vf-section" aria-labelledby="vf-sources-h">
-        <div className="vf-section-head"><h2 id="vf-sources-h">Fuentes</h2><p>Cada huella es la que firmará el informe</p></div>
+        <div className="pb-section-head"><h2 id="vf-sources-h">Fuentes</h2><p>Cada huella es la que firmará el informe</p></div>
         <ol className="vf-sources-list">
           {ENGAGEMENT_ROLES.map(role => (
             <SourceRow key={role} state={view.sources[role]} busy={busyRole === role} error={errors[role] ?? null}
@@ -176,21 +176,21 @@ export function OperationPage({ origin, onOpenEngagement, onOpen, openError }: {
       <OperationContent engagements={engagements} loadError={loadError} busy={busy} createError={createError} onCreate={create} onOpenEngagement={onOpenEngagement} />
       {closures.length > 0 && (
         <section className="vf-section" aria-labelledby="vf-closures">
-          <div className="vf-section-head"><h2 id="vf-closures">Encargos cerrados</h2><p>Sus datos se borraron; queda el acta</p></div>
+          <div className="pb-section-head"><h2 id="vf-closures">Encargos cerrados</h2><p>Sus datos se borraron; queda el acta</p></div>
           <ul className="vf-engagements">
             {[...closures].reverse().map(c => (
               <li key={c.fingerprint} className="vf-engagement vf-record">
                 <div className="vf-engagement-text">
                   <h3>Cerrado el {day(c.closedAt)}</h3>
-                  <p className="vf-trace">{c.deleted.rows} {c.deleted.rows === 1 ? 'dato borrado' : 'datos borrados'} · expediente {c.ledgerIntact ? 'íntegro' : 'con problemas'} al cerrar · acta <code title={c.fingerprint}>{short(c.fingerprint)}</code></p>
+                  <p className="pb-trace">{c.deleted.rows} {c.deleted.rows === 1 ? 'dato borrado' : 'datos borrados'} · expediente {c.ledgerIntact ? 'íntegro' : 'con problemas'} al cerrar · acta <code title={c.fingerprint}>{short(c.fingerprint)}</code></p>
                 </div>
-                <button type="button" className="vf-secondary" onClick={() => downloadJson(JSON.stringify(c, null, 2) + '\n', 'verifica-acta-cierre-' + short(c.fingerprint) + '.json')}>Descargar el acta</button>
+                <button type="button" className="pb-secondary" onClick={() => downloadJson(JSON.stringify(c, null, 2) + '\n', 'verifica-acta-cierre-' + short(c.fingerprint) + '.json')}>Descargar el acta</button>
               </li>
             ))}
           </ul>
         </section>
       )}
-      {origin.kind === 'local' && <p className="vf-head-row"><a className="vf-secondary" href="/inicio">Copia de trabajo</a></p>}
+      {origin.kind === 'local' && <p className="vf-head-row"><a className="pb-secondary" href="/inicio">Copia de trabajo</a></p>}
     </Frame>
   );
 }
@@ -253,8 +253,8 @@ export function SourcesPage({ origin, engagementId, onOpen, openError, onShowRep
   return (
     <Frame origin={origin} current="sources" eyebrow={'Paso 2 · Fuentes' + (view ? ' · ' + view.engagement.name : '')} title={title} onOpen={onOpen} openError={openError} busy={!!engagementId && !view && !loadError}
       lede={!engagementId ? 'Crea o abre un encargo en el paso 1 para subir sus fuentes.' : 'Sube cada archivo tal como lo dio el lector o el vendedor. Una fuente que no sirve no se guarda, y se explica por qué.'}>
-      {loadError && <p className="vf-error" role="alert">{loadError}</p>}
-      {engagementId && !view && !loadError && <p className="vf-empty" role="status">Leyendo el encargo…</p>}
+      {loadError && <p className="pb-error" role="alert">{loadError}</p>}
+      {engagementId && !view && !loadError && <p className="pb-empty" role="status">Leyendo el encargo…</p>}
       {view && engagementId && <SourcesContent view={view} busyRole={busyRole} errors={errors} issue={issueControls}
         onUpload={(role, file) => act(role, () => uploadSource(engagementId, role, file))}
         onRemove={role => act(role, () => removeSource(engagementId, role))} />}

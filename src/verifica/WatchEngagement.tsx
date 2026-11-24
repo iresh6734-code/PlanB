@@ -94,8 +94,8 @@ export default function WatchEngagement({ origin, engagementId, onOpen, openErro
       <Frame origin={origin} current="watch" eyebrow="Paso 5 · Vigilancia" title={view?.name ?? 'Vigilancia hasta el cierre'}
         lede={engagementId ? 'Una captura en la firma y una lectura semanal mientras Plan B está abierto.' : 'Abre un encargo en Operación para programar la vigilancia.'}
         onOpen={onOpen} openError={openError} busy={busy || (!!path && !view && !failure)}>
-        {failure && <p className="vf-error" role="alert">{failure}</p>}
-        {view && !view.schedule && <section className="vf-card" aria-label="Captura de firma">
+        {failure && <p className="pb-error" role="alert">{failure}</p>}
+        {view && !view.schedule && <section className="pb-card" aria-label="Captura de firma">
           <h2>Captura de firma</h2>
           {view.choices.length === 0 ? <p>Hace falta una captura de HubSpot con su acta de lectura. Haz la lectura desde «Capturas».</p> :
             <form className="vf-read-form" onSubmit={event => {
@@ -109,32 +109,32 @@ export default function WatchEngagement({ origin, engagementId, onOpen, openErro
                 await change({ action: 'set-signing', role: choice.role, fingerprint: choice.fingerprint, salt });
               });
             }}>
-              <fieldset className="vf-choice" disabled={busy}>
+              <fieldset className="pb-choice" disabled={busy}>
                 <legend>Elige la captura tomada al firmar</legend>
-                {view.choices.map(choice => <label className="vf-option" key={choice.role}>
+                {view.choices.map(choice => <label className="pb-option" key={choice.role}>
                   <input required type="radio" name="signing" value={choice.role} />
                   {choice.role === 'previous' ? 'Captura anterior' : 'Captura más reciente'} · {time(choice.at)} · {short(choice.fingerprint)}
                 </label>)}
-                <label className="vf-field">Sal privada existente · opcional<input name="salt" type="file" accept=".txt,text/plain" /></label>
+                <label className="pb-field">Sal privada existente · opcional<input name="salt" type="file" accept=".txt,text/plain" /></label>
               </fieldset>
-              <div><button className="vf-primary" disabled={busy}>Fijar captura de firma</button></div>
+              <div><button className="pb-primary" disabled={busy}>Fijar captura de firma</button></div>
             </form>}
         </section>}
         {view?.schedule && <>
-          <section className="vf-card vf-issue" aria-label="Calendario de vigilancia">
+          <section className="pb-card vf-issue" aria-label="Calendario de vigilancia">
             <h2>Calendario de vigilancia</h2>
             <p role="status">{active ? 'Vigilancia activa' : 'Vigilancia en pausa'} · {view.schedule.weeklyCount} {view.schedule.weeklyCount === 1 ? 'captura semanal' : 'capturas semanales'}</p>
-            {view.schedule.reason && <p className="vf-held">{view.schedule.reason}</p>}
+            {view.schedule.reason && <p className="pb-held">{view.schedule.reason}</p>}
             <dl className="vf-sources">
               <div><dt>Firma</dt><dd>{time(view.schedule.signing.at)}</dd></div>
               <div><dt>Última captura</dt><dd>{time(view.schedule.latest.at)}</dd></div>
               <div><dt>Próxima lectura</dt><dd>{time(view.schedule.nextDue)}</dd></div>
               {view.schedule.retriesAfter && <div><dt>Siguiente reintento</dt><dd>{time(view.schedule.retriesAfter)}</dd></div>}
             </dl>
-            {view.schedule.late && <p className="vf-error" role="alert">Hay una semana sin captura.</p>}
-            {active && <div><button className="vf-secondary" type="button" disabled={busy} onClick={() => void run(() => change({ action: 'pause' }))}>Pausar vigilancia</button></div>}
+            {view.schedule.late && <p className="pb-error" role="alert">Hay una semana sin captura.</p>}
+            {active && <div><button className="pb-secondary" type="button" disabled={busy} onClick={() => void run(() => change({ action: 'pause' }))}>Pausar vigilancia</button></div>}
           </section>
-          {!active && <section className="vf-card" aria-label="Activación de vigilancia">
+          {!active && <section className="pb-card" aria-label="Activación de vigilancia">
             <h2>Activar vigilancia</h2>
             <form className="vf-read-form" onSubmit={event => {
               event.preventDefault();
@@ -147,25 +147,25 @@ export default function WatchEngagement({ origin, engagementId, onOpen, openErro
                 element.reset();
               });
             }}>
-              <fieldset className="vf-choice" disabled={busy}>
-                <label className="vf-field">Credencial de solo lectura<input name="token" className="vf-input" type="password" autoComplete="off" required /></label>
-                <label className="vf-field">Autorización de lectura<input name="authorization" type="file" accept=".json,application/json" required /></label>
-                <label className="vf-field">Documento firmado<input name="document" type="file" accept=".pdf,application/pdf" required /></label>
-                <label className="vf-option vf-confirm"><input name="recurring" type="checkbox" required />Confirmo que el documento autoriza lecturas semanales.</label>
-                <p className="vf-field-note">La credencial está en memoria durante la vigilancia. Al reiniciar Plan B, vuelve a activarla.</p>
+              <fieldset className="pb-choice" disabled={busy}>
+                <label className="pb-field">Credencial de solo lectura<input name="token" className="pb-input" type="password" autoComplete="off" required /></label>
+                <label className="pb-field">Autorización de lectura<input name="authorization" type="file" accept=".json,application/json" required /></label>
+                <label className="pb-field">Documento firmado<input name="document" type="file" accept=".pdf,application/pdf" required /></label>
+                <label className="pb-option vf-confirm"><input name="recurring" type="checkbox" required />Confirmo que el documento autoriza lecturas semanales.</label>
+                <p className="pb-field-note">La credencial está en memoria durante la vigilancia. Al reiniciar Plan B, vuelve a activarla.</p>
               </fieldset>
-              <div><button className="vf-primary" disabled={busy}>Activar vigilancia</button></div>
+              <div><button className="pb-primary" disabled={busy}>Activar vigilancia</button></div>
             </form>
           </section>}
-          <section className="vf-card vf-issue" aria-label="Parte semanal">
+          <section className="pb-card vf-issue" aria-label="Parte semanal">
             <h2>Parte semanal</h2>
             <div className="vf-issue-actions">
-              <button className="vf-secondary" type="button" disabled={busy} onClick={() => void run(prepareReport)}>Preparar parte</button>
+              <button className="pb-secondary" type="button" disabled={busy} onClick={() => void run(prepareReport)}>Preparar parte</button>
               {report && <>
-                <button className="vf-secondary" type="button" onClick={() => setPreview(true)}>Ver parte</button>
-                <button className="vf-secondary" type="button" onClick={() => downloadJson(watchReportToJson(report), `verifica-vigilancia-${short(report.fingerprint)}.json`)}>Descargar parte</button>
+                <button className="pb-secondary" type="button" onClick={() => setPreview(true)}>Ver parte</button>
+                <button className="pb-secondary" type="button" onClick={() => downloadJson(watchReportToJson(report), `verifica-vigilancia-${short(report.fingerprint)}.json`)}>Descargar parte</button>
               </>}
-              <button className="vf-secondary" type="button" disabled={busy} onClick={() => void run(async () => {
+              <button className="pb-secondary" type="button" disabled={busy} onClick={() => void run(async () => {
                 const salt = await response(path + '/artifacts/salt');
                 downloadText(await salt.text(), 'verifica-vigilancia-sal-privada.txt');
               })}>Descargar sal privada</button>
@@ -176,8 +176,8 @@ export default function WatchEngagement({ origin, engagementId, onOpen, openErro
               void run(async () => { await change({ action: 'accept', fingerprint: entry.fingerprint, confirmed }); await prepareReport(); });
             }}>
               <p>Captura retenida del {day(entry.at)} · <code>{short(entry.fingerprint)}</code></p>
-              <label className="vf-option"><input name="reviewed" type="checkbox" required />Confirmo que las partes aceptan esta captura como nueva base.</label>
-              <div><button className="vf-secondary" disabled={busy}>Aceptar captura retenida</button></div>
+              <label className="pb-option"><input name="reviewed" type="checkbox" required />Confirmo que las partes aceptan esta captura como nueva base.</label>
+              <div><button className="pb-secondary" disabled={busy}>Aceptar captura retenida</button></div>
             </form>)}
           </section>
         </>}

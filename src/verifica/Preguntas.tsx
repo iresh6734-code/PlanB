@@ -21,20 +21,20 @@ function QuestionRow({ question, answer, controls }: { question: SellerQuestion;
   return (
     <li className="vf-question">
       <h3>{question.finding}</h3>
-      <p className="vf-summary">{question.text}</p>
+      <p className="pb-summary">{question.text}</p>
       {question.refs.length > 0 && (
         <details className="vf-refs"><summary>{question.refs.length === 1 ? 'Ver la referencia' : 'Ver las ' + question.refs.length + ' referencias'}</summary>
           <ul>{question.refs.map(ref => <li key={ref}><code>{ref}</code></li>)}</ul></details>
       )}
       <form className="vf-answer" onSubmit={event => { event.preventDefault(); controls.onSave(question.id, text); }}>
-        <label className="vf-field" htmlFor={id}><span className="vf-field-label">Respuesta del vendedor</span></label>
-        <textarea id={id} className="vf-input vf-input-text vf-textarea" rows={3} maxLength={4000} value={text} disabled={controls.busy === question.id}
+        <label className="pb-field" htmlFor={id}><span className="pb-field-label">Respuesta del vendedor</span></label>
+        <textarea id={id} className="pb-input pb-input-text pb-textarea" rows={3} maxLength={4000} value={text} disabled={controls.busy === question.id}
           placeholder="Con los seudónimos del informe, sin nombres ni correos" onChange={event => setText(event.target.value)} />
         <div className="vf-issue-actions">
-          <button type="submit" className="vf-secondary" disabled={controls.busy === question.id || !text.trim() || text.trim() === answer?.text}>{controls.busy === question.id ? 'Guardando…' : answer ? 'Guardar el cambio' : 'Guardar la respuesta'}</button>
-          {answer && <span className="vf-trace">Declarada el {day(answer.answeredAt)}</span>}
+          <button type="submit" className="pb-secondary" disabled={controls.busy === question.id || !text.trim() || text.trim() === answer?.text}>{controls.busy === question.id ? 'Guardando…' : answer ? 'Guardar el cambio' : 'Guardar la respuesta'}</button>
+          {answer && <span className="pb-trace">Declarada el {day(answer.answeredAt)}</span>}
         </div>
-        {controls.errors[question.id] && <p className="vf-error" role="alert">{controls.errors[question.id]}</p>}
+        {controls.errors[question.id] && <p className="pb-error" role="alert">{controls.errors[question.id]}</p>}
       </form>
     </li>
   );
@@ -46,11 +46,11 @@ export function QuestionsContent({ questions, answers, comparison, loadError, co
   return (
     <>
       {comparison && (
-        <section className="vf-card" aria-labelledby="vf-compare">
+        <section className="pb-card" aria-labelledby="vf-compare">
           <h2 id="vf-compare">Qué cambió desde la emisión anterior</h2>
-          <p className="vf-summary">Corte del {day(comparison.from.asOf)} frente al del {day(comparison.to.asOf)}. {comparison.sources.filter(s => s.changed).length === 0 ? 'Ninguna fuente cambió.' : 'Cambiaron: ' + comparison.sources.filter(s => s.changed).map(s => ROLE[s.role].toLowerCase()).join(', ') + '.'}</p>
+          <p className="pb-summary">Corte del {day(comparison.from.asOf)} frente al del {day(comparison.to.asOf)}. {comparison.sources.filter(s => s.changed).length === 0 ? 'Ninguna fuente cambió.' : 'Cambiaron: ' + comparison.sources.filter(s => s.changed).map(s => ROLE[s.role].toLowerCase()).join(', ') + '.'}</p>
           {comparison.findings.length === 0
-            ? <p className="vf-empty">Ningún hallazgo cambió.</p>
+            ? <p className="pb-empty">Ningún hallazgo cambió.</p>
             : (
               <ul className="vf-unverified">
                 {comparison.findings.map(f => (
@@ -58,25 +58,25 @@ export function QuestionsContent({ questions, answers, comparison, loadError, co
                     <strong>{f.title}.</strong>{' '}
                     {f.before && f.after && f.before.alarm !== f.after.alarm ? (f.after.alarm ? 'Ahora se sale de lo normal. ' : 'Ya no se sale de lo normal. ') : ''}
                     {f.figures.map(c => c.key + ': ' + number(c.before) + ' → ' + number(c.after)).join('; ')}
-                    {f.explainedBy.length > 0 && <span className="vf-trace"> · lo explica: {f.explainedBy.map(r => ROLE[r].toLowerCase()).join(', ')}</span>}
+                    {f.explainedBy.length > 0 && <span className="pb-trace"> · lo explica: {f.explainedBy.map(r => ROLE[r].toLowerCase()).join(', ')}</span>}
                   </li>
                 ))}
               </ul>
             )}
           {(comparison.notVerified.removed.length > 0 || comparison.notVerified.added.length > 0) && (
-            <p className="vf-note">{comparison.notVerified.removed.length > 0 ? 'Ya se comprueba: ' + comparison.notVerified.removed.join('; ') + '. ' : ''}{comparison.notVerified.added.length > 0 ? 'Ahora no se puede comprobar: ' + comparison.notVerified.added.join('; ') + '.' : ''}</p>
+            <p className="pb-note">{comparison.notVerified.removed.length > 0 ? 'Ya se comprueba: ' + comparison.notVerified.removed.join('; ') + '. ' : ''}{comparison.notVerified.added.length > 0 ? 'Ahora no se puede comprobar: ' + comparison.notVerified.added.join('; ') + '.' : ''}</p>
           )}
         </section>
       )}
       {questions && questions.length > 0 && (
         <section className="vf-section" aria-labelledby="vf-questions">
-          <div className="vf-section-head"><h2 id="vf-questions">Preguntas al vendedor</h2><p>Una por cada hallazgo que se sale de lo normal; la respuesta queda como «declarado»</p></div>
+          <div className="pb-section-head"><h2 id="vf-questions">Preguntas al vendedor</h2><p>Una por cada hallazgo que se sale de lo normal; la respuesta queda como «declarado»</p></div>
           <ol className="vf-questions">
             {questions.map(q => <QuestionRow key={q.id} question={q} answer={answers?.answers.find(a => a.question === q.id)} controls={controls} />)}
           </ol>
         </section>
       )}
-      {loadError && <p className="vf-error" role="alert">{loadError}</p>}
+      {loadError && <p className="pb-error" role="alert">{loadError}</p>}
     </>
   );
 }

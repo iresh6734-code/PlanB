@@ -49,7 +49,7 @@ export function VerificaReportView({ report, origin, onOpen, openError }: { repo
       )}
 
       <section className="vf-section" aria-labelledby="vf-findings">
-        <div className="vf-section-head">
+        <div className="pb-section-head">
           <h2 id="vf-findings">Hallazgos</h2>
           <p>Cada cifra dice de dónde sale</p>
         </div>
@@ -61,13 +61,13 @@ export function VerificaReportView({ report, origin, onOpen, openError }: { repo
                 <span className="vf-index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
                 <div className="vf-finding-body">
                   <h3>{finding.title}</h3>
-                  <p className="vf-summary">{finding.summary}</p>
+                  <p className="pb-summary">{finding.summary}</p>
                   <p className="vf-status">
-                    <span className="vf-state">{finding.alarm ? 'Se sale de lo normal' : 'Dentro de lo normal'}</span>
-                    <span className="vf-basis" data-basis={finding.basis}>{BASIS[finding.basis]}</span>
+                    <span className="pb-state">{finding.alarm ? 'Se sale de lo normal' : 'Dentro de lo normal'}</span>
+                    <span className="pb-basis" data-basis={finding.basis}>{BASIS[finding.basis]}</span>
                   </p>
                   <Refs items={finding.items} />
-                  <p className="vf-trace">{traceText(finding.captures, report.sources)}</p>
+                  <p className="pb-trace">{traceText(finding.captures, report.sources)}</p>
                 </div>
                 {key && <p className="vf-key">{key}</p>}
               </li>
@@ -77,10 +77,10 @@ export function VerificaReportView({ report, origin, onOpen, openError }: { repo
       </section>
 
       <div className="vf-closing">
-        <section className="vf-card vf-sheet-next" aria-labelledby="vf-unverified">
+        <section className="pb-card vf-sheet-next" aria-labelledby="vf-unverified">
           <h2 id="vf-unverified">Lo que no se pudo comprobar</h2>
           {report.notVerified.length === 0
-            ? <p className="vf-empty">Con estas capturas y facturas se pudo comprobar todo.</p>
+            ? <p className="pb-empty">Con estas capturas y facturas se pudo comprobar todo.</p>
             : (
               <ul className="vf-unverified">
                 {report.notVerified.map((item, index) => (
@@ -90,7 +90,7 @@ export function VerificaReportView({ report, origin, onOpen, openError }: { repo
             )}
         </section>
 
-        <footer className="vf-card vf-foot">
+        <footer className="pb-card vf-foot">
           <h2>Huella y fuentes</h2>
           <Fingerprint label="Huella del informe" value={report.fingerprint} intact={intact} broken="No coincide: el informe se ha tocado" />
           <dl className="vf-sources">
@@ -101,7 +101,7 @@ export function VerificaReportView({ report, origin, onOpen, openError }: { repo
               </div>
             ))}
           </dl>
-          <p className="vf-note">Ningún nombre sale del lado del vendedor: cada referencia es un seudónimo con una sal que no viaja en el informe.</p>
+          <p className="pb-note">Ningún nombre sale del lado del vendedor: cada referencia es un seudónimo con una sal que no viaja en el informe.</p>
         </footer>
       </div>
 

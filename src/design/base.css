@@ -1,0 +1,7 @@
+/* Plan B · base común: caja, texto, foco, selección, código y enlaces (corte 1 del plan de diseño). */
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--pb-ground); color: var(--pb-ink); font: 400 15px/1.55 var(--pb-sans); -webkit-font-smoothing: antialiased; }
+::selection { background: var(--pb-highlight); color: var(--pb-ink); }
+:focus-visible { outline: 2px solid var(--pb-focus); outline-offset: 2px; }
+code { font-family: var(--pb-mono); font-size: 12px; font-variant-numeric: tabular-nums; }
+a { color: var(--pb-link); } a:hover { color: var(--pb-link-hover); }

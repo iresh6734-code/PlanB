@@ -33,22 +33,22 @@ export function CustodyCheck({ report }: { report: VerificaReport }) {
       <h2 id="vf-custody">Comprobar con la copia custodiada</h2>
       <p className="vf-custody-intro">Quien guarda la copia, un abogado o un notario, comprueba aquí que rehace este informe. La copia y la llave se abren en este navegador y no se envían a ningún sitio.</p>
       <form className="vf-custody-form" onSubmit={submit}>
-        <div className="vf-field">
-          <span className="vf-field-label" id="vf-custody-file">Copia custodiada</span>
-          <div className="vf-file-row">
-            <label className="vf-secondary">
-              <input className="vf-file-input" type="file" accept=".json,application/json" aria-labelledby="vf-custody-file"
+        <div className="pb-field">
+          <span className="pb-field-label" id="vf-custody-file">Copia custodiada</span>
+          <div className="pb-file-row">
+            <label className="pb-secondary">
+              <input className="pb-file-input" type="file" accept=".json,application/json" aria-labelledby="vf-custody-file"
                 onChange={event => { setFile(event.target.files?.[0] ?? null); setOutcome(null); event.target.value = ''; }} />
               {file ? 'Cambiar' : 'Elegir archivo'}
             </label>
-            <span className="vf-file-name">{file ? file.name : 'Ningún archivo elegido'}</span>
+            <span className="pb-file-name">{file ? file.name : 'Ningún archivo elegido'}</span>
           </div>
         </div>
-        <label className="vf-field">
-          <span className="vf-field-label">Llave</span>
-          <input className="vf-input" type="password" autoComplete="off" spellCheck={false} placeholder="vfk1-…" value={key} onChange={event => setKey(event.target.value)} />
+        <label className="pb-field">
+          <span className="pb-field-label">Llave</span>
+          <input className="pb-input" type="password" autoComplete="off" spellCheck={false} placeholder="vfk1-…" value={key} onChange={event => setKey(event.target.value)} />
         </label>
-        <button type="submit" className="vf-primary" disabled={!ready}>{busy ? 'Comprobando…' : 'Comprobar la copia'}</button>
+        <button type="submit" className="pb-primary" disabled={!ready}>{busy ? 'Comprobando…' : 'Comprobar la copia'}</button>
       </form>
       <div className="vf-result-area" role="status" aria-live="polite">
         {outcome && (

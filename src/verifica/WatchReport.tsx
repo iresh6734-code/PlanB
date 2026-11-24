@@ -26,7 +26,7 @@ function Alert({ alert }: { alert: WatchAlert }) {
   return (
     <li className="vf-alert" data-kind={alert.kind}>
       <h4>{alert.title}</h4>
-      <p className="vf-summary">{alert.summary}</p>
+      <p className="pb-summary">{alert.summary}</p>
       <Refs items={alert.items} />
     </li>
   );
@@ -38,7 +38,7 @@ function Finding({ alert }: { alert: WatchAlert }) {
       <span className="vf-seal" aria-hidden="true" />
       <div className="vf-finding-body">
         <h3>{alert.title}</h3>
-        <p className="vf-summary">{alert.summary}</p>
+        <p className="pb-summary">{alert.summary}</p>
         <Refs items={alert.items} />
       </div>
     </li>
@@ -84,9 +84,9 @@ export function WatchReportView({ report, origin, onOpen, openError }: { report:
                     <span className="vf-capture-status" data-tone={s.tone}>{s.label}</span>
                     <span>{entry.detail}</span>
                   </p>
-                  {s.note && <p className="vf-held">{s.note}</p>}
+                  {s.note && <p className="pb-held">{s.note}</p>}
                   {entry.alerts.length > 0 && <ul className="vf-alerts">{entry.alerts.map(alert => <Alert key={alert.kind} alert={alert} />)}</ul>}
-                  <p className="vf-trace">Captura {short(entry.fingerprint)}</p>
+                  <p className="pb-trace">Captura {short(entry.fingerprint)}</p>
                 </div>
               </li>
             );
@@ -97,7 +97,7 @@ export function WatchReportView({ report, origin, onOpen, openError }: { report:
       <section className="vf-sheet" aria-labelledby="vf-closing">
         <h2 id="vf-closing">Al cierre: la firma frente a la captura del {day(last.at)}</h2>
         {report.closing.alerts.length === 0
-          ? <p className="vf-empty">Entre la firma y la última captura nada se sale de lo normal.</p>
+          ? <p className="pb-empty">Entre la firma y la última captura nada se sale de lo normal.</p>
           : <ol className="vf-findings">{report.closing.alerts.map(alert => <Finding key={alert.kind} alert={alert} />)}</ol>}
       </section>
 
@@ -108,7 +108,7 @@ export function WatchReportView({ report, origin, onOpen, openError }: { report:
           Cada captura se compara con la anterior para dar avisos y con la última aceptada para decidir si se retiene.
         </p>
         <Fingerprint label="Huella del parte" value={report.fingerprint} intact={intact} broken="No coincide: el parte se ha tocado" />
-        <p className="vf-note">Los nombres no salen del lado del vendedor: cada referencia es un seudónimo con la misma sal que el informe, que no viaja en el parte.</p>
+        <p className="pb-note">Los nombres no salen del lado del vendedor: cada referencia es un seudónimo con la misma sal que el informe, que no viaja en el parte.</p>
       </footer>
     </Frame>
   );

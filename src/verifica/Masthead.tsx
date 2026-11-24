@@ -20,25 +20,8 @@ export function Refs({ items }: { items: readonly FindingItem[] }) {
   );
 }
 
-/** El sello: la huella completa y si coincide con el contenido. */
-export function Fingerprint({ label, value, intact, broken }: { label: string; value: string; intact: boolean; broken: string }) {
-  return (
-    <div className="vf-fingerprint" data-ok={intact ? 'true' : 'false'}>
-      <svg className="vf-stamp" viewBox="0 0 64 64" width="56" height="56" aria-hidden="true">
-        <circle cx="32" cy="32" r="29" fill="none" strokeWidth="2" />
-        <circle cx="32" cy="32" r="22.5" fill="none" strokeWidth="1" strokeDasharray="3 3" />
-        {intact
-          ? <path d="M22 33l7 7 13-15" fill="none" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-          : <path d="M24 24l16 16M40 24L24 40" fill="none" strokeWidth="2.5" strokeLinecap="round" />}
-      </svg>
-      <div className="vf-fingerprint-text">
-        <span className="vf-fingerprint-label">{label}</span>
-        <code>{value}</code>
-        <span className="vf-check" data-ok={intact ? 'true' : 'false'}>{intact ? 'Coincide con el contenido' : broken}</span>
-      </div>
-    </div>
-  );
-}
+// El sello de huella es un componente común (src/design/Fingerprint.tsx); se reexporta para no cambiar las importaciones.
+export { Fingerprint } from '../design/Fingerprint.js';
 
 export type Variant = 'traps' | 'clean';
 export type DocKind = 'report' | 'watch' | 'migration' | 'operation' | 'sources' | 'captures';
@@ -102,8 +85,8 @@ function Steps({ origin, current }: { origin: ReportOrigin; current: DocKind }) 
 
 function OpenReport({ label, onOpen }: { label: string; onOpen?: (file: File) => void }) {
   return (
-    <label className="vf-secondary">
-      <input className="vf-file-input" type="file" accept=".json,application/json"
+    <label className="pb-secondary">
+      <input className="pb-file-input" type="file" accept=".json,application/json"
         onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) onOpen?.(file); }} />
       {label}
     </label>
@@ -127,7 +110,7 @@ export function Frame({ origin, current, eyebrow, title, lede, onOpen, openError
               : <p className="vf-origin">{origin.name} · abierto en este navegador, no se envía a ningún sitio</p>}
           <div className="vf-bar-actions">
             <OpenReport label={origin.kind === 'opened' ? 'Abrir otro informe' : 'Abrir un informe'} onOpen={onOpen} />
-            {origin.kind === 'reference' && download && <button type="button" className="vf-primary" onClick={download.run}>{download.label}</button>}
+            {origin.kind === 'reference' && download && <button type="button" className="pb-primary" onClick={download.run}>{download.label}</button>}
           </div>
         </div>
       </header>
@@ -149,8 +132,8 @@ export function Frame({ origin, current, eyebrow, title, lede, onOpen, openError
                   </div>
                 </div>
               )
-              : origin.kind === 'opened' ? <div className="vf-head-row"><button type="button" className="vf-link" onClick={() => origin.onReference?.()}>{origin.backLabel ?? 'Volver al ejemplo'}</button></div> : null}
-            {openError && <p className="vf-error" role="alert">{openError}</p>}
+              : origin.kind === 'opened' ? <div className="vf-head-row"><button type="button" className="pb-link" onClick={() => origin.onReference?.()}>{origin.backLabel ?? 'Volver al ejemplo'}</button></div> : null}
+            {openError && <p className="pb-error" role="alert">{openError}</p>}
           </header>
           {children}
         </main>

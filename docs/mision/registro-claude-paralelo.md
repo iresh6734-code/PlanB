@@ -496,3 +496,25 @@ Con la autorización de la usuaria («ves a ello») y con Codex avisado, porque 
 - Una prueba nueva en `verifica-watch-timer` (5/5).
 - Las comparaciones de filas de `verifica-lectura` y `verifica-reapertura` excluyen el estado de lectura, que ahora se guarda a propósito.
 - Verifica completa: 130/130. Recorridos en navegador: 48/48 y 72/72. `docs/api.md` está al día.
+
+## 24/11/2026 · Plan de diseño «una sola app» · cortes 0 y 1 (Claude)
+
+Plan en Claude Docs: https://claude.ai/artifact/8YSUfA67BfTDc1uepQbB9n. Por decisión de la usuaria, todo el diseño de la interfaz es de Claude. Codex crea y ejecuta el mega plan 4 de lógica (`coordination/plans/MEGA-PLAN-4.md`) en `server/`, `shared/` y `scripts/`, y no toca `src/`.
+
+**Corte 0 · red visual de Verifica (`tools/visual/verifica.mts`).** Prepara un encargo de ejemplo por la API y captura 10 vistas en escritorio, móvil y oscuro: 7 del servidor local y 3 del visor sin servidor. En total, 30 capturas. Guarda la huella de cada una y, al comparar, distingue el cambio real del ruido de suavizado (40 px o menos).
+
+Para que las capturas se repitan, corre sobre un servidor con reloj y sal fijos y HubSpot simulado. Ese servidor se monta desde una copia fija (`tests/.tmp/visual-base`, fuera de git) con el `server/` y el `shared/` del último commit y el `src/` de Claude encima. Así lo que Codex cambia a la vez en `server/` y `shared/` no aparece como diferencia de diseño.
+
+Comprobado: sin cambios coinciden las 30, con 3 a 11 px de ruido; un color cambiado a propósito hace saltar 12 de 30. La referencia del CRM (`tools/visual/check.mts`) se tomará antes del corte 3, porque necesita el CRM con una copia de ensayo activada.
+
+**Corte 1 · tokens y componentes comunes en `src/design/`:**
+- `tokens.css`: tokens `--pb-*` de la dirección Dictamen, claro y oscuro.
+- `base.css`.
+- `components.css`: 55 reglas genéricas con clases `pb-*` (botones, campos, opciones, tarjeta, avisos, etiquetas y sello), en el orden que tenían para no cambiar la cascada.
+- `Fingerprint.tsx`: el sello de huella, que `Masthead` reexporta.
+
+`verifica.css` se queda con lo propio de Verifica y baja de 307 a 214 líneas. `main.tsx` carga lo común antes. Las pantallas y las pruebas usan las clases `pb-*`.
+
+Resultado: **las 30 capturas coinciden con la referencia**, así que no hay ningún cambio visible. Prueba nueva: `tests/diseno-tokens.test.ts`, que rechaza colores sueltos en las hojas ya pasadas y exige valor oscuro para cada token. Pruebas de pantalla: 28/28. Recorridos en navegador: 48/48 y 72/72. `tsc` limpio.
+
+Pendiente como cambio de diseño a propósito, no en este corte: hoy `.pb-input` va después de `.pb-input-text` y gana, así que los campos de texto salen en letra de máquina de 13 px.

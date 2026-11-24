@@ -45,7 +45,7 @@ test('Verifica · sin trampas no hay ningún sello de alarma', () => {
 test('Verifica · un solo botón relleno y ningún nombre del CRM en la página', () => {
   for (const variant of ['traps', 'clean'] as const) {
     const { html } = render(variant);
-    assert.equal(html.match(/class="vf-primary"/g)?.length, 1);
+    assert.equal(html.match(/class="pb-primary"/g)?.length, 1);
     const leaked = buildTrapCompany({ traps: variant === 'traps' }).forbidden.filter(text => html.includes(text));
     assert.deepEqual(leaked, [], 'filtrados: ' + leaked.slice(0, 5).join(', '));
   }
@@ -59,8 +59,8 @@ test('Verifica · un informe abierto de un archivo: sin aviso de ficción ni var
   const html = renderWith(opened, { kind: 'opened', name: 'informe.json' });
   assert.ok(!html.includes('Empresa ficticia') && !html.includes('vf-switch'));
   assert.match(html, /informe\.json · abierto en este navegador/);
-  assert.equal(html.match(/class="vf-primary"/g)?.length, 1);
-  assert.match(html, /class="vf-primary"[^>]*disabled=""[^>]*>Comprobar la copia</);
+  assert.equal(html.match(/class="pb-primary"/g)?.length, 1);
+  assert.match(html, /class="pb-primary"[^>]*disabled=""[^>]*>Comprobar la copia</);
   assert.match(html, /type="password"/);
   assert.equal(html.split(opened.fingerprint).length - 1, 1, 'la huella del informe sale una sola vez');
 });
@@ -111,7 +111,7 @@ test('Verifica · parte de vigilancia: cada trampa sale en su semana, la retenid
   assert.match(html, /3 avisos en 4 capturas semanales\. 3 retenidas/);
   assert.ok(!html.includes('Ahora mismo'), 'a la fecha del parte no falta ninguna captura');
   assert.match(html, /Al cierre: la firma frente a la captura del/);
-  assert.equal(html.match(/class="vf-primary"/g)?.length, 1);
+  assert.equal(html.match(/class="pb-primary"/g)?.length, 1);
   assert.match(html, /aria-current="page"><span class="vf-step-n">05<\/span><span class="vf-step-text"><span class="vf-step-label">Vigilancia</, 'el paso de vigilancia es la página actual');
   assert.equal(html.match(/aria-current="page"/g)?.length, 1);
   assert.ok(html.includes(report.fingerprint) && /Coincide con el contenido/.test(html));
@@ -132,7 +132,7 @@ test('Verifica · abrir un parte de vigilancia: se reconoce, no tiene botón rel
   const doc = readDocumentText(watchReportToJson(report));
   assert.ok(typeof doc !== 'string' && doc.kind === 'watch');
   const html = renderWatch(doc.report, { kind: 'opened', name: 'parte.json' });
-  assert.equal(html.match(/class="vf-primary"/g), null);
+  assert.equal(html.match(/class="pb-primary"/g), null);
   assert.ok(!html.includes('Empresa ficticia') && !html.includes('vf-docs'));
   assert.equal(html.split(report.fingerprint).length - 1, 1, 'la huella del parte sale una sola vez');
   const touched = structuredClone(report);
@@ -164,8 +164,8 @@ test('Verifica · informe de equivalencia: tabla por objeto, diferencias arriba 
   assert.equal(html.match(/data-alarm="true"/g)?.length, 4);
   assert.equal(html.match(/data-alarm="false"/g)?.length, 2);
   assert.ok(html.indexOf('Contactos: no llegaron') < html.indexOf('vf-pending') && html.indexOf('Contactos: ambiguos') > html.indexOf('vf-pending'));
-  assert.equal(html.match(/class="vf-primary"[^>]*>Descargar informe de equivalencia</g)?.length, 1);
-  assert.equal(html.match(/class="vf-primary"/g)?.length, 1);
+  assert.equal(html.match(/class="pb-primary"[^>]*>Descargar informe de equivalencia</g)?.length, 1);
+  assert.equal(html.match(/class="pb-primary"/g)?.length, 1);
   assert.match(html, /aria-current="page"><span class="vf-step-n">06<\/span><span class="vf-step-text"><span class="vf-step-label">Después del cierre</, 'el paso de después del cierre es la página actual');
   assert.match(html, /<h1>Hay diferencias en 4 puntos; 2 más no se pueden concluir\.<\/h1>/, 'el veredicto es la conclusión');
   assert.equal(html.split(report.fingerprint).length - 1, 1, 'la huella del informe sale una sola vez');
@@ -189,7 +189,7 @@ test('Verifica · abrir un informe de equivalencia: se reconoce, no tiene botón
   const doc = readDocumentText(equivalenceToJson(report));
   assert.ok(typeof doc !== 'string' && doc.kind === 'migration');
   const html = renderEquivalence(doc.report, { kind: 'opened', name: 'equivalencia.json' });
-  assert.equal(html.match(/class="vf-primary"/g), null);
+  assert.equal(html.match(/class="pb-primary"/g), null);
   assert.ok(!html.includes('Empresa ficticia') && !html.includes('vf-docs'));
   const touched = structuredClone(report);
   touched.objects[1]!.intact = touched.objects[1]!.closing;
@@ -199,7 +199,7 @@ test('Verifica · abrir un informe de equivalencia: se reconoce, no tiene botón
   assert.equal(readDocumentText(JSON.stringify({ ...report, objects: 'nada' })), NOT_A_DOCUMENT);
   const waiting = renderToStaticMarkup(createElement(EquivalencePending, { origin: { kind: 'reference', variant: 'traps', doc: 'migration' }, failed: false }));
   assert.match(waiting, /Preparando el ejemplo/);
-  assert.equal(waiting.match(/class="vf-primary"/g), null, 'nada que descargar hasta que llega');
+  assert.equal(waiting.match(/class="pb-primary"/g), null, 'nada que descargar hasta que llega');
 });
 
 test('Verifica · informe de equivalencia con el destino a medias: el resumen dice por qué no se puede concluir', () => {

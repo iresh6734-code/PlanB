@@ -52,10 +52,10 @@ export function ExpedienteContent({ name, view, loadError, issued, pkg, close }:
   return (
     <>
       <section className="vf-section" aria-labelledby="vf-expediente">
-        <div className="vf-section-head"><h2 id="vf-expediente">Expediente</h2><p>Cada paso del encargo, encadenado al anterior por su huella</p></div>
-        {loadError && <p className="vf-error" role="alert">{loadError}</p>}
-        {!view && !loadError && <p className="vf-empty" role="status">Leyendo el expediente…</p>}
-        {view && view.entries.length === 0 && <p className="vf-empty">Todavía no hay nada en el expediente: empieza al guardar la primera fuente.</p>}
+        <div className="pb-section-head"><h2 id="vf-expediente">Expediente</h2><p>Cada paso del encargo, encadenado al anterior por su huella</p></div>
+        {loadError && <p className="pb-error" role="alert">{loadError}</p>}
+        {!view && !loadError && <p className="pb-empty" role="status">Leyendo el expediente…</p>}
+        {view && view.entries.length === 0 && <p className="pb-empty">Todavía no hay nada en el expediente: empieza al guardar la primera fuente.</p>}
         {view && head && (
           <>
             <Fingerprint label={'Última entrada del expediente · ' + view.entries.length + (view.entries.length === 1 ? ' entrada' : ' entradas')} value={head.fingerprint} intact={intact} broken={broken} />
@@ -64,48 +64,48 @@ export function ExpedienteContent({ name, view, loadError, issued, pkg, close }:
                 <li key={entry.sequence} className="vf-ledger-entry">
                   <span className="vf-index" aria-hidden="true">{String(entry.sequence).padStart(2, '0')}</span>
                   <div className="vf-ledger-text">
-                    <p className="vf-ledger-event">{EVENT_LABEL[entry.event] ?? entry.event}{entryDetail(entry) ? <span className="vf-trace"> · {entryDetail(entry)}</span> : null}</p>
-                    <p className="vf-trace">{time(entry.recordedAt)} · huella <code title={entry.fingerprint}>{short(entry.fingerprint)}</code></p>
+                    <p className="vf-ledger-event">{EVENT_LABEL[entry.event] ?? entry.event}{entryDetail(entry) ? <span className="pb-trace"> · {entryDetail(entry)}</span> : null}</p>
+                    <p className="pb-trace">{time(entry.recordedAt)} · huella <code title={entry.fingerprint}>{short(entry.fingerprint)}</code></p>
                   </div>
                 </li>
               ))}
             </ol>
-            <p className="vf-note">El expediente se queda en este equipo: guarda huellas, no nombres ni datos del CRM. Las emisiones y el paquete del comprador llevan su última entrada, para que un recorte se pueda detectar desde fuera.</p>
+            <p className="pb-note">El expediente se queda en este equipo: guarda huellas, no nombres ni datos del CRM. Las emisiones y el paquete del comprador llevan su última entrada, para que un recorte se pueda detectar desde fuera.</p>
           </>
         )}
       </section>
 
-      <section className="vf-card vf-issue" aria-labelledby="vf-package">
+      <section className="pb-card vf-issue" aria-labelledby="vf-package">
         <h2 id="vf-package">Paquete del comprador</h2>
-        <p className="vf-summary">Un solo archivo con lo que se puede compartir, que el comprador comprueba sin conexión en este mismo visor. Nunca lleva autorizaciones, actas, fuentes, la sal ni la copia custodiada.</p>
+        <p className="pb-summary">Un solo archivo con lo que se puede compartir, que el comprador comprueba sin conexión en este mismo visor. Nunca lleva autorizaciones, actas, fuentes, la sal ni la copia custodiada.</p>
         {!issued
-          ? <p className="vf-held">Primero hay que emitir el informe: el paquete siempre lo lleva.</p>
+          ? <p className="pb-held">Primero hay que emitir el informe: el paquete siempre lo lleva.</p>
           : (
             <form className="vf-read-form" onSubmit={event => { event.preventDefault(); pkg.onBuild({ watch, answers }); }}>
-              <fieldset className="vf-choice" disabled={pkg.busy}>
-                <legend className="vf-field-label">Qué lleva, además del informe</legend>
-                <label className="vf-option"><input type="checkbox" checked={watch} onChange={event => setWatch(event.target.checked)} />
-                  <span className="vf-option-text"><span className="vf-option-label">El parte de vigilancia</span><span className="vf-option-note">Si el encargo tiene vigilancia desde la firma.</span></span></label>
-                <label className="vf-option"><input type="checkbox" checked={answers} onChange={event => setAnswers(event.target.checked)} />
-                  <span className="vf-option-text"><span className="vf-option-label">Las respuestas del vendedor</span><span className="vf-option-note">Van como «declarado», atadas a la huella del informe.</span></span></label>
+              <fieldset className="pb-choice" disabled={pkg.busy}>
+                <legend className="pb-field-label">Qué lleva, además del informe</legend>
+                <label className="pb-option"><input type="checkbox" checked={watch} onChange={event => setWatch(event.target.checked)} />
+                  <span className="pb-option-text"><span className="pb-option-label">El parte de vigilancia</span><span className="pb-option-note">Si el encargo tiene vigilancia desde la firma.</span></span></label>
+                <label className="pb-option"><input type="checkbox" checked={answers} onChange={event => setAnswers(event.target.checked)} />
+                  <span className="pb-option-text"><span className="pb-option-label">Las respuestas del vendedor</span><span className="pb-option-note">Van como «declarado», atadas a la huella del informe.</span></span></label>
               </fieldset>
-              <div className="vf-issue-actions"><button type="submit" className="vf-secondary" disabled={pkg.busy}>{pkg.busy ? 'Preparando…' : 'Descargar el paquete'}</button></div>
+              <div className="vf-issue-actions"><button type="submit" className="pb-secondary" disabled={pkg.busy}>{pkg.busy ? 'Preparando…' : 'Descargar el paquete'}</button></div>
             </form>
           )}
-        {pkg.error && <p className="vf-error" role="alert">{pkg.error}</p>}
+        {pkg.error && <p className="pb-error" role="alert">{pkg.error}</p>}
       </section>
 
-      <section className="vf-card vf-issue vf-danger" aria-labelledby="vf-close">
+      <section className="pb-card vf-issue vf-danger" aria-labelledby="vf-close">
         <h2 id="vf-close">Cerrar el encargo</h2>
-        <p className="vf-summary">Al terminar, se borran de este equipo las fuentes, las capturas, las actas, las emisiones, la vigilancia y el expediente. Queda un acta mínima con lo que se borró, sin nombres ni datos del CRM. No se puede deshacer.</p>
+        <p className="pb-summary">Al terminar, se borran de este equipo las fuentes, las capturas, las actas, las emisiones, la vigilancia y el expediente. Queda un acta mínima con lo que se borró, sin nombres ni datos del CRM. No se puede deshacer.</p>
         <form className="vf-create" onSubmit={event => { event.preventDefault(); if (confirm.trim() === name) close.onClose(confirm.trim()); }}>
-          <label className="vf-field">
-            <span className="vf-field-label">Escribe «{name}» para confirmar</span>
-            <input className="vf-input vf-input-text" value={confirm} autoComplete="off" spellCheck={false} disabled={close.busy} onChange={event => setConfirm(event.target.value)} />
+          <label className="pb-field">
+            <span className="pb-field-label">Escribe «{name}» para confirmar</span>
+            <input className="pb-input pb-input-text" value={confirm} autoComplete="off" spellCheck={false} disabled={close.busy} onChange={event => setConfirm(event.target.value)} />
           </label>
-          <button type="submit" className="vf-secondary vf-danger-button" disabled={close.busy || confirm.trim() !== name}>{close.busy ? 'Cerrando…' : 'Cerrar y borrar'}</button>
+          <button type="submit" className="pb-secondary pb-danger-button" disabled={close.busy || confirm.trim() !== name}>{close.busy ? 'Cerrando…' : 'Cerrar y borrar'}</button>
         </form>
-        {close.error && <p className="vf-error" role="alert">{close.error}</p>}
+        {close.error && <p className="pb-error" role="alert">{close.error}</p>}
       </section>
     </>
   );
@@ -166,32 +166,32 @@ export function PackageView({ pkg, origin, onOpen, openError, onOpenDocument }: 
     <Frame origin={origin} current="report" eyebrow={'Paquete del comprador · preparado el ' + day(pkg.createdAt)} onOpen={onOpen} openError={openError}
       title={check.intact ? 'El paquete está íntegro' : 'El paquete no está íntegro'}
       lede={check.intact ? 'Ningún documento ha cambiado desde que se preparó. La huella no acredita quién lo emitió ni que las cifras comerciales sean exactas.' : 'Algo se ha añadido, quitado o retocado después de prepararlo. Mira qué documento falla.'}>
-      <section className="vf-card" aria-labelledby="vf-package-checks">
+      <section className="pb-card" aria-labelledby="vf-package-checks">
         <h2 id="vf-package-checks">Comprobación</h2>
         <ul className="vf-engagements">
           {check.checks.map((item, index) => (
             <li key={index} className="vf-engagement vf-record">
-              <div className="vf-engagement-text"><h3>{item.label}</h3>{item.problem && <p className="vf-error">{item.problem}</p>}</div>
-              <span className="vf-check" data-ok={item.ok ? 'true' : 'false'}>{item.ok ? 'Coincide con su huella' : 'No coincide'}</span>
+              <div className="vf-engagement-text"><h3>{item.label}</h3>{item.problem && <p className="pb-error">{item.problem}</p>}</div>
+              <span className="pb-check" data-ok={item.ok ? 'true' : 'false'}>{item.ok ? 'Coincide con su huella' : 'No coincide'}</span>
             </li>
           ))}
         </ul>
       </section>
       <section className="vf-section" aria-labelledby="vf-package-docs">
-        <div className="vf-section-head"><h2 id="vf-package-docs">Documentos</h2><p>Se abren aquí mismo, sin conexión</p></div>
+        <div className="pb-section-head"><h2 id="vf-package-docs">Documentos</h2><p>Se abren aquí mismo, sin conexión</p></div>
         <ul className="vf-engagements">
           {pkg.documents.map((doc, index) => (
             <li key={index} className="vf-engagement vf-record">
               <div className="vf-engagement-text">
                 <h3>{doc.kind === 'report' ? 'Informe de verificación' : doc.kind === 'watch' ? 'Parte de vigilancia' : doc.kind === 'equivalence' ? 'Informe de equivalencia' : 'Respuestas del vendedor (declarado)'}</h3>
-                <p className="vf-trace">Huella <code title={doc.fingerprint}>{short(doc.fingerprint)}</code></p>
-                {doc.kind === 'answers' && doc.content.answers.map(a => <p key={a.question} className="vf-summary"><strong>{titles.get(a.question) ?? 'Hallazgo'}.</strong> {a.text}</p>)}
+                <p className="pb-trace">Huella <code title={doc.fingerprint}>{short(doc.fingerprint)}</code></p>
+                {doc.kind === 'answers' && doc.content.answers.map(a => <p key={a.question} className="pb-summary"><strong>{titles.get(a.question) ?? 'Hallazgo'}.</strong> {a.text}</p>)}
               </div>
-              {doc.kind !== 'answers' && <button type="button" className="vf-secondary" onClick={() => open(index)}>Abrir</button>}
+              {doc.kind !== 'answers' && <button type="button" className="pb-secondary" onClick={() => open(index)}>Abrir</button>}
             </li>
           ))}
         </ul>
-        {pkg.ledgerHead && <p className="vf-note">Última entrada del expediente del vendedor al preparar el paquete: la {pkg.ledgerHead.sequence}, huella <code title={pkg.ledgerHead.fingerprint}>{short(pkg.ledgerHead.fingerprint)}</code>. Guárdala: permite comprobar después que su expediente no se ha recortado.</p>}
+        {pkg.ledgerHead && <p className="pb-note">Última entrada del expediente del vendedor al preparar el paquete: la {pkg.ledgerHead.sequence}, huella <code title={pkg.ledgerHead.fingerprint}>{short(pkg.ledgerHead.fingerprint)}</code>. Guárdala: permite comprobar después que su expediente no se ha recortado.</p>}
       </section>
     </Frame>
   );

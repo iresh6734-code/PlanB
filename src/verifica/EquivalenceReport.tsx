@@ -16,7 +16,7 @@ function Finding({ finding }: { finding: EquivalenceFinding }) {
       <span className="vf-seal" aria-hidden="true" />
       <div className="vf-finding-body">
         <h3>{OBJECT_LABEL[finding.object]}: {finding.title.toLowerCase()}</h3>
-        <p className="vf-summary">{finding.summary}</p>
+        <p className="pb-summary">{finding.summary}</p>
         <Refs items={finding.items} />
       </div>
     </li>
@@ -62,7 +62,7 @@ export function EquivalenceReportView({ report, origin, onOpen, openError }: { r
       <section className="vf-sheet" aria-labelledby="vf-differences">
         <h2 id="vf-differences">Diferencias confirmadas</h2>
         {confirmed.length === 0
-          ? <p className="vf-empty">Ninguna en lo que compara el mapa.</p>
+          ? <p className="pb-empty">Ninguna en lo que compara el mapa.</p>
           : <ol className="vf-findings">{confirmed.map(f => <Finding key={f.object + f.kind} finding={f} />)}</ol>}
       </section>
 
@@ -98,7 +98,7 @@ export function EquivalenceReportView({ report, origin, onOpen, openError }: { r
           </div>
         </dl>
         <Fingerprint label="Huella del informe" value={report.fingerprint} intact={intact} broken="No coincide: el informe se ha tocado" />
-        <p className="vf-note">Los nombres no salen del lado del vendedor: cada referencia es un seudónimo con la misma sal que el parte de vigilancia. Lo que solo está en el destino lleva su propio seudónimo.</p>
+        <p className="pb-note">Los nombres no salen del lado del vendedor: cada referencia es un seudónimo con la misma sal que el parte de vigilancia. Lo que solo está en el destino lleva su propio seudónimo.</p>
       </footer>
     </Frame>
   );

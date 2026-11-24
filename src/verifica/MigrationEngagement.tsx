@@ -108,20 +108,20 @@ export default function MigrationEngagement({ origin, engagementId, onOpen, open
         lede="Compara los registros del cierre con lo que llegó al CRM del comprador. Los archivos se procesan en este navegador."
         onOpen={onOpen} openError={openError} busy={busy}>
         <section className="vf-section" aria-labelledby="vf-migration-files">
-          <div className="vf-section-head"><h2 id="vf-migration-files">Archivos de la comparación</h2></div>
+          <div className="pb-section-head"><h2 id="vf-migration-files">Archivos de la comparación</h2></div>
           <form className="vf-read-form" onSubmit={event => void compare(event)} onChange={() => { setError(null); setResult(null); }}>
             <fieldset disabled={busy} className="vf-read-form">
               <legend>Entradas de migración</legend>
-              {watch && <fieldset className="vf-choice">
-                <legend className="vf-field-label">Captura de cierre</legend>
-                <label className="vf-option">
+              {watch && <fieldset className="pb-choice">
+                <legend className="pb-field-label">Captura de cierre</legend>
+                <label className="pb-option">
                   <input type="radio" name="closingSource" value="watch" checked={fromWatch} onChange={() => setFromWatch(true)} />
-                  <span className="vf-option-text"><span className="vf-option-label">La última de la vigilancia del encargo</span>
-                    <span className="vf-option-note">{day(watch.latest.at)} · huella <code>{short(watch.latest.fingerprint)}</code>. Se usan también su parte y su sal.</span></span>
+                  <span className="pb-option-text"><span className="pb-option-label">La última de la vigilancia del encargo</span>
+                    <span className="pb-option-note">{day(watch.latest.at)} · huella <code>{short(watch.latest.fingerprint)}</code>. Se usan también su parte y su sal.</span></span>
                 </label>
-                <label className="vf-option">
+                <label className="pb-option">
                   <input type="radio" name="closingSource" value="files" checked={!fromWatch} onChange={() => setFromWatch(false)} />
-                  <span className="vf-option-text"><span className="vf-option-label">Subir los archivos a mano</span></span>
+                  <span className="pb-option-text"><span className="pb-option-label">Subir los archivos a mano</span></span>
                 </label>
               </fieldset>}
               {fields.map(({ name, label, required }) => (
@@ -130,25 +130,25 @@ export default function MigrationEngagement({ origin, engagementId, onOpen, open
                   <input name={name} type="file" accept={name === 'salt' ? '.txt,text/plain' : '.json,application/json'} required={required} />
                 </label>
               ))}
-              <p className="vf-note">{linked
+              <p className="pb-note">{linked
                 ? 'Si la última captura está retenida, acepta antes su huella en «Vigilancia». La captura de cierre se queda en este equipo.'
                 : 'Si adjuntas un parte de vigilancia, añade también la sal con la que se generó.'}</p>
-              <label>Fecha del informe{' '}<input className="vf-input" name="asOf" type="date" defaultValue={madridDay(new Date())} required /></label>
+              <label>Fecha del informe{' '}<input className="pb-input" name="asOf" type="date" defaultValue={madridDay(new Date())} required /></label>
             </fieldset>
-            <div><button className="vf-primary" type="submit" disabled={busy}>{busy ? 'Comparando…' : 'Comparar migración'}</button></div>
+            <div><button className="pb-primary" type="submit" disabled={busy}>{busy ? 'Comparando…' : 'Comparar migración'}</button></div>
           </form>
-          {error && <p className="vf-error" role="alert">{error}</p>}
+          {error && <p className="pb-error" role="alert">{error}</p>}
         </section>
-        {result && <section className="vf-card" aria-label="Resultado de la comparación">
+        {result && <section className="pb-card" aria-label="Resultado de la comparación">
           <h2>Informe preparado</h2>
           <p role="status">Huella <code>{short(result.report.fingerprint)}</code></p>
           <div className="vf-bar-actions">
-            <button className="vf-secondary" type="button" onClick={() => setPreview(true)}>Ver informe</button>
-            <button className="vf-secondary" type="button" onClick={() => downloadJson(equivalenceToJson(result.report), `${filename}.json`)}>Descargar informe</button>
-            <button className="vf-secondary" type="button" onClick={() => downloadText(result.workList, `${filename}-lista-privada.csv`, 'text/csv')}>Descargar lista privada</button>
-            {result.newSalt !== null && <button className="vf-secondary" type="button" onClick={() => downloadText(`${result.newSalt}\n`, `${filename}-sal-privada.txt`)}>Descargar sal privada</button>}
+            <button className="pb-secondary" type="button" onClick={() => setPreview(true)}>Ver informe</button>
+            <button className="pb-secondary" type="button" onClick={() => downloadJson(equivalenceToJson(result.report), `${filename}.json`)}>Descargar informe</button>
+            <button className="pb-secondary" type="button" onClick={() => downloadText(result.workList, `${filename}-lista-privada.csv`, 'text/csv')}>Descargar lista privada</button>
+            {result.newSalt !== null && <button className="pb-secondary" type="button" onClick={() => downloadText(`${result.newSalt}\n`, `${filename}-sal-privada.txt`)}>Descargar sal privada</button>}
           </div>
-          <p className="vf-note">La lista de corrección contiene identificadores del CRM. Guárdala con la sal en el equipo de trabajo.</p>
+          <p className="pb-note">La lista de corrección contiene identificadores del CRM. Guárdala con la sal en el equipo de trabajo.</p>
         </section>}
       </Frame>
     </div>

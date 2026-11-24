@@ -9,9 +9,13 @@ import { registerVerificaEngagements } from '../server/verifica/engagements.js';
 import { sha256Hex } from '../shared/sha256.js';
 import type { ReadJob, StoredSource } from '../shared/verifica/engagement.js';
 import { buildWatchedCompany } from '../shared/verifica/empresa-vigilada.js';
+import { buildMigratedCompany } from '../shared/verifica/empresa-migrada.js';
+import { equivalenceToJson, verifyEquivalenceReport } from '../shared/verifica/equivalence.js';
+import { parseCaptureText } from '../shared/verifica/inputs.js';
+import { equivalenceWorkList, prepareEquivalenceFiles, releaseEquivalence } from '../shared/verifica/migration.js';
 import { READ_SCOPE, verifyReadRecord, type ReadAuthorization, type ReadRecord } from '../shared/verifica/read-authorization.js';
-import { watchUrl, type WatchReportResult, type WatchView } from '../shared/verifica/watch-contract.js';
-import { verifyWatchReport } from '../shared/verifica/watch.js';
+import { watchMigrationUrl, watchUrl, type WatchMigrationResult, type WatchReportResult, type WatchView } from '../shared/verifica/watch-contract.js';
+import { verifyWatchReport, watchReportToJson } from '../shared/verifica/watch.js';
 import { FAKE_PORTAL, fakeHubspot } from './helpers/fake-hubspot.js';
 
 process.env.NODE_ENV = 'test';
@@ -103,8 +107,32 @@ test('la ruta del encargo vigila desde la captura firmada, detecta un retraso y 
     const observed = store.get<{ record: ReadRecord; captureText: string } | null>('verifica:watch-capture:' + id + ':' + week.fingerprint, null);
     assert.ok(observed && verifyReadRecord(observed.record, observed.captureText));
     assert.equal((await post({ action: 'accept', fingerprint: week.fingerprint, confirmed: false })).statusCode, 422);
+    const migrationUrl = watchMigrationUrl(id);
+    const migrated = buildMigratedCompany({ traps: false });
+    const closingCapture = parseCaptureText(observed.captureText, 'La captura');
+    const asOf = '2099-01-01';
+    const map = { ...migrated.map, sourceProvider: closingCapture.source, sourceAccountId: closingCapture.id };
+    const migration = { target: JSON.stringify(migrated.target), map: JSON.stringify(map), asOf };
+    const blocked = await app.inject({ method: 'POST', url: migrationUrl, payload: migration });
+    assert.equal(blocked.statusCode, 409, blocked.body);
+    assert.match(blocked.body, /retenida/);
+    assert.equal((await app.inject({ method: 'POST', url: watchMigrationUrl(other), payload: migration })).statusCode, 404);
     assert.equal((await post({ action: 'accept', fingerprint: week.fingerprint, confirmed: true })).statusCode, 200);
     assert.equal((await report()).entries[1]!.status, 'accepted');
+
+    assert.equal((await app.inject({ method: 'POST', url: migrationUrl, payload: { ...migration, map: '{' } })).statusCode, 422);
+    assert.equal((await app.inject({ method: 'POST', url: migrationUrl, payload: { ...migration, asOf: '2099-02-31' } })).statusCode, 422);
+    const compared = await app.inject({ method: 'POST', url: migrationUrl, payload: migration });
+    assert.equal(compared.statusCode, 200, compared.body);
+    assert.equal(compared.headers['cache-control'], 'no-store');
+    const result = compared.json<WatchMigrationResult>();
+    assert.equal(verifyEquivalenceReport(result.report), true);
+    assert.equal(result.report.closing.fingerprint, week.fingerprint);
+    // Mismo resultado que subir a mano la captura de cierre, el parte y la sal descargados para esa fecha.
+    const manual = releaseEquivalence(prepareEquivalenceFiles({ closing: observed.captureText, target: migration.target, map: migration.map,
+      watch: watchReportToJson(timer.report(id, new Date(asOf).toISOString())), salt: company.salt + '\n', asOf }).input);
+    assert.equal(equivalenceToJson(result.report), equivalenceToJson(manual.report));
+    assert.equal(result.workList, equivalenceWorkList(manual.comparison));
 
     assert.equal((await post({ action: 'pause' })).json<WatchView>().schedule?.active, false);
     now = new Date(company.captures[2]!.capturedAt);

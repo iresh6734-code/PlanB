@@ -1,11 +1,14 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { AppError, type Store } from '../store.js';
+import { MigrationInputError } from '../../shared/migration-verifier.js';
 import { CleanRoomError, newSalt } from '../../shared/verifica/clean-room.js';
-import { READ_LIMITS } from '../../shared/verifica/engagement.js';
+import { ENGAGEMENT_LIMITS, READ_LIMITS } from '../../shared/verifica/engagement.js';
+import { VerificaInputError } from '../../shared/verifica/inputs.js';
+import { EquivalenceInputError, equivalenceWorkList, prepareEquivalenceFiles, releaseEquivalence } from '../../shared/verifica/migration.js';
 import { ReadAuthorizationError, type ReadRecord } from '../../shared/verifica/read-authorization.js';
-import { WatchInputError } from '../../shared/verifica/watch.js';
-import { WATCH_ARTIFACTS, WATCH_RESOURCE, type WatchSigningChoice, type WatchView } from '../../shared/verifica/watch-contract.js';
+import { WatchInputError, watchReportToJson } from '../../shared/verifica/watch.js';
+import { WATCH_ARTIFACTS, WATCH_MIGRATION, WATCH_RESOURCE, type WatchMigrationResult, type WatchSigningChoice, type WatchView } from '../../shared/verifica/watch-contract.js';
 import { createWatchTimer, inspectWatchObservation } from './watch-timer.js';
 
 const roles = ['previous', 'latest'] as const;
@@ -20,6 +23,11 @@ const action = z.discriminatedUnion('action', [
   z.object({ action: z.literal('pause') }).strict(),
   z.object({ action: z.literal('accept'), fingerprint, confirmed: z.literal(true) }).strict(),
 ]);
+const migrationBody = z.object({
+  target: z.string().min(1).max(ENGAGEMENT_LIMITS.sourceBytes),
+  map: z.string().min(1).max(ENGAGEMENT_LIMITS.sourceBytes),
+  asOf: z.iso.date(),
+}).strict();
 
 type Signing = { captureText: string; record: ReadRecord };
 type WatchOptions = Parameters<typeof createWatchTimer>[1];
@@ -29,6 +37,8 @@ function input<T>(run: () => T): T {
   catch (error) {
     if (error instanceof ReadAuthorizationError) throw new AppError(422, error.code === 'MALFORMED' ? 'La autorización tiene un formato incorrecto.' : error.message);
     if (error instanceof WatchInputError || error instanceof CleanRoomError) throw new AppError(422, error.message);
+    if (error instanceof VerificaInputError || error instanceof MigrationInputError || error instanceof EquivalenceInputError) throw new AppError(422, error.message);
+    if (error instanceof SyntaxError) throw new AppError(422, 'El destino o el mapa no es un JSON válido.');
     throw error;
   }
 }
@@ -106,6 +116,25 @@ export function registerWatchApi(app: FastifyInstance, store: Store, engagements
     reply.header('Cache-Control', 'no-store');
     if (file === 'salt') return reply.type('text/plain; charset=utf-8').send(timer.privateSalt(id) + '\n');
     return { report: input(() => timer.report(id)) };
+  });
+
+  // Migración (D5) sobre la captura de cierre de la vigilancia. Si la última está retenida, se para hasta que las partes
+  // acepten su huella: el parte sigue tomando la última captura como cierre y no se sustituye por otra.
+  app.post(WATCH_MIGRATION, async (request, reply) => {
+    const { id } = params.parse(request.params);
+    engagements.name(id);
+    if (!timer.configured(id)) throw new AppError(404, 'Falta fijar la captura de firma.');
+    const body = migrationBody.parse(request.body);
+    const result = input((): WatchMigrationResult => {
+      const closing = timer.closing(id, new Date(Date.parse(body.asOf)).toISOString());
+      if (closing.retained) throw new AppError(409, 'La última captura de la vigilancia está retenida. Acepta su huella en «Vigilancia» antes de comparar la migración.');
+      const { input: equivalence } = prepareEquivalenceFiles({ closing: closing.captureText, target: body.target, map: body.map,
+        watch: watchReportToJson(closing.report), salt: timer.privateSalt(id), asOf: body.asOf });
+      const { report, comparison } = releaseEquivalence(equivalence);
+      return { report, workList: equivalenceWorkList(comparison) };
+    });
+    reply.header('Cache-Control', 'no-store');
+    return result;
   });
 
   return timer;

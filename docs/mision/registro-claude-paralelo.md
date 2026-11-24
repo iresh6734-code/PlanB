@@ -383,3 +383,18 @@ Plan en Claude Docs, «Plan B · Mega plan 2». La usuaria pidió seguirlo «usa
 **Dependencias de lo aparcado.** El 24/11 el usuario ejecutó el `npm uninstall` de las diez (`@azure/msal-node`, `@firebase/app`, `@firebase/auth`, `@google-cloud/tasks`, `@microsoft/agents-copilotstudio-client`, `firebase-admin`, `google-auth-library`, `pg`, `@electric-sql/pglite`, `@types/pg`). Ya no están en `package.json` ni en `node_modules`. Ningún archivo de código las importa; solo las nombran los paquetes viejos de `build/`, que no están en git y que el arranque no usa (`start-full-workspace.cjs` tira de su propia instalación). `tsc` y `vite build` pasan sin ellas.
 
 **Siguiente:** corte 4, la vigilancia automática con el temporizador.
+
+## 24/11/2026 · Mega plan 2 · D5: migración con la captura de cierre de la vigilancia
+
+**Qué hay.** Si el encargo tiene vigilancia, «Después del cierre» propone su última captura, con fecha y huella, y conserva la carga manual. El navegador envía solo destino, mapa y fecha. `POST /api/verifica/engagements/:id/watch/migration` toma en el servidor la captura, el parte de esa fecha y la sal del encargo. Responde con el informe y la lista privada, con `no-store`.
+
+**Regla elegida por la usuaria:** si la última captura está retenida, `409` hasta aceptar su huella. No se cambia por la última aceptada.
+
+**Comprobado:**
+
+- `verifica-watch-api` cubre `409`, `404` y `422`.
+- Tras aceptar la huella, el resultado es idéntico byte a byte a la carga manual. El mutante sin la regla falla.
+- Pruebas focales, `tsc` y batería segura en verde.
+- Sin navegador, servidor, PowerShell ni DPAPI.
+
+**Pendiente:** regenerar `docs/api.md` con las cuatro rutas, bajo la reserva `CLAUDE-API-INVENTORY`. La fase B necesita la cuenta de pruebas de HubSpot y un CSV anonimizado de Holded.

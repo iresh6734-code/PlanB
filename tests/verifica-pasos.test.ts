@@ -14,7 +14,7 @@ const noop = () => {};
 
 test('Verifica · pantalla de migración local: archivos separados, fecha y una acción primaria', async () => {
   const { default: MigrationEngagement } = await import('../src/verifica/MigrationEngagement.js');
-  const html = renderToStaticMarkup(createElement(MigrationEngagement, { origin: { kind: 'local', onDoc: noop }, onOpen: noop, openError: null }));
+  const html = renderToStaticMarkup(createElement(MigrationEngagement, { origin: { kind: 'local', onDoc: noop }, engagementId: null, onOpen: noop, openError: null }));
   for (const name of ['closing', 'target', 'map', 'watch', 'salt']) assert.match(html, new RegExp(`name="${name}"`));
   assert.match(html, /<input(?=[^>]*\bname="asOf")(?=[^>]*\btype="date")[^>]*>/);
   assert.match(html, /Comparar migración/);

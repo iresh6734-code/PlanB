@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MigrationInputError } from '../../shared/migration-verifier.js';
 import { CleanRoomError } from '../../shared/verifica/clean-room.js';
 import { ENGAGEMENT_LIMITS } from '../../shared/verifica/engagement.js';
@@ -7,12 +7,15 @@ import { VerificaInputError } from '../../shared/verifica/inputs.js';
 import { EquivalenceInputError, equivalenceWorkList, prepareEquivalenceFiles, releaseEquivalence } from '../../shared/verifica/migration.js';
 import { madridDay } from '../../shared/verifica/read-authorization.js';
 import { WatchInputError } from '../../shared/verifica/watch.js';
-import { downloadJson, downloadText, short } from './documents.js';
+import { watchMigrationUrl, watchUrl, type WatchMigrationRequest, type WatchMigrationResult, type WatchScheduleStatus, type WatchView } from '../../shared/verifica/watch-contract.js';
+import { day, downloadJson, downloadText, short } from './documents.js';
 import { EquivalenceReportView } from './EquivalenceReport.js';
 import { Frame, type ReportOrigin } from './Masthead.js';
 
 type Result = { report: EquivalenceReport; workList: string; newSalt: string | null };
-type Props = { origin: Extract<ReportOrigin, { kind: 'local' }>; onOpen: (file: File) => void; openError: string | null };
+type Props = { origin: Extract<ReportOrigin, { kind: 'local' }>; engagementId: string | null; onOpen: (file: File) => void; openError: string | null };
+
+class ServerError extends Error { constructor(message: string) { super(message); this.name = 'ServerError'; } }
 
 const FILES = [
   { name: 'closing', label: 'Captura de cierre', required: true },
@@ -37,15 +40,40 @@ async function readFile(data: FormData, { name, label, required }: typeof FILES[
 function message(error: unknown): string {
   if (error instanceof SyntaxError) return 'Uno de los archivos .json no es un JSON válido.';
   if (error instanceof VerificaInputError || error instanceof MigrationInputError || error instanceof EquivalenceInputError
-    || error instanceof WatchInputError || error instanceof CleanRoomError) return error.message;
+    || error instanceof WatchInputError || error instanceof CleanRoomError || error instanceof ServerError) return error.message;
+  if (error instanceof TypeError) return 'No hubo respuesta del servidor local. Comprueba que Plan B sigue abierto y reintenta.';
   return 'No se pudo completar la comparación. Revisa los archivos y vuelve a intentarlo.';
 }
 
-export default function MigrationEngagement({ origin, onOpen, openError }: Props) {
+/** Compara en el servidor con la captura de cierre, el parte y la sal de la vigilancia: la captura no sale del equipo. */
+async function compareWithWatch(engagementId: string, request: WatchMigrationRequest): Promise<WatchMigrationResult> {
+  const response = await fetch(watchMigrationUrl(engagementId), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) });
+  if (response.status === 401) throw new ServerError('Plan B está bloqueado. Desbloquea la copia y vuelve a intentarlo.');
+  const body = await response.json().catch(() => null) as (WatchMigrationResult & { error?: string }) | null;
+  if (!response.ok || !body) throw new ServerError(body?.error ?? 'No se pudo completar la comparación. Revisa los archivos y vuelve a intentarlo.');
+  return body;
+}
+
+export default function MigrationEngagement({ origin, engagementId, onOpen, openError }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Result | null>(null);
   const [preview, setPreview] = useState(false);
+  const [watch, setWatch] = useState<WatchScheduleStatus | null>(null);
+  const [fromWatch, setFromWatch] = useState(false);
+
+  useEffect(() => {
+    if (!engagementId) return;
+    const abort = new AbortController();
+    fetch(watchUrl(engagementId), { signal: abort.signal })
+      .then(response => response.ok ? response.json() as Promise<WatchView> : null)
+      .then(view => { if (!abort.signal.aborted && view?.schedule) { setWatch(view.schedule); setFromWatch(true); } })
+      .catch(() => {});
+    return () => abort.abort();
+  }, [engagementId]);
+
+  const linked = fromWatch && watch !== null && engagementId !== null;
+  const fields = FILES.filter(field => !linked || field.name === 'target' || field.name === 'map');
 
   async function compare(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -55,8 +83,15 @@ export default function MigrationEngagement({ origin, onOpen, openError }: Props
     setError(null);
     setResult(null);
     try {
-      const [closing, target, map, watch, salt] = await Promise.all(FILES.map(field => readFile(data, field)));
-      const { input, saltCreated } = prepareEquivalenceFiles({ closing: closing!, target: target!, map: map!, watch, salt, asOf: String(data.get('asOf') ?? '') });
+      const asOf = String(data.get('asOf') ?? '');
+      if (linked) {
+        const [target, map] = await Promise.all(fields.map(field => readFile(data, field)));
+        const { report, workList } = await compareWithWatch(engagementId, { target: target!, map: map!, asOf });
+        setResult({ report, workList, newSalt: null });
+        return;
+      }
+      const [closing, target, map, watchFile, salt] = await Promise.all(FILES.map(field => readFile(data, field)));
+      const { input, saltCreated } = prepareEquivalenceFiles({ closing: closing!, target: target!, map: map!, watch: watchFile, salt, asOf });
       const { report, comparison } = releaseEquivalence(input);
       setResult({ report, workList: equivalenceWorkList(comparison), newSalt: saltCreated ? input.salt : null });
     } catch (failure) {
@@ -77,13 +112,27 @@ export default function MigrationEngagement({ origin, onOpen, openError }: Props
           <form className="vf-read-form" onSubmit={event => void compare(event)} onChange={() => { setError(null); setResult(null); }}>
             <fieldset disabled={busy} className="vf-read-form">
               <legend>Entradas de migración</legend>
-              {FILES.map(({ name, label, required }) => (
+              {watch && <fieldset className="vf-choice">
+                <legend className="vf-field-label">Captura de cierre</legend>
+                <label className="vf-option">
+                  <input type="radio" name="closingSource" value="watch" checked={fromWatch} onChange={() => setFromWatch(true)} />
+                  <span className="vf-option-text"><span className="vf-option-label">La última de la vigilancia del encargo</span>
+                    <span className="vf-option-note">{day(watch.latest.at)} · huella <code>{short(watch.latest.fingerprint)}</code>. Se usan también su parte y su sal.</span></span>
+                </label>
+                <label className="vf-option">
+                  <input type="radio" name="closingSource" value="files" checked={!fromWatch} onChange={() => setFromWatch(false)} />
+                  <span className="vf-option-text"><span className="vf-option-label">Subir los archivos a mano</span></span>
+                </label>
+              </fieldset>}
+              {fields.map(({ name, label, required }) => (
                 <label key={name}>
                   <span>{label}{required ? '' : ' · opcional'}</span>{' '}
                   <input name={name} type="file" accept={name === 'salt' ? '.txt,text/plain' : '.json,application/json'} required={required} />
                 </label>
               ))}
-              <p className="vf-note">Si adjuntas un parte de vigilancia, añade también la sal con la que se generó.</p>
+              <p className="vf-note">{linked
+                ? 'Si la última captura está retenida, acepta antes su huella en «Vigilancia». La captura de cierre se queda en este equipo.'
+                : 'Si adjuntas un parte de vigilancia, añade también la sal con la que se generó.'}</p>
               <label>Fecha del informe{' '}<input className="vf-input" name="asOf" type="date" defaultValue={madridDay(new Date())} required /></label>
             </fieldset>
             <div><button className="vf-primary" type="submit" disabled={busy}>{busy ? 'Comparando…' : 'Comparar migración'}</button></div>

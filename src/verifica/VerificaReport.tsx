@@ -177,7 +177,7 @@ export default function VerificaReportPage() {
   if (!opened && local && doc === 'migration') {
     const localOrigin = { kind: 'local', onDoc: go } as const;
     return <Suspense fallback={<EquivalencePending origin={localOrigin} failed={false} onOpen={open} openError={openError} />}>
-      <MigrationEngagement key={engagementId} origin={localOrigin} onOpen={open} openError={openError} />
+      <MigrationEngagement key={engagementId} origin={localOrigin} engagementId={engagementId} onOpen={open} openError={openError} />
     </Suspense>;
   }
   return shown === null

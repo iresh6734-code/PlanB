@@ -22,4 +22,4 @@ El servidor completo montó tres rutas nuevas. `node tools/api/inventory.mjs --c
 | POST | `/api/verifica/engagements/:id/watch` | Fijar la firma, activar, pausar o aceptar una captura retenida. |
 | GET | `/api/verifica/engagements/:id/watch/artifacts/:file` | `report` obtiene el parte verificable. `salt` descarga la sal privada. |
 
-La migración sigue tomando una captura de cierre seleccionada en la pantalla. Queda acordar el enlace a la captura aceptada cuando la última esté retenida y validar las fuentes de la fase B.
+La migración usa la última captura de la vigilancia desde el encargo y se para mientras esté retenida ([D5](CODEX-VERIFICA-D5-MIGRACION.md)). Queda validar las fuentes de la fase B.

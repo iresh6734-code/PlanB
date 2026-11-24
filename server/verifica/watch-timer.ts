@@ -91,6 +91,20 @@ export function createWatchTimer(store: Store, options: { now?: () => Date; fetc
   const interval = setInterval(() => { void poll().catch(() => {}); }, options.intervalMs ?? 60_000);
   interval.unref();
 
+  function loadObservation(id: string, fingerprint: string) {
+    const item = store.get<Observation | null>(observationKey(id, fingerprint), null);
+    if (!item) throw new Error('Falta una captura con su acta íntegra.');
+    const { capture, ref } = inspectWatchObservation(item);
+    if (ref.fingerprint !== fingerprint) throw new Error('Cambió la huella de la captura de vigilancia.');
+    return { item, capture };
+  }
+
+  function reportOf(id: string, asOf: string) {
+    const state = stateOf(id);
+    const load = ({ fingerprint }: WatchCaptureRef) => loadObservation(id, fingerprint).capture;
+    return releaseWatchReport({ signing: load(state.signing), captures: state.weekly.map(load), accepted: state.accepted, asOf, salt: state.salt });
+  }
+
   return {
     setSigning(id: string, observation: Observation, salt: string) {
       if (store.get<WatchState | null>(watchKey(id), null)) throw new WatchInputError('La captura de firma ya está fijada.');
@@ -127,15 +141,14 @@ export function createWatchTimer(store: Store, options: { now?: () => Date; fetc
       if (!state.accepted.includes(fingerprint)) store.set(watchKey(id), { ...state, accepted: [...state.accepted, fingerprint] });
     },
     report(id: string, asOf = now().toISOString()) {
-      const state = stateOf(id);
-      const load = ({ fingerprint }: WatchCaptureRef) => {
-        const item = store.get<Observation | null>(observationKey(id, fingerprint), null);
-        if (!item) throw new Error('Falta una captura con su acta íntegra.');
-        const { capture, ref } = inspectWatchObservation(item);
-        if (ref.fingerprint !== fingerprint) throw new Error('Cambió la huella de la captura de vigilancia.');
-        return capture;
-      };
-      return releaseWatchReport({ signing: load(state.signing), captures: state.weekly.map(load), accepted: state.accepted, asOf, salt: state.salt });
+      return reportOf(id, asOf);
+    },
+    /** La captura de cierre es la última del parte. `retained` indica que las partes aún no han aceptado su huella. */
+    closing(id: string, asOf: string) {
+      const report = reportOf(id, asOf);
+      const entry = report.entries.at(-1)!;
+      const { item } = loadObservation(id, entry.fingerprint);
+      return { captureText: item.captureText, report, retained: entry.status === 'retained' };
     },
     poll,
     async close() {

@@ -84,8 +84,8 @@ Es para cuando la lista de la sección 1 esté completa. Hasta entonces es solo 
 | Hora 24 | Segunda captura, con su acta, para tener lo que cambió entre las dos. Las dos van a la sala limpia como `--previous` y `--latest` | El mismo lector, con otros nombres de archivo |
 | Hora 24–48 | Sala limpia: informe, copia y llave por separado. Revisar a mano lo que la barrera no cubre | `scripts/verifica-sala-limpia.ts` |
 | Hora 48–72 | El comprador comprueba la huella en `verifica.html`. Reunión de 45 minutos | `verifica.html` |
-| Tras la firma | Vigilancia semanal hasta el cierre | `scripts/verifica-vigilancia.ts` |
-| Tras el cierre | Informe de equivalencia de la migración | `scripts/verifica-migracion.ts` |
+| Tras la firma | Vigilancia semanal hasta el cierre | Paso 5 del encargo, «Vigilancia», o `scripts/verifica-vigilancia.ts` |
+| Tras el cierre | Informe de equivalencia de la migración. Desde el encargo se usa la última captura de la vigilancia con su parte y su sal; si está retenida, primero se acepta su huella | Paso 6, «Después del cierre», o `scripts/verifica-migracion.ts` |
 | Al terminar | Borrar las capturas del equipo de trabajo. Solo quedan la copia custodiada y las actas, en manos de quien se acordó | Acuerdo de tratamiento |
 
 ### Autorización de lectura

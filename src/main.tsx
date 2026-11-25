@@ -2,6 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.js';
 import './styles.css';
+import './design/tokens.css';
 import './sales.css';
 import './integrations.css';
 import './design-system.css';

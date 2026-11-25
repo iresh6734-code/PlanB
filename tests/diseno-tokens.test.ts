@@ -5,6 +5,21 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const MIGRATED = ['src/design/base.css', 'src/design/components.css', 'src/verifica/verifica.css'];
+const SEMANTIC_LAYER = ['src/faro.css'];
+
+test('Diseño · la capa de variables de faro.css solo usa tokens --pb-* (sin hex propios)', () => {
+  const css = readFileSync('src/faro.css', 'utf8');
+  const blocks = [...css.matchAll(/^(:root|html\[data-theme="dark"\]) \{([\s\S]*?)^\}/gm)];
+  assert.ok(blocks.length >= 2, 'faltan bloques de variables en faro.css');
+  const SEMANTIC = /--(bg-|text-|border|rule|primary|success|warning|danger|info|font-(sans|display))/;
+  for (const [, selector, body] of blocks) {
+    const loose = body.split(/\r?\n/).filter(line => /^\s*--/.test(line) && SEMANTIC.test(line) && LOOSE_COLOR.test(line) && !/var\(--pb-/.test(line));
+    assert.deepEqual(loose.map(l => l.trim()), [], 'el bloque ' + selector + ' escribe colores fuera de los tokens');
+  }
+  for (const name of ['--text-1', '--border', '--primary', '--font-display', '--bg-canvas']) {
+    assert.ok(css.includes(name + ': var(--pb-'), name + ' no apunta a los tokens comunes');
+  }
+});
 const LOOSE_COLOR = /#[0-9a-fA-F]{3,8}\b|\brgba?\(|\bhsla?\(/;
 
 test('Diseño · las hojas pasadas al sistema común no escriben colores sueltos: solo tokens', () => {

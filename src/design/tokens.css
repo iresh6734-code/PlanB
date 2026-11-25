@@ -18,6 +18,12 @@
   --pb-declared: #8a4b0f; --pb-declared-bg: #fbf0e4;
   --pb-unverified: #4a4f5a; --pb-unverified-bg: #efeff2;
   --pb-ok: #2f6b4f; --pb-ok-bg: #e6f1ea;
+  --pb-tone-0: #2650d0; --pb-tone-0-bg: #e6edfd;
+  --pb-tone-1: #5b3bb5; --pb-tone-1-bg: #eee9fc;
+  --pb-tone-2: #0c6a62; --pb-tone-2-bg: #dcf3ef;
+  --pb-tone-3: #8b3a0f; --pb-tone-3-bg: #fbe9dc;
+  --pb-tone-4: #a31d55; --pb-tone-4-bg: #fce5ee;
+  --pb-tone-5: #0b5f93; --pb-tone-5-bg: #dcf0fb;
   --pb-focus: #1f3a5f; --pb-highlight: #d6e2f2;
   color-scheme: light;
 }
@@ -34,6 +40,12 @@ html[data-theme="dark"] {
   --pb-declared: #f0c27c; --pb-declared-bg: #33250f;
   --pb-unverified: #c5cad2; --pb-unverified-bg: #272b32;
   --pb-ok: #82d0a3; --pb-ok-bg: #16291e;
+  --pb-tone-0: #a9c3e8; --pb-tone-0-bg: #1e2a3a;
+  --pb-tone-1: #c9b8ff; --pb-tone-1-bg: #2a2147;
+  --pb-tone-2: #7fd9cc; --pb-tone-2-bg: #12302f;
+  --pb-tone-3: #f2b48a; --pb-tone-3-bg: #3a2414;
+  --pb-tone-4: #f5a3c4; --pb-tone-4-bg: #3b1828;
+  --pb-tone-5: #8fcbf2; --pb-tone-5-bg: #12293a;
   --pb-focus: #a9c3e8; --pb-highlight: #2b3c56;
   color-scheme: dark;
 }

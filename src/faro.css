@@ -530,7 +530,7 @@ html body .lop .lop-tasks li, html body .oc-task-list li { position: relative; }
   --warning: var(--pb-declared); --warning-bg: var(--pb-declared-bg); --warning-border: #e8cf90;
   --danger: var(--pb-alarm); --danger-bg: var(--pb-alarm-bg); --danger-border: #efbcb6;
   --info: var(--pb-observed); --info-bg: var(--pb-observed-bg); --info-border: #b9dcd6;
-  --tone-0: var(--pb-observed); --tone-0-bg: var(--pb-observed-bg);
+  --tone-0: var(--pb-tone-0); --tone-0-bg: var(--pb-tone-0-bg);
   --r-sm: 5px; --r-md: 7px; --r-lg: 10px; --r-xl: 14px;
   --shadow-1: none;
   --shadow-2: 0 6px 18px rgba(14, 42, 47, .08);
@@ -1182,7 +1182,7 @@ html[data-theme="dark"] {
   --warning: var(--pb-declared); --warning-bg: var(--pb-declared-bg); --warning-border: #5b4719;
   --danger: var(--pb-alarm); --danger-bg: var(--pb-alarm-bg); --danger-border: #6a2f2c;
   --info: var(--pb-observed); --info-bg: var(--pb-observed-bg); --info-border: #24534f;
-  --tone-0: var(--pb-observed); --tone-0-bg: var(--pb-observed-bg);
+  --tone-0: var(--pb-tone-0); --tone-0-bg: var(--pb-tone-0-bg);
   --oc-ink: var(--text-1); --oc-muted: var(--text-3); --oc-line: var(--border); --oc-surface: var(--bg-surface); --oc-canvas: var(--bg-canvas);
   --oc-neutral-bg: #1f3336; --oc-neutral-fg: #c4d2cf;
   --oc-danger: #ffa197; --oc-danger-bg: #331a1b; --oc-danger-fg: #ffa197;
@@ -1575,7 +1575,7 @@ html body:has(.record-drawer, [role="dialog"][aria-modal="true"]) .gx-drill { ri
 /* Tablas y textos del espacio de equipo con los tokens del tema: en oscuro la tabla de Empresa conservaba fondos claros
    y el texto de Comercial un azul grisáceo fijo (contraste 1,55–2,29). */
 /* Tonos de etiqueta 1–5 en oscuro (solo existía el 0): fondos profundos y texto claro del mismo matiz, ≥ 4,5:1. */
-html[data-theme="dark"] { --tone-1-bg: #2a2147; --tone-1: #c9b8ff; --tone-2-bg: #12302f; --tone-2: #7fd9cc; --tone-3-bg: #3a2414; --tone-3: #f2b48a; --tone-4-bg: #3b1828; --tone-4: #f5a3c4; --tone-5-bg: #12293a; --tone-5: #8fcbf2; }
+html[data-theme="dark"] { --tone-0: var(--pb-tone-0); --tone-0-bg: var(--pb-tone-0-bg); --tone-1: var(--pb-tone-1); --tone-1-bg: var(--pb-tone-1-bg); --tone-2: var(--pb-tone-2); --tone-2-bg: var(--pb-tone-2-bg); --tone-3: var(--pb-tone-3); --tone-3-bg: var(--pb-tone-3-bg); --tone-4: var(--pb-tone-4); --tone-4-bg: var(--pb-tone-4-bg); --tone-5: var(--pb-tone-5); --tone-5-bg: var(--pb-tone-5-bg); }
 /* Espacio de equipo en móvil: las tablas de Contactos y de «Registros guardados» pasan a tarjetas, como las listas de la App
    local (nombre arriba, pares etiqueta · valor y el botón de editar a la derecha) en lugar de desplazarse en horizontal. */
 /* ---- Espacio de equipo · Dispositivos y Equipo en paneles; conflictos como comparación de campos ---- */

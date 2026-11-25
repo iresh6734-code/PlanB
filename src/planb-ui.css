@@ -39,12 +39,12 @@
   --info: #234ba8; --info-bg: #e8eefd; --info-border: #c4d3f2;
 
   /* Tonos de identificación (avatares, métricas): pares texto/fondo AA */
-  --tone-0: #2650d0; --tone-0-bg: #e6edfd;
-  --tone-1: #5b3bb5; --tone-1-bg: #eee9fc;
-  --tone-2: #0c6a62; --tone-2-bg: #dcf3ef;
-  --tone-3: #8b3a0f; --tone-3-bg: #fbe9dc;
-  --tone-4: #a31d55; --tone-4-bg: #fce5ee;
-  --tone-5: #0b5f93; --tone-5-bg: #dcf0fb;
+  --tone-0: var(--pb-tone-0); --tone-0-bg: var(--pb-tone-0-bg);
+  --tone-1: var(--pb-tone-1); --tone-1-bg: var(--pb-tone-1-bg);
+  --tone-2: var(--pb-tone-2); --tone-2-bg: var(--pb-tone-2-bg);
+  --tone-3: var(--pb-tone-3); --tone-3-bg: var(--pb-tone-3-bg);
+  --tone-4: var(--pb-tone-4); --tone-4-bg: var(--pb-tone-4-bg);
+  --tone-5: var(--pb-tone-5); --tone-5-bg: var(--pb-tone-5-bg);
 
   /* Espaciado (escala de 4) */
   --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px; --sp-6: 24px; --sp-8: 32px;

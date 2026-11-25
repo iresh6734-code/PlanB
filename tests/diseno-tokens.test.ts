@@ -5,7 +5,6 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const MIGRATED = ['src/design/base.css', 'src/design/components.css', 'src/verifica/verifica.css', 'src/design-system.css'];
-const SEMANTIC_LAYER = ['src/faro.css'];
 
 test('Diseño · la capa de variables de faro.css solo usa tokens --pb-* (sin hex propios)', () => {
   const css = readFileSync('src/faro.css', 'utf8');
@@ -37,5 +36,7 @@ test('Diseño · los tokens tienen valor claro y oscuro, y nadie usa ya los de V
   const colors = [...names(light)].filter(name => /#[0-9a-f]{6}/i.test(light.slice(light.indexOf(name + ':'), light.indexOf(';', light.indexOf(name + ':')))));
   assert.ok(colors.length > 20, 'hay tokens de color');
   for (const name of colors) assert.ok(names(dark).has(name), name + ' no tiene valor oscuro');
+  // Y al revés: un token solo oscuro deja en claro un var() sin valor (pasó con --pb-sb-* el 25/11/2026).
+  for (const name of names(dark)) assert.ok(names(light).has(name), name + ' no tiene valor claro');
   for (const file of MIGRATED) assert.ok(!readFileSync(file, 'utf8').includes('--vf-'), file + ' usa tokens antiguos');
 });

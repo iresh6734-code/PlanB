@@ -109,6 +109,7 @@ export function Frame({ origin, current, eyebrow, title, lede, onOpen, openError
               ? <p className="vf-origin">Encargos de este equipo · se guardan cifrados y no salen de aquí</p>
               : <p className="vf-origin">{origin.name} · abierto en este navegador, no se envía a ningún sitio</p>}
           <div className="vf-bar-actions">
+            {(origin.kind === 'local' || (origin.kind === 'reference' && origin.local)) && <a className="pb-link vf-home" href="/inicio">Copia de trabajo</a>}
             <OpenReport label={origin.kind === 'opened' ? 'Abrir otro informe' : 'Abrir un informe'} onOpen={onOpen} />
             {origin.kind === 'reference' && download && <button type="button" className="pb-primary" onClick={download.run}>{download.label}</button>}
           </div>

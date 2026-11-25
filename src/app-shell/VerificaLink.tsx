@@ -14,5 +14,5 @@ export function VerificaLink({ className, size }: { className: string; size: num
   }, []);
 
   if (!available) return null;
-  return <a href="/verifica.html" className={className}><BadgeCheck size={size} aria-hidden="true" /><span>Verifica</span></a>;
+  return <a href="/verifica" className={className}><BadgeCheck size={size} aria-hidden="true" /><span>Verifica</span></a>;
 }

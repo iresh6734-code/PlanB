@@ -518,3 +518,53 @@ Comprobado: sin cambios coinciden las 30, con 3 a 11 px de ruido; un color cambi
 Resultado: **las 30 capturas coinciden con la referencia**, así que no hay ningún cambio visible. Prueba nueva: `tests/diseno-tokens.test.ts`, que rechaza colores sueltos en las hojas ya pasadas y exige valor oscuro para cada token. Pruebas de pantalla: 28/28. Recorridos en navegador: 48/48 y 72/72. `tsc` limpio.
 
 Pendiente como cambio de diseño a propósito, no en este corte: hoy `.pb-input` va después de `.pb-input-text` y gana, así que los campos de texto salen en letra de máquina de 13 px.
+
+## 24/11/2026 · Plan de diseño «una sola app» · corte 2: Verifica con direcciones propias (Claude)
+
+Antes Verifica era una sola dirección, `/verifica.html`. El paso y el encargo vivían solo en la memoria de la página: recargar devolvía al principio, «Atrás» salía de Verifica y no se podía enlazar un encargo. Ahora cada paso y cada encargo tienen su dirección:
+
+- `/verifica` es Operación, con los encargos.
+- `/verifica/encargos/:id/fuentes`, `…/capturas`, `…/informe`, `…/vigilancia` y `…/despues` son los pasos de un encargo.
+- `/verifica/informe` y las demás direcciones sin id son el paso sin encargo elegido.
+
+**Lo que se ha hecho:**
+- `src/verifica/app/routes.ts`: una pieza pura con `placeOf`, `pathOf` y el título de cada paso. Una dirección de encargo sin paso abre sus fuentes; una dirección que no vale lleva a Operación.
+- `VerificaReport.tsx`:
+  - arranca en el paso y el encargo de la dirección;
+  - con servidor local, moverse añade una entrada al historial, y llegar por `/verifica.html` o por una dirección que no vale la reemplaza;
+  - cerrar un encargo también reemplaza la entrada, para que «Atrás» no vuelva a un encargo ya borrado;
+  - «Atrás» y «Adelante» llevan al paso de la dirección;
+  - la pestaña lleva el nombre del paso;
+  - mientras comprueba si hay servidor local, muestra «Abriendo…» en vez del ejemplo.
+- Sin servidor (el visor del comprador), la página sigue siendo el visor del ejemplo y no toca la dirección.
+- Servidor: Codex añadió en `server/app.ts` que `/verifica` y `/verifica/…` sirvan `verifica.html` (prueba `tests/verifica-app-entry.test.ts`). Su variante portátil no cambia. `vite.config.ts` hace lo mismo en desarrollo.
+- `VerificaLink`, en la Copia de trabajo, apunta a `/verifica`. El enlace «Copia de trabajo» pasa del pie de Operación a la barra superior y se ve desde cualquier paso con servidor local.
+- Cambio visible previsto en el corte 1: `.pb-input-text` y `.pb-textarea` van ahora después de `.pb-input`. Los campos de texto salen en letra normal de 15 px (16 px en móvil, para que el teléfono no amplíe la página al escribir), y el área de respuesta recupera su margen y su altura.
+
+**Comprobado:**
+- Red visual: cambian 18 de 30 capturas, justo las que tienen la barra con servidor local o campos de texto. El paquete y las tres vistas sin servidor no cambian. Revisadas las capturas, se rehízo la referencia; al volver a comparar coinciden las 30, con 3 px de ruido.
+- Pruebas: `tests/verifica-rutas.test.ts` (2/2) y las de pantalla, tokens y entrada (30/30). `tsc` limpio.
+- Recorrido nuevo de direcciones contra el servidor aislado: 19/19. Cubre la entrada antigua, crear, recargar, «Atrás» y «Adelante», el enlace directo en móvil, un id en mayúsculas, una dirección que no vale, un encargo inexistente, la página sin servidor y cerrar.
+- Recorridos de siempre: 48/48 y 72/72.
+
+## 25/11/2026 · Integración de lo subido por la mañana con el mega plan 4 sin subir (Claude, a petición de la usuaria)
+
+Por la mañana se subieron 7 commits desde el otro equipo (hasta `67feb4f`): A1–A4 (las capas del CRM apuntan a los tokens `--pb-*`), B2 (`0b5e3f0`, el paquete del comprador puede llevar el informe de equivalencia), `c5bfa13` (letra de los campos) y `fd74d34` (CI). No se podían traer con `pull --ff-only` porque B2 toca los mismos archivos que el mega plan 4 de Codex, que sigue sin commit. La usuaria pidió que lo integrara Claude.
+
+**Cómo se integró:**
+- Copia completa de lo que había sin subir en `tests/.tmp/respaldo-2511`: el parche del árbol, los archivos sin seguimiento y una copia de cada archivo modificado. Los 6 archivos que chocaban quedan además en `git stash` («integracion-2511»).
+- `pull --ff-only` y reaplicación: 5 conflictos.
+- Verifica: se queda la versión de Codex, que es la más completa (la equivalencia se elige por su huella y como revisada, y se guarda con `equivalence-store`). Se quita el bloque de B2 que se había colado sin conflicto y metía la equivalencia dos veces.
+- Se conserva lo de B2 que vale con ese contrato: el tipo `equivalence-report` en el expediente (por las entradas que ya se escribieron), la lectura del formato `{ report, json }` que B2 guardó en la misma clave y sus dos pruebas, adaptadas.
+- La casilla del paquete envía `{ fingerprint, reviewed: true }` con la equivalencia vigente (`latestEquivalence`). Si no la hay, sale desactivada y explica dónde se genera.
+
+**Arreglos de diseño de lo subido:**
+1. `--pb-sb-*` solo tenía valor oscuro, así que en claro `faro.css` quedaba con `var()` sin valor; no se veía porque `consola.css` lo pisa. Ahora tiene sus valores claros, y `tests/diseno-tokens.test.ts` exige también valor claro para cada token oscuro.
+2. `c5bfa13` no arreglaba la letra de los campos: solo duplicaba la regla de foco. El arreglo bueno es el del corte 2 (`.pb-input-text` y `.pb-textarea` después de `.pb-input`). La duplicada se quita.
+3. Las 3 pruebas de `tests/design-tokens.test.ts` que A1 y A2 rompieron (tonos y paletas de Faro y de la Consola) ahora resuelven `var(--pb-*)` con su valor claro u oscuro antes de medir el contraste. Siguen comprobando AA sobre los valores reales.
+4. Las opciones desactivadas salen en gris (`.pb-option:has(input:disabled)`).
+
+**Comprobado:**
+- `tsc` limpio. Pruebas de diseño y de Verifica: 158/158.
+- Recorridos: 19/19 el de direcciones, 48/48 el del mega plan 3 y 72/72 el de capturas.
+- Red visual: solo cambian las 3 vistas de Fuentes, por la opción nueva del paquete. Se rehízo la referencia.

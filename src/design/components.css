@@ -37,19 +37,17 @@
 .pb-check[data-ok="false"] { background: var(--pb-alarm-bg); color: var(--pb-alarm); }
 .pb-note { margin: 14px 0 0; max-width: 70ch; font-size: 13px; color: var(--pb-text-3); }
 .pb-held { margin: 0; max-width: 70ch; font-size: 14px; color: var(--pb-declared); }
-.pb-input:focus-visible { outline-offset: 0; border-color: var(--pb-focus); }
-.pb-input-text { font-family: var(--pb-sans); font-size: 15px; width: 100%; }
 .pb-card .pb-error { margin-top: 4px; }
 .pb-choice { margin: 0; padding: 0; border: 0; display: grid; gap: 8px; min-width: 0; }
 .pb-choice legend { padding: 0; margin-bottom: 4px; }
 .pb-choice:disabled { opacity: 0.6; }
 .pb-option { display: flex; align-items: flex-start; gap: 10px; width: fit-content; max-width: 100%; cursor: pointer; }
 .pb-option input { flex: none; width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--pb-ink); cursor: pointer; }
+.pb-option:has(input:disabled) { cursor: not-allowed; } .pb-option:has(input:disabled) .pb-option-label { color: var(--pb-text-3); }
 .pb-option-text { display: grid; gap: 2px; min-width: 0; }
 .pb-option-label { font-size: 15px; font-weight: 500; color: var(--pb-ink); }
 .pb-option-note, .pb-field-note { font-size: 13px; color: var(--pb-text-3); }
 .pb-field-note { margin: 0; max-width: 70ch; }
-.pb-textarea { min-height: 84px; padding: 10px 12px; font-family: var(--pb-sans); font-size: 15px; line-height: 1.45; resize: vertical; width: 100%; }
 .pb-danger-button { color: var(--pb-alarm); border-color: var(--pb-alarm); }
 .pb-danger-button:disabled { opacity: 0.45; cursor: not-allowed; }
 .pb-field { display: grid; gap: 6px; min-width: 0; }
@@ -59,10 +57,14 @@
 .pb-input { min-height: 40px; padding: 0 12px; border: 1px solid var(--pb-rule-strong); border-radius: 8px; background: var(--pb-sheet); color: var(--pb-ink); font-family: var(--pb-mono); font-size: 13px; }
 .pb-input::placeholder { color: var(--pb-text-3); }
 .pb-input:focus-visible { outline-offset: 0; border-color: var(--pb-focus); }
+/* Campos de texto y áreas: letra normal (no de máquina) y más alto el área. Van después de .pb-input para ganarle. */
+.pb-input-text { font-family: var(--pb-sans); font-size: 15px; width: 100%; }
+.pb-textarea { min-height: 84px; padding: 10px 12px; font-family: var(--pb-sans); font-size: 15px; line-height: 1.45; resize: vertical; width: 100%; }
 
 @media (max-width: 899px) {
   .pb-primary, .pb-secondary { min-height: 44px; }
   .pb-card { padding: 18px; }
+  .pb-input-text, .pb-textarea { font-size: 16px; } /* 16 px: el móvil no amplía la página al escribir */
 }
 
 @media print {

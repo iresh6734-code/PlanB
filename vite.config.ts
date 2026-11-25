@@ -13,9 +13,12 @@ export default defineConfig({
       name: 'plan-b-public-pages',
       configureServer(server) {
         server.middlewares.use((request, _response, next) => {
-          const page = request.url?.split('?')[0].slice(1);
+          const path = request.url?.split('?')[0] ?? '';
+          const page = path.slice(1);
           const source = page && publicPages.get(page);
           if (source) request.url = request.url!.replace('/' + page, '/' + source);
+          // Verifica tiene direcciones propias (/verifica, /verifica/encargos/:id/…): todas sirven su página, como en server/app.ts.
+          else if (path === '/verifica' || path.startsWith('/verifica/')) request.url = '/verifica.html';
           next();
         });
       },

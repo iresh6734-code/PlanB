@@ -19,6 +19,10 @@ import { OperationPage, SourcesPage } from './Engagements.js';
 import { PackageView } from './Expediente.js';
 import { CapturesPage } from './Captures.js';
 import { referenceWatch, WatchReportView } from './WatchReport.js';
+import { pathOf, placeOf, STEP_TITLE } from './app/routes.js';
+
+/** Pasos que solo existen con el servidor local; abierta suelta, la página vuelve al informe de ejemplo. */
+const LOCAL_ONLY: readonly DocKind[] = ['operation', 'sources', 'captures'];
 
 const MigrationEngagement = lazy(() => import('./MigrationEngagement.js'));
 const WatchEngagement = lazy(() => import('./WatchEngagement.js'));
@@ -114,7 +118,9 @@ type Opened = { name: string; doc: VerificaDocument; backLabel?: string; parent?
 
 export default function VerificaReportPage() {
   const [variant, setVariant] = useState<Variant>('traps');
-  const [doc, setDoc] = useState<DocKind>('report');
+  // Llegada por una dirección de Verifica (/verifica/encargos/:id/capturas…): se abre ese paso de ese encargo.
+  const [start] = useState(() => typeof window === 'undefined' ? null : placeOf(window.location.pathname));
+  const [doc, setDoc] = useState<DocKind>(start?.doc ?? 'report');
   const [opened, setOpened] = useState<Opened | null>(null);
   const [openError, setOpenError] = useState<string | null>(null);
   const [equivalence, setEquivalence] = useState<Partial<Record<Variant, EquivalenceReport>>>({});
@@ -122,14 +128,45 @@ export default function VerificaReportPage() {
   // Servida por el servidor local: aparecen los pasos 1 a 3 del encargo y la página abre en el 1, salvo que la persona
   // ya se haya movido. Abierta suelta (el comprador), no hay servidor y la página sigue siendo el visor sin conexión.
   const [local, setLocal] = useState(false);
-  const [engagementId, setEngagementId] = useState<string | null>(null);
-  const moved = useRef(false);
-  const go = (next: DocKind) => { moved.current = true; setOpened(null); setOpenError(null); setDoc(next); };
+  const [checked, setChecked] = useState(false);
+  const [engagementId, setEngagementId] = useState<string | null>(start?.engagementId ?? null);
+  const moved = useRef(start !== null);
+  // Con el servidor local cada paso y cada encargo tienen su dirección (app/routes.ts): moverse añade una entrada al
+  // historial; ajustar la de llegada (/verifica.html, una dirección que no vale) o cerrar un encargo la reemplaza.
+  const how = useRef<'push' | 'replace'>('replace');
+  const go = (next: DocKind, entry: 'push' | 'replace' = 'push') => { moved.current = true; how.current = entry; setOpened(null); setOpenError(null); setDoc(next); };
   useEffect(() => {
     const abort = new AbortController();
-    void localAvailable(abort.signal).then(ok => { if (!ok || abort.signal.aborted) return; setLocal(true); if (!moved.current) setDoc('operation'); });
+    void localAvailable(abort.signal).then(ok => {
+      if (abort.signal.aborted) return;
+      setChecked(true);
+      if (ok) { setLocal(true); if (!moved.current) setDoc('operation'); }
+      else setDoc(current => LOCAL_ONLY.includes(current) ? 'report' : current);
+    });
     return () => abort.abort();
   }, []);
+  useEffect(() => {
+    if (!local) return;
+    const target = pathOf({ doc, engagementId: doc === 'operation' ? null : engagementId });
+    if (window.location.pathname !== target) {
+      if (how.current === 'push') window.history.pushState(null, '', target);
+      else window.history.replaceState(null, '', target);
+    }
+    how.current = 'push';
+  }, [local, doc, engagementId]);
+  useEffect(() => {
+    if (!local) return;
+    const back = () => {
+      const place = placeOf(window.location.pathname);
+      if (!place) return;
+      moved.current = true; setOpened(null); setOpenError(null); setDoc(place.doc); setEngagementId(place.engagementId);
+    };
+    window.addEventListener('popstate', back);
+    return () => window.removeEventListener('popstate', back);
+  }, [local]);
+  useEffect(() => {
+    if (local) document.title = (opened ? opened.name : STEP_TITLE[doc]) + ' · Plan B Verifica';
+  }, [local, doc, opened]);
   useEffect(() => {
     if (doc !== 'migration' || local || equivalence[variant]) return;
     let live = true;
@@ -159,6 +196,10 @@ export default function VerificaReportPage() {
   const origin: ReportOrigin = opened
     ? { kind: 'opened', name: opened.name, onReference: toReference, backLabel: opened.backLabel }
     : { kind: 'reference', variant, onVariant: setVariant, doc, onDoc: go, local };
+  // Llegada por una dirección de Verifica: hasta saber si hay servidor local no se pinta el ejemplo ni un paso a medias.
+  if (!checked && start) {
+    return <Frame origin={{ kind: 'local' }} current={doc} eyebrow={STEP_TITLE[doc]} title="Abriendo…" lede={<span role="status">Comprobando el servidor local de este equipo.</span>} busy />;
+  }
   if (!opened && local && doc === 'operation') {
     return <OperationPage origin={{ kind: 'local', onDoc: go }} onOpen={open} openError={openError}
       onOpenEngagement={id => { setEngagementId(id); go('sources'); }} />;
@@ -166,7 +207,7 @@ export default function VerificaReportPage() {
   if (!opened && local && doc === 'sources') {
     return <SourcesPage origin={{ kind: 'local', onDoc: go }} engagementId={engagementId} onOpen={open} openError={openError}
       onShowReport={(shownDoc, name) => { setOpenError(null); setOpened({ name, doc: shownDoc, backLabel: 'Volver a las fuentes' }); }}
-      onClosed={() => { setEngagementId(null); go('operation'); }} />;
+      onClosed={() => { setEngagementId(null); go('operation', 'replace'); }} />;
   }
   if (!opened && local && doc === 'captures') {
     return <CapturesPage origin={{ kind: 'local', onDoc: go }} engagementId={engagementId} onOpen={open} openError={openError} onShowSources={() => go('sources')} />;

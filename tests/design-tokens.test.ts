@@ -5,8 +5,19 @@ import test from 'node:test';
 // CLAUDE-UX-038: el sistema de diseño se verifica sobre los tokens reales de src/planb-ui.css, sin navegador.
 const css = readFileSync(new URL('../src/planb-ui.css', import.meta.url), 'utf8');
 const rootBlock = /:root\s*\{([\s\S]*?)\n\}/.exec(css)?.[1] ?? '';
+// Desde el plan de diseño «una sola app» (A1–A4, 25/11/2026) las capas apuntan a los tokens comunes de src/design/tokens.css:
+// se resuelven con su valor claro u oscuro antes de medir el contraste, como hace el navegador.
+const common = readFileSync(new URL('../src/design/tokens.css', import.meta.url), 'utf8');
+const [commonLight, commonDark] = common.split(/\r?\nhtml\[data-theme="dark"\] \{/)
+  .map(block => new Map([...block.matchAll(/--(pb-[a-z0-9-]+)\s*:\s*([^;]+);/g)].map(m => [m[1], m[2].trim()] as const)));
+const resolve = (map: Map<string, string>, dark = false) => {
+  const pb = dark ? new Map([...commonLight, ...commonDark]) : commonLight;
+  for (const [key, value] of map) map.set(key, value.replace(/var\(--(pb-[a-z0-9-]+)\)/g, (all, name: string) => pb.get(name) ?? all));
+  return map;
+};
 const tokens = new Map<string, string>();
 for (const match of rootBlock.matchAll(/--([a-z0-9-]+)\s*:\s*([^;]+);/g)) tokens.set(match[1], match[2].trim());
+resolve(tokens);
 const colour = (name: string) => {
   const value = tokens.get(name);
   assert.ok(value && /^#[0-9a-f]{6}$/i.test(value), `--${name} debe ser un color #rrggbb (valor: ${value})`);
@@ -87,7 +98,8 @@ test('grafito: la paleta efectiva cumple AA en texto, barra lateral, acción y e
   const eff = new Map(tokens);
   // La capa tiene varias secciones :root (Grafito y, después, Faro): gana la última, como en el navegador.
   for (const block of grafito.matchAll(/^:root\s*\{([\s\S]*?)\r?\n\}/gm)) for (const m of block[1].matchAll(/--([a-z0-9-]+)\s*:\s*([^;]+);/g)) eff.set(m[1], m[2].trim());
-  assert.equal(eff.get('primary'), '#0d6b63', 'se están comprobando los tokens de Faro');
+  resolve(eff);
+  assert.equal(eff.get('primary'), commonLight.get('pb-primary'), 'se están comprobando los tokens de Faro, que desde A1 apuntan a los comunes');
   const c = (fg: string, bg: string) => contrast(eff.get(fg)!, eff.get(bg)!);
   for (const text of ['text-1', 'text-2', 'text-3']) for (const surface of ['bg-surface', 'bg-canvas', 'bg-subtle', 'bg-hover', 'bg-active']) assert.ok(c(text, surface) >= 4.5, text + ' sobre ' + surface + ': ' + c(text, surface).toFixed(2));
   for (const text of ['sb-text', 'sb-text-strong', 'sb-muted', 'sb-icon-active']) for (const surface of ['bg-sidebar', 'sb-hover', 'sb-active']) assert.ok(c(text, surface) >= 4.5, text + ' sobre ' + surface);
@@ -105,6 +117,7 @@ test('consola: la paleta efectiva cumple AA en claro y en oscuro y fija la densi
   const faro = read('faro.css'), consola = read('consola.css');
   const light = new Map(tokens); apply(light, faro, rootBlocks); apply(light, consola, rootBlocks);
   const dark = new Map(light); apply(dark, faro, darkBlocks); apply(dark, consola, darkBlocks);
+  resolve(light); resolve(dark, true);
   assert.equal(light.get('primary'), '#2853d0', 'se están comprobando los tokens de la Consola (cobalto)');
   for (const [name, eff] of [['claro', light], ['oscuro', dark]] as const) {
     const c = (fg: string, bg: string) => { const a = eff.get(fg) ?? '', b = eff.get(bg) ?? ''; assert.match(a + b, /^#[0-9a-f]{6}#[0-9a-f]{6}$/i, `${name}: --${fg}/--${bg} deben ser #rrggbb`); return contrast(a, b); };

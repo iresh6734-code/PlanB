@@ -25,6 +25,7 @@
   --pb-tone-4: #a31d55; --pb-tone-4-bg: #fce5ee;
   --pb-tone-5: #0b5f93; --pb-tone-5-bg: #dcf0fb;
   --pb-ok-border: #b5d9c4; --pb-declared-border: #e8cf90; --pb-alarm-border: #efbcb6; --pb-observed-border: #b9dcd6;
+  --pb-sb-hover: #163a40; --pb-sb-active: #1c464d; --pb-sb-border: #1d4047; --pb-sb-text: #c8d8d8; --pb-sb-text-strong: #ffffff; --pb-sb-muted: #9db8b9; --pb-sb-icon-active: #f0a92b;
   --pb-focus: #1f3a5f; --pb-highlight: #d6e2f2;
   color-scheme: light;
 }

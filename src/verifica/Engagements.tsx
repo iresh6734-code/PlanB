@@ -190,7 +190,6 @@ export function OperationPage({ origin, onOpenEngagement, onOpen, openError }: {
           </ul>
         </section>
       )}
-      {origin.kind === 'local' && <p className="vf-head-row"><a className="pb-secondary" href="/inicio">Copia de trabajo</a></p>}
     </Frame>
   );
 }

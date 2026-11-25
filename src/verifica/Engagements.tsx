@@ -9,7 +9,8 @@ import { createEngagement, EngagementApiError, issueCleanRoom, issueFile, listCl
 import type { ClosureRecord } from '../../shared/verifica/expediente.js';
 import { day, downloadJson, downloadText, readDocumentText, short, type VerificaDocument } from './documents.js';
 import { Frame, type ReportOrigin } from './Masthead.js';
-import { ExpedienteSection } from './Expediente.js';
+import { ExpedienteSection, useExpediente } from './Expediente.js';
+import { NextStep, ReviewSection } from './Revision.js';
 import { QuestionsSection } from './Preguntas.js';
 
 const STATE: Record<SourceState['status'], string> = { missing: 'Falta', ok: 'Sirve', waiting: 'En espera', invalid: 'No sirve' };
@@ -221,6 +222,9 @@ export function SourcesPage({ origin, engagementId, onOpen, openError, onShowRep
     setBusyRole(role); setErrors(previous => ({ ...previous, [role]: undefined }));
     run().then(setView, error => setErrors(previous => ({ ...previous, [role]: message(error) }))).finally(() => setBusyRole(null));
   }, []);
+  // Mega plan 4: el expediente trae el estado del encargo; lo comparten el siguiente paso, la revisión, el paquete y el cierre.
+  const dossier = useExpediente(engagementId, (view?.engagement.updatedAt ?? '') + '|' + (view?.issue?.issuedAt ?? '') + '|' + ledgerTick);
+  const workflow = dossier.view?.workflow;
   const name = (file: string, fingerprint?: string) => 'verifica-' + file + '-' + short(fingerprint ?? view?.issue?.reportFingerprint ?? 'encargo');
   const issueControls: IssueControls = {
     busy: issueBusy, error: issueError, freshKey,
@@ -254,12 +258,14 @@ export function SourcesPage({ origin, engagementId, onOpen, openError, onShowRep
       lede={!engagementId ? 'Crea o abre un encargo en el paso 1 para subir sus fuentes.' : 'Sube cada archivo tal como lo dio el lector o el vendedor. Una fuente que no sirve no se guarda, y se explica por qué.'}>
       {loadError && <p className="pb-error" role="alert">{loadError}</p>}
       {engagementId && !view && !loadError && <p className="pb-empty" role="status">Leyendo el encargo…</p>}
+      {view && <NextStep workflow={workflow} />}
       {view && engagementId && <SourcesContent view={view} busyRole={busyRole} errors={errors} issue={issueControls}
         onUpload={(role, file) => act(role, () => uploadSource(engagementId, role, file))}
         onRemove={role => act(role, () => removeSource(engagementId, role))} />}
       {view && engagementId && view.issue && <QuestionsSection engagementId={engagementId} refreshKey={view.issue.issuedAt} onAnswered={() => setLedgerTick(t => t + 1)} />}
+      {view && engagementId && workflow?.review && <ReviewSection engagementId={engagementId} review={workflow.review} recent={workflow.recentDecisions} onChanged={dossier.reload} />}
       {view && engagementId && <ExpedienteSection engagementId={engagementId} name={view.engagement.name} issued={!!view.issue}
-        refreshKey={view.engagement.updatedAt + '|' + (view.issue?.issuedAt ?? '') + '|' + ledgerTick} onClosed={() => onClosed?.()} />}
+        view={dossier.view} loadError={dossier.loadError} onChanged={dossier.reload} onClosed={() => onClosed?.()} />}
     </Frame>
   );
 }

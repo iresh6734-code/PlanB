@@ -5,6 +5,7 @@ import { ENGAGEMENT_LIMITS, sourceSizeProblem } from '../../shared/verifica/enga
 import type { ClosureRecord, ExpedienteView, IssueVersion } from '../../shared/verifica/expediente.js';
 import type { ReportComparison } from '../../shared/verifica/comparacion.js';
 import type { AnswersDocument, SellerQuestion } from '../../shared/verifica/preguntas.js';
+import type { ReviewCommand, ReviewView } from '../../shared/verifica/revision.js';
 
 export type EngagementSummary = Engagement & { ready: boolean; stored: number; issued: boolean };
 
@@ -81,13 +82,16 @@ export const readExpediente = (id: string) => call<ExpedienteView>(`/api/verific
 export const readIssues = (id: string) => call<{ versions: Omit<IssueVersion, 'reportJson'>[]; comparison: ReportComparison | null }>(`/api/verifica/engagements/${id}/issues`);
 export const readQuestions = (id: string) => call<{ report: string | null; questions: SellerQuestion[]; answers: AnswersDocument | null }>(`/api/verifica/engagements/${id}/questions`);
 export const saveAnswer = (id: string, rule: string, text: string) => call<{ answers: AnswersDocument }>(`/api/verifica/engagements/${id}/answers/${rule}`, { method: 'PUT', body: JSON.stringify({ text }) });
-export const closeEngagement = (id: string, confirmName: string) => call<{ closure: ClosureRecord }>(`/api/verifica/engagements/${id}/close`, { method: 'POST', body: JSON.stringify({ confirmName }) });
+/** Mega Plan 4: el cierre lleva la huella del alcance que se enseñó; si cambió, el servidor responde 409. */
+export const closeEngagement = (id: string, confirmName: string, scopeFingerprint?: string) => call<{ closure: ClosureRecord }>(`/api/verifica/engagements/${id}/close`, { method: 'POST', body: JSON.stringify({ confirmName, scopeFingerprint }) });
+/** Mega Plan 4: una decisión de revisión sobre un hallazgo; devuelve la revisión entera ya actualizada. */
+export const decideFinding = (id: string, rule: string, command: ReviewCommand) => call<ReviewView>(`/api/verifica/engagements/${id}/review/${rule}`, { method: 'PUT', body: JSON.stringify(command) });
 export const listClosures = () => call<{ closures: ClosureRecord[] }>('/api/verifica/closures').then(r => r.closures);
 
 /** El paquete del comprador en texto, tal como se descarga. */
-export async function buyerPackage(id: string, include: { watch?: boolean; answers?: boolean; equivalence?: { fingerprint: string; reviewed: true } | null }): Promise<string> {
+export async function buyerPackage(id: string, include: { watch?: boolean; answers?: boolean; equivalence?: { fingerprint: string; reviewed: true } | null; reviewFingerprint?: string | null }): Promise<string> {
   let response: Response;
-  try { response = await fetch(`/api/verifica/engagements/${id}/package`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...include, equivalence: include.equivalence ?? undefined }) }); }
+  try { response = await fetch(`/api/verifica/engagements/${id}/package`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...include, equivalence: include.equivalence ?? undefined, reviewFingerprint: include.reviewFingerprint ?? undefined }) }); }
   catch { throw new EngagementApiError('No hubo respuesta del servidor local. Comprueba que Plan B sigue abierto y reintenta.', 0); }
   if (!response.ok) {
     let message = 'No se pudo preparar el paquete.';

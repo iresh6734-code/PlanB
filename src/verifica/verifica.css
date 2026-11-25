@@ -171,6 +171,24 @@ button.vf-step:hover { background: var(--pb-subtle); }
 .vf-result-print { display: grid; gap: 4px; margin: 0; font-size: 13px; color: var(--pb-text-3); }
 .vf-result-print code { overflow-wrap: anywhere; color: var(--pb-ink); }
 
+/* Mega plan 4: siguiente paso del encargo, revisión de hallazgos, alcance del cierre y huella recibida aparte. */
+.vf-next { display: grid; gap: 6px; margin-bottom: 28px; border-left: 3px solid var(--pb-ink); }
+.vf-next .vf-eyebrow { margin: 0; }
+.vf-next[data-next="reviewed-package-issued"] { border-left-color: var(--pb-ok); }
+.vf-next[data-next="check-expediente"] { border-left-color: var(--pb-alarm); }
+.vf-next-text { margin: 0; max-width: 70ch; font-size: 17px; font-weight: 600; color: var(--pb-ink); }
+.vf-next-list { margin: 2px 0 0; padding-left: 18px; font-size: 14px; color: var(--pb-text-2); }
+.pb-state[data-state="reviewed"], .pb-state[data-state="reviewed-declaration"] { background: var(--pb-ok-bg); color: var(--pb-ok); }
+.pb-state[data-state="request-information"] { background: var(--pb-declared-bg); color: var(--pb-declared); }
+.pb-state[data-state="reopened"] { background: var(--pb-alarm-bg); color: var(--pb-alarm); }
+.vf-review .pb-secondary[aria-pressed="true"] { background: var(--pb-subtle); border-color: var(--pb-ink); font-weight: 600; }
+.vf-recent { margin-top: 18px; font-size: 14px; }
+.vf-recent summary { cursor: pointer; color: var(--pb-link); }
+.vf-scope { display: grid; gap: 6px; margin-bottom: 14px; }
+.vf-scope p { max-width: 70ch; margin: 0; }
+.vf-reference { margin-top: 20px; }
+.vf-reference-note { margin-top: 6px; }
+
 @media (min-width: 900px) {
   .vf-steps { position: sticky; top: 24px; }
 }

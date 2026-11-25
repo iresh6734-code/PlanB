@@ -568,3 +568,28 @@ Por la mañana se subieron 7 commits desde el otro equipo (hasta `67feb4f`): A1�
 - `tsc` limpio. Pruebas de diseño y de Verifica: 158/158.
 - Recorridos: 19/19 el de direcciones, 48/48 el del mega plan 3 y 72/72 el de capturas.
 - Red visual: solo cambian las 3 vistas de Fuentes, por la opción nueva del paquete. Se rehízo la referencia.
+
+## 25/11/2026 · Mega plan 4 en la pantalla: siguiente paso, revisión de hallazgos, entrega revisada, alcance del cierre y huella aparte (Claude)
+
+Son las pantallas de los contratos que Codex entregó por el tablón (mensajes `17ed297b`, `4568f183` y `281cacd1`). No hay paso nuevo: todo va en Fuentes y en el visor, donde ya estaban el expediente, el paquete y el cierre.
+
+**Lo que se ve ahora:**
+- **Siguiente paso** (`src/verifica/Revision.tsx`, `NextStep`), arriba de Fuentes. Dice qué toca: completar fuentes (con lo que falta), emitir, volver a emitir, revisar hallazgos (cuántos quedan), preparar la entrega revisada o que está al día. También dice si la última entrega revisada quedó atrás y por qué (fuentes, otra emisión con cuántos hallazgos cambian, o una decisión de revisión).
+- **Revisión de hallazgos** (`ReviewSection`), después de las preguntas al vendedor. Lista los hallazgos que se salen de lo normal o quedaron sin comprobar, con su estado: por revisar, reabierto, revisado, pide información o revisada la respuesta del vendedor. Cada uno tiene tres decisiones; la tercera solo aparece si el vendedor respondió. Debajo van las últimas decisiones.
+  - Si otra pestaña decidió antes, el servidor responde 409. La pantalla lo explica y se vuelve a leer.
+- **Entrega revisada.** Con la revisión completa, el paquete lleva `reviewFingerprint` y lo dice. Si quedan hallazgos por revisar, avisa de que saldrá sin revisión ligada.
+- **Cierre.** Antes de pedir el nombre enseña cuántos datos borra, por clase, y lo que no borra. Envía `scopeFingerprint`; si el alcance cambió, el servidor responde 409 y se vuelve a leer.
+- **Visor.** Tiene un campo para la huella que el comprador recibió por otro canal, con cuatro resultados:
+  - íntegro y anunciado;
+  - no es el anunciado (es coherente, pero otro o rehecho);
+  - coincide, pero los documentos no cuadran entre sí (el caso del parte regenerado que señaló Codex);
+  - no íntegro.
+
+  Solo se abren los documentos que el comprobador valida. Un paquete mal formado se enseña sin romper el visor.
+- El expediente se lee una vez por página (`useExpediente`) y lo comparten el siguiente paso, la revisión, el paquete y el cierre.
+
+**Comprobado:**
+- `tsc` limpio. Prueba nueva `tests/verifica-revision-pantalla.test.ts` (4/4).
+- Recorrido nuevo `tests/.tmp/verifica-vista/mp4.mts`, 36/36 en escritorio y en móvil oscuro. Cubre: fuentes, emitir, revisar con la respuesta del vendedor, conflicto entre dos pestañas, entrega revisada, entrega al día, visor con huella equivocada y con la buena (en mayúsculas y con espacios), y cierre con alcance y acta con `scopeFingerprint` y eslabón final.
+- Recorridos de siempre: 19/19, 48/48 y 72/72.
+- Red visual: el servidor de la copia fija pasa al último commit. Cambian solo Fuentes y el paquete (6 de 30); se rehízo la referencia.

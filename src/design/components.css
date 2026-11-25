@@ -37,6 +37,7 @@
 .pb-check[data-ok="false"] { background: var(--pb-alarm-bg); color: var(--pb-alarm); }
 .pb-note { margin: 14px 0 0; max-width: 70ch; font-size: 13px; color: var(--pb-text-3); }
 .pb-held { margin: 0; max-width: 70ch; font-size: 14px; color: var(--pb-declared); }
+.pb-input:focus-visible { outline-offset: 0; border-color: var(--pb-focus); }
 .pb-input-text { font-family: var(--pb-sans); font-size: 15px; width: 100%; }
 .pb-card .pb-error { margin-top: 4px; }
 .pb-choice { margin: 0; padding: 0; border: 0; display: grid; gap: 8px; min-width: 0; }

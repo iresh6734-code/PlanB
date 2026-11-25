@@ -35,7 +35,7 @@ function entryDetail(entry: LedgerEntry): string {
   return parts.join(' · ');
 }
 
-export interface PackageControls { busy: boolean; error: string | null; onBuild: (include: { watch: boolean; answers: boolean }) => void }
+export interface PackageControls { busy: boolean; error: string | null; onBuild: (include: { watch: boolean; answers: boolean; equivalence: boolean }) => void }
 export interface CloseControls { busy: boolean; error: string | null; onClose: (confirmName: string) => void }
 
 export function ExpedienteContent({ name, view, loadError, issued, pkg, close }: {
@@ -43,6 +43,7 @@ export function ExpedienteContent({ name, view, loadError, issued, pkg, close }:
 }) {
   const [watch, setWatch] = useState(false);
   const [answers, setAnswers] = useState(false);
+  const [equivalence, setEquivalence] = useState(false);
   const [confirm, setConfirm] = useState('');
   const head = view?.entries.at(-1) ?? null;
   const anchorsOk = view ? view.anchors.every(a => a.ok) : true;
@@ -81,13 +82,15 @@ export function ExpedienteContent({ name, view, loadError, issued, pkg, close }:
         {!issued
           ? <p className="pb-held">Primero hay que emitir el informe: el paquete siempre lo lleva.</p>
           : (
-            <form className="vf-read-form" onSubmit={event => { event.preventDefault(); pkg.onBuild({ watch, answers }); }}>
+            <form className="vf-read-form" onSubmit={event => { event.preventDefault(); pkg.onBuild({ watch, answers, equivalence }); }}>
               <fieldset className="pb-choice" disabled={pkg.busy}>
                 <legend className="pb-field-label">Qué lleva, además del informe</legend>
                 <label className="pb-option"><input type="checkbox" checked={watch} onChange={event => setWatch(event.target.checked)} />
                   <span className="pb-option-text"><span className="pb-option-label">El parte de vigilancia</span><span className="pb-option-note">Si el encargo tiene vigilancia desde la firma.</span></span></label>
                 <label className="pb-option"><input type="checkbox" checked={answers} onChange={event => setAnswers(event.target.checked)} />
                   <span className="pb-option-text"><span className="pb-option-label">Las respuestas del vendedor</span><span className="pb-option-note">Van como «declarado», atadas a la huella del informe.</span></span></label>
+                <label className="pb-option"><input type="checkbox" checked={equivalence} onChange={event => setEquivalence(event.target.checked)} />
+                  <span className="pb-option-text"><span className="pb-option-label">El informe de equivalencia</span><span className="pb-option-note">Si ya se comparó la migración en «Vigilancia».</span></span></label>
               </fieldset>
               <div className="vf-issue-actions"><button type="submit" className="pb-secondary" disabled={pkg.busy}>{pkg.busy ? 'Preparando…' : 'Descargar el paquete'}</button></div>
             </form>

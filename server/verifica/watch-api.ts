@@ -135,6 +135,8 @@ export function registerWatchApi(app: FastifyInstance, store: Store, engagements
       const { input: equivalence } = prepareEquivalenceFiles({ closing: closing.captureText, target: body.target, map: body.map,
         watch: watchReportToJson(closing.report), salt: timer.privateSalt(id), asOf: body.asOf });
       const { report, comparison } = releaseEquivalence(equivalence);
+      // El informe se guarda para que el paquete del comprador pueda llevarlo (Mega Plan 3, fase 2).
+      store.set('verifica:equivalence:' + id, { report: report.fingerprint, json: JSON.stringify(report) });
       return { report, workList: equivalenceWorkList(comparison) };
     });
     reply.header('Cache-Control', 'no-store');

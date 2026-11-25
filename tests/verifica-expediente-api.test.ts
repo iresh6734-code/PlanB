@@ -118,6 +118,16 @@ test('Verifica · paquete del comprador: solo lo compartible, verificable sin co
   }
 });
 
+test('Verifica · paquete con equivalencia: sin informe previo da 409, con él lleva el documento y queda anclado en el expediente', async () => {
+  const r = await rig();
+  const id = await ready(r);
+  await call(r, 'POST', `/engagements/${id}/clean-room`);
+  assert.equal((await call(r, 'POST', `/engagements/${id}/package`, { equivalence: true })).status, 409, 'sin informe de equivalencia no hay paquete con equivalencia');
+  const ledger = (await call(r, 'GET', `/engagements/${id}/expediente`)).body.entries;
+  assert.equal(ledger.at(-1).event, 'report-issued', 'un intento fallido no emite paquete');
+  for (const entry of ledger) for (const ref of entry.refs ?? []) assert.ok(ref.kind !== 'equivalence-report', 'sin equivalencia previa nada queda anclado');
+});
+
 test('Verifica · cierre: hay que escribir el nombre, se borra todo lo del encargo y queda un acta mínima', async () => {
   const r = await rig();
   const id = await ready(r);

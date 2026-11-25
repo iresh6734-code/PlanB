@@ -29,7 +29,7 @@ const CLOSURES_KEY = 'verifica:closures';
 const idParam = z.object({ id: z.uuid() }).strict();
 const answerParams = z.object({ id: z.uuid(), rule: z.enum(RULE_IDS) }).strict();
 const answerBody = z.object({ text: z.string().max(8000) }).strict();
-const packageBody = z.object({ watch: z.boolean().optional(), answers: z.boolean().optional() }).strict();
+const packageBody = z.object({ watch: z.boolean().optional(), answers: z.boolean().optional(), equivalence: z.boolean().optional() }).strict();
 const closeBody = z.object({ confirmName: z.string().max(400) }).strict();
 
 type Timer = ReturnType<typeof createWatchTimer>;
@@ -131,6 +131,12 @@ export function registerExpedienteApi(app: FastifyInstance, store: Store, deps: 
       const watch = JSON.parse(watchReportToJson(deps.timer.report(id)));
       documents.push({ kind: 'watch', fingerprint: watch.fingerprint, content: watch });
     }
+    if (body.equivalence) {
+      const stored = store.get<{ report: string; json: string } | null>('verifica:equivalence:' + id, null);
+      if (!stored) throw new AppError(409, 'Este encargo no tiene informe de equivalencia: se genera al comparar la migración en «Vigilancia».');
+      const content = JSON.parse(stored.json);
+      documents.push({ kind: 'equivalence', fingerprint: content.fingerprint, content });
+    }
     if (body.answers) {
       const answers = answersOf(id, report);
       if (!answers) throw new AppError(409, 'No hay respuestas del vendedor a este informe.');
@@ -140,8 +146,8 @@ export function registerExpedienteApi(app: FastifyInstance, store: Store, deps: 
       const head = engagementLedger(store, id).at(-1) ?? null;
       const pkg = buildPackage({ engagement: id, createdAt: deps.now(), ledgerHead: head ? { sequence: head.sequence, fingerprint: head.fingerprint } : null, documents });
       appendLedger(store, id, deps.now(), [{ event: 'package-issued', refs: [{ kind: 'package', method: 'verifica-paquete-comprador-v1', fingerprint: pkg.fingerprint },
-        ...documents.map(d => ({ kind: d.kind === 'answers' ? 'answer' as const : d.kind === 'watch' ? 'watch-report' as const : 'report' as const,
-          method: d.kind === 'answers' ? 'sha256-bytes-v1' as const : d.kind === 'watch' ? 'planb-verifica-watch-v1' as const : 'planb-verifica-report-v1' as const,
+        ...documents.map(d => ({ kind: d.kind === 'answers' ? 'answer' as const : d.kind === 'watch' ? 'watch-report' as const : d.kind === 'equivalence' ? 'equivalence-report' as const : 'report' as const,
+          method: d.kind === 'answers' ? 'sha256-bytes-v1' as const : d.kind === 'watch' ? 'planb-verifica-watch-v1' as const : d.kind === 'equivalence' ? 'planb-verifica-equivalence-v1' as const : 'planb-verifica-report-v1' as const,
           fingerprint: d.kind === 'answers' ? sha256Hex(JSON.stringify(d.content)) : d.fingerprint }))] }]);
       return packageToJson(pkg);
     });

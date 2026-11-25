@@ -11,7 +11,7 @@ export const LEDGER_ENTRY_METHOD = 'sha256-canonical-v1';
 export const LEDGER_EVENTS = ['source-stored', 'source-removed', 'report-issued', 'watch-signing', 'watch-capture', 'watch-accepted', 'answer-declared', 'package-issued', 'engagement-closed'] as const;
 export type LedgerEvent = typeof LEDGER_EVENTS[number];
 
-export const LEDGER_REF_KINDS = ['capture', 'invoices', 'declarations', 'read-record', 'authorization-document', 'report', 'custody', 'answer', 'watch-report', 'package', 'closure'] as const;
+export const LEDGER_REF_KINDS = ['capture', 'invoices', 'declarations', 'read-record', 'authorization-document', 'report', 'custody', 'answer', 'watch-report', 'equivalence-report', 'package', 'closure'] as const;
 export type LedgerRefKind = typeof LEDGER_REF_KINDS[number];
 
 /**
@@ -20,7 +20,7 @@ export type LedgerRefKind = typeof LEDGER_REF_KINDS[number];
  * - `verifica-input-v1`: `fingerprintOf` del objeto que entra en la sala limpia, como en las fuentes del informe.
  * - los demás: la huella propia de ese formato, con sus funciones vigentes.
  */
-export const LEDGER_REF_METHODS = ['sha256-bytes-v1', 'verifica-input-v1', 'verifica-read-record-v1', 'planb-verifica-report-v1', 'planb-verifica-custody-v1', 'planb-verifica-watch-v1', 'verifica-paquete-comprador-v1', 'verifica-acta-cierre-v1'] as const;
+export const LEDGER_REF_METHODS = ['sha256-bytes-v1', 'verifica-input-v1', 'verifica-read-record-v1', 'planb-verifica-report-v1', 'planb-verifica-custody-v1', 'planb-verifica-watch-v1', 'planb-verifica-equivalence-v1', 'verifica-paquete-comprador-v1', 'verifica-acta-cierre-v1'] as const;
 export type LedgerRefMethod = typeof LEDGER_REF_METHODS[number];
 
 export interface LedgerRef {

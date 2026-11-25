@@ -62,12 +62,12 @@ export function parseArgs(argv) {
 export function run(args, { env = {}, log, timeoutMs = 0 }) {
   return new Promise(done => {
     const started = Date.now(), file = createWriteStream(log);
-    const child = spawn(process.execPath, args, { cwd: REPO, env: childEnvironment(process.env, env), windowsHide: true });
+    const child = spawn(process.execPath, args, { cwd: REPO, env: childEnvironment(process.env, env), windowsHide: true, detached: process.platform !== 'win32' });
     let output = '', timedOut = false;
     // Texto UTF-8 por flujo: un carácter partido entre dos trozos no corrompe «✖» ni «ℹ».
     for (const stream of [child.stdout, child.stderr]) { stream.setEncoding('utf8'); stream.on('data', chunk => { output += chunk; file.write(chunk); }); }
     // En Windows, kill() solo termina el proceso directo y sus hijos siguen escribiendo en la tubería: se termina el árbol entero.
-    const killTree = () => { if (process.platform === 'win32') spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], { windowsHide: true, stdio: 'ignore' }); else child.kill('SIGKILL'); };
+    const killTree = () => { try { if (process.platform === 'win32') spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], { windowsHide: true, stdio: 'ignore' }); else process.kill(-child.pid, 'SIGKILL'); } catch { /* ya terminado */ } child.kill('SIGKILL'); };
     const timer = timeoutMs ? setTimeout(() => { timedOut = true; killTree(); }, timeoutMs) : null;
     child.on('close', code => { if (timer) clearTimeout(timer); file.end(); done({ code, output, timedOut, seconds: (Date.now() - started) / 1000 }); });
   });

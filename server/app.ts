@@ -2,6 +2,7 @@ import { registerUndo } from './undo.js';
 import Fastify, { type FastifyInstance } from 'fastify';
 import staticPlugin from '@fastify/static';
 import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { z } from 'zod';
 import { EntityNameSchema, entityNames, validateRecord, validateSpec, type AppState } from '../shared/model.js';
 import { AppError, Store } from './store.js';
@@ -161,8 +162,11 @@ export async function createBaseApp(options: AppOptions): Promise<{ app: Fastify
   if (options.taskRevisions) registerTaskRevision(app,store);
   if (existsSync(options.staticDir)) {
     await app.register(staticPlugin, { root: options.staticDir, prefix: '/', decorateReply: true });
+    const servesVerifica = !options.runtime && existsSync(join(options.staticDir, 'verifica.html'));
     app.setNotFoundHandler((request, reply) => {
       if (request.url.startsWith('/api/')) return reply.code(404).send({ error: 'Operación no disponible en esta aplicación.' });
+      const pathname = request.url.split('?', 1)[0];
+      if (servesVerifica && (pathname === '/verifica' || pathname.startsWith('/verifica/'))) return reply.sendFile('verifica.html');
       return reply.sendFile('index.html');
     });
   }

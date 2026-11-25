@@ -35,7 +35,7 @@ const issueKey = (id: string) => 'verifica:issue:' + id;
 const viewKey = (id: string) => 'verifica:view:' + id;
 /** El estado de la última lectura de HubSpot, guardado al empezar y al terminar para sobrevivir a un reinicio. */
 const jobKey = (id: string) => 'verifica:readjob:' + id;
-const INTERRUPTED = 'La lectura se cortó porque Plan B se cerró antes de terminarla. No se guardó nada de ella; vuelve a leer.';
+const INTERRUPTED = 'La lectura se cortó porque Plan B se cerró antes de registrar su resultado. Comprueba la última captura antes de repetirla.';
 type SourcesView = Pick<EngagementView, 'sources' | 'missing'>;
 const recordsKey = (id: string) => 'verifica:records:' + id;
 const recordKey = (id: string, captureId: string) => 'verifica:record:' + id + ':' + captureId;
@@ -285,15 +285,19 @@ export function registerVerificaEngagements(app: FastifyInstance, store: Store, 
       }
     }
     const job: ReadJob = { state: 'running', mode: body.mode, startedAt: now(), progress: [] };
+    store.set(jobKey(id), job);
     jobs.set(id, job);
-    persistJob(id, job);
     const token = body.token;
     void readWithRecord({
       token, portalId: body.portalId, mode: body.mode, authorization, fetch: options.hubspotFetch ?? fetch, now: options.hubspotNow,
       maxCaptureBytes: sourceBytes, progress: message => { job.progress.push(message); },
     }).then(({ reading, captureText, record }) => {
       const role: 'previous' | 'latest' = body.target === 'previous' ? 'previous' : 'latest';
-      const label = (body.mode === 'client' ? 'HubSpot ' : 'HubSpot de pruebas ') + reading.account.portalId + ' · ' + reading.capture.capturedAt.slice(0, 10) + '.json';
+      const { capture } = reading;
+      const label = (body.mode === 'client' ? 'HubSpot ' : 'HubSpot de pruebas ') + reading.account.portalId + ' · ' + capture.capturedAt.slice(0, 10) + '.json';
+      const finished: ReadJob = { ...job, state: 'done', finishedAt: now(), result: { captureId: capture.id, role,
+        counts: { owners: capture.owners.length, companies: capture.companies.length, contacts: capture.contacts.length, deals: capture.deals.length },
+        historyAvailable: capture.historyAvailable, requests: reading.requests, recordFingerprint: record?.fingerprint ?? null } };
       try {
         store.transaction(() => {
           const at = now(), events: LedgerEventInput[] = [];
@@ -323,18 +327,14 @@ export function registerVerificaEngagements(app: FastifyInstance, store: Store, 
           appendLedger(store, id, at, events);
           touch(id);
           refreshView(find(id));
+          store.set(jobKey(id), finished);
         });
       } catch {
         Object.assign(job, { state: 'failed', finishedAt: now(), error: 'No se pudo guardar la lectura completa. Vuelve a intentarlo.' } satisfies Partial<ReadJob>);
         persistJob(id, job);
         return;
       }
-      const { capture } = reading;
-      Object.assign(job, {
-        state: 'done', finishedAt: now(),
-        result: { captureId: capture.id, role, counts: { owners: capture.owners.length, companies: capture.companies.length, contacts: capture.contacts.length, deals: capture.deals.length }, historyAvailable: capture.historyAvailable, requests: reading.requests, recordFingerprint: record?.fingerprint ?? null },
-      } satisfies Partial<ReadJob>);
-      persistJob(id, job);
+      jobs.set(id, finished);
     }, error => {
       Object.assign(job, { state: 'failed', finishedAt: now(), error: error instanceof VerificaReadError ? 'Lectura detenida: ' + error.message : 'La lectura terminó con un error inesperado; no se muestra el detalle por si contuviera datos de la petición.' } satisfies Partial<ReadJob>);
       persistJob(id, job);
@@ -378,7 +378,9 @@ export function registerVerificaEngagements(app: FastifyInstance, store: Store, 
   registerExpedienteApi(app, store, {
     now, find, timer,
     remove: id => store.set(LIST_KEY, list().filter(item => item.id !== id)),
+    forgetRead: id => { jobs.delete(id); },
     inputs: id => engagementInputs(store, id).inputs,
+    status: viewOf,
     readRunning: id => jobs.get(id)?.state === 'running',
   });
   return timer;

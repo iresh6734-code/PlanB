@@ -56,3 +56,23 @@ test('Verifica · paquete: aceptación 3 · los valores ficticios de la empresa 
   for (const banned of [company.salt, ...company.latest.companies.slice(0, 30).map(c => c.name)]) assert.ok(!eqJson.includes(banned), 'sin sal ni nombres con equivalencia');
   assert.ok(verifyPackage(JSON.parse(eqJson)).intact, 'el paquete con equivalencia se verifica sin conexión');
 });
+
+test('Verifica · distingue la coherencia interna de la coincidencia con una huella entregada por separado', () => {
+  assert.equal(verifyPackage(pkg).reference, 'absent');
+  assert.equal(verifyPackage(pkg, ` ${pkg.fingerprint.toUpperCase()} `).reference, 'matched');
+  const replaced = buildPackage({ ...pkg, documents: [pkg.documents[0]!] });
+  assert.ok(verifyPackage(replaced).intact, 'el paquete rehecho es coherente por sí solo');
+  const checked = verifyPackage(replaced, pkg.fingerprint);
+  assert.equal(checked.reference, 'mismatch');
+  assert.equal(checked.intact, false);
+  assert.deepEqual(checked.documents, []);
+});
+
+test('Verifica · un paquete con un documento mal formado se puede comprobar sin que el visor falle', () => {
+  for (const bad of [null, 'texto', { kind: 'report', fingerprint: report.fingerprint, content: null }]) {
+    const checked = verifyPackage({ ...pkg, documents: [pkg.documents[0], bad] });
+    assert.equal(checked.intact, false);
+    assert.ok(checked.checks.some(check => check.kind !== 'package' && !check.ok));
+    assert.deepEqual(checked.documents, []);
+  }
+});

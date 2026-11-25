@@ -4,6 +4,7 @@
 // nombres de archivo ni datos del CRM. El número de entrada fija el orden; la hora solo sirve para enseñarlo.
 import { ENGAGEMENT_ROLES, type EngagementRole } from './engagement.js';
 import { fingerprintOf } from './report.js';
+import { REVIEW_FORMAT, type EngagementWorkflow } from './revision.js';
 
 export const LEDGER_FORMAT = 'verifica-expediente-v1';
 export const LEDGER_ENTRY_METHOD = 'sha256-canonical-v1';
@@ -11,7 +12,7 @@ export const LEDGER_ENTRY_METHOD = 'sha256-canonical-v1';
 export const LEDGER_EVENTS = ['source-stored', 'source-removed', 'report-issued', 'watch-signing', 'watch-capture', 'watch-accepted', 'answer-declared', 'package-issued', 'engagement-closed'] as const;
 export type LedgerEvent = typeof LEDGER_EVENTS[number];
 
-export const LEDGER_REF_KINDS = ['capture', 'invoices', 'declarations', 'read-record', 'authorization-document', 'report', 'custody', 'answer', 'watch-report', 'equivalence-report', 'package', 'closure'] as const;
+export const LEDGER_REF_KINDS = ['capture', 'invoices', 'declarations', 'read-record', 'authorization-document', 'report', 'custody', 'answer', 'watch-report', 'equivalence', 'equivalence-report', 'review', 'package', 'closure'] as const;
 export type LedgerRefKind = typeof LEDGER_REF_KINDS[number];
 
 /**
@@ -20,7 +21,7 @@ export type LedgerRefKind = typeof LEDGER_REF_KINDS[number];
  * - `verifica-input-v1`: `fingerprintOf` del objeto que entra en la sala limpia, como en las fuentes del informe.
  * - los demás: la huella propia de ese formato, con sus funciones vigentes.
  */
-export const LEDGER_REF_METHODS = ['sha256-bytes-v1', 'verifica-input-v1', 'verifica-read-record-v1', 'planb-verifica-report-v1', 'planb-verifica-custody-v1', 'planb-verifica-watch-v1', 'planb-verifica-equivalence-v1', 'verifica-paquete-comprador-v1', 'verifica-acta-cierre-v1'] as const;
+export const LEDGER_REF_METHODS = ['sha256-bytes-v1', LEDGER_ENTRY_METHOD, 'verifica-input-v1', 'verifica-read-record-v1', 'planb-verifica-report-v1', 'planb-verifica-custody-v1', 'planb-verifica-watch-v1', 'planb-verifica-equivalence-v1', REVIEW_FORMAT, 'verifica-paquete-comprador-v1', 'verifica-acta-cierre-v1'] as const;
 export type LedgerRefMethod = typeof LEDGER_REF_METHODS[number];
 
 export interface LedgerRef {
@@ -68,7 +69,7 @@ function checkRef(ref: LedgerRef) {
 }
 
 /** La entrada siguiente a `head` (o la primera, si no hay cabeza). */
-export function nextLedgerEntry(head: LedgerEntry | null, engagement: string, recordedAt: string, input: LedgerEventInput): LedgerEntry {
+export function nextLedgerEntry(head: Pick<LedgerEntry, 'engagement' | 'sequence' | 'fingerprint'> | null, engagement: string, recordedAt: string, input: LedgerEventInput): LedgerEntry {
   if (!engagement) throw new LedgerInputError('Falta el encargo del expediente.');
   if (head && head.engagement !== engagement) throw new LedgerInputError('La cabeza del expediente es de otro encargo.');
   if (!has(LEDGER_EVENTS, input.event)) throw new LedgerInputError('Evento desconocido para el expediente.');
@@ -150,9 +151,57 @@ export interface ClosureRecord {
   deleted: { rows: number; byKind: Record<string, number> };
   /** Lo que el borrado no alcanza porque ya no está en este equipo. */
   outside: string[];
+  /** Huella del alcance que se comprobó antes de borrar. */
+  scopeFingerprint?: string;
+  /** Presente en los cierres nuevos. Las actas anteriores conservan su formato y su huella. */
+  terminalEntry?: LedgerEntry;
   fingerprint: string;
 }
-export interface ExpedienteView { entries: LedgerEntry[]; verification: LedgerVerification; anchors: { sequence: number; ok: boolean }[] }
+type ClosureDetails = Omit<ClosureRecord, 'fingerprint' | 'terminalEntry'>;
+
+export function buildClosureRecord(details: ClosureDetails): ClosureRecord {
+  const head = details.ledgerHead ? { engagement: details.engagement, ...details.ledgerHead } : null;
+  // El eslabón sella el resultado del borrado. El acta completa sella también el eslabón sin crear una referencia circular.
+  const terminalEntry = nextLedgerEntry(head, details.engagement, details.closedAt, { event: 'engagement-closed',
+    refs: [{ kind: 'closure', method: LEDGER_ENTRY_METHOD, fingerprint: fingerprintOf(details) }] });
+  const body = { ...details, terminalEntry };
+  return { ...body, fingerprint: fingerprintOf(body) };
+}
+
+export function verifyClosureRecord(raw: unknown, expectedFingerprint?: string): boolean {
+  if (!raw || typeof raw !== 'object') return false;
+  const { fingerprint, ...body } = raw as ClosureRecord;
+  if (body.format !== CLOSURE_FORMAT || typeof fingerprint !== 'string' || !HEX.test(fingerprint)
+    || (expectedFingerprint !== undefined && fingerprint !== expectedFingerprint.trim().toLowerCase())) return false;
+  try {
+    const { ledgerHead, deleted } = body;
+    if (typeof body.engagement !== 'string' || !body.engagement || typeof body.closedAt !== 'string' || !Number.isFinite(Date.parse(body.closedAt))
+      || typeof body.ledgerIntact !== 'boolean' || !Array.isArray(body.outside) || body.outside.some(item => typeof item !== 'string')
+      || (ledgerHead !== null && (!ledgerHead || !Number.isSafeInteger(ledgerHead.sequence) || ledgerHead.sequence < 1
+        || typeof ledgerHead.fingerprint !== 'string' || !HEX.test(ledgerHead.fingerprint)))
+      || (body.scopeFingerprint !== undefined && (typeof body.scopeFingerprint !== 'string' || !HEX.test(body.scopeFingerprint)))
+      || !deleted || !deleted.byKind || typeof deleted.byKind !== 'object' || Array.isArray(deleted.byKind)) return false;
+    const counts = Object.values(deleted.byKind);
+    if (!Number.isSafeInteger(deleted.rows) || deleted.rows < 0 || counts.some(count => !Number.isSafeInteger(count) || count < 1)
+      || counts.reduce((total, count) => total + count, 0) !== deleted.rows) return false;
+    if (fingerprintOf(body) !== fingerprint) return false;
+    const { terminalEntry, ...details } = body;
+    if (!terminalEntry) return terminalEntry === undefined;
+    const expected = buildClosureRecord(details).terminalEntry!;
+    return terminalEntry.fingerprint === expected.fingerprint && ledgerEntryFingerprint(terminalEntry) === expected.fingerprint;
+  } catch { return false; }
+}
+
+export interface EquivalenceChoice { fingerprint: string; asOf: string; confirmedBy: string }
+export interface ClosureScope { fingerprint: string; rows: number; byKind: Record<string, number>; outside: string[] }
+export interface ExpedienteView {
+  entries: LedgerEntry[];
+  verification: LedgerVerification;
+  anchors: { sequence: number; ok: boolean }[];
+  latestEquivalence?: EquivalenceChoice | null;
+  closureScope?: ClosureScope;
+  workflow?: EngagementWorkflow;
+}
 
 export const CLOSURE_OUTSIDE = [
   'La copia custodiada y su llave, en manos de quien las guarda.',

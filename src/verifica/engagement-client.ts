@@ -85,9 +85,9 @@ export const closeEngagement = (id: string, confirmName: string) => call<{ closu
 export const listClosures = () => call<{ closures: ClosureRecord[] }>('/api/verifica/closures').then(r => r.closures);
 
 /** El paquete del comprador en texto, tal como se descarga. */
-export async function buyerPackage(id: string, include: { watch?: boolean; answers?: boolean; equivalence?: boolean }): Promise<string> {
+export async function buyerPackage(id: string, include: { watch?: boolean; answers?: boolean; equivalence?: { fingerprint: string; reviewed: true } | null }): Promise<string> {
   let response: Response;
-  try { response = await fetch(`/api/verifica/engagements/${id}/package`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(include) }); }
+  try { response = await fetch(`/api/verifica/engagements/${id}/package`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...include, equivalence: include.equivalence ?? undefined }) }); }
   catch { throw new EngagementApiError('No hubo respuesta del servidor local. Comprueba que Plan B sigue abierto y reintenta.', 0); }
   if (!response.ok) {
     let message = 'No se pudo preparar el paquete.';

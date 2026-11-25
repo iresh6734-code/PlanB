@@ -5,16 +5,18 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { setTimeout as delay } from 'node:timers/promises';
 import { createBaseApp } from '../server/app.js';
+import { Store } from '../server/store.js';
 import { registerVerificaEngagements } from '../server/verifica/engagements.js';
 import { engagementLedger } from '../server/verifica/expediente-store.js';
 import { sha256Hex } from '../shared/sha256.js';
 import type { ReadJob, StoredSource } from '../shared/verifica/engagement.js';
-import { verifyLedger } from '../shared/verifica/expediente.js';
+import { verifyClosureRecord, verifyLedger, type ClosureRecord } from '../shared/verifica/expediente.js';
 import { buildWatchedCompany } from '../shared/verifica/empresa-vigilada.js';
 import { buildMigratedCompany } from '../shared/verifica/empresa-migrada.js';
 import { equivalenceToJson, verifyEquivalenceReport } from '../shared/verifica/equivalence.js';
 import { parseCaptureText } from '../shared/verifica/inputs.js';
 import { equivalenceWorkList, prepareEquivalenceFiles, releaseEquivalence } from '../shared/verifica/migration.js';
+import { verifyPackage } from '../shared/verifica/paquete.js';
 import { READ_SCOPE, verifyReadRecord, type ReadAuthorization, type ReadRecord } from '../shared/verifica/read-authorization.js';
 import { watchMigrationUrl, watchUrl, type WatchMigrationResult, type WatchReportResult, type WatchView } from '../shared/verifica/watch-contract.js';
 import { verifyWatchReport, watchReportToJson } from '../shared/verifica/watch.js';
@@ -31,7 +33,8 @@ const grant = { authorization: JSON.stringify(dossier), documentBase64: document
 test('la ruta del encargo vigila desde la captura firmada, detecta un retraso y permite revisar y pausar', async () => {
   const company = buildWatchedCompany({ traps: true });
   const root = mkdtempSync(join(tmpdir(), 'planb-watch-api-'));
-  const { app, store } = await createBaseApp({ root, dbPath: join(root, 'planb.sqlite'), staticDir: root });
+  const dbPath = join(root, 'planb.sqlite');
+  const { app, store } = await createBaseApp({ root, dbPath, staticDir: root });
   const signingTransport = fakeHubspot(company.signing, { accountType: 'STANDARD' });
   const weeklyTransport = fakeHubspot(company.captures[1]!, { accountType: 'STANDARD' });
   let fake = signingTransport;
@@ -42,6 +45,7 @@ test('la ruta del encargo vigila desde la captura firmada, detecta un retraso y 
     assert.equal(res.statusCode, 201);
     return res.json<{ engagement: { id: string } }>().engagement.id;
   }
+  let savedClosure: ClosureRecord | undefined;
   try {
     const id = await create('Vigilancia de ensayo');
     const other = await create('Otro encargo');
@@ -136,7 +140,14 @@ test('la ruta del encargo vigila desde la captura firmada, detecta un retraso y 
 
     assert.equal((await app.inject({ method: 'POST', url: migrationUrl, payload: { ...migration, map: '{' } })).statusCode, 422);
     assert.equal((await app.inject({ method: 'POST', url: migrationUrl, payload: { ...migration, asOf: '2099-02-31' } })).statusCode, 422);
-    const compared = await app.inject({ method: 'POST', url: migrationUrl, payload: migration });
+    const migrate = () => app.inject({ method: 'POST', url: migrationUrl, payload: migration });
+    store.db.exec(`CREATE TEMP TRIGGER fail_equivalence_ledger BEFORE UPDATE ON meta WHEN OLD.key = 'verifica:ledger:${id}'
+      BEGIN SELECT RAISE(ABORT, 'fallo de ensayo'); END;`);
+    assert.equal((await migrate()).statusCode, 500);
+    assert.equal((await app.inject(base + '/expediente')).json().latestEquivalence, null);
+    assert.deepEqual(engagementLedger(store, id), ledger);
+    store.db.exec('DROP TRIGGER fail_equivalence_ledger');
+    const compared = await migrate();
     assert.equal(compared.statusCode, 200, compared.body);
     assert.equal(compared.headers['cache-control'], 'no-store');
     const result = compared.json<WatchMigrationResult>();
@@ -147,6 +158,28 @@ test('la ruta del encargo vigila desde la captura firmada, detecta un retraso y 
       watch: watchReportToJson(timer.report(id, new Date(asOf).toISOString())), salt: company.salt + '\n', asOf }).input);
     assert.equal(equivalenceToJson(result.report), equivalenceToJson(manual.report));
     assert.equal(result.workList, equivalenceWorkList(manual.comparison));
+    const { latestEquivalence } = (await app.inject(base + '/expediente')).json();
+    assert.equal(latestEquivalence.fingerprint, result.report.fingerprint);
+    const withEquivalence = engagementLedger(store, id);
+    assert.deepEqual(withEquivalence.at(-1)!.refs[0], { kind: 'equivalence', method: result.report.format, fingerprint: result.report.fingerprint });
+    assert.equal((await migrate()).statusCode, 200);
+    assert.deepEqual(engagementLedger(store, id), withEquivalence, 'repetir la misma comparación no añade otro eslabón');
+
+    const previous = parseCaptureText(source.text, 'Captura anterior');
+    previous.capturedAt = new Date(Date.parse(previous.capturedAt) - 86_400_000).toISOString();
+    assert.equal((await app.inject({ method: 'PUT', url: base + '/sources/previous', payload: { text: JSON.stringify(previous), fileName: 'anterior.json' } })).statusCode, 200);
+    assert.equal((await app.inject({ method: 'POST', url: base + '/clean-room' })).statusCode, 200);
+    const pkg = (equivalence: { fingerprint: string; reviewed: boolean }) => app.inject({ method: 'POST', url: base + '/package', payload: { watch: true, equivalence } });
+    assert.equal((await pkg({ fingerprint: '1'.repeat(64), reviewed: true })).statusCode, 409);
+    assert.equal((await pkg({ fingerprint: result.report.fingerprint, reviewed: false })).statusCode, 422);
+    const published = await pkg({ fingerprint: result.report.fingerprint, reviewed: true });
+    assert.equal(published.statusCode, 200, published.body);
+    const { fingerprint } = published.json();
+    const checked = verifyPackage(published.json(), fingerprint);
+    assert.equal(checked.reference, 'matched');
+    assert.deepEqual(checked.documents.map(doc => doc.kind), ['report', 'watch', 'equivalence']);
+    assert.deepEqual(checked.documents.find(doc => doc.kind === 'equivalence')?.content, result.report);
+    assert.ok(!published.body.includes('id_cierre') && !published.body.includes(company.salt) && !published.body.includes('Ficticia Cedente'));
 
     assert.equal((await post({ action: 'pause' })).json<WatchView>().schedule?.active, false);
     now = new Date(company.captures[2]!.capturedAt);
@@ -154,10 +187,26 @@ test('la ruta del encargo vigila desde la captura firmada, detecta un retraso y 
     await timer.poll();
     assert.equal(weeklyTransport.log.length, previousRequests);
 
+    const { closureScope } = (await app.inject(base + '/expediente')).json();
+    const closed = await app.inject({ method: 'POST', url: base + '/close', payload: { confirmName: 'Vigilancia de ensayo', scopeFingerprint: closureScope.fingerprint } });
+    assert.equal(closed.statusCode, 200, closed.body);
+    const { closure } = closed.json();
+    assert.ok(verifyClosureRecord(closure));
+    savedClosure = closure;
+    assert.equal(closure.deleted.byKind.equivalence, 1);
+    assert.equal((await app.inject(base)).statusCode, 404);
+    assert.equal((await app.inject(watchUrl(other))).statusCode, 200);
+
     const protect = await app.inject({ method: 'POST', url: '/api/v2/auth/setup', payload: { password: 'clave-ficticia-solo-pruebas-2026' } });
     assert.equal(protect.statusCode, 200, protect.body);
     assert.equal((await app.inject(url + '/artifacts/salt')).statusCode, 401);
   } finally {
     await app.close();
   }
+  const reopened = new Store(dbPath);
+  try {
+    assert.ok(savedClosure);
+    assert.deepEqual(reopened.get('verifica:closures', []), [savedClosure]);
+    assert.equal(reopened.get(`verifica:equivalence:${savedClosure.engagement}`, null), null);
+  } finally { reopened.close(); }
 });

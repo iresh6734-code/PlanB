@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { setTimeout as delay } from 'node:timers/promises';
 import { createBaseApp } from '../server/app.js';
 import { registerVerificaEngagements } from '../server/verifica/engagements.js';
 import { buildTrapCompany } from '../shared/verifica/empresa-con-trampas.js';
@@ -85,4 +86,56 @@ test('Verifica · la migración acepta un destino dentro de su presupuesto aunqu
   assert.notEqual(res.statusCode, 413, 'el cuerpo pasa: decide la ruta, no el límite global');
   assert.equal(res.statusCode, 404, 'sin vigilancia configurada, la ruta lo dice');
   await app.close();
+});
+
+test('Verifica · una captura y su estado final se confirman juntos incluso al reabrir SQLite', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'planb-verifica-estado-'));
+  const dbPath = join(root, 'planb.sqlite');
+  const capture = buildTrapCompany({ traps: true }).latest;
+  const transport = fakeHubspot(capture);
+  const open = async () => {
+    const result = await createBaseApp({ dbPath, root, staticDir: root });
+    registerVerificaEngagements(result.app, result.store, { hubspotFetch: transport.fetcher, hubspotNow: () => new Date(capture.capturedAt) });
+    return result;
+  };
+  const body = { mode: 'test', portalId: FAKE_PORTAL, token: 'pat-ficticio-estado-lectura', target: 'latest', confirmFullRead: true };
+  async function finished(app: Awaited<ReturnType<typeof open>>['app'], path: string) {
+    for (let i = 0; i < 150; i++) {
+      const { job } = (await app.inject(path + '/read')).json<{ job: ReadJob }>();
+      if (job.state !== 'running') return job;
+      await delay(10);
+    }
+    throw new Error('La lectura de prueba no terminó.');
+  }
+  const first = await open();
+  let route = '';
+  try {
+    const id = (await first.app.inject({ method: 'POST', url: '/api/verifica/engagements', payload: { name: 'Estado atómico' } })).json().engagement.id;
+    route = '/api/verifica/engagements/' + id;
+    const start = () => first.app.inject({ method: 'POST', url: route + '/read', payload: body });
+    first.store.db.exec(`CREATE TEMP TRIGGER fail_job_start BEFORE INSERT ON meta WHEN NEW.key = 'verifica:readjob:${id}'
+      BEGIN SELECT RAISE(ABORT, 'fallo de ensayo'); END;`);
+    assert.equal((await start()).statusCode, 500);
+    assert.equal(transport.log.length, 0);
+    first.store.db.exec('DROP TRIGGER fail_job_start');
+    first.store.db.exec(`CREATE TEMP TRIGGER fail_job_finish BEFORE UPDATE ON meta WHEN OLD.key = 'verifica:readjob:${id}'
+      BEGIN SELECT RAISE(ABORT, 'fallo de ensayo'); END;`);
+    assert.equal((await start()).statusCode, 202);
+    assert.equal((await finished(first.app, route)).state, 'failed');
+    assert.equal((await first.app.inject(route)).json().sources.latest.status, 'missing');
+    assert.deepEqual((await first.app.inject(route + '/expediente')).json().entries, []);
+  } finally { await first.app.close(); }
+  const second = await open();
+  try {
+    assert.equal((await second.app.inject(route + '/read')).json().job.state, 'failed');
+    assert.equal((await second.app.inject(route)).json().sources.latest.status, 'missing');
+    assert.equal((await second.app.inject({ method: 'POST', url: route + '/read', payload: body })).statusCode, 202);
+    assert.equal((await finished(second.app, route)).state, 'done');
+  } finally { await second.app.close(); }
+  const third = await open();
+  try {
+    assert.equal((await third.app.inject(route + '/read')).json().job.state, 'done');
+    assert.equal((await third.app.inject(route)).json().sources.latest.status, 'ok');
+    assert.equal((await third.app.inject(route + '/expediente')).json().entries.length, 1);
+  } finally { await third.app.close(); }
 });

@@ -11,6 +11,8 @@ import { verifyPackage } from '../shared/verifica/paquete.js';
 import { fingerprintOf } from '../shared/verifica/report.js';
 import { buildTrapCompany } from '../shared/verifica/empresa-con-trampas.js';
 import { fakeHubspot, FAKE_PORTAL } from './helpers/fake-hubspot.js';
+import { buildClosureRecord, verifyClosureRecord } from '../shared/verifica/expediente.js';
+import { latestEquivalence } from '../server/verifica/equivalence-store.js';
 
 process.env.NODE_ENV = 'test';
 const files = exampleFiles(true);
@@ -118,14 +120,23 @@ test('Verifica · paquete del comprador: solo lo compartible, verificable sin co
   }
 });
 
-test('Verifica · paquete con equivalencia: sin informe previo da 409, con él lleva el documento y queda anclado en el expediente', async () => {
+test('Verifica · la equivalencia requiere su huella y las solicitudes anteriores pueden omitirla', async () => {
   const r = await rig();
   const id = await ready(r);
   await call(r, 'POST', `/engagements/${id}/clean-room`);
-  assert.equal((await call(r, 'POST', `/engagements/${id}/package`, { equivalence: true })).status, 409, 'sin informe de equivalencia no hay paquete con equivalencia');
+  assert.equal((await call(r, 'POST', `/engagements/${id}/package`, { equivalence: { fingerprint: 'a'.repeat(64), reviewed: true } })).status, 409, 'sin informe de equivalencia no hay paquete con equivalencia');
+  const previousClient = await call(r, 'POST', `/engagements/${id}/package`, { equivalence: true });
+  assert.equal(previousClient.status, 409);
+  assert.match(previousClient.body.error, /confirma la huella/);
   const ledger = (await call(r, 'GET', `/engagements/${id}/expediente`)).body.entries;
   assert.equal(ledger.at(-1).event, 'report-issued', 'un intento fallido no emite paquete');
-  for (const entry of ledger) for (const ref of entry.refs ?? []) assert.ok(ref.kind !== 'equivalence-report', 'sin equivalencia previa nada queda anclado');
+  for (const entry of ledger) for (const ref of entry.refs ?? []) assert.ok(ref.kind !== 'equivalence' && ref.kind !== 'equivalence-report', 'sin equivalencia previa nada queda anclado');
+  // Lo guardado con el formato de 0b5e3f0 ({ report, json }) se sigue leyendo como informe.
+  r.store.set('verifica:equivalence:' + id, { report: 'f'.repeat(64), json: JSON.stringify({ fingerprint: 'f'.repeat(64) }) });
+  assert.equal(latestEquivalence(r.store, id)?.fingerprint, 'f'.repeat(64));
+  const omitted = await call(r, 'POST', `/engagements/${id}/package`, { equivalence: false });
+  assert.equal(omitted.status, 200);
+  assert.deepEqual(JSON.parse(omitted.text).documents.map((doc: { kind: string }) => doc.kind), ['report']);
 });
 
 test('Verifica · cierre: hay que escribir el nombre, se borra todo lo del encargo y queda un acta mínima', async () => {
@@ -141,14 +152,52 @@ test('Verifica · cierre: hay que escribir el nombre, se borra todo lo del encar
   assert.equal(closure.deleted.rows, before);
   assert.ok(closure.ledgerIntact);
   assert.equal(closure.ledgerHead.sequence, 5);
+  assert.equal(closure.terminalEntry.event, 'engagement-closed');
+  assert.equal(closure.terminalEntry.sequence, 6);
+  assert.equal(closure.terminalEntry.previous, closure.ledgerHead.fingerprint);
+  assert.equal(verifyClosureRecord(closure, closure.fingerprint), true);
   const { fingerprint, ...body } = closure;
   assert.equal(fingerprint, fingerprintOf(body));
+  const { terminalEntry, scopeFingerprint, ...legacy } = body;
+  assert.ok(verifyClosureRecord({ ...legacy, fingerprint: fingerprintOf(legacy) }), 'las actas anteriores conservan su comprobación');
+  const altered = { ...body, terminalEntry: { ...terminalEntry, sequence: 7 } };
+  assert.equal(verifyClosureRecord({ ...altered, fingerprint: fingerprintOf(altered) }), false, 'recalcular la huella externa no corrige un eslabón incoherente');
+  assert.equal(verifyClosureRecord(buildClosureRecord({ ...legacy, deleted: { ...legacy.deleted, rows: before + 1 } })), false);
   const left = r.store.db.prepare('SELECT key FROM meta WHERE key LIKE ?').all('%' + id + '%') as { key: string }[];
   assert.deepEqual(left.map(k => k.key), [], 'ninguna clave del encargo; el acta va en la lista común de cierres');
   assert.ok(!JSON.stringify(r.store.get('verifica:closures', null)).includes('Distribuidora'), 'el acta no guarda el nombre');
   assert.equal((await call(r, 'GET', `/engagements/${id}`)).status, 404);
   assert.equal((await call(r, 'GET', `/engagements/${other}`)).status, 200, 'el otro encargo sigue intacto');
   assert.equal((await call(r, 'GET', '/closures')).body.closures.length, 1);
+});
+
+test('Verifica · el cierre rechaza un alcance desfasado y revierte un fallo al guardar su acta', async () => {
+  const r = await rig();
+  try {
+    const id = await ready(r);
+    const other = await ready(r, 'Otro encargo');
+    const foreignKey = `verifica:record:${other}:captura:${id}`;
+    r.store.set(foreignKey, 'evidencia ficticia de otro encargo');
+    const base = `/engagements/${id}`;
+    const before = (await call(r, 'GET', base + '/expediente')).body.closureScope;
+    assert.equal((await call(r, 'POST', base + '/clean-room')).status, 200);
+    const denied = await call(r, 'POST', base + '/close', { confirmName: 'Distribuidora del norte', scopeFingerprint: before.fingerprint });
+    assert.equal(denied.status, 409);
+    const scope = (await call(r, 'GET', base + '/expediente')).body.closureScope;
+    assert.notEqual(scope.fingerprint, before.fingerprint);
+    r.store.db.exec(`CREATE TEMP TRIGGER fallar_acta_cierre BEFORE INSERT ON meta WHEN NEW.key = 'verifica:closures'
+      BEGIN SELECT RAISE(ABORT, 'fallo de ensayo'); END;`);
+    const confirm = () => call(r, 'POST', base + '/close', { confirmName: 'Distribuidora del norte', scopeFingerprint: scope.fingerprint });
+    assert.equal((await confirm()).status, 500);
+    assert.deepEqual((await call(r, 'GET', base + '/expediente')).body.closureScope, scope);
+    assert.deepEqual((await call(r, 'GET', '/closures')).body.closures, []);
+    r.store.db.exec('DROP TRIGGER fallar_acta_cierre');
+    const finished = await confirm();
+    assert.equal(finished.status, 200, finished.text);
+    assert.equal(finished.body.closure.scopeFingerprint, scope.fingerprint);
+    assert.deepEqual(finished.body.closure.deleted, { rows: scope.rows, byKind: scope.byKind });
+    assert.equal(r.store.get(foreignKey, null), 'evidencia ficticia de otro encargo');
+  } finally { await r.app.close(); }
 });
 
 test('Verifica · capturas: mientras hay una lectura de HubSpot en marcha no se cambian a mano', async () => {

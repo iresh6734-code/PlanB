@@ -14,8 +14,8 @@ Generado por `node tools/api/inventory.mjs` a partir de los servidores reales: c
 | v3 | 4 | 4 | 2 |
 | v4 | 10 | 10 | 10 |
 | v7 | 15 | 15 | 13 |
-| sin versión | 40 | 40 | 13 |
-| **Total** | **119** | **119** | **72** |
+| sin versión | 41 | 41 | 13 |
+| **Total** | **120** | **120** | **72** |
 
 ## v2
 
@@ -153,6 +153,7 @@ Generado por `node tools/api/inventory.mjs` a partir de los servidores reales: c
 | POST | `/api/verifica/engagements/:id/read` | ● |  | `server/verifica/engagements.ts` |
 | GET | `/api/verifica/engagements/:id/records` | ● |  | `server/verifica/engagements.ts` |
 | GET | `/api/verifica/engagements/:id/records/:captureId` | ● |  | `server/verifica/engagements.ts` |
+| PUT | `/api/verifica/engagements/:id/review/:rule` | ● |  | `server/verifica/expediente-api.ts` |
 | DELETE | `/api/verifica/engagements/:id/sources/:role` | ● |  | `server/verifica/engagements.ts` |
 | PUT | `/api/verifica/engagements/:id/sources/:role` | ● |  | `server/verifica/engagements.ts` |
 | GET | `/api/verifica/engagements/:id/watch` | ● |  | `server/verifica/watch-api.ts` |

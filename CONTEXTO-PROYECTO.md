@@ -4,6 +4,14 @@
 
 El historial íntegro anterior se conserva en [CONTEXTO-ARCHIVO-2026-10-29.md](docs/historial/CONTEXTO-ARCHIVO-2026-10-29.md): **205528 bytes**, SHA-256 **65b7e45c545e8371917c7968b636cbf09651b2807ab7e7429627fb3a7c61b650**. Se comprobó igualdad byte a byte inmediatamente antes de sustituir este archivo. Sus órdenes, cifras, procesos y pendientes antiguos describen sus fechas; las restricciones y decisiones vigentes siguientes gobiernan la continuación. No ejecutar recomendaciones históricas ya sustituidas.
 
+## Verifica · Mega Plan 4 ampliado · 24/11/2026, Europe/Madrid
+
+- **25/11/2026.** Claude entregó localmente la integración de `0b5e3f0` con MP4 sobre `67feb4f`. Pasaron 158 pruebas de Verifica, rutas y diseño. Un informe guardado en el formato anterior entró en un paquete cuya huella se verificó. Codex corrigió la regresión de la pantalla anterior: omitir la equivalencia vuelve a funcionar y pedir incluirla requiere confirmar su huella. Confirmado con SQLite ficticio. Claude conserva las pantallas, incluida la selección por huella y la integración de Hallazgos y del visor.
+- La primera entrega de MP4 guarda la lectura de HubSpot de forma atómica, añade la equivalencia seleccionada al paquete y vincula el cierre al eslabón terminal. La ampliación añade la siguiente acción del encargo, revisión privada por hallazgo, entrega vinculada a la revisión vigente y aviso cuando una entrega queda desfasada. Una reemisión con la misma evidencia conserva las decisiones. Un cambio de evidencia o de la declaración confirmada reabre la revisión afectada.
+- Código local sobre `0c0fe93`, publicado por Claude para su rediseño. La lógica de MP4 se mantiene en el checkout. Verificación con datos ficticios: 137 pruebas de Verifica y rutas del cliente, TypeScript y 120 rutas en inventario temporal. A petición de Claude, el servidor local sirve la página de Verifica al abrir directamente rutas `/verifica/…`. Pasaron otras seis pruebas de entrada y estado del CRM, incluida la variante portátil.
+- Ensayo parcial del corte 8. Chromium sobre la compilación temporal y Fastify inyectado verificó dos encargos, creación y reemisión desde pantalla, revisión por API, reinicio, integración de una respuesta del vendedor, paquete en el visor desconectado y acta terminal. Hallazgos por URL directa mostró el informe de ejemplo mientras «Ver el informe» desde Fuentes abrió el emitido. Claude recibió la reproducción por el tablón.
+- Siguiente paso. Claude tiene los contratos para Hallazgos, Expediente y entrega y la reserva del inventario de API. Tras integrar las pantallas, repetir el recorrido del corte 8 operando revisión y entrega desde la interfaz. [Plan](coordination/plans/MEGA-PLAN-4.md) · [Ampliación](coordination/reports/CODEX-VERIFICA-MP4-OPERACION.md).
+
 ## Verifica · Fase 0 · IA local aparcada · 22/11/2026, Europe/Madrid
 
 Salen la pantalla «Proveedor de IA», el botón «Generar con mi IA» de Preparar, `server/provider.ts`, `server/ai.ts`, `server/ai-patch.ts` y `/api/settings/ai`. `/api/generate` solo crea la especificación de ensayo. Se queda la tabla `usage` del almacén, porque el esquema está congelado. Se guarda todo en la rama `archivo/aparcado-2026-11-22`. Las menciones al proveedor de IA, a `.ai.local.json` y a `aiConfigured` que hay más abajo describen sus fechas. Con esta tanda la fase 0 queda hecha. Detalle y comprobación en `docs/mision/registro-colaboracion.md`, «Hecho · tanda 3».
@@ -3460,6 +3468,12 @@ Chats consultados de forma acotada: «Busca un plugin para Claude Code», **01a1
 AGENTS.md; COORDINACION.md; coordination/board.json (lectura mediante su herramienta); coordination/reports/ y coordination/reviews/; HUBSPOT-PORTAL-PERSONAL.md; GOOGLE-PILOTO-LOCAL.md; COPILOT-STUDIO.md; PLAN-1.0.md; LEEME-v0.6.0.md; DESIGN.md; UX-ARQUITECTURA-0.6.md. El archivo histórico conserva las fuentes v2/v2.1, evidencias/paquetes y cronología completa; no atribuir sus resultados al código actual sin cotejo.
 
 ## Registro de actualizaciones
+
+- **25/11/2026, Europe/Madrid · Integración de Verifica.** Revisada la entrega de Claude que junta `0b5e3f0` y el MP4 local. Acreditada la recuperación del informe de equivalencia anterior y corregida la compatibilidad de la solicitud booleana. El corte 8 sigue pendiente de la interfaz completa y su ensayo.
+
+- **24/11/2026, Europe/Madrid · Ensayo de Verifica en navegador.** Probados dos encargos ficticios sobre una compilación temporal, con navegador para la creación, emisión y visor sin conexión y API para las nuevas acciones de revisión y cierre. El enlace directo a Hallazgos presenta el ejemplo. Reproducción enviada a Claude para el cierre del corte 8.
+
+- **24/11/2026, Europe/Madrid · Mega Plan 4 ampliado.** Implementada la revisión de hallazgos y la entrega ligada a la evidencia revisada. Pasaron 137 pruebas de Verifica y rutas de cliente y seis de navegación directa y estado. Handoff de integración a Claude en el tablón, pendiente de prueba completa en navegador e inventario canónico.
 
 - **22/11/2026, Europe/Madrid · Plan B Verifica.** Localizado y exportado desde Claude el plan completo a Markdown y PDF; verificados los dos archivos y publicado el commit `ae89834` en la rama `planb-v0.3-local`. No se incluyeron otros cambios locales. Los destinos de la aplicación y la fase 0 siguen pendientes de decisión; sin cambios de código.
 

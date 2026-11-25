@@ -35,7 +35,7 @@ function entryDetail(entry: LedgerEntry): string {
   return parts.join(' · ');
 }
 
-export interface PackageControls { busy: boolean; error: string | null; onBuild: (include: { watch: boolean; answers: boolean; equivalence: boolean }) => void }
+export interface PackageControls { busy: boolean; error: string | null; onBuild: (include: { watch: boolean; answers: boolean; equivalence: { fingerprint: string; reviewed: true } | null }) => void }
 export interface CloseControls { busy: boolean; error: string | null; onClose: (confirmName: string) => void }
 
 export function ExpedienteContent({ name, view, loadError, issued, pkg, close }: {
@@ -46,6 +46,8 @@ export function ExpedienteContent({ name, view, loadError, issued, pkg, close }:
   const [equivalence, setEquivalence] = useState(false);
   const [confirm, setConfirm] = useState('');
   const head = view?.entries.at(-1) ?? null;
+  // El paquete solo lleva la equivalencia vigente, elegida por su huella: marcarla es confirmar que se ha revisado.
+  const latest = view?.latestEquivalence ?? null;
   const anchorsOk = view ? view.anchors.every(a => a.ok) : true;
   const intact = !!view && view.verification.intact && anchorsOk;
   const broken = !view ? '' : !view.verification.intact ? (view.verification.first?.message ?? 'La cadena no cuadra.') + (view.verification.first?.sequence ? ' (entrada ' + view.verification.first.sequence + ')' : '')
@@ -82,15 +84,17 @@ export function ExpedienteContent({ name, view, loadError, issued, pkg, close }:
         {!issued
           ? <p className="pb-held">Primero hay que emitir el informe: el paquete siempre lo lleva.</p>
           : (
-            <form className="vf-read-form" onSubmit={event => { event.preventDefault(); pkg.onBuild({ watch, answers, equivalence }); }}>
+            <form className="vf-read-form" onSubmit={event => { event.preventDefault(); pkg.onBuild({ watch, answers, equivalence: equivalence && latest ? { fingerprint: latest.fingerprint, reviewed: true } : null }); }}>
               <fieldset className="pb-choice" disabled={pkg.busy}>
                 <legend className="pb-field-label">Qué lleva, además del informe</legend>
                 <label className="pb-option"><input type="checkbox" checked={watch} onChange={event => setWatch(event.target.checked)} />
                   <span className="pb-option-text"><span className="pb-option-label">El parte de vigilancia</span><span className="pb-option-note">Si el encargo tiene vigilancia desde la firma.</span></span></label>
                 <label className="pb-option"><input type="checkbox" checked={answers} onChange={event => setAnswers(event.target.checked)} />
                   <span className="pb-option-text"><span className="pb-option-label">Las respuestas del vendedor</span><span className="pb-option-note">Van como «declarado», atadas a la huella del informe.</span></span></label>
-                <label className="pb-option"><input type="checkbox" checked={equivalence} onChange={event => setEquivalence(event.target.checked)} />
-                  <span className="pb-option-text"><span className="pb-option-label">El informe de equivalencia</span><span className="pb-option-note">Si ya se comparó la migración en «Vigilancia».</span></span></label>
+                <label className="pb-option"><input type="checkbox" checked={equivalence && !!latest} disabled={!latest} onChange={event => setEquivalence(event.target.checked)} />
+                  <span className="pb-option-text"><span className="pb-option-label">El informe de equivalencia</span><span className="pb-option-note">{latest
+                    ? <>El de la comparación del {day(latest.asOf)}, huella <code title={latest.fingerprint}>{short(latest.fingerprint)}</code>. Márcalo después de revisarlo.</>
+                    : 'Todavía no hay: se genera al comparar la migración en «Después del cierre».'}</span></span></label>
               </fieldset>
               <div className="vf-issue-actions"><button type="submit" className="pb-secondary" disabled={pkg.busy}>{pkg.busy ? 'Preparando…' : 'Descargar el paquete'}</button></div>
             </form>

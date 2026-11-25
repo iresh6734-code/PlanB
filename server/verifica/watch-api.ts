@@ -11,6 +11,7 @@ import { ReadAuthorizationError, type ReadRecord } from '../../shared/verifica/r
 import { WatchInputError, watchReportToJson } from '../../shared/verifica/watch.js';
 import { WATCH_ARTIFACTS, WATCH_MIGRATION, WATCH_RESOURCE, type WatchMigrationResult, type WatchSigningChoice, type WatchView } from '../../shared/verifica/watch-contract.js';
 import { createWatchTimer, inspectWatchObservation } from './watch-timer.js';
+import { rememberEquivalence } from './equivalence-store.js';
 
 const roles = ['previous', 'latest'] as const;
 const fingerprint = z.string().regex(/^[a-f0-9]{64}$/);
@@ -135,9 +136,9 @@ export function registerWatchApi(app: FastifyInstance, store: Store, engagements
       const { input: equivalence } = prepareEquivalenceFiles({ closing: closing.captureText, target: body.target, map: body.map,
         watch: watchReportToJson(closing.report), salt: timer.privateSalt(id), asOf: body.asOf });
       const { report, comparison } = releaseEquivalence(equivalence);
-      // El informe se guarda para que el paquete del comprador pueda llevarlo (Mega Plan 3, fase 2).
-      store.set('verifica:equivalence:' + id, { report: report.fingerprint, json: JSON.stringify(report) });
-      return { report, workList: equivalenceWorkList(comparison) };
+      const workList = equivalenceWorkList(comparison);
+      rememberEquivalence(store, id, (options?.now?.() ?? new Date()).toISOString(), report);
+      return { report, workList };
     });
     reply.header('Cache-Control', 'no-store');
     return result;

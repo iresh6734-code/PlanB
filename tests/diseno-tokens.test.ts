@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const MIGRATED = ['src/design/base.css', 'src/design/components.css', 'src/verifica/verifica.css'];
+const MIGRATED = ['src/design/base.css', 'src/design/components.css', 'src/verifica/verifica.css', 'src/design-system.css'];
 const SEMANTIC_LAYER = ['src/faro.css'];
 
 test('Diseño · la capa de variables de faro.css solo usa tokens --pb-* (sin hex propios)', () => {
